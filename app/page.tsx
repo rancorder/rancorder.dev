@@ -1,4 +1,4 @@
-// app/page.tsx
+// app/page.tsx - モバイル修正版
 'use client';
 
 import { useState } from 'react';
@@ -7,13 +7,13 @@ import { useInView } from 'react-intersection-observer';
 import { projects } from '../data/projects';
 import { skills } from '../data/skills';
 
-// アニメーション設定
+// アニメーション設定（高速化）
 const fadeInUp = {
-  hidden: { opacity: 0, y: 60 },
+  hidden: { opacity: 0, y: 30 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.6, ease: 'easeOut' }
+    transition: { duration: 0.4, ease: 'easeOut' }
   }
 };
 
@@ -22,18 +22,19 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
+      staggerChildren: 0.08
     }
   }
 };
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Intersection Observer フック
-  const [heroRef, heroInView] = useInView({ threshold: 0.3, triggerOnce: true });
-  const [projectsRef, projectsInView] = useInView({ threshold: 0.2, triggerOnce: true });
-  const [skillsRef, skillsInView] = useInView({ threshold: 0.2, triggerOnce: true });
+  // Intersection Observer フック（threshold調整）
+  const [heroRef, heroInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [projectsRef, projectsInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [skillsRef, skillsInView] = useInView({ threshold: 0.1, triggerOnce: true });
 
   // プロジェクトフィルタリング
   const filteredProjects = activeCategory === 'all' 
@@ -84,17 +85,18 @@ export default function HomePage() {
           z-index: 0;
         }
 
-        /* ヘッダー */
+        /* ヘッダー - モバイル最適化 */
         header {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
-          background: rgba(15, 23, 42, 0.8);
+          background: rgba(15, 23, 42, 0.95);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border);
-          z-index: 100;
+          z-index: 1000;
           padding: 1rem 0;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         nav {
@@ -110,6 +112,7 @@ export default function HomePage() {
           font-size: 1.5rem;
           font-weight: 700;
           color: var(--primary);
+          z-index: 1001;
         }
 
         .nav-links {
@@ -129,10 +132,42 @@ export default function HomePage() {
           color: var(--text-light);
         }
 
+        /* ハンバーガーメニューボタン */
+        .mobile-menu-btn {
+          display: none;
+          flex-direction: column;
+          gap: 4px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          z-index: 1001;
+        }
+
+        .mobile-menu-btn span {
+          width: 24px;
+          height: 2px;
+          background: var(--text-light);
+          transition: all 0.3s;
+        }
+
+        .mobile-menu-btn.open span:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .mobile-menu-btn.open span:nth-child(2) {
+          opacity: 0;
+        }
+
+        .mobile-menu-btn.open span:nth-child(3) {
+          transform: rotate(-45deg) translate(7px, -6px);
+        }
+
         /* コンテンツ */
         main {
           position: relative;
           z-index: 1;
+          padding-top: 80px; /* ヘッダー分の余白確保 */
         }
 
         .container {
@@ -470,21 +505,68 @@ export default function HomePage() {
           margin-bottom: 0.5rem;
         }
 
-        /* レスポンシブ */
+        /* レスポンシブ - モバイル最適化 */
         @media (max-width: 768px) {
-          nav {
-            flex-direction: column;
-            gap: 1rem;
+          /* ヘッダー修正 */
+          header {
+            padding: 0.75rem 0;
           }
 
+          nav {
+            padding: 0 1rem;
+          }
+
+          /* ハンバーガーメニュー表示 */
+          .mobile-menu-btn {
+            display: flex;
+          }
+
+          /* ナビゲーションリンク - モバイル */
           .nav-links {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            pointer-events: none;
+          }
+
+          .nav-links.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+          }
+
+          .nav-links li {
+            padding: 0;
+            border-bottom: 1px solid var(--border);
+          }
+
+          .nav-links li:last-child {
+            border-bottom: none;
+          }
+
+          .nav-links a {
+            display: block;
+            padding: 1rem 2rem;
             text-align: center;
           }
 
+          /* メインコンテンツ調整 */
+          main {
+            padding-top: 60px;
+          }
+
           section {
-            padding: 4rem 0;
+            padding: 3rem 0;
             min-height: auto;
           }
 
@@ -492,26 +574,107 @@ export default function HomePage() {
             padding: 0 1rem;
           }
 
+          /* ヒーローセクション */
+          .hero-description {
+            font-size: 1rem;
+          }
+
           .hero-links {
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
           }
 
           .btn {
             width: 100%;
-            max-width: 300px;
+            max-width: none;
           }
+
+          /* 実績カード */
+          .achievements-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+          }
+
+          .achievement-card {
+            padding: 1.5rem;
+          }
+
+          .achievement-value {
+            font-size: 2.5rem;
+          }
+
+          /* プロジェクトグリッド */
+          .projects-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+
+          .project-card {
+            padding: 1.5rem;
+          }
+
+          /* フィルターボタン */
+          .filter-buttons {
+            gap: 0.5rem;
+          }
+
+          .filter-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+          }
+
+          /* スキルグリッド */
+          .skills-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+        }
+
+        /* 超小型デバイス */
+        @media (max-width: 480px) {
+          .hero-title {
+            font-size: 2rem;
+          }
+
+          .section-title {
+            font-size: 1.8rem;
+          }
+
+          .project-metrics {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* スムーズスクロール */
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* スクロール時のパフォーマンス最適化 */
+        * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
       `}</style>
 
       <header>
         <nav>
           <div className="logo">H・M</div>
-          <ul className="nav-links">
-            <li><a href="#home">Home</a></li>
-            <li><a href="#projects">Projects</a></li>
-            <li><a href="#skills">Skills</a></li>
-            <li><a href="#contact">Contact</a></li>
+          <button 
+            className={`mobile-menu-btn ${mobileMenuOpen ? 'open' : ''}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="メニュー"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <ul className={`nav-links ${mobileMenuOpen ? 'open' : ''}`}>
+            <li><a href="#home" onClick={() => setMobileMenuOpen(false)}>Home</a></li>
+            <li><a href="#projects" onClick={() => setMobileMenuOpen(false)}>Projects</a></li>
+            <li><a href="#skills" onClick={() => setMobileMenuOpen(false)}>Skills</a></li>
+            <li><a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a></li>
           </ul>
         </nav>
       </header>
@@ -620,7 +783,7 @@ export default function HomePage() {
                   variants={fadeInUp}
                   initial="hidden"
                   animate={projectsInView ? "visible" : "hidden"}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ delay: i * 0.08 }}
                 >
                   <h3 className="project-title">{project.title}</h3>
                   <p className="project-description">{project.description}</p>
@@ -707,15 +870,15 @@ export default function HomePage() {
               className="section-title"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.4 }}
             >
-              一緒にプロダクトを作りませんか？
+              一緒にプロダクトを作りませんか?
             </motion.h2>
             <motion.p 
               className="section-subtitle"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
             >
               製造業17年の経験と本番運用レベルの技術力で、<br />
               貴社のプロダクト成功に貢献します。
@@ -726,7 +889,7 @@ export default function HomePage() {
               style={{ marginTop: '2rem' }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
             >
               お問い合わせ
             </motion.a>
