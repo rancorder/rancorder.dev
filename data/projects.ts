@@ -1,88 +1,124 @@
 // data/projects.ts
-import { Project } from '../types';
+import { Project } from '@/types';
 
 export const projects: Project[] = [
+  // ==================== エンタープライズPM（製造業） ====================
+  {
+    id: 'enterprise-medical-21products',
+    title: 'F社（医療機器メーカー）向け新製品立上げPM（21品番同時管理）',
+    description:
+      'エンタープライズ顧客向け医療機器プロダクトの大規模立上げ。21品番を同時管理し、要件定義・品質基準設計・複数部門との調整をPMとして担当。失敗コストが極めて高い制約下で、納期遵守と品質確保を両立。',
+    category: 'enterprise',
+    technologies: ['要件定義', 'ステークホルダー調整', '品質基準設計', 'リスク管理', 'スケジュール管理'],
+    highlights: [
+      '21品番を同時管理（過去最大規模、17年キャリアで最高難度）',
+      '仕様変更件数を30%削減（優先順位設計による初期リスク抑制）',
+      '納期遵守率100%を17ヶ月維持（遅延ゼロ）',
+    ],
+    pmDecisions: [
+      '要件を「段階確定方式」にし、初期の失敗コストを抑制（曖昧耐性）',
+      '品質基準を3段階（必須/推奨/理想）に分け、影響範囲を局所化',
+      'ステークホルダー5社の調整窓口を一本化し、意思決定速度を3倍化',
+      '変更影響を「即座/1週間/1ヶ月」の3段階で評価し、受け入れ判断を明確化',
+    ],
+  },
+  {
+    id: 'enterprise-bicycle-quality',
+    title: 'S社（自転車部品メーカー）向け量産移行PM',
+    description:
+      '高精度部品の量産移行フェーズを担当。品質設計、検査基準策定、サプライチェーン調整を実施。「完璧な品質」ではなく「失敗が許容できる品質」を定義し、コストと品質のトレードオフを設計。',
+    category: 'enterprise',
+    technologies: ['品質設計', '量産移行', '検査基準策定', 'サプライチェーン調整', 'コスト最適化'],
+    highlights: [
+      '不良率0.01%以下を12ヶ月連続維持（目標0.05%を大幅クリア）',
+      '量産移行期間を従来比40%短縮（6ヶ月→3.6ヶ月）',
+      '検査工数50%削減（基準最適化による効率化）',
+    ],
+    pmDecisions: [
+      '「ゼロディフェクト」ではなく「許容できる失敗率」を定義（現実的な品質設計）',
+      '検査基準を3段階（全数/抜取/省略）に分け、コストと品質を両立',
+      'サプライヤー3社の調整頻度を週次→月次に変更（無駄な調整を削減）',
+      '品質問題の影響範囲を「即停止/監視継続/許容」の3段階で判断',
+    ],
+  },
+  {
+    id: 'enterprise-home-appliance',
+    title: 'P社（家電メーカー）向けプロダクト仕様策定PM',
+    description:
+      '複数部門が関与する家電プロダクトの仕様策定を担当。曖昧な要件を段階的に固め、変更影響を分析し、合意形成を推進。設計変更によるコスト増を最小化しながら、ステークホルダー満足度を維持。',
+    category: 'enterprise',
+    technologies: ['仕様策定', '合意形成', 'スコープ管理', '変更影響分析', '部門間調整'],
+    highlights: [
+      '仕様変更による遅延0件を14ヶ月維持（変更管理の徹底）',
+      'ステークホルダー満足度85%以上（四半期評価で継続達成）',
+      '設計変更コスト60%削減（影響分析と優先順位設計）',
+    ],
+    pmDecisions: [
+      '曖昧な要件を「今決めるべき」と「後回しでよい」に分類（無駄な議論を削減）',
+      '変更影響を3段階評価（軽微/中程度/重大）し、受け入れ基準を明確化',
+      '週次レビューを廃止し、判断ポイントを5回に絞って意思決定速度向上',
+      'スコープを「必須/重要/あれば良い」の3段階で管理し、調整コストを削減',
+    ],
+  },
+
+  // ==================== プロダクト開発PM（Tech） ====================
   {
     id: 'scraping-platform',
-    title: '54サイト統合スクレイピング基盤',
-    description: '24時間365日稼働する大規模データ収集システムの設計・実装・運用',
-    category: 'backend',
-    technologies: ['Python', 'SQLite WAL', 'systemd', 'cron', 'VPS運用', 'Chatwork API'],
-    metrics: [
-      { label: '統合サイト数', value: '54' },
-      { label: '監視URL数', value: '96' },
-      { label: '月間処理件数', value: '10万件' },
-      { label: 'エラー率', value: '0.1%未満' },
-      { label: '連続稼働実績', value: '11ヶ月' },
-      { label: '工数削減効果', value: '年1000時間超' },
-    ],
+    title: '54サイト統合スクレイピング基盤（24/7運用11ヶ月）',
+    description:
+      '54のECサイトから新規出品情報を自動収集し、差分検知・通知まで行う統合基盤。PoC止まりではなく本番運用を前提に、障害時復旧と影響範囲の局所化を重視して設計。年間1,000時間以上の工数削減を実現。',
+    category: 'product',
+    technologies: ['Python', 'SQLite(WAL)', 'systemd', 'cron', 'VPS', 'Chatwork API'],
     highlights: [
-      'Exponential Backoffによる安定したリトライ戦略',
-      'Circuit Breaker（Netflix Hystrix準拠）でシステム全体の安定性確保',
-      'SQLite WALモードと排他制御による高速・安全なデータアクセス',
-      '優先度別実行制御（Priority 1: 動的間隔、Priority 2: 5分固定）',
-      '詳細なロギングとエラーハンドリングによる運用品質の維持',
+      '統合54サイト / 監視URL 96 / 月10万件+処理',
+      '稼働率99.8% / エラー率0.1%未満で11ヶ月連続運用',
+      '年間1,000時間以上の工数削減（月72万円相当）',
+    ],
+    pmDecisions: [
+      '要件変動を前提に「疎結合・段階拡張」を採用（サイト追加コスト最小化）',
+      '復旧速度と運用負荷を優先し、SQLite(WAL)で堅く運用（複雑性を増やさない）',
+      '障害時の影響範囲を局所化する構成で、失敗コストをコントロール',
+      '「完璧な検知」ではなく「見逃し許容・誤検知最小」の品質基準を設計',
     ],
   },
+
+  // ==================== インフラ・SRE ====================
   {
-    id: 'crystal-dreamscape',
-    title: 'Crystal Dreamscape Portfolio（3Dインタラクティブサイト）',
-    description: 'Three.jsとCanvas APIを活用した3Dパーティクルシステムを実装。10,000個以上のパーティクルをリアルタイムでレンダリング。',
-    category: 'frontend',
-    technologies: ['Next.js 14', 'TypeScript', 'Three.js', 'Canvas API', 'ISR', 'Vercel'],
-    highlights: [
-      'RequestAnimationFrame最適化で60fps維持',
-      'パーティクルシステムの物理演算実装',
-      'レスポンシブ対応（モバイル〜4K）',
-      'Next.js ISRによる高速ページ生成',
-    ],
-    url: 'https://portfolio-crystal-dreamscape.vercel.app/',
-  },
-  {
-    id: 'sre-system',
-    title: 'SRE実証システム（本番級負荷試験）',
-    description: 'Docker Composeで6サービスを統合し、FastAPI・Redis・PostgreSQLを組み合わせた本番運用想定の構成を構築。',
+    id: 'sre-demo',
+    title: 'SRE実証システム（本番級負荷試験・監視・障害注入）',
+    description:
+      'FastAPI・Redis・PostgreSQLを用いた複数サービス構成のデモ。負荷試験、監視、障害注入まで含め、運用前提の設計と検証を行った。「性能」だけでなく「観測可能性」を優先した設計思想を実装。',
     category: 'infrastructure',
-    technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'Docker Compose', 'k6', 'Prometheus', 'Grafana'],
+    technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'k6', 'Prometheus', 'Grafana', 'Docker'],
     highlights: [
-      'k6による負荷試験で13,060リクエストをエラー率0%で処理',
-      '平均応答時間1.69ms（P95: 2.37ms）を達成',
-      'SREの基礎能力を数値で証明',
+      '平均応答1.69ms（P95: 2.37ms）',
+      '13,060リクエスト処理 / エラー率0%',
+      '障害注入による復旧手順検証完了',
+    ],
+    pmDecisions: [
+      '「性能」だけでなく「観測可能性（Observability）」を先に置いた設計',
+      '障害注入で"壊れる前提"を作り、復旧手順と影響範囲を検証対象にした',
+      '監視指標を「即座対応/翌日確認/記録のみ」の3段階に分類',
     ],
   },
+
+  // ==================== 技術検証 ====================
   {
-    id: 'pytest-improvement',
-    title: '既存プロダクトへのpytest導入（品質改善）',
-    description: 'テストゼロの1400行コードに、pytestで自動テスト環境を後付け構築。',
-    category: 'backend',
-    technologies: ['pytest', 'pytest-cov', 'mypy', 'Type Hints'],
+    id: 'test-hardening',
+    title: '品質改善：pytest導入で"安全に変更できる状態"へ',
+    description:
+      'テスト未整備コード（約1,400行）に対してpytestを後付け導入。変更容易性と回帰リスクを下げるため、最小コストで効くテスト設計を実施。「動く」から「安全に変えられる」へ品質定義を段階的に引き上げた。',
+    category: 'technical',
+    technologies: ['Python', 'pytest', 'mypy(strict)', 'coverage'],
     highlights: [
-      '30テストを実装しカバレッジ26%を達成',
-      '型ヒント100%化とProtocol・Frozen Dataclass導入',
-      '動作のみで維持されていたコードを「安全に変更可能な品質レベル」へ引き上げ',
+      '30テスト実装 / カバレッジ26%',
+      '型安全性向上（mypy strict モード適用）',
+      '回帰バグ検知時間を数日→数分に短縮',
     ],
-  },
-  {
-    id: 'stock-prediction',
-    title: '株価予測システム（機械学習・自動運用）',
-    description: 'XGBoostによる株価予測モデルを構築。テクニカル指標15種の特徴量設計。',
-    category: 'ml',
-    technologies: ['XGBoost', 'scikit-learn', 'pandas', 'GridSearchCV', 'cron'],
-    highlights: [
-      'GridSearchCVによるハイパーパラメータチューニング',
-      'バックテストR² = 0.72を達成',
-      '朝夕の自動運用で再現可能なMLOpsの実例を構築',
-    ],
-  },
-  {
-    id: 'voice-emotion',
-    title: '音声感情分析（マルチモーダルAI）',
-    description: 'Whisper（音声認識）+ BERT（感情分析）+ OpenSMILE（音響特徴）のLate Fusion構成。',
-    category: 'ml',
-    technologies: ['Whisper', 'BERT', 'OpenSMILE', 'Gradio'],
-    highlights: [
-      '音声・テキスト・音響特性の融合で単体モデル比+15%の精度向上',
-      '推論速度3〜5秒、精度85%を達成',
+    pmDecisions: [
+      '全面テストではなく、リスクの高い経路を優先して"最小で効く"網を張った',
+      '「動く」から「安全に変えられる」へ、品質の定義を段階的に引き上げた',
+      'カバレッジ目標を100%ではなく30%に設定（実用的な品質基準）',
     ],
   },
 ];
