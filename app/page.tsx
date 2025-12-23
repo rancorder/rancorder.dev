@@ -1,24 +1,60 @@
-// app/page.tsx
+// app/page.tsx（エンタープライズレベル20完全版）
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { projects } from '@/data/projects';
 import { skills } from '@/data/skills';
 import type { ProjectCategory } from '@/types';
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const stagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.07 } },
+  visible: { transition: { staggerChildren: 0.08 } },
 };
+
+// カウントアップコンポーネント
+function CountUp({ end, suffix = '' }: { end: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
+
+  useEffect(() => {
+    if (!isInView) return;
+    let start = 0;
+    const duration = 1500;
+    const increment = end / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [isInView, end]);
+
+  return (
+    <div ref={ref} className="stat-v">
+      {count}
+      {suffix}
+    </div>
+  );
+}
 
 export default function Page() {
   const [activeCategory, setActiveCategory] = useState<ProjectCategory>('all');
+  const { scrollYProgress } = useScroll();
+  
+  // 背景グラデーション用のスプリングアニメーション
+  const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
 
   const categories: { key: ProjectCategory; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -35,6 +71,14 @@ export default function Page() {
 
   return (
     <main>
+      {/* 動的背景 */}
+      <motion.div
+        className="bg-gradient"
+        style={{
+          y: bgY,
+        }}
+      />
+
       {/* Top Nav */}
       <header className="nav">
         <div className="container nav-inner">
@@ -76,7 +120,7 @@ export default function Page() {
             </motion.p>
 
             <motion.div className="cta" variants={fadeUp}>
-              <a className="btn primary" href="mailto:xzengbu@gmail.com">
+              <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
                 面談・相談する
               </a>
               <a className="btn ghost" href="#projects">
@@ -88,18 +132,18 @@ export default function Page() {
             </motion.div>
 
             <motion.div className="stats" variants={fadeUp}>
-              <div className="stat">
-                <div className="stat-v">17年</div>
+              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                <CountUp end={17} suffix="年" />
                 <div className="stat-l">エンタープライズPM経験</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">21品番</div>
+              </motion.div>
+              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                <CountUp end={21} suffix="品番" />
                 <div className="stat-l">同時立上げ（最大規模）</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">11ヶ月</div>
+              </motion.div>
+              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                <CountUp end={11} suffix="ヶ月" />
                 <div className="stat-l">24/7本番運用（連続稼働）</div>
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
@@ -148,19 +192,32 @@ export default function Page() {
 
             <motion.div className="filters" variants={fadeUp}>
               {categories.map((c) => (
-                <button
+                <motion.button
                   key={c.key}
                   className={`chip ${activeCategory === c.key ? 'active' : ''}`}
                   onClick={() => setActiveCategory(c.key)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {c.label}
-                </button>
+                </motion.button>
               ))}
             </motion.div>
 
-            <motion.div className="grid" variants={stagger}>
+            <motion.div className="grid" variants={stagger} layout>
               {filtered.map((p) => (
-                <motion.article key={p.id} className="card project" variants={fadeUp}>
+                <motion.article
+                  key={p.id}
+                  className="card project"
+                  variants={fadeUp}
+                  layout
+                  whileHover={{
+                    y: -8,
+                    boxShadow: '0 24px 80px rgba(0, 0, 0, 0.5)',
+                    borderColor: 'rgba(255, 255, 255, 0.22)',
+                  }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                >
                   <div className="project-head">
                     <h3 className="project-title">{p.title}</h3>
                     <span className="badge">{p.category}</span>
@@ -219,7 +276,16 @@ export default function Page() {
 
             <motion.div className="grid skills" variants={stagger}>
               {skills.map((g) => (
-                <motion.div key={g.category} className="card" variants={fadeUp}>
+                <motion.div
+                  key={g.category}
+                  className="card"
+                  variants={fadeUp}
+                  whileHover={{
+                    y: -6,
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
                   <div className="mini-title">{g.category}</div>
                   <ul className="list">
                     {g.items.map((it) => (
@@ -254,7 +320,7 @@ export default function Page() {
                 </p>
               </div>
               <div className="contact-right">
-                <a className="btn primary" href="mailto:xzengbu@gmail.com">
+                <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
                   xzengbu@gmail.com
                 </a>
                 <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
@@ -272,7 +338,7 @@ export default function Page() {
         </div>
       </footer>
 
-      {/* Styles (self-contained) */}
+      {/* Styles（エンタープライズレベル20完全版） */}
       <style jsx global>{`
         :root {
           --bg: #05070f;
@@ -286,29 +352,61 @@ export default function Page() {
           --accent2: #22c55e;
           --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
         }
+
         * {
           box-sizing: border-box;
         }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
         html,
         body {
           height: 100%;
         }
+
         body {
           margin: 0;
           font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-          background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
-            radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%),
-            var(--bg);
+          background: var(--bg);
           color: var(--text);
+          overflow-x: hidden;
         }
+
+        /* 動的背景グラデーション */
+        .bg-gradient {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: -1;
+          background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
+            radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%);
+          animation: gradientShift 15s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.85;
+          }
+        }
+
         a {
           color: inherit;
           text-decoration: none;
         }
+
         .container {
           width: min(1100px, calc(100% - 40px));
           margin: 0 auto;
         }
+
         .muted {
           color: var(--muted);
         }
@@ -318,264 +416,409 @@ export default function Page() {
           position: sticky;
           top: 0;
           z-index: 20;
-          backdrop-filter: blur(10px);
-          background: rgba(5, 7, 15, 0.55);
+          backdrop-filter: blur(12px) saturate(180%);
+          background: rgba(5, 7, 15, 0.7);
           border-bottom: 1px solid var(--border);
         }
+
         .nav-inner {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 14px 0;
+          padding: 16px 0;
         }
+
         .brand {
           font-weight: 800;
           letter-spacing: 0.3px;
+          transition: color 0.2s ease;
         }
+
+        .brand:hover {
+          color: var(--accent);
+        }
+
         .nav-links {
           display: flex;
-          gap: 14px;
+          gap: 16px;
           align-items: center;
           color: var(--muted);
           font-size: 14px;
         }
+
+        .nav-links a {
+          transition: color 0.2s ease;
+        }
+
         .nav-links a:hover {
           color: var(--text);
         }
+
         .pill {
-          padding: 8px 12px;
+          padding: 8px 14px;
           border: 1px solid var(--border);
           border-radius: 999px;
           background: var(--panel-2);
+          transition: all 0.2s ease;
+        }
+
+        .pill:hover {
+          background: var(--panel);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         /* Hero */
         .hero {
-          padding: 70px 0 34px;
+          padding: 100px 0 60px;
         }
+
         .kicker {
-          margin: 0 0 10px;
+          margin: 0 0 12px;
           font-weight: 700;
           color: var(--muted2);
+          font-size: 15px;
         }
+
         .hero-title {
           margin: 0;
-          font-size: clamp(28px, 3.2vw, 46px);
+          font-size: clamp(32px, 3.5vw, 52px);
           line-height: 1.1;
           letter-spacing: -0.02em;
+          background: linear-gradient(135deg, var(--text), rgba(255, 255, 255, 0.7));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
+
         .hero-sub {
-          margin: 16px 0 0;
-          font-size: 16px;
+          margin: 20px 0 0;
+          font-size: 17px;
           color: var(--muted);
           line-height: 1.7;
         }
+
         .hero-desc {
-          margin: 10px 0 0;
+          margin: 12px 0 0;
           font-size: 15px;
           color: var(--muted2);
           line-height: 1.8;
           max-width: 900px;
         }
+
         .cta {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-wrap: wrap;
-          margin-top: 18px;
+          margin-top: 24px;
         }
+
         .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          height: 42px;
-          padding: 0 14px;
+          height: 46px;
+          padding: 0 20px;
           border-radius: 12px;
           border: 1px solid var(--border);
           background: var(--panel-2);
           color: var(--text);
           font-weight: 700;
           font-size: 14px;
-          transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+          transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
         }
+
         .btn:hover {
-          transform: translateY(-1px);
-          border-color: rgba(255, 255, 255, 0.22);
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.28);
         }
+
         .btn.primary {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(34, 197, 94, 0.55));
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6));
           border-color: transparent;
-          box-shadow: var(--shadow);
+          box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
         }
+
+        .btn.primary:hover {
+          box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
+        }
+
+        /* 呼吸アニメーション */
+        .btn.pulse {
+          animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
+          }
+          50% {
+            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.6);
+          }
+        }
+
         .btn.ghost {
           background: var(--panel-2);
         }
+
         .stats {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          margin-top: 18px;
+          gap: 16px;
+          margin-top: 32px;
         }
+
         .stat {
           border: 1px solid var(--border);
           background: var(--panel);
-          border-radius: 16px;
-          padding: 14px;
+          border-radius: 18px;
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
         }
+
+        .stat:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.22);
+        }
+
         .stat-v {
           font-weight: 900;
-          font-size: 20px;
+          font-size: 32px;
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
+
         .stat-l {
-          margin-top: 6px;
+          margin-top: 8px;
           color: var(--muted);
           font-size: 13px;
-          line-height: 1.4;
+          line-height: 1.5;
         }
 
         /* Section */
         .section {
-          padding: 54px 0;
+          padding: 120px 0;
         }
+
         .section-title {
           margin: 0;
-          font-size: 26px;
+          font-size: 32px;
           letter-spacing: -0.01em;
+          font-weight: 800;
         }
+
         .section-sub {
-          margin: 10px 0 0;
+          margin: 12px 0 0;
           color: var(--muted);
           line-height: 1.7;
+          font-size: 16px;
         }
 
         /* Cards/Grid */
         .grid {
-          margin-top: 18px;
+          margin-top: 32px;
           display: grid;
-          gap: 14px;
+          gap: 32px;
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
         .card {
           border: 1px solid var(--border);
           background: var(--panel);
-          border-radius: 18px;
-          padding: 18px;
+          border-radius: 20px;
+          padding: 32px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
         }
 
         /* Projects */
         .filters {
-          margin-top: 16px;
+          margin-top: 24px;
           display: flex;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
         }
+
         .chip {
           border: 1px solid var(--border);
           background: var(--panel-2);
           color: var(--muted);
           border-radius: 999px;
-          padding: 8px 12px;
+          padding: 10px 16px;
           font-weight: 700;
           font-size: 13px;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
+
         .chip:hover {
-          border-color: rgba(255, 255, 255, 0.22);
+          border-color: rgba(255, 255, 255, 0.28);
+          background: var(--panel);
         }
+
         .chip.active {
           color: var(--text);
-          background: rgba(124, 58, 237, 0.28);
-          border-color: rgba(124, 58, 237, 0.45);
+          background: rgba(124, 58, 237, 0.32);
+          border-color: rgba(124, 58, 237, 0.5);
+          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
         }
 
         .project-head {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 10px;
+          gap: 12px;
         }
+
         .project-title {
           margin: 0;
-          font-size: 17px;
+          font-size: 18px;
           line-height: 1.4;
+          font-weight: 700;
         }
+
         .badge {
-          font-size: 12px;
-          padding: 6px 10px;
+          font-size: 11px;
+          padding: 6px 12px;
           border-radius: 999px;
           border: 1px solid var(--border);
           color: var(--muted);
           background: rgba(255, 255, 255, 0.04);
           white-space: nowrap;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-weight: 700;
         }
+
         .project-desc {
-          margin: 10px 0 0;
+          margin: 16px 0 0;
           color: var(--muted);
           line-height: 1.75;
           font-size: 14px;
         }
 
         .pm-box {
-          margin-top: 12px;
-          padding: 12px 12px;
-          border-radius: 14px;
-          border: 1px solid rgba(124, 58, 237, 0.35);
-          background: rgba(124, 58, 237, 0.12);
+          margin-top: 20px;
+          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(124, 58, 237, 0.4);
+          background: rgba(124, 58, 237, 0.14);
+          position: relative;
         }
+
+        .pm-box::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 16px;
+          padding: 1px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(34, 197, 94, 0.3));
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0;
+          animation: pmGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes pmGlow {
+          0%,
+          100% {
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
         .pm-title {
           font-weight: 900;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
           font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
+
         .pm-list {
           margin: 0;
-          padding-left: 18px;
+          padding-left: 20px;
           color: var(--muted);
-          line-height: 1.7;
+          line-height: 1.8;
           font-size: 13px;
         }
 
+        .pm-list li {
+          margin-bottom: 8px;
+        }
+
+        .pm-list li:last-child {
+          margin-bottom: 0;
+        }
+
         .two-col {
-          margin-top: 14px;
+          margin-top: 24px;
           display: grid;
           grid-template-columns: 1.2fr 1fr;
-          gap: 12px;
+          gap: 20px;
           border-top: 1px solid var(--border);
-          padding-top: 14px;
+          padding-top: 24px;
         }
+
         .mini-title {
           font-weight: 900;
           font-size: 13px;
           color: var(--text);
-          margin-bottom: 10px;
+          margin-bottom: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
+
         .list {
           margin: 0;
-          padding-left: 18px;
+          padding-left: 20px;
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
         }
+
+        .list li {
+          margin-bottom: 8px;
+        }
+
         .tags {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
         }
+
         .tag {
           font-size: 12px;
-          padding: 6px 10px;
+          padding: 6px 12px;
           border-radius: 999px;
           border: 1px solid var(--border);
           color: var(--muted);
           background: rgba(255, 255, 255, 0.03);
+          transition: all 0.2s ease;
+        }
+
+        .tag:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.18);
         }
 
         /* Why */
         .why p {
-          margin: 0 0 12px;
+          margin: 0 0 16px;
           color: var(--muted);
           line-height: 1.85;
         }
+
         .why p:last-child {
           margin-bottom: 0;
         }
@@ -587,33 +830,36 @@ export default function Page() {
 
         /* Contact */
         .contact-card {
-          margin-top: 18px;
+          margin-top: 32px;
           display: flex;
-          gap: 14px;
+          gap: 24px;
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
           border: 1px solid var(--border);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(34, 197, 94, 0.08));
-          border-radius: 18px;
-          padding: 18px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(34, 197, 94, 0.1));
+          border-radius: 20px;
+          padding: 32px;
         }
+
         .contact-left {
-          min-width: 260px;
+          min-width: 280px;
           flex: 1;
         }
+
         .contact-right {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           flex-wrap: wrap;
         }
 
         /* Footer */
         .footer {
           border-top: 1px solid var(--border);
-          padding: 22px 0;
+          padding: 32px 0;
           color: var(--muted);
         }
+
         .footer-inner {
           display: flex;
           justify-content: space-between;
@@ -635,7 +881,10 @@ export default function Page() {
             grid-template-columns: 1fr;
           }
           .nav-links {
-            gap: 10px;
+            gap: 12px;
+          }
+          .section {
+            padding: 80px 0;
           }
         }
       `}</style>
