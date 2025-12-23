@@ -1,8 +1,7 @@
-// app/page.tsx（エンタープライズレベル20完全版）
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useInView, AnimatePresence } from 'framer-motion';
 import { projects } from '@/data/projects';
 import { skills } from '@/data/skills';
 import type { ProjectCategory } from '@/types';
@@ -52,7 +51,6 @@ export default function Page() {
   const [activeCategory, setActiveCategory] = useState<ProjectCategory>('all');
   const { scrollYProgress } = useScroll();
   
-  // 背景グラデーション用のスプリングアニメーション
   const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
 
@@ -204,61 +202,69 @@ export default function Page() {
               ))}
             </motion.div>
 
-            <motion.div className="grid" variants={stagger} layout>
-              {filtered.map((p) => (
-                <motion.article
-                  key={p.id}
-                  className="card project"
-                  variants={fadeUp}
-                  layout
-                  whileHover={{
-                    y: -8,
-                    boxShadow: '0 24px 80px rgba(0, 0, 0, 0.5)',
-                    borderColor: 'rgba(255, 255, 255, 0.22)',
-                  }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <div className="project-head">
-                    <h3 className="project-title">{p.title}</h3>
-                    <span className="badge">{p.category}</span>
-                  </div>
-
-                  <p className="project-desc">{p.description}</p>
-
-                  {p.pmDecisions?.length ? (
-                    <div className="pm-box">
-                      <div className="pm-title">PMとしての判断</div>
-                      <ul className="pm-list">
-                        {p.pmDecisions.map((d, idx) => (
-                          <li key={idx}>{d}</li>
-                        ))}
-                      </ul>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeCategory}
+                className="grid"
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                variants={stagger}
+              >
+                {filtered.map((p) => (
+                  <motion.article
+                    key={p.id}
+                    className="card project"
+                    variants={fadeUp}
+                    whileHover={{
+                      y: -8,
+                      boxShadow: '0 24px 80px rgba(0, 0, 0, 0.5)',
+                      borderColor: 'rgba(255, 255, 255, 0.22)',
+                    }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="project-head">
+                      <h3 className="project-title">{p.title}</h3>
+                      <span className="badge">{p.category}</span>
                     </div>
-                  ) : null}
 
-                  <div className="two-col">
-                    <div>
-                      <div className="mini-title">成果</div>
-                      <ul className="list">
-                        {p.highlights.map((h, idx) => (
-                          <li key={idx}>{h}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="mini-title">Tech</div>
-                      <div className="tags">
-                        {p.technologies.map((t) => (
-                          <span className="tag" key={t}>
-                            {t}
-                          </span>
-                        ))}
+                    <p className="project-desc">{p.description}</p>
+
+                    {p.pmDecisions?.length ? (
+                      <div className="pm-box">
+                        <div className="pm-title">PMとしての判断</div>
+                        <ul className="pm-list">
+                          {p.pmDecisions.map((d, idx) => (
+                            <li key={idx}>{d}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    <div className="two-col">
+                      <div>
+                        <div className="mini-title">成果</div>
+                        <ul className="list">
+                          {p.highlights.map((h, idx) => (
+                            <li key={idx}>{h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="mini-title">Tech</div>
+                        <div className="tags">
+                          {p.technologies.map((t) => (
+                            <span className="tag" key={t}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.article>
-              ))}
-            </motion.div>
+                  </motion.article>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         </div>
       </section>
@@ -338,7 +344,7 @@ export default function Page() {
         </div>
       </footer>
 
-      {/* Styles（エンタープライズレベル20完全版） */}
+      {/* Styles */}
       <style jsx global>{`
         :root {
           --bg: #05070f;
@@ -374,7 +380,6 @@ export default function Page() {
           overflow-x: hidden;
         }
 
-        /* 動的背景グラデーション */
         .bg-gradient {
           position: fixed;
           top: 0;
@@ -411,7 +416,6 @@ export default function Page() {
           color: var(--muted);
         }
 
-        /* Nav */
         .nav {
           position: sticky;
           top: 0;
@@ -467,7 +471,6 @@ export default function Page() {
           border-color: rgba(255, 255, 255, 0.22);
         }
 
-        /* Hero */
         .hero {
           padding: 100px 0 60px;
         }
@@ -543,7 +546,6 @@ export default function Page() {
           box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
         }
 
-        /* 呼吸アニメーション */
         .btn.pulse {
           animation: pulse 3s ease-in-out infinite;
         }
@@ -599,7 +601,6 @@ export default function Page() {
           line-height: 1.5;
         }
 
-        /* Section */
         .section {
           padding: 120px 0;
         }
@@ -618,7 +619,6 @@ export default function Page() {
           font-size: 16px;
         }
 
-        /* Cards/Grid */
         .grid {
           margin-top: 32px;
           display: grid;
@@ -635,7 +635,6 @@ export default function Page() {
           will-change: transform;
         }
 
-        /* Projects */
         .filters {
           margin-top: 24px;
           display: flex;
@@ -812,7 +811,6 @@ export default function Page() {
           border-color: rgba(255, 255, 255, 0.18);
         }
 
-        /* Why */
         .why p {
           margin: 0 0 16px;
           color: var(--muted);
@@ -823,12 +821,10 @@ export default function Page() {
           margin-bottom: 0;
         }
 
-        /* Skills */
         .grid.skills {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        /* Contact */
         .contact-card {
           margin-top: 32px;
           display: flex;
@@ -853,7 +849,6 @@ export default function Page() {
           flex-wrap: wrap;
         }
 
-        /* Footer */
         .footer {
           border-top: 1px solid var(--border);
           padding: 32px 0;
@@ -866,7 +861,6 @@ export default function Page() {
           align-items: center;
         }
 
-        /* Responsive */
         @media (max-width: 860px) {
           .stats {
             grid-template-columns: 1fr;
