@@ -1,4 +1,4 @@
-// types/index.ts
+// types/index.ts（変更なし）
 export type ProjectCategory = 'enterprise' | 'product' | 'infrastructure' | 'technical' | 'all';
 
 export interface Project {
@@ -8,7 +8,6 @@ export interface Project {
   category: Exclude<ProjectCategory, 'all'>;
   technologies: string[];
   highlights: string[];
-  /** PMとしての判断（トレードオフ、スコープ、運用設計など） */
   pmDecisions?: string[];
   links?: {
     demo?: string;
