@@ -1,631 +1,906 @@
+// app/page.tsx - モバイル修正版
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { projects } from '@/data/projects';
-import { skills } from '@/data/skills';
-import type { ProjectCategory } from '@/types';
+import { useInView } from 'react-intersection-observer';
+import { projects } from '../data/projects';
+import { skills } from '../data/skills';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+// アニメーション設定（高速化）
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' }
+  }
 };
 
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07 } },
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
 };
 
-export default function Page() {
-  const [activeCategory, setActiveCategory] = useState<ProjectCategory>('all');
+export default function HomePage() {
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const categories: { key: ProjectCategory; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'backend', label: 'Backend' },
-    { key: 'frontend', label: 'Frontend' },
-    { key: 'infrastructure', label: 'Infra/SRE' },
-    { key: 'ml', label: 'ML/AI' },
-  ];
+  // Intersection Observer フック（threshold調整）
+  const [heroRef, heroInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [projectsRef, projectsInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [skillsRef, skillsInView] = useInView({ threshold: 0.1, triggerOnce: true });
 
-  const filtered = useMemo(() => {
-    if (activeCategory === 'all') return projects;
-    return projects.filter((p) => p.category === activeCategory);
-  }, [activeCategory]);
+  // プロジェクトフィルタリング
+  const filteredProjects = activeCategory === 'all' 
+    ? projects 
+    : projects.filter(p => p.category === activeCategory);
 
   return (
-    <main>
-      {/* Top Nav */}
-      <header className="nav">
-        <div className="container nav-inner">
-          <a href="#top" className="brand">
-            rancorder
-          </a>
-          <nav className="nav-links">
-            <a href="#why">Why PM</a>
-            <a href="#projects">Projects</a>
-            <a href="#skills">Skills</a>
-            <a href="#contact" className="pill">
-              Contact
-            </a>
-          </nav>
-        </div>
+    <>
+      <style jsx global>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        :root {
+          --primary: #2563eb;
+          --primary-dark: #1e40af;
+          --secondary: #64748b;
+          --accent: #10b981;
+          --bg-dark: #0f172a;
+          --bg-darker: #020617;
+          --text-light: #f8fafc;
+          --text-gray: #cbd5e1;
+          --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+          background: var(--bg-darker);
+          color: var(--text-light);
+          line-height: 1.7;
+          overflow-x: hidden;
+        }
+
+        /* グラデーション背景 */
+        body::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: 
+            radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* ヘッダー - モバイル最適化 */
+        header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          background: rgba(15, 23, 42, 0.95);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--border);
+          z-index: 1000;
+          padding: 1rem 0;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        nav {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .logo {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--primary);
+          z-index: 1001;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 2rem;
+          list-style: none;
+        }
+
+        .nav-links a {
+          color: var(--text-gray);
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+          color: var(--text-light);
+        }
+
+        /* ハンバーガーメニューボタン */
+        .mobile-menu-btn {
+          display: none;
+          flex-direction: column;
+          gap: 4px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          z-index: 1001;
+        }
+
+        .mobile-menu-btn span {
+          width: 24px;
+          height: 2px;
+          background: var(--text-light);
+          transition: all 0.3s;
+        }
+
+        .mobile-menu-btn.open span:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .mobile-menu-btn.open span:nth-child(2) {
+          opacity: 0;
+        }
+
+        .mobile-menu-btn.open span:nth-child(3) {
+          transform: rotate(-45deg) translate(7px, -6px);
+        }
+
+        /* コンテンツ */
+        main {
+          position: relative;
+          z-index: 1;
+          padding-top: 80px; /* ヘッダー分の余白確保 */
+        }
+
+        .container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 2rem;
+        }
+
+        section {
+          padding: 6rem 0;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        /* ヒーローセクション */
+        .hero {
+          text-align: center;
+        }
+
+        .hero-title {
+          font-size: clamp(2.5rem, 6vw, 4rem);
+          font-weight: 800;
+          margin-bottom: 1.5rem;
+          background: linear-gradient(135deg, var(--primary), var(--accent));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          line-height: 1.2;
+        }
+
+        .hero-subtitle {
+          font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+          color: var(--text-gray);
+          margin-bottom: 2rem;
+          font-weight: 300;
+        }
+
+        .hero-description {
+          max-width: 800px;
+          margin: 0 auto 3rem;
+          font-size: 1.1rem;
+          line-height: 1.8;
+          color: var(--text-gray);
+        }
+
+        .hero-links {
+          display: flex;
+          gap: 1.5rem;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .btn {
+          padding: 1rem 2rem;
+          border-radius: 12px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.3s;
+          display: inline-block;
+        }
+
+        .btn-primary {
+          background: var(--primary);
+          color: white;
+          border: 2px solid transparent;
+        }
+
+        .btn-primary:hover {
+          background: var(--primary-dark);
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-outline {
+          background: transparent;
+          color: var(--text-light);
+          border: 2px solid var(--border);
+        }
+
+        .btn-outline:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+          transform: translateY(-2px);
+        }
+
+        /* 実績カード */
+        .achievements-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 2rem;
+          margin-top: 3rem;
+        }
+
+        .achievement-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 2rem;
+          text-align: center;
+          transition: all 0.3s;
+        }
+
+        .achievement-card:hover {
+          transform: translateY(-8px);
+          border-color: var(--primary);
+          box-shadow: 0 20px 40px rgba(37, 99, 235, 0.2);
+        }
+
+        .achievement-value {
+          font-size: 3rem;
+          font-weight: 800;
+          color: var(--primary);
+          margin-bottom: 0.5rem;
+        }
+
+        .achievement-label {
+          font-size: 1rem;
+          color: var(--text-gray);
+          font-weight: 600;
+        }
+
+        /* セクションタイトル */
+        .section-title {
+          font-size: clamp(2rem, 4vw, 3rem);
+          font-weight: 800;
+          margin-bottom: 1rem;
+          text-align: center;
+        }
+
+        .section-subtitle {
+          text-align: center;
+          color: var(--text-gray);
+          font-size: 1.1rem;
+          margin-bottom: 4rem;
+        }
+
+        /* プロジェクトフィルター */
+        .filter-buttons {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-bottom: 3rem;
+        }
+
+        .filter-btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border);
+          color: var(--text-gray);
+          cursor: pointer;
+          transition: all 0.3s;
+          font-weight: 600;
+        }
+
+        .filter-btn:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+
+        .filter-btn.active {
+          background: var(--primary);
+          border-color: var(--primary);
+          color: white;
+        }
+
+        /* プロジェクトグリッド */
+        .projects-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+          gap: 2rem;
+        }
+
+        .project-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 2.5rem;
+          transition: all 0.4s;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .project-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(90deg, var(--primary), var(--accent));
+          transform: scaleX(0);
+          transition: transform 0.4s;
+        }
+
+        .project-card:hover::before {
+          transform: scaleX(1);
+        }
+
+        .project-card:hover {
+          transform: translateY(-8px);
+          border-color: rgba(37, 99, 235, 0.5);
+          box-shadow: 0 20px 60px rgba(37, 99, 235, 0.2);
+        }
+
+        .project-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
+          color: var(--text-light);
+        }
+
+        .project-description {
+          color: var(--text-gray);
+          margin-bottom: 1.5rem;
+          line-height: 1.7;
+        }
+
+        .project-metrics {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .metric {
+          text-align: center;
+          padding: 1rem;
+          background: rgba(37, 99, 235, 0.1);
+          border-radius: 8px;
+        }
+
+        .metric-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--primary);
+        }
+
+        .metric-label {
+          font-size: 0.8rem;
+          color: var(--text-gray);
+        }
+
+        .project-tech {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .tech-tag {
+          padding: 0.4rem 0.8rem;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          border-radius: 6px;
+          font-size: 0.85rem;
+          color: var(--accent);
+        }
+
+        .project-highlights {
+          list-style: none;
+          padding: 0;
+        }
+
+        .project-highlights li {
+          padding: 0.5rem 0;
+          padding-left: 1.5rem;
+          position: relative;
+          color: var(--text-gray);
+          font-size: 0.95rem;
+        }
+
+        .project-highlights li::before {
+          content: '✓';
+          position: absolute;
+          left: 0;
+          color: var(--accent);
+          font-weight: bold;
+        }
+
+        /* スキルセクション */
+        .skills-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          gap: 2rem;
+        }
+
+        .skill-category {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 2rem;
+          transition: all 0.3s;
+        }
+
+        .skill-category:hover {
+          transform: translateY(-4px);
+          border-color: var(--primary);
+        }
+
+        .skill-category-title {
+          font-size: 1.3rem;
+          font-weight: 700;
+          margin-bottom: 1.5rem;
+          color: var(--primary);
+        }
+
+        .skill-list {
+          list-style: none;
+          padding: 0;
+        }
+
+        .skill-list li {
+          padding: 0.75rem 0;
+          border-bottom: 1px solid var(--border);
+          color: var(--text-gray);
+        }
+
+        .skill-list li:last-child {
+          border-bottom: none;
+        }
+
+        /* フッター */
+        footer {
+          padding: 4rem 0;
+          text-align: center;
+          border-top: 1px solid var(--border);
+          background: rgba(15, 23, 42, 0.5);
+        }
+
+        footer p {
+          color: var(--text-gray);
+          margin-bottom: 0.5rem;
+        }
+
+        /* レスポンシブ - モバイル最適化 */
+        @media (max-width: 768px) {
+          /* ヘッダー修正 */
+          header {
+            padding: 0.75rem 0;
+          }
+
+          nav {
+            padding: 0 1rem;
+          }
+
+          /* ハンバーガーメニュー表示 */
+          .mobile-menu-btn {
+            display: flex;
+          }
+
+          /* ナビゲーションリンク - モバイル */
+          .nav-links {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            flex-direction: column;
+            gap: 0;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            pointer-events: none;
+          }
+
+          .nav-links.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+          }
+
+          .nav-links li {
+            padding: 0;
+            border-bottom: 1px solid var(--border);
+          }
+
+          .nav-links li:last-child {
+            border-bottom: none;
+          }
+
+          .nav-links a {
+            display: block;
+            padding: 1rem 2rem;
+            text-align: center;
+          }
+
+          /* メインコンテンツ調整 */
+          main {
+            padding-top: 60px;
+          }
+
+          section {
+            padding: 3rem 0;
+            min-height: auto;
+          }
+
+          .container {
+            padding: 0 1rem;
+          }
+
+          /* ヒーローセクション */
+          .hero-description {
+            font-size: 1rem;
+          }
+
+          .hero-links {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .btn {
+            width: 100%;
+            max-width: none;
+          }
+
+          /* 実績カード */
+          .achievements-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+          }
+
+          .achievement-card {
+            padding: 1.5rem;
+          }
+
+          .achievement-value {
+            font-size: 2.5rem;
+          }
+
+          /* プロジェクトグリッド */
+          .projects-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+
+          .project-card {
+            padding: 1.5rem;
+          }
+
+          /* フィルターボタン */
+          .filter-buttons {
+            gap: 0.5rem;
+          }
+
+          .filter-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+          }
+
+          /* スキルグリッド */
+          .skills-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+        }
+
+        /* 超小型デバイス */
+        @media (max-width: 480px) {
+          .hero-title {
+            font-size: 2rem;
+          }
+
+          .section-title {
+            font-size: 1.8rem;
+          }
+
+          .project-metrics {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* スムーズスクロール */
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* スクロール時のパフォーマンス最適化 */
+        * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+      `}</style>
+
+      <header>
+        <nav>
+          <div className="logo">H・M</div>
+          <button 
+            className={`mobile-menu-btn ${mobileMenuOpen ? 'open' : ''}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="メニュー"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <ul className={`nav-links ${mobileMenuOpen ? 'open' : ''}`}>
+            <li><a href="#home" onClick={() => setMobileMenuOpen(false)}>Home</a></li>
+            <li><a href="#projects" onClick={() => setMobileMenuOpen(false)}>Projects</a></li>
+            <li><a href="#skills" onClick={() => setMobileMenuOpen(false)}>Skills</a></li>
+            <li><a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a></li>
+          </ul>
+        </nav>
       </header>
 
-      {/* Hero */}
-      <section id="top" className="hero">
-        <div className="container">
-          <motion.div initial="hidden" animate="visible" variants={stagger}>
-            <motion.p className="kicker" variants={fadeUp}>
-              H・M
-            </motion.p>
-
-            <motion.h1 className="hero-title" variants={fadeUp}>
-              エンタープライズB2Bで、要件を“壊さず前に進める”Technical PM
-            </motion.h1>
-
-            <motion.p className="hero-sub" variants={fadeUp}>
-              要件定義・品質設計・運用判断を17年。実装と本番運用まで見通して意思決定します。
-            </motion.p>
-
-            <motion.p className="hero-desc" variants={fadeUp}>
-              曖昧な要件、複雑なステークホルダー、失敗コストの高い制約下でも、
-              優先順位とトレードオフを設計し、プロジェクトを前に進めてきました。
-            </motion.p>
-
-            <motion.div className="cta" variants={fadeUp}>
-              <a className="btn primary" href="mailto:xzengbu@gmail.com">
-                面談・相談する
+      <main>
+        {/* ヒーローセクション */}
+        <motion.section 
+          id="home" 
+          className="hero"
+          ref={heroRef}
+          initial="hidden"
+          animate={heroInView ? "visible" : "hidden"}
+          variants={fadeInUp}
+        >
+          <div className="container">
+            <h1 className="hero-title">H・M</h1>
+            <p className="hero-subtitle">
+              製造業PM 17年 × フルスタックエンジニア
+            </p>
+            <p className="hero-description">
+              エンタープライズ経験と技術実装を融合するProduct Manager。
+              17年間の製造業PM経験と、本番運用レベルの技術実装力で、
+              企業の課題を正確に理解し、技術で解決します。
+            </p>
+            
+            <div className="hero-links">
+              <a href="mailto:contact@example.com" className="btn btn-primary">
+                お問い合わせ
               </a>
-              <a className="btn ghost" href="#projects">
-                代表実績を見る →
-              </a>
-              <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
+              <a href="https://github.com/rancorder" target="_blank" className="btn btn-outline">
                 GitHub
               </a>
-            </motion.div>
+              <a href="https://portfolio-crystal-dreamscape.vercel.app/" target="_blank" className="btn btn-outline">
+                Portfolio Site
+              </a>
+            </div>
 
-            <motion.div className="stats" variants={fadeUp}>
-              <div className="stat">
-                <div className="stat-v">17年</div>
-                <div className="stat-l">エンタープライズPM経験</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">21品番</div>
-                <div className="stat-l">同時立上げ（最大）</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">11ヶ月</div>
-                <div className="stat-l">24/7本番運用（連続）</div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Why PM */}
-      <section id="why" className="section">
-        <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
-              Why Product Manager
-            </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
-              技術だけでは前に進まない領域を、意思決定で通す
-            </motion.p>
-
-            <motion.div className="card why" variants={fadeUp}>
-              <p>
-                技術だけでは、プロダクトは前に進みません。要件・品質・運用の「間」で、
-                何を採り、何を捨てるかを決める役割が必要です。
-              </p>
-              <p>
-                私は17年間、失敗コストの高いエンタープライズ案件で、
-                要件定義・合意形成・品質設計を担い、進め切る意思決定をしてきました。
-                その経験をテクノロジー領域のPMとして提供します。
-              </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Projects */}
-      <section id="projects" className="section">
-        <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
-              代表実績（意思決定と運用）
-            </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
-              要件・品質・運用のトレードオフをどう捌いたか
-            </motion.p>
-
-            <motion.div className="filters" variants={fadeUp}>
-              {categories.map((c) => (
-                <button
-                  key={c.key}
-                  className={`chip ${activeCategory === c.key ? 'active' : ''}`}
-                  onClick={() => setActiveCategory(c.key)}
+            {/* 実績数値 */}
+            <motion.div 
+              className="achievements-grid"
+              variants={staggerContainer}
+              initial="hidden"
+              animate={heroInView ? "visible" : "hidden"}
+            >
+              {[
+                { value: '17年', label: 'エンタープライズ営業' },
+                { value: '21品番', label: 'プロダクト立上げ' },
+                { value: '11ヶ月', label: '24/7システム稼働' },
+              ].map((achievement, i) => (
+                <motion.div 
+                  key={i} 
+                  className="achievement-card"
+                  variants={fadeInUp}
                 >
-                  {c.label}
+                  <div className="achievement-value">{achievement.value}</div>
+                  <div className="achievement-label">{achievement.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.section>
+
+        {/* プロジェクトセクション */}
+        <motion.section 
+          id="projects"
+          ref={projectsRef}
+          initial="hidden"
+          animate={projectsInView ? "visible" : "hidden"}
+        >
+          <div className="container">
+            <motion.h2 className="section-title" variants={fadeInUp}>
+              技術実装の代表事例
+            </motion.h2>
+            <motion.p className="section-subtitle" variants={fadeInUp}>
+              本番運用レベルのシステム構築実績
+            </motion.p>
+
+            {/* フィルターボタン */}
+            <motion.div className="filter-buttons" variants={fadeInUp}>
+              {[
+                { key: 'all', label: 'すべて' },
+                { key: 'backend', label: 'Backend' },
+                { key: 'frontend', label: 'Frontend' },
+                { key: 'infrastructure', label: 'Infrastructure' },
+                { key: 'ml', label: 'ML/AI' },
+              ].map(filter => (
+                <button
+                  key={filter.key}
+                  className={`filter-btn ${activeCategory === filter.key ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(filter.key)}
+                >
+                  {filter.label}
                 </button>
               ))}
             </motion.div>
 
-            <motion.div className="grid" variants={stagger}>
-              {filtered.map((p) => (
-                <motion.article key={p.id} className="card project" variants={fadeUp}>
-                  <div className="project-head">
-                    <h3 className="project-title">{p.title}</h3>
-                    <span className="badge">{p.category}</span>
+            {/* プロジェクトグリッド */}
+            <motion.div 
+              className="projects-grid"
+              variants={staggerContainer}
+            >
+              {filteredProjects.map((project, i) => (
+                <motion.div 
+                  key={project.id} 
+                  className="project-card"
+                  variants={fadeInUp}
+                  initial="hidden"
+                  animate={projectsInView ? "visible" : "hidden"}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  <h3 className="project-title">{project.title}</h3>
+                  <p className="project-description">{project.description}</p>
+
+                  {/* メトリクス */}
+                  {project.metrics && (
+                    <div className="project-metrics">
+                      {project.metrics.map((metric, j) => (
+                        <div key={j} className="metric">
+                          <div className="metric-value">{metric.value}</div>
+                          <div className="metric-label">{metric.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 技術タグ */}
+                  <div className="project-tech">
+                    {project.technologies.map((tech, j) => (
+                      <span key={j} className="tech-tag">{tech}</span>
+                    ))}
                   </div>
 
-                  <p className="project-desc">{p.description}</p>
+                  {/* ハイライト */}
+                  <ul className="project-highlights">
+                    {project.highlights.map((highlight, j) => (
+                      <li key={j}>{highlight}</li>
+                    ))}
+                  </ul>
 
-                  {p.pmDecisions?.length ? (
-                    <div className="pm-box">
-                      <div className="pm-title">PMとしての判断</div>
-                      <ul className="pm-list">
-                        {p.pmDecisions.map((d, idx) => (
-                          <li key={idx}>{d}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-
-                  <div className="two-col">
-                    <div>
-                      <div className="mini-title">成果</div>
-                      <ul className="list">
-                        {p.highlights.map((h, idx) => (
-                          <li key={idx}>{h}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="mini-title">Tech</div>
-                      <div className="tags">
-                        {p.technologies.map((t) => (
-                          <span className="tag" key={t}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </motion.article>
+                  {/* URL */}
+                  {project.url && (
+                    <a href={project.url} target="_blank" className="btn btn-outline" style={{ marginTop: '1rem', display: 'inline-block' }}>
+                      View Project →
+                    </a>
+                  )}
+                </motion.div>
               ))}
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </motion.section>
 
-      {/* Skills */}
-      <section id="skills" className="section">
-        <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
-              Skills
+        {/* スキルセクション */}
+        <motion.section 
+          id="skills"
+          ref={skillsRef}
+          initial="hidden"
+          animate={skillsInView ? "visible" : "hidden"}
+        >
+          <div className="container">
+            <motion.h2 className="section-title" variants={fadeInUp}>
+              スキルセット
             </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
-              「できること」より「どう判断するか」を中心に
+            <motion.p className="section-subtitle" variants={fadeInUp}>
+              エンタープライズPMと技術実装の両軸
             </motion.p>
 
-            <motion.div className="grid skills" variants={stagger}>
-              {skills.map((g) => (
-                <motion.div key={g.category} className="card" variants={fadeUp}>
-                  <div className="mini-title">{g.category}</div>
-                  <ul className="list">
-                    {g.items.map((it) => (
-                      <li key={it}>{it}</li>
+            <motion.div 
+              className="skills-grid"
+              variants={staggerContainer}
+            >
+              {skills.map((skillCategory, i) => (
+                <motion.div 
+                  key={i} 
+                  className="skill-category"
+                  variants={fadeInUp}
+                >
+                  <h3 className="skill-category-title">{skillCategory.category}</h3>
+                  <ul className="skill-list">
+                    {skillCategory.items.map((skill, j) => (
+                      <li key={j}>{skill}</li>
                     ))}
                   </ul>
                 </motion.div>
               ))}
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </motion.section>
 
-      {/* Contact */}
-      <section id="contact" className="section">
-        <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
-              詰まりやすい案件を、前に進めます
+        {/* CTAセクション */}
+        <section id="contact" style={{ minHeight: 'auto', padding: '6rem 0' }}>
+          <div className="container" style={{ textAlign: 'center' }}>
+            <motion.h2 
+              className="section-title"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              一緒にプロダクトを作りませんか?
             </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
-              要件が曖昧 / 品質で揉める / 運用が怖い —— その詰まりを整理して意思決定します
+            <motion.p 
+              className="section-subtitle"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
+              製造業17年の経験と本番運用レベルの技術力で、<br />
+              貴社のプロダクト成功に貢献します。
             </motion.p>
+            <motion.a 
+              href="mailto:xzengbu@gmail.com" 
+              className="btn btn-primary"
+              style={{ marginTop: '2rem' }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              お問い合わせ
+            </motion.a>
+          </div>
+        </section>
+      </main>
 
-            <motion.div className="contact-card" variants={fadeUp}>
-              <div className="contact-left">
-                <div className="mini-title">Contact</div>
-                <p className="muted">
-                  案件の状況（ざっくりでOK）を添えてもらえると、話が早いです。
-                </p>
-              </div>
-              <div className="contact-right">
-                <a className="btn primary" href="mailto:xzengbu@gmail.com">
-                  xzengbu@gmail.com
-                </a>
-                <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
-                  GitHubを見る
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      <footer className="footer">
-        <div className="container footer-inner">
-          <span className="muted">© {new Date().getFullYear()} rancorder</span>
-        </div>
+      <footer>
+        <p>© 2025 H・M - Product Manager & Full Stack Engineer</p>
+        <p>Powered by Next.js + React + Framer Motion</p>
       </footer>
-
-      {/* Styles (self-contained) */}
-      <style jsx global>{`
-        :root {
-          --bg: #05070f;
-          --panel: rgba(255, 255, 255, 0.06);
-          --panel-2: rgba(255, 255, 255, 0.04);
-          --border: rgba(255, 255, 255, 0.12);
-          --text: rgba(255, 255, 255, 0.92);
-          --muted: rgba(255, 255, 255, 0.68);
-          --muted2: rgba(255, 255, 255, 0.55);
-          --accent: #7c3aed;
-          --accent2: #22c55e;
-          --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
-        }
-        * {
-          box-sizing: border-box;
-        }
-        html,
-        body {
-          height: 100%;
-        }
-        body {
-          margin: 0;
-          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-          background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
-            radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%),
-            var(--bg);
-          color: var(--text);
-        }
-        a {
-          color: inherit;
-          text-decoration: none;
-        }
-        .container {
-          width: min(1100px, calc(100% - 40px));
-          margin: 0 auto;
-        }
-        .muted {
-          color: var(--muted);
-        }
-
-        /* Nav */
-        .nav {
-          position: sticky;
-          top: 0;
-          z-index: 20;
-          backdrop-filter: blur(10px);
-          background: rgba(5, 7, 15, 0.55);
-          border-bottom: 1px solid var(--border);
-        }
-        .nav-inner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px 0;
-        }
-        .brand {
-          font-weight: 800;
-          letter-spacing: 0.3px;
-        }
-        .nav-links {
-          display: flex;
-          gap: 14px;
-          align-items: center;
-          color: var(--muted);
-          font-size: 14px;
-        }
-        .nav-links a:hover {
-          color: var(--text);
-        }
-        .pill {
-          padding: 8px 12px;
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          background: var(--panel-2);
-        }
-
-        /* Hero */
-        .hero {
-          padding: 70px 0 34px;
-        }
-        .kicker {
-          margin: 0 0 10px;
-          font-weight: 700;
-          color: var(--muted2);
-        }
-        .hero-title {
-          margin: 0;
-          font-size: clamp(28px, 3.2vw, 46px);
-          line-height: 1.1;
-          letter-spacing: -0.02em;
-        }
-        .hero-sub {
-          margin: 16px 0 0;
-          font-size: 16px;
-          color: var(--muted);
-          line-height: 1.7;
-        }
-        .hero-desc {
-          margin: 10px 0 0;
-          font-size: 15px;
-          color: var(--muted2);
-          line-height: 1.8;
-          max-width: 900px;
-        }
-        .cta {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 18px;
-        }
-        .btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          height: 42px;
-          padding: 0 14px;
-          border-radius: 12px;
-          border: 1px solid var(--border);
-          background: var(--panel-2);
-          color: var(--text);
-          font-weight: 700;
-          font-size: 14px;
-          transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
-        }
-        .btn:hover {
-          transform: translateY(-1px);
-          border-color: rgba(255, 255, 255, 0.22);
-        }
-        .btn.primary {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(34, 197, 94, 0.55));
-          border-color: transparent;
-          box-shadow: var(--shadow);
-        }
-        .btn.ghost {
-          background: var(--panel-2);
-        }
-        .stats {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-          margin-top: 18px;
-        }
-        .stat {
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 16px;
-          padding: 14px;
-        }
-        .stat-v {
-          font-weight: 900;
-          font-size: 20px;
-        }
-        .stat-l {
-          margin-top: 6px;
-          color: var(--muted);
-          font-size: 13px;
-          line-height: 1.4;
-        }
-
-        /* Section */
-        .section {
-          padding: 54px 0;
-        }
-        .section-title {
-          margin: 0;
-          font-size: 26px;
-          letter-spacing: -0.01em;
-        }
-        .section-sub {
-          margin: 10px 0 0;
-          color: var(--muted);
-          line-height: 1.7;
-        }
-
-        /* Cards/Grid */
-        .grid {
-          margin-top: 18px;
-          display: grid;
-          gap: 14px;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .card {
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 18px;
-          padding: 18px;
-        }
-
-        /* Projects */
-        .filters {
-          margin-top: 16px;
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .chip {
-          border: 1px solid var(--border);
-          background: var(--panel-2);
-          color: var(--muted);
-          border-radius: 999px;
-          padding: 8px 12px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-        }
-        .chip.active {
-          color: var(--text);
-          background: rgba(124, 58, 237, 0.28);
-          border-color: rgba(124, 58, 237, 0.45);
-        }
-
-        .project-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 10px;
-        }
-        .project-title {
-          margin: 0;
-          font-size: 17px;
-          line-height: 1.4;
-        }
-        .badge {
-          font-size: 12px;
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid var(--border);
-          color: var(--muted);
-          background: rgba(255, 255, 255, 0.04);
-          white-space: nowrap;
-        }
-        .project-desc {
-          margin: 10px 0 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-        }
-
-        .pm-box {
-          margin-top: 12px;
-          padding: 12px 12px;
-          border-radius: 14px;
-          border: 1px solid rgba(124, 58, 237, 0.35);
-          background: rgba(124, 58, 237, 0.12);
-        }
-        .pm-title {
-          font-weight: 900;
-          margin-bottom: 8px;
-          font-size: 13px;
-        }
-        .pm-list {
-          margin: 0;
-          padding-left: 18px;
-          color: var(--muted);
-          line-height: 1.7;
-          font-size: 13px;
-        }
-
-        .two-col {
-          margin-top: 14px;
-          display: grid;
-          grid-template-columns: 1.2fr 1fr;
-          gap: 12px;
-          border-top: 1px solid var(--border);
-          padding-top: 14px;
-        }
-        .mini-title {
-          font-weight: 900;
-          font-size: 13px;
-          color: var(--text);
-          margin-bottom: 10px;
-        }
-        .list {
-          margin: 0;
-          padding-left: 18px;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 13px;
-        }
-        .tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .tag {
-          font-size: 12px;
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid var(--border);
-          color: var(--muted);
-          background: rgba(255, 255, 255, 0.03);
-        }
-
-        /* Why */
-        .why p {
-          margin: 0 0 12px;
-          color: var(--muted);
-          line-height: 1.85;
-        }
-        .why p:last-child {
-          margin-bottom: 0;
-        }
-
-        /* Skills */
-        .grid.skills {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        /* Contact */
-        .contact-card {
-          margin-top: 18px;
-          display: flex;
-          gap: 14px;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          border: 1px solid var(--border);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(34, 197, 94, 0.08));
-          border-radius: 18px;
-          padding: 18px;
-        }
-        .contact-left {
-          min-width: 260px;
-          flex: 1;
-        }
-        .contact-right {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        /* Footer */
-        .footer {
-          border-top: 1px solid var(--border);
-          padding: 22px 0;
-          color: var(--muted);
-        }
-        .footer-inner {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        /* Responsive */
-        @media (max-width: 860px) {
-          .stats {
-            grid-template-columns: 1fr;
-          }
-          .grid {
-            grid-template-columns: 1fr;
-          }
-          .grid.skills {
-            grid-template-columns: 1fr;
-          }
-          .two-col {
-            grid-template-columns: 1fr;
-          }
-          .nav-links {
-            gap: 10px;
-          }
-        }
-      `}</style>
-    </main>
+    </>
   );
 }
