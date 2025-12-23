@@ -1,67 +1,35 @@
 // data/skills.ts
-import { Skill } from '../types';
+import { SkillGroup } from '@/types';
 
-export const skills: Skill[] = [
+export const skills: SkillGroup[] = [
   {
-    category: 'PMスキル',
+    category: 'PM（意思決定・推進）',
     items: [
-      '要件定義・仕様策定',
-      'プロダクト立上げ管理',
-      '複数プロジェクト並行推進',
-      'エンタープライズ顧客折衝',
-      '技術的意思決定',
-      '品質管理・納期管理',
+      '要件定義・仕様策定（曖昧耐性・段階確定）',
+      'ステークホルダー調整 / 合意形成（5社以上の並行調整）',
+      '優先順位付け・スコープ設計（トレードオフ判断）',
+      '品質 / リスク / 変更影響の設計（3段階評価手法）',
+      'マルチプロダクト管理（最大21品番同時立上げ）',
     ],
   },
   {
-    category: 'フロントエンド',
+    category: 'プロダクト / 運用視点',
     items: [
-      'Next.js 14 / React',
-      'TypeScript',
-      'Three.js（3D表現）',
-      'Canvas API',
-      'レスポンシブデザイン',
-      'HTML5 / CSS3',
+      '0→1 / 改修 / 運用フェーズの判断（段階設計）',
+      'トレードオフ設計（速度×品質×コスト）',
+      '障害時の影響範囲限定と復旧設計',
+      '本番前提の設計レビュー（運用負荷・失敗コスト評価）',
+      '製造業精度（0.01mm）× Tech速度（24/7）の両立',
     ],
   },
   {
-    category: 'プログラミング',
+    category: '技術（判断に使える理解）',
     items: [
-      'Python（実務レベル）',
-      'JavaScript（基礎）',
-      'FastAPI, Flask',
-      'BeautifulSoup, Playwright',
-      'pandas, numpy',
-    ],
-  },
-  {
-    category: 'インフラ・運用',
-    items: [
-      'Docker / Docker Compose',
-      'Linux / systemd',
-      'VPS運用（24/7）',
-      'Prometheus / Grafana',
-      'Redis / PostgreSQL / SQLite',
-    ],
-  },
-  {
-    category: '品質・テスト',
-    items: [
-      'pytest / pytest-cov',
-      'mypy（strict mode）',
-      'Type Hints（型安全性）',
-      'k6（負荷試験）',
-      'CI/CD（軽量構築）',
-    ],
-  },
-  {
-    category: 'AI・機械学習',
-    items: [
-      'scikit-learn, XGBoost',
-      'Whisper（音声処理）',
-      'BERT（自然言語処理）',
-      'OpenCV（画像処理）',
-      '特徴量エンジニアリング',
+      'Python / FastAPI / React / TypeScript / Next.js',
+      'Docker / Linux / PostgreSQL / Redis / SQLite',
+      'pytest / k6 / Prometheus / Grafana',
+      'VPS運用 / systemd / cron',
+      '生成AI（Whisper / BERT / Prompt設計）',
     ],
   },
 ];
