@@ -89,11 +89,15 @@ export default function PageJa() {
             </motion.p>
 
             <motion.h1 className="hero-title" variants={fadeUp}>
-              エンタープライズB2Bにおいて、PoCで止まるプロジェクトを「意思決定の設計」で本番・運用まで持っていくPMです
+              エンタープライズB2Bで、PoCで止まるプロジェクトを「意思決定の設計」から本番・運用まで前に進める技術PMです
             </motion.h1>
 
             <motion.p className="hero-subtitle" variants={fadeUp}>
-              曖昧な要件から、安定した本番運用まで。
+              「誰が何を決めるか」を先に整えると、プロジェクトは止まりにくくなる。
+            </motion.p>
+
+            <motion.p className="hero-subtitle" variants={fadeUp}>
+              現場を責めない。個人を評価しない。構造だけを見る。
             </motion.p>
 
             <motion.p className="lang-note" variants={fadeUp}>
@@ -103,7 +107,7 @@ export default function PageJa() {
 
             <motion.div className="cta" variants={fadeUp}>
               <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
-                面談・相談する
+                面談を依頼する
               </a>
               <a className="btn ghost" href="#projects">
                 代表実績を見る →
@@ -119,15 +123,15 @@ export default function PageJa() {
               <div className="stats-operational">
                 <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                   <div className="stat-v">19日以上</div>
-                  <div className="stat-l">統合自動化コントローラーの連続稼働</div>
+                  <div className="stat-l">統合コントローラを継続運用（停止・張り付き運用を削減）</div>
                 </motion.div>
                 <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                   <div className="stat-v">50+モジュール</div>
-                  <div className="stat-l">手動介入ゼロでのオーケストレーション</div>
+                  <div className="stat-l">50+モジュールを自動制御（手動介入ゼロ）</div>
                 </motion.div>
                 <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
                   <div className="stat-v">本番運用</div>
-                  <div className="stat-l">障害隔離・サーキットブレーカー設計</div>
+                  <div className="stat-l">障害の波及を防ぐ設計（隔離 / Circuit Breaker）</div>
                 </motion.div>
               </div>
             </motion.div>
@@ -191,7 +195,7 @@ export default function PageJa() {
                 <div>
                   <div className="pm-clarification-title">私のPMアプローチ</div>
                   <p className="pm-clarification-text">
-                    私がプロジェクトを管理する手段は、意思決定の明確化と責任設計です。ツール（JIRA、Asana等）は認知負荷を下げる場合にのみ導入します。私の価値は、開発が技術的に完了した後にプロジェクトが停滞することを防ぐ意思決定の設計にあります。
+                    私の軸は「進捗の管理」ではなく「判断が前に進む構造の設計」です。何を決めるべきか／誰が決めるか／決めない場合の既定値を先に定義し、技術的に完成した後に止まるプロジェクトを止めにくくします。
                   </p>
                 </div>
               </div>
@@ -442,6 +446,34 @@ export default function PageJa() {
                 </ul>
               </motion.div>
             </motion.div>
+
+            {/* ツール問題の先回り */}
+            <motion.div className="tool-approach" variants={fadeUp}>
+              <div className="tool-approach-inner">
+                <div className="tool-approach-icon">🛠️</div>
+                <div>
+                  <div className="tool-approach-title">プロジェクト管理ツールについて</div>
+                  <p className="tool-approach-text">
+                    なお、進捗管理や課題管理については、ツール運用そのものよりも「判断と合意が前に進む構造」を優先して設計してきました。
+                    結果として、Excel / チケット管理 / 独自運用など、プロジェクト特性に応じた手法を選択しています。
+                    必要に応じて、Jira / Azure DevOps などの運用にも短期間で適応できます。
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 日本向け注釈 */}
+      <section className="section japan-note-section">
+        <div className="container">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+            <motion.div className="japan-note-card" variants={fadeUp}>
+              <p className="japan-note-text">
+                ※ 日本企業・日本拠点のプロジェクトにおいても、意思決定構造・責任設計の考え方は同様に適用しています。
+              </p>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -454,7 +486,7 @@ export default function PageJa() {
               技術的には完成しているが、本番に移せないプロジェクトがあれば
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
-              お話しできれば幸いです
+              まずは状況の整理からでも、お話しできます
             </motion.p>
 
             <motion.div className="contact-card" variants={fadeUp}>
@@ -904,6 +936,59 @@ export default function PageJa() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 14px;
+        }
+
+        .tool-approach {
+          margin-top: 40px;
+          padding: 32px;
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          background: rgba(124, 58, 237, 0.06);
+          border-radius: 20px;
+        }
+
+        .tool-approach-inner {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+        }
+
+        .tool-approach-icon {
+          font-size: 32px;
+          flex-shrink: 0;
+        }
+
+        .tool-approach-title {
+          font-weight: 900;
+          font-size: 16px;
+          margin-bottom: 12px;
+          color: var(--accent);
+        }
+
+        .tool-approach-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .japan-note-section {
+          padding: 60px 0;
+        }
+
+        .japan-note-card {
+          padding: 24px 32px;
+          border: 1px solid rgba(255, 190, 11, 0.3);
+          background: rgba(255, 190, 11, 0.06);
+          border-radius: 16px;
+          text-align: center;
+        }
+
+        .japan-note-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+          font-style: italic;
         }
 
         .project-head {
