@@ -73,6 +73,9 @@ export default function Page() {
             <a href="#contact" className="pill">
               Contact
             </a>
+            <a href="/ja" className="lang-switch">
+              JA
+            </a>
           </nav>
         </div>
       </header>
@@ -604,6 +607,21 @@ export default function Page() {
         .pill:hover {
           background: var(--panel);
           border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        .lang-switch {
+          padding: 8px 14px;
+          border: 1px solid var(--accent);
+          border-radius: 999px;
+          background: rgba(124, 58, 237, 0.1);
+          color: var(--accent);
+          font-weight: 700;
+          transition: all 0.2s ease;
+        }
+
+        .lang-switch:hover {
+          background: rgba(124, 58, 237, 0.2);
+          border-color: var(--accent);
         }
 
         .hero {
