@@ -115,26 +115,26 @@ export const projects: Project[] = [
     ],
   },
 
-  // Additional: SRE Demo System
+  // Additional: Load Testing & Performance Validation
   {
-    id: 'additional-sre-demo',
-    title: 'Additional: SRE Demonstration System (Production-grade Load Testing, Monitoring, Fault Injection)',
+    id: 'additional-load-testing',
+    title: 'Additional: VPS Load Testing (k6 Performance Validation under 4GB Constraint)',
     description:
-      'Demo with multi-service configuration using FastAPI, Redis, PostgreSQL. Includes load testing, monitoring, and fault injection, all designed and validated with production operation in mind. Design philosophy prioritizes "observability" over just "performance."',
+      'Performance validation project testing parallel processing limits under VPS 4GB memory constraint. Used k6 to systematically verify theoretical vs actual capacity for 43-site concurrent scraping operations. Achieved stable operation at 95.1% memory utilization.',
     category: 'infrastructure',
-    technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'k6', 'Prometheus', 'Grafana', 'Docker'],
+    technologies: ['k6', 'FastAPI', 'Docker', 'VPS', 'Performance Testing'],
     highlights: [
-      'Average response 1.69ms (P95: 2.37ms)',
-      '13,060 requests processed / 0% error rate',
-      'Fault injection recovery procedure validation completed',
+      'Validated 43-site parallel processing limit through staged load testing',
+      'Achieved stable operation at 95.1% memory utilization (4GB constraint)',
+      'Established baseline metrics for production capacity planning',
     ],
     pmDecisions: [
-      'Prioritized "observability" over "performance" in design',
-      'Created fault injection to design for "failure assumption," validating recovery procedures and impact scope',
-      'Classified monitoring metrics into 3 tiers (Immediate Response/Next-day Check/Record Only)',
+      'Prioritized "real-world constraint validation" over theoretical performance maximization',
+      'Designed load test scenarios to match actual production usage patterns',
+      'Established monitoring thresholds based on empirical failure points',
     ],
     links: {
-      github: 'https://github.com/rancorder/sre-demo-system',
+      github: 'https://github.com/rancorder/scraping-load-test',
     },
   },
 
@@ -156,5 +156,54 @@ export const projects: Project[] = [
       'Incrementally elevated quality definition from "works" to "safely changeable"',
       'Set coverage target at 30% instead of 100% (practical quality baseline)',
     ],
+    links: {
+      github: 'https://github.com/rancorder/pytest',
+    },
+  },
+
+  // Additional: Reliability Engineering Demo
+  {
+    id: 'additional-reliability-engineering',
+    title: 'Additional: Reliability Engineering Demo (Production-grade Multi-service System)',
+    description:
+      'Multi-service demonstration system using FastAPI, Redis, PostgreSQL. Validated production-grade reliability through load testing, monitoring, and fault injection. Design philosophy prioritizes "observability" over raw performance metrics.',
+    category: 'infrastructure',
+    technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'k6', 'Prometheus', 'Grafana', 'Docker'],
+    highlights: [
+      'Average response 1.69ms (P95: 2.37ms)',
+      '13,060 requests processed / 0% error rate',
+      'Fault injection recovery procedure validation completed',
+    ],
+    pmDecisions: [
+      'Prioritized "observability" over "performance" in architecture design',
+      'Validated failure assumptions through fault injection rather than perfect uptime pursuit',
+      'Classified monitoring metrics into 3 tiers (Immediate Response/Next-day Check/Record Only)',
+    ],
+    links: {
+      github: 'https://github.com/rancorder/reliability-engineering-demo',
+    },
+  },
+
+  // Additional: Reservation System PoC
+  {
+    id: 'additional-reservation-system',
+    title: 'Additional: Reservation System PoC (Rapid Enterprise-grade Implementation)',
+    description:
+      'Full-featured reservation system implemented in 1 hour. Production-level implementation including inventory management, double-booking prevention, and Redis caching. Demonstrates ability to rapidly deliver enterprise-grade solutions under time constraints.',
+    category: 'technical',
+    technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'Docker'],
+    highlights: [
+      'Implemented in 1 hour (full feature set)',
+      'Production-grade inventory management and concurrency control',
+      'Enterprise-level architecture with caching layer',
+    ],
+    pmDecisions: [
+      'Prioritized "critical path features" over comprehensive functionality (time-boxed delivery)',
+      'Designed for production from the start rather than treating as throwaway PoC',
+      'Applied proven patterns (Redis caching, DB transactions) to minimize implementation risk',
+    ],
+    links: {
+      github: 'https://github.com/rancorder/reservation-system-poc',
+    },
   },
 ];
