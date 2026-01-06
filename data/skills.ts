@@ -1,35 +1,35 @@
-// data/skills.ts
+// data/skills.ts - EY想定版（"Used for" 形式）
 import { SkillGroup } from '@/types';
 
 export const skills: SkillGroup[] = [
   {
-    category: 'PM（意思決定・推進）',
+    category: 'Decision Design & Project Execution',
     items: [
-      '要件定義・仕様策定（曖昧耐性・段階確定）',
-      'ステークホルダー調整 / 合意形成（5社以上の並行調整）',
-      '優先順位付け・スコープ設計（トレードオフ判断）',
-      '品質 / リスク / 変更影響の設計（3段階評価手法）',
-      'マルチプロダクト管理（最大21品番同時立上げ）',
+      'Used for: Designing requirements that can be incrementally solidified under ambiguity (phased confirmation, ambiguity tolerance)',
+      'Used for: Multi-stakeholder coordination and consensus building (5+ companies in parallel)',
+      'Used for: Priority and scope design (trade-off judgment under constraints)',
+      'Used for: Designing quality/risk/change impact (3-tier evaluation methodology)',
+      'Used for: Multi-product management (maximum 21 SKUs simultaneous launch)',
     ],
   },
   {
-    category: 'プロダクト / 運用視点',
+    category: 'Product & Operations Perspective',
     items: [
-      '0→1 / 改修 / 運用フェーズの判断（段階設計）',
-      'トレードオフ設計（速度×品質×コスト）',
-      '障害時の影響範囲限定と復旧設計',
-      '本番前提の設計レビュー（運用負荷・失敗コスト評価）',
-      '製造業精度（0.01mm）× Tech速度（24/7）の両立',
+      'Used for: Phase-appropriate judgment (0→1 / Enhancement / Operations phase design)',
+      'Used for: Trade-off design (Speed × Quality × Cost)',
+      'Used for: Failure impact scope limitation and recovery design',
+      'Used for: Production-focused design reviews (operational burden and failure cost evaluation)',
+      'Used for: Balancing manufacturing precision (0.01mm) × technology speed (24/7 operations)',
     ],
   },
   {
-    category: '技術（判断に使える理解）',
+    category: 'Technical Skills (Understanding for Decision-Making)',
     items: [
-      'Python / FastAPI / React / TypeScript / Next.js',
-      'Docker / Linux / PostgreSQL / Redis / SQLite',
-      'pytest / k6 / Prometheus / Grafana',
-      'VPS運用 / systemd / cron',
-      '生成AI（Whisper / BERT / Prompt設計）',
+      'Used for: Designing failure-tolerant automation systems (Python/FastAPI)',
+      'Used for: Building controllers that remove human decision points (systemd/cron)',
+      'Used for: Operating long-running production jobs (11+ months continuous operation)',
+      'Used for: Production-grade monitoring and observability (Prometheus/Grafana)',
+      'Used for: Quality assurance through automated testing (pytest/k6)',
     ],
   },
 ];
