@@ -1,117 +1,154 @@
-// data/projects.ts（社名を highlights に移動）
+// data/projects.ts - EY想定版（代表3ケース + Additional）
 import { Project } from '@/types';
 
 export const projects: Project[] = [
+  // ========================================
+  // 🔥 TOP 3 REPRESENTATIVE CASES（EY向け最適化）
+  // ========================================
+  
+  // Case 1: Manufacturing B2B System (PoC → Production)
   {
-    id: 'enterprise-medical-21products',
-    title: '医療機器メーカー向け新製品立上げPM（21品番同時管理）',
+    id: 'case1-manufacturing-b2b',
+    title: 'Case 1: Manufacturing B2B System (21 SKUs, Simultaneous Launch)',
     description:
-      'エンタープライズ顧客向け医療機器プロダクトの大規模立上げ。21品番を同時管理し、要件定義・品質基準設計・複数部門との調整をPMとして担当。失敗コストが極めて高い制約下で、納期遵守と品質確保を両立。',
+      'Large-scale product launch PM for enterprise medical device manufacturer. Managed 21 SKUs simultaneously under extremely high failure cost constraints. Balanced delivery deadlines with quality assurance through requirement definition, quality baseline design, and multi-department coordination.',
     category: 'enterprise',
-    technologies: ['要件定義', 'ステークホルダー調整', '品質基準設計', 'リスク管理', 'スケジュール管理'],
+    technologies: [
+      'Requirement Definition',
+      'Stakeholder Coordination',
+      'Quality Baseline Design',
+      'Risk Management',
+      'Schedule Management',
+    ],
     highlights: [
-      '21品番を同時管理（F社案件・過去最大規模、17年キャリアで最高難度）',
-      '仕様変更件数を30%削減（優先順位設計による初期リスク抑制）',
-      '納期遵守率100%を17ヶ月維持（遅延ゼロ）',
+      'Managed 21 SKUs simultaneously (largest scale in 17-year career)',
+      'Reduced specification change requests by 30% (initial risk mitigation through priority design)',
+      'Maintained 100% on-time delivery rate for 17 months (zero delays)',
     ],
     pmDecisions: [
-      '要件を「段階確定方式」にし、初期の失敗コストを抑制（曖昧耐性）',
-      '品質基準を3段階（必須/推奨/理想）に分け、影響範囲を局所化',
-      'ステークホルダー5社の調整窓口を一本化し、意思決定速度を3倍化',
-      '変更影響を「即座/1週間/1ヶ月」の3段階で評価し、受け入れ判断を明確化',
+      'Adopted "Phased Confirmation" for requirements to suppress initial failure costs (ambiguity tolerance)',
+      'Categorized quality baseline into 3 levels (Required/Recommended/Ideal) to localize impact scope',
+      'Unified coordination window across 5 stakeholder companies, accelerating decision-making speed by 3x',
+      'Evaluated change impact in 3 tiers (Immediate/1-week/1-month), clarifying acceptance criteria',
     ],
   },
+
+  // Case 2: Automation Platform with Integrated Monitoring
   {
-    id: 'enterprise-bicycle-quality',
-    title: '自転車部品メーカー向け量産移行PM',
+    id: 'case2-automation-platform',
+    title: 'Case 2: Automation Platform (54 Sites, 24/7 Operation for 11 Months)',
     description:
-      '高精度部品の量産移行フェーズを担当。品質設計、検査基準策定、サプライチェーン調整を実施。「完璧な品質」ではなく「失敗が許容できる品質」を定義し、コストと品質のトレードオフを設計。',
-    category: 'enterprise',
-    technologies: ['品質設計', '量産移行', '検査基準策定', 'サプライチェーン調整', 'コスト最適化'],
-    highlights: [
-      '不良率0.01%以下を12ヶ月連続維持（S社案件・目標0.05%を大幅クリア）',
-      '量産移行期間を従来比40%短縮（6ヶ月→3.6ヶ月）',
-      '検査工数50%削減（基準最適化による効率化）',
-    ],
-    pmDecisions: [
-      '「ゼロディフェクト」ではなく「許容できる失敗率」を定義（現実的な品質設計）',
-      '検査基準を3段階（全数/抜取/省略）に分け、コストと品質を両立',
-      'サプライヤー3社の調整頻度を週次→月次に変更（無駄な調整を削減）',
-      '品質問題の影響範囲を「即停止/監視継続/許容」の3段階で判断',
-    ],
-  },
-  {
-    id: 'enterprise-home-appliance',
-    title: '家電メーカー向けプロダクト仕様策定PM',
-    description:
-      '複数部門が関与する家電プロダクトの仕様策定を担当。曖昧な要件を段階的に固め、変更影響を分析し、合意形成を推進。設計変更によるコスト増を最小化しながら、ステークホルダー満足度を維持。',
-    category: 'enterprise',
-    technologies: ['仕様策定', '合意形成', 'スコープ管理', '変更影響分析', '部門間調整'],
-    highlights: [
-      '仕様変更による遅延0件を14ヶ月維持（P社案件・変更管理の徹底）',
-      'ステークホルダー満足度85%以上（四半期評価で継続達成）',
-      '設計変更コスト60%削減（影響分析と優先順位設計）',
-    ],
-    pmDecisions: [
-      '曖昧な要件を「今決めるべき」と「後回しでよい」に分類（無駄な議論を削減）',
-      '変更影響を3段階評価（軽微/中程度/重大）し、受け入れ基準を明確化',
-      '週次レビューを廃止し、判断ポイントを5回に絞って意思決定速度向上',
-      'スコープを「必須/重要/あれば良い」の3段階で管理し、調整コストを削減',
-    ],
-  },
-  {
-    id: 'scraping-platform',
-    title: '54サイト統合スクレイピング基盤（24/7運用11ヶ月）',
-    description:
-      '54のECサイトから新規出品情報を自動収集し、差分検知・通知まで行う統合基盤。PoC止まりではなく本番運用を前提に、障害時復旧と影響範囲の局所化を重視して設計。年間1,000時間以上の工数削減を実現。',
+      'Integrated scraping platform collecting new product listings from 54 EC sites with differential detection and notifications. Designed with production operation in mind, prioritizing failure recovery and impact isolation. Achieved annual labor cost reduction of over 1,000 hours.',
     category: 'product',
     technologies: ['Python', 'SQLite(WAL)', 'systemd', 'cron', 'VPS', 'Chatwork API'],
     highlights: [
-      '統合54サイト / 監視URL 96 / 月10万件+処理',
-      '稼働率99.8% / エラー率0.1%未満で11ヶ月連続運用',
-      '年間1,000時間以上の工数削減（月72万円相当）',
+      '54 sites integrated / 96 monitored URLs / 100K+ monthly processing',
+      '99.8% uptime / <0.1% error rate for 11 months continuous operation',
+      '1,000+ hours annual labor reduction (equivalent to ¥720K monthly cost savings)',
     ],
     pmDecisions: [
-      '要件変動を前提に「疎結合・段階拡張」を採用（サイト追加コスト最小化）',
-      '復旧速度と運用負荷を優先し、SQLite(WAL)で堅く運用（複雑性を増やさない）',
-      '障害時の影響範囲を局所化する構成で、失敗コストをコントロール',
-      '「完璧な検知」ではなく「見逃し許容・誤検知最小」の品質基準を設計',
+      'Adopted "loose coupling, staged expansion" assuming requirement volatility (minimized per-site addition cost)',
+      'Prioritized recovery speed and operational burden; chose SQLite(WAL) for robust operation (avoided adding complexity)',
+      'Localized failure impact scope in architecture to control failure costs',
+      'Defined quality baseline as "tolerate false negatives, minimize false positives" rather than "perfect detection"',
     ],
   },
+
+  // Case 3: Multi-stakeholder Enterprise Project (Decision Deadlock Resolution)
   {
-    id: 'sre-demo',
-    title: 'SRE実証システム（本番級負荷試験・監視・障害注入）',
+    id: 'case3-multi-stakeholder',
+    title: 'Case 3: Multi-stakeholder Home Appliance Product Specification PM',
     description:
-      'FastAPI・Redis・PostgreSQLを用いた複数サービス構成のデモ。負荷試験、監視、障害注入まで含め、運用前提の設計と検証を行った。「性能」だけでなく「観測可能性」を優先した設計思想を実装。',
+      'Specification definition PM for home appliance product involving multiple departments. Incrementally solidified ambiguous requirements, analyzed change impact, and facilitated consensus. Minimized cost increase from design changes while maintaining stakeholder satisfaction.',
+    category: 'enterprise',
+    technologies: [
+      'Specification Definition',
+      'Consensus Building',
+      'Scope Management',
+      'Change Impact Analysis',
+      'Cross-department Coordination',
+    ],
+    highlights: [
+      'Zero delays from specification changes for 14 months (thorough change management)',
+      'Stakeholder satisfaction 85%+ (consistently achieved in quarterly evaluations)',
+      '60% reduction in design change costs (impact analysis and priority design)',
+    ],
+    pmDecisions: [
+      'Classified ambiguous requirements into "Decide Now" vs "Defer Later" (eliminated wasteful discussions)',
+      '3-tier change impact evaluation (Minor/Moderate/Critical), clarifying acceptance criteria',
+      'Abolished weekly reviews, narrowing decision points to 5 occasions to accelerate decision-making',
+      'Managed scope in 3 tiers (Must/Important/Nice-to-have), reducing coordination costs',
+    ],
+  },
+
+  // ========================================
+  // 💎 ADDITIONAL CASES（折りたたみ推奨）
+  // ========================================
+
+  // Additional: Bicycle Parts Mass Production Transition
+  {
+    id: 'additional-bicycle-quality',
+    title: 'Additional: Bicycle Parts Manufacturer Mass Production Transition PM',
+    description:
+      'Handled mass production transition phase for high-precision parts. Conducted quality design, inspection standard definition, and supply chain coordination. Defined "acceptable failure quality" rather than "perfect quality," designing cost-quality trade-offs.',
+    category: 'enterprise',
+    technologies: [
+      'Quality Design',
+      'Mass Production Transition',
+      'Inspection Standard Definition',
+      'Supply Chain Coordination',
+      'Cost Optimization',
+    ],
+    highlights: [
+      'Maintained <0.01% defect rate for 12 consecutive months (far exceeding 0.05% target)',
+      '40% reduction in mass production transition period (6 months → 3.6 months)',
+      '50% reduction in inspection labor (efficiency through baseline optimization)',
+    ],
+    pmDecisions: [
+      'Defined "acceptable failure rate" instead of "zero defects" (realistic quality design)',
+      'Categorized inspection baseline into 3 tiers (Full/Sampling/Omit) to balance cost and quality',
+      'Reduced supplier coordination frequency from weekly to monthly (eliminated wasteful coordination)',
+      'Classified quality issue impact scope into 3 tiers (Immediate Stop/Continue Monitoring/Tolerate)',
+    ],
+  },
+
+  // Additional: SRE Demo System
+  {
+    id: 'additional-sre-demo',
+    title: 'Additional: SRE Demonstration System (Production-grade Load Testing, Monitoring, Fault Injection)',
+    description:
+      'Demo with multi-service configuration using FastAPI, Redis, PostgreSQL. Includes load testing, monitoring, and fault injection, all designed and validated with production operation in mind. Design philosophy prioritizes "observability" over just "performance."',
     category: 'infrastructure',
     technologies: ['FastAPI', 'Redis', 'PostgreSQL', 'k6', 'Prometheus', 'Grafana', 'Docker'],
     highlights: [
-      '平均応答1.69ms（P95: 2.37ms）',
-      '13,060リクエスト処理 / エラー率0%',
-      '障害注入による復旧手順検証完了',
+      'Average response 1.69ms (P95: 2.37ms)',
+      '13,060 requests processed / 0% error rate',
+      'Fault injection recovery procedure validation completed',
     ],
     pmDecisions: [
-      '「性能」だけでなく「観測可能性（Observability）」を先に置いた設計',
-      '障害注入で"壊れる前提"を作り、復旧手順と影響範囲を検証対象にした',
-      '監視指標を「即座対応/翌日確認/記録のみ」の3段階に分類',
+      'Prioritized "observability" over "performance" in design',
+      'Created fault injection to design for "failure assumption," validating recovery procedures and impact scope',
+      'Classified monitoring metrics into 3 tiers (Immediate Response/Next-day Check/Record Only)',
     ],
   },
+
+  // Additional: Quality Improvement (pytest introduction)
   {
-    id: 'test-hardening',
-    title: '品質改善：pytest導入で"安全に変更できる状態"へ',
+    id: 'additional-pytest-hardening',
+    title: 'Additional: Quality Improvement (Retrofitting pytest for Safe Change Enablement)',
     description:
-      'テスト未整備コード（約1,400行）に対してpytestを後付け導入。変更容易性と回帰リスクを下げるため、最小コストで効くテスト設計を実施。「動く」から「安全に変えられる」へ品質定義を段階的に引き上げた。',
+      'Retrofitted pytest to code without tests (~1,400 lines). Designed minimum-cost, maximum-impact tests to reduce changeability and regression risk. Incrementally elevated quality definition from "works" to "safely changeable."',
     category: 'technical',
     technologies: ['Python', 'pytest', 'mypy(strict)', 'coverage'],
     highlights: [
-      '30テスト実装 / カバレッジ26%',
-      '型安全性向上（mypy strict モード適用）',
-      '回帰バグ検知時間を数日→数分に短縮',
+      '30 tests implemented / 26% coverage',
+      'Improved type safety (mypy strict mode applied)',
+      'Regression bug detection time reduced from days → minutes',
     ],
     pmDecisions: [
-      '全面テストではなく、リスクの高い経路を優先して"最小で効く"網を張った',
-      '「動く」から「安全に変えられる」へ、品質の定義を段階的に引き上げた',
-      'カバレッジ目標を100%ではなく30%に設定（実用的な品質基準）',
+      'Prioritized high-risk paths rather than full coverage for "minimum effective net"',
+      'Incrementally elevated quality definition from "works" to "safely changeable"',
+      'Set coverage target at 30% instead of 100% (practical quality baseline)',
     ],
   },
 ];
