@@ -247,43 +247,21 @@ export default function Page() {
 
                 <div className="case-block">
                   <div className="case-label">Result</div>
-                  <p className="case-text">
-                    Delivered all 21 SKUs within budget and schedule with minimal post-launch defects. Achieved first
-                    year sales of ¥9M+ (~$60k USD).
-                  </p>
-                </div>
-
-                <div className="pm-box">
-                  <div className="pm-title">PM Contributions</div>
-                  <ul className="pm-list">
-                    <li>Cross-company specification arbitration and approval design</li>
-                    <li>Change control framework enabling rapid pivots</li>
-                    <li>Quality baseline tier definition (Required/Recommended/Ideal)</li>
+                  <ul className="list">
+                    <li>100% on-time delivery rate maintained for 17 months (zero delays)</li>
+                    <li>30% reduction in specification change requests</li>
+                    <li>Largest-scale project in 17-year career</li>
                   </ul>
                 </div>
 
-                <div className="two-col">
-                  <div>
-                    <div className="mini-title">Technical Components</div>
-                    <div className="tags">
-                      <span className="tag">B2B Portal</span>
-                      <span className="tag">Order Management</span>
-                      <span className="tag">Approval Workflow</span>
-                      <span className="tag">Notification System</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mini-title">Stakeholders Managed</div>
-                    <div className="tags">
-                      <span className="tag">5 Partner Companies</span>
-                      <span className="tag">Dev/QA/Design</span>
-                      <span className="tag">Marketing/Sales</span>
-                    </div>
-                  </div>
+                <div className="tags">
+                  <span className="tag">Requirement Definition</span>
+                  <span className="tag">Stakeholder Coordination</span>
+                  <span className="tag">Risk Management</span>
                 </div>
               </motion.article>
 
-              {/* Case 2: Master Controller */}
+              {/* Case 2: Automation Platform */}
               <motion.article
                 className="card"
                 variants={fadeUp}
@@ -294,75 +272,55 @@ export default function Page() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
-                  <h3 className="project-title">Master Controller (43-Site Industrial Monitoring)</h3>
-                  <span className="badge">infrastructure</span>
+                  <h3 className="project-title">Automation Platform (54 Sites, 24/7 Operation for 11 Months)</h3>
+                  <span className="badge">product</span>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Problem</div>
                   <p className="case-text">
-                    43-site industrial monitoring required 24/7 manual supervision. Critical failures (power outages,
-                    floods) escalated without proactive detection. Annual network costs exceeded ¥20M (~$135k USD).
+                    Manual monitoring of 54 e-commerce sites consuming 1,000+ hours annually. PoC implementations
+                    historically failed to reach production due to operational complexity.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Action</div>
                   <p className="case-text">
-                    Built unified controller orchestrating 50+ monitoring modules with zero-downtime failover design.
-                    Implemented preemptive alert system with circuit breaker pattern to prevent alert storms.
+                    Designed for failure isolation from day one using SQLite WAL for recovery speed. Prioritized
+                    operational simplicity over architectural elegance. Defined quality baseline as "tolerate false
+                    negatives, minimize false positives."
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Result</div>
-                  <p className="case-text">
-                    Sustained 99.9% uptime with zero manual interventions. Reduced network costs from ¥20M to ¥4.4M
-                    (-78%) while eliminating 24/7 staffing requirements.
-                  </p>
-                </div>
-
-                <div className="pm-box">
-                  <div className="pm-title">PM Contributions</div>
-                  <ul className="pm-list">
-                    <li>Unified orchestration controller design ensuring <0.01% operational failure rate</li>
-                    <li>Budget optimization: negotiated -78% network cost reduction (¥20M→¥4.4M)</li>
-                    <li>Runbook automation: transitioned from 24/7 manual monitoring to lights-out operation</li>
+                  <ul className="list">
+                    <li>99.8% uptime over 11 months continuous operation</li>
+                    <li>1,000+ hours annual labor reduction (¥720K monthly equivalent)</li>
+                    <li>54 sites integrated / 100K+ monthly processing</li>
                   </ul>
                 </div>
 
-                <div className="two-col">
-                  <div>
-                    <div className="mini-title">Technologies Used</div>
-                    <div className="tags">
-                      <span className="tag">Python/FastAPI</span>
-                      <span className="tag">PostgreSQL</span>
-                      <span className="tag">Docker</span>
-                      <span className="tag">Grafana</span>
-                      <span className="tag">LINE Notify</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mini-title">Operational Metrics</div>
-                    <div className="tags">
-                      <span className="tag">99.9% Uptime</span>
-                      <span className="tag">43 Sites</span>
-                      <span className="tag">50+ Modules</span>
-                    </div>
-                  </div>
+                <div className="project-links">
+                  <a
+                    href="https://github.com/rancorder/master_controller"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="project-link"
+                  >
+                    GitHub →
+                  </a>
                 </div>
 
-                <div className="project-links">
-                  <a href="https://github.com/rancorder/master-controller" target="_blank" rel="noreferrer" className="project-link">
-                    View on GitHub →
-                  </a>
-                  <a href="https://qiita.com/rancorder" target="_blank" rel="noreferrer" className="project-link">
-                    Technical Write-up (Qiita) →
-                  </a>
+                <div className="tags">
+                  <span className="tag">Python</span>
+                  <span className="tag">SQLite(WAL)</span>
+                  <span className="tag">24/7 Operations</span>
                 </div>
               </motion.article>
 
-              {/* Case 3: QA Automation Framework */}
+              {/* Case 3: Multi-stakeholder */}
               <motion.article
                 className="card"
                 variants={fadeUp}
@@ -373,70 +331,39 @@ export default function Page() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
-                  <h3 className="project-title">QA Automation Framework (AI-Integrated SCM Platform)</h3>
-                  <span className="badge">qa/automation</span>
+                  <h3 className="project-title">Multi-stakeholder Product Specification PM</h3>
+                  <span className="badge">enterprise</span>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Problem</div>
                   <p className="case-text">
-                    Manual E2E testing required 8 hours per cycle. Critical regressions reached production. Test
-                    maintainability collapsed as system evolved.
+                    Home appliance product specification deadlocked by competing department priorities. Ambiguous
+                    requirements generating costly design changes and timeline slippage.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Action</div>
                   <p className="case-text">
-                    Built Playwright-based automation suite with CI/CD integration, coverage tracking, and automatic
-                    failure analysis. Architected for maintainability with Page Object Model and fixture-based design.
+                    Classified requirements into "Decide Now" vs "Defer Later" to eliminate wasteful debate. Established
+                    3-tier change impact evaluation (Minor/Moderate/Critical) with clear acceptance criteria.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Result</div>
-                  <p className="case-text">
-                    Automated 52 critical test scenarios with 90% coverage. Reduced E2E test cycle from 8 hours to 12
-                    minutes (~40x faster), cutting QA costs by 80% while improving defect detection.
-                  </p>
-                </div>
-
-                <div className="pm-box">
-                  <div className="pm-title">PM Contributions</div>
-                  <ul className="pm-list">
-                    <li>Test strategy design: prioritized critical paths yielding 90% coverage with 52 scenarios</li>
-                    <li>CI/CD pipeline integration with failure isolation and automatic regression tracking</li>
-                    <li>Maintainability architecture: Page Object Model + fixture-based design for evolving systems</li>
+                  <ul className="list">
+                    <li>Zero specification-related delays for 14 months</li>
+                    <li>60% reduction in design change costs</li>
+                    <li>85%+ stakeholder satisfaction maintained quarterly</li>
                   </ul>
                 </div>
 
-                <div className="two-col">
-                  <div>
-                    <div className="mini-title">Stack</div>
-                    <div className="tags">
-                      <span className="tag">Playwright</span>
-                      <span className="tag">TypeScript</span>
-                      <span className="tag">GitHub Actions</span>
-                      <span className="tag">Codecov</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mini-title">Metrics</div>
-                    <div className="tags">
-                      <span className="tag">52 Test Cases</span>
-                      <span className="tag">90% Coverage</span>
-                      <span className="tag">40x Faster</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="project-links">
-                  <a href="https://github.com/rancorder/qa-automation-framework" target="_blank" rel="noreferrer" className="project-link">
-                    View on GitHub →
-                  </a>
-                  <a href="https://zenn.dev/supermassu" target="_blank" rel="noreferrer" className="project-link">
-                    Technical Deep Dive (Zenn) →
-                  </a>
+                <div className="tags">
+                  <span className="tag">Specification Definition</span>
+                  <span className="tag">Consensus Building</span>
+                  <span className="tag">Change Management</span>
                 </div>
               </motion.article>
             </motion.div>
@@ -444,97 +371,100 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Skills */}
+      {/* Skills - 役割ベース */}
       <section id="skills" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
-              Technical Capabilities
+              Skills
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
-              SRE + QA Automation + Enterprise PM
+              Role-based capabilities, not tool lists
             </motion.p>
 
             <motion.div className="grid skills" variants={stagger}>
-              <motion.div className="card" variants={fadeUp}>
-                <h3 className="mini-title">Backend & Infrastructure</h3>
-                <div className="tags">
-                  <span className="tag">Python/FastAPI</span>
-                  <span className="tag">PostgreSQL</span>
-                  <span className="tag">Docker</span>
-                  <span className="tag">AWS/GCP</span>
-                  <span className="tag">Linux</span>
-                  <span className="tag">Grafana</span>
-                </div>
+              {/* Project & Decision Design */}
+              <motion.div
+                className="card"
+                variants={fadeUp}
+                whileHover={{
+                  y: -6,
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mini-title">Project & Decision Design</div>
+                <ul className="list">
+                  <li>Clarifying ambiguous requirements</li>
+                  <li>Designing decision authority and ownership</li>
+                  <li>Cross-functional stakeholder alignment</li>
+                  <li>Trade-off design (Speed × Quality × Cost)</li>
+                </ul>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <h3 className="mini-title">Frontend & Automation</h3>
-                <div className="tags">
-                  <span className="tag">TypeScript</span>
-                  <span className="tag">React/Next.js</span>
-                  <span className="tag">Playwright</span>
-                  <span className="tag">Three.js</span>
-                  <span className="tag">Framer Motion</span>
-                </div>
+              {/* Operational & Technical Context */}
+              <motion.div
+                className="card"
+                variants={fadeUp}
+                whileHover={{
+                  y: -6,
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mini-title">Operational & Technical Context</div>
+                <ul className="list">
+                  <li>Long-running automation systems (11+ months continuous operation)</li>
+                  <li>Monitoring, failure isolation, circuit breakers</li>
+                  <li>Production-focused design reviews</li>
+                  <li>Manufacturing precision (0.01mm) × Technology speed (24/7)</li>
+                </ul>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <h3 className="mini-title">Enterprise PM</h3>
-                <div className="tags">
-                  <span className="tag">Decision Design</span>
-                  <span className="tag">Stakeholder Mgmt</span>
-                  <span className="tag">Production Ownership</span>
-                  <span className="tag">Change Control</span>
-                  <span className="tag">Budget Optimization</span>
-                </div>
+              {/* Tools */}
+              <motion.div
+                className="card"
+                variants={fadeUp}
+                whileHover={{
+                  y: -6,
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mini-title">Tools</div>
+                <ul className="list">
+                  <li>Python, FastAPI, React, TypeScript, Next.js</li>
+                  <li>Docker, Linux, PostgreSQL, Redis, SQLite</li>
+                  <li>pytest, k6, Prometheus, Grafana</li>
+                  <li>Azure, Git, Azure DevOps</li>
+                </ul>
               </motion.div>
-            </motion.div>
-
-            <motion.div className="card" variants={fadeUp} style={{ marginTop: '32px' }}>
-              <h3 className="mini-title">Content & Documentation</h3>
-              <ul className="list">
-                <li>
-                  <a href="https://zenn.dev/supermassu" target="_blank" rel="noreferrer" className="project-link">
-                    Zenn (@supermassu)
-                  </a>{' '}
-                  - Technical deep dives on QA automation and system design
-                </li>
-                <li>
-                  <a href="https://qiita.com/rancorder" target="_blank" rel="noreferrer" className="project-link">
-                    Qiita (@rancorder)
-                  </a>{' '}
-                  - Infrastructure automation and monitoring best practices
-                </li>
-                <li>
-                  <a href="https://github.com/rancorder" target="_blank" rel="noreferrer" className="project-link">
-                    GitHub (@rancorder)
-                  </a>{' '}
-                  - Open-source contributions and production-grade reference implementations
-                </li>
-              </ul>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Contact */}
+      {/* Contact - EY向けCTA */}
       <section id="contact" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
-              CONTACT
+              If your project is technically complete but cannot move to production
             </motion.h2>
+            <motion.p className="section-sub" variants={fadeUp}>
+              I'm happy to have a conversation
+            </motion.p>
 
             <motion.div className="contact-card" variants={fadeUp}>
               <div className="contact-left">
+                <div className="mini-title">Contact</div>
                 <p className="muted">
                   Brief context about your project helps — I can propose the best approach from both manufacturing PM
                   and technical PM perspectives.
                 </p>
               </div>
               <div className="contact-right">
-                <a className="btn primary" href="mailto:xzengbu@gmail.com">
+                <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
                   xzengbu@gmail.com
                 </a>
                 <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
@@ -546,32 +476,28 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="footer">
-        <div className="container">
-          <div className="footer-inner">
-            <p>© 2025 H・M. All rights reserved.</p>
-            <p className="muted">Built with Next.js + React + TypeScript</p>
-          </div>
+        <div className="container footer-inner">
+          <span className="muted">© {new Date().getFullYear()} H・M</span>
         </div>
       </footer>
 
-      <style jsx>{`
+      {/* Styles */}
+      <style jsx global>{`
         :root {
-          --primary: #7c3aed;
-          --accent: #22c55e;
-          --accent2: #10b981;
-          --text: #e2e8f0;
-          --muted: #94a3b8;
-          --border: rgba(148, 163, 184, 0.2);
-          --bg-darker: #020617;
-          --bg-dark: #0f172a;
-          --card-bg: rgba(15, 23, 42, 0.6);
+          --bg: #05070f;
+          --panel: rgba(255, 255, 255, 0.06);
+          --panel-2: rgba(255, 255, 255, 0.04);
+          --border: rgba(255, 255, 255, 0.12);
+          --text: rgba(255, 255, 255, 0.92);
+          --muted: rgba(255, 255, 255, 0.68);
+          --muted2: rgba(255, 255, 255, 0.55);
+          --accent: #7c3aed;
+          --accent2: #22c55e;
+          --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
         }
 
         * {
-          margin: 0;
-          padding: 0;
           box-sizing: border-box;
         }
 
@@ -579,20 +505,39 @@ export default function Page() {
           scroll-behavior: smooth;
         }
 
+        html,
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-          background: var(--bg-darker);
+          height: 100%;
+        }
+
+        body {
+          margin: 0;
+          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+          background: var(--bg);
           color: var(--text);
-          line-height: 1.6;
           overflow-x: hidden;
         }
 
-        main {
-          position: relative;
-          min-height: 100vh;
-          width: 100%;
-          max-width: 100vw;
-          overflow-x: hidden;
+        .bg-gradient {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: -1;
+          background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
+            radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%);
+          animation: gradientShift 15s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.85;
+          }
         }
 
         a {
@@ -600,355 +545,414 @@ export default function Page() {
           text-decoration: none;
         }
 
-        .bg-gradient {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 140vh;
-          background: radial-gradient(ellipse at top, rgba(124, 58, 237, 0.25), transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(34, 197, 94, 0.15), transparent 50%);
-          pointer-events: none;
-          z-index: 0;
-        }
-
         .container {
-          max-width: 1280px;
+          width: min(1100px, calc(100% - 40px));
           margin: 0 auto;
-          padding: 0 24px;
-          width: 100%;
         }
 
-        /* ============================================
-           ナビゲーション - モバイル完全対応
-           ============================================ */
+        .muted {
+          color: var(--muted);
+        }
+
         .nav {
           position: sticky;
           top: 0;
-          z-index: 1000;
-          background: rgba(2, 6, 23, 0.8);
-          backdrop-filter: blur(12px);
+          z-index: 20;
+          backdrop-filter: blur(12px) saturate(180%);
+          background: rgba(5, 7, 15, 0.7);
           border-bottom: 1px solid var(--border);
-          padding: 16px 0;
         }
 
         .nav-inner {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          gap: 16px;
+          justify-content: space-between;
+          padding: 16px 0;
         }
 
         .brand {
-          font-size: 20px;
-          font-weight: 900;
-          letter-spacing: -0.5px;
-          color: var(--text);
-          white-space: nowrap;
-          flex-shrink: 0;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+          transition: color 0.2s ease;
+        }
+
+        .brand:hover {
+          color: var(--accent);
         }
 
         .nav-links {
           display: flex;
-          gap: 20px;
+          gap: 16px;
           align-items: center;
-          flex-wrap: wrap;
-          justify-content: flex-end;
+          color: var(--muted);
+          font-size: 14px;
         }
 
         .nav-links a {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--muted);
           transition: color 0.2s ease;
-          white-space: nowrap;
         }
 
         .nav-links a:hover {
           color: var(--text);
         }
 
-        .nav-links .pill {
-          padding: 8px 20px;
+        .pill {
+          padding: 8px 14px;
+          border: 1px solid var(--border);
           border-radius: 999px;
-          background: rgba(124, 58, 237, 0.2);
-          border: 1px solid rgba(124, 58, 237, 0.4);
-          color: var(--text);
+          background: var(--panel-2);
+          transition: all 0.2s ease;
         }
 
-        .nav-links .pill:hover {
-          background: rgba(124, 58, 237, 0.3);
+        .pill:hover {
+          background: var(--panel);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .lang-switch {
-          padding: 6px 14px;
+          padding: 8px 14px;
+          border: 1px solid var(--accent);
           border-radius: 999px;
-          background: rgba(34, 197, 94, 0.15);
-          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgba(124, 58, 237, 0.1);
           color: var(--accent);
           font-weight: 700;
-          font-size: 12px;
-          letter-spacing: 0.5px;
           transition: all 0.2s ease;
-          flex-shrink: 0;
         }
 
         .lang-switch:hover {
-          background: rgba(34, 197, 94, 0.25);
-          border-color: rgba(34, 197, 94, 0.5);
+          background: rgba(124, 58, 237, 0.2);
+          border-color: var(--accent);
         }
 
-        /* ============================================
-           ヒーローセクション - モバイル完全対応
-           ============================================ */
         .hero {
-          position: relative;
-          padding: 120px 0 100px;
-          min-height: 90vh;
-          display: flex;
-          align-items: center;
+          padding: 100px 0 60px;
         }
 
         .kicker {
-          font-size: 14px;
+          margin: 0 0 12px;
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          color: var(--accent);
-          margin-bottom: 24px;
+          color: var(--muted2);
+          font-size: 15px;
         }
 
         .hero-title {
-          font-size: clamp(28px, 6vw, 56px);
-          font-weight: 900;
-          line-height: 1.15;
-          margin-bottom: 32px;
-          letter-spacing: -1.5px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
+          margin: 0;
+          font-size: clamp(32px, 3.5vw, 52px);
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          background: linear-gradient(135deg, var(--text), rgba(255, 255, 255, 0.7));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .hero-subtitle {
-          font-size: clamp(16px, 3vw, 20px);
-          color: var(--muted);
-          margin-bottom: 16px;
+          margin: 20px 0 0;
+          font-size: 14px;
+          color: var(--muted2);
           line-height: 1.6;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          font-style: italic;
+        }
+
+        .hero-sub {
+          margin: 20px 0 0;
+          font-size: 17px;
+          color: var(--muted);
+          line-height: 1.7;
+        }
+
+        .hero-desc {
+          margin: 12px 0 0;
+          font-size: 15px;
+          color: var(--muted2);
+          line-height: 1.8;
+          max-width: 900px;
+        }
+
+        /* 🆕 Role Definition Block */
+        .role-definition {
+          margin: 32px 0;
+          padding: 28px;
+          border: 1px solid var(--border);
+          background: var(--panel);
+          border-radius: 20px;
+        }
+
+        .role-item {
+          margin-bottom: 20px;
+        }
+
+        .role-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .role-label {
+          font-weight: 900;
+          font-size: 12px;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          margin-bottom: 8px;
+        }
+
+        .role-value {
+          font-size: 14px;
+          color: var(--muted);
+          line-height: 1.75;
+        }
+
+        /* 🆕 Operational Highlights */
+        .operational-highlights {
+          margin-top: 40px;
+          padding: 32px;
+          border: 2px solid rgba(124, 58, 237, 0.4);
+          background: rgba(124, 58, 237, 0.08);
+          border-radius: 20px;
+        }
+
+        .op-header {
+          font-weight: 900;
+          font-size: 14px;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+
+        .stats-operational {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+
+        .stat-op {
+          border: 1px solid var(--border);
+          background: var(--panel);
+          border-radius: 18px;
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
+          text-align: center;
+        }
+
+        .stat-op:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .cta {
           display: flex;
-          gap: 16px;
-          margin-top: 40px;
+          gap: 12px;
           flex-wrap: wrap;
+          margin-top: 24px;
         }
 
         .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 14px 32px;
+          height: 46px;
+          padding: 0 20px;
           border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--panel-2);
+          color: var(--text);
           font-weight: 700;
-          font-size: 15px;
-          transition: all 0.3s ease;
-          border: 1px solid transparent;
+          font-size: 14px;
+          transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
-          text-align: center;
-          min-width: 160px;
+        }
+
+        .btn:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.28);
         }
 
         .btn.primary {
-          background: linear-gradient(135deg, var(--primary), var(--accent));
-          color: white;
-          box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6));
+          border-color: transparent;
+          box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
         }
 
         .btn.primary:hover {
-          box-shadow: 0 6px 28px rgba(124, 58, 237, 0.6);
-          transform: translateY(-2px);
+          box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
         }
 
-        .btn.primary.pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .btn.pulse {
+          animation: pulse 3s ease-in-out infinite;
         }
 
         @keyframes pulse {
           0%,
           100% {
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
           }
           50% {
-            box-shadow: 0 4px 32px rgba(124, 58, 237, 0.8);
+            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.6);
           }
         }
 
         .btn.ghost {
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--text);
+          background: var(--panel-2);
         }
 
-        .btn.ghost:hover {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ============================================
-           Operational Highlights
-           ============================================ */
-        .operational-highlights {
-          margin-top: 64px;
-          padding: 32px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(34, 197, 94, 0.1));
-          border: 1px solid var(--border);
-        }
-
-        .op-header {
-          font-size: 13px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 1.2px;
-          color: var(--accent);
-          margin-bottom: 24px;
-          text-align: center;
-        }
-
-        .stats-operational {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 24px;
-        }
-
-        .stat-op {
-          text-align: center;
-          padding: 20px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--border);
-          transition: all 0.3s ease;
-        }
-
-        .stat-op .stat-v {
-          font-size: 28px;
-          font-weight: 900;
-          color: var(--accent);
-          margin-bottom: 8px;
-        }
-
-        .stat-op .stat-l {
-          font-size: 13px;
-          color: var(--muted);
-          line-height: 1.5;
-        }
-
-        /* ============================================
-           Traditional Stats
-           ============================================ */
         .stats {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 32px;
-          margin-top: 64px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          margin-top: 32px;
         }
 
         .stat {
-          text-align: center;
-          padding: 24px;
-          border-radius: 16px;
-          background: var(--card-bg);
-          backdrop-filter: blur(10px);
           border: 1px solid var(--border);
-          transition: all 0.3s ease;
+          background: var(--panel);
+          border-radius: 18px;
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
+        }
+
+        .stat:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .stat-v {
-          font-size: 42px;
           font-weight: 900;
-          color: var(--primary);
-          margin-bottom: 8px;
-          line-height: 1;
+          font-size: 32px;
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .stat-l {
-          font-size: 13px;
+          margin-top: 8px;
           color: var(--muted);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          font-size: 13px;
+          line-height: 1.5;
         }
 
-        /* ============================================
-           セクション共通
-           ============================================ */
         .section {
-          position: relative;
-          padding: 100px 0;
+          padding: 120px 0;
         }
 
         .section-title {
-          font-size: clamp(32px, 5vw, 48px);
-          font-weight: 900;
-          margin-bottom: 16px;
-          letter-spacing: -1px;
+          margin: 0;
+          font-size: 32px;
+          letter-spacing: -0.01em;
+          font-weight: 800;
         }
 
         .section-sub {
-          font-size: clamp(16px, 2.5vw, 18px);
+          margin: 12px 0 0;
           color: var(--muted);
-          margin-bottom: 48px;
+          line-height: 1.7;
+          font-size: 16px;
         }
 
-        /* ============================================
-           グリッド・カード
-           ============================================ */
         .grid {
+          margin-top: 32px;
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
           gap: 32px;
-        }
-
-        .not-optimize-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 24px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .card {
-          background: var(--card-bg);
-          backdrop-filter: blur(10px);
           border: 1px solid var(--border);
+          background: var(--panel);
           border-radius: 20px;
           padding: 32px;
-          transition: all 0.3s ease;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
         }
 
-        .card:hover {
-          border-color: rgba(124, 58, 237, 0.4);
+        /* 🆕 Not Optimize Grid */
+        .not-optimize-grid {
+          margin-top: 32px;
+          display: grid;
+          gap: 24px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        /* 🆕 PM Clarification Box */
+        .pm-clarification {
+          margin-top: 40px;
+          padding: 32px;
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgba(34, 197, 94, 0.06);
+          border-radius: 20px;
+        }
+
+        .pm-clarification-inner {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+        }
+
+        .pm-icon {
+          font-size: 32px;
+          flex-shrink: 0;
+        }
+
+        .pm-clarification-title {
+          font-weight: 900;
+          font-size: 16px;
+          margin-bottom: 12px;
+          color: var(--accent2);
+        }
+
+        .pm-clarification-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .filters {
+          margin-top: 24px;
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .chip {
+          border: 1px solid var(--border);
+          background: var(--panel-2);
+          color: var(--muted);
+          border-radius: 999px;
+          padding: 10px 16px;
+          font-weight: 700;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .chip:hover {
+          border-color: rgba(255, 255, 255, 0.28);
+          background: var(--panel);
+        }
+
+        .chip.active {
+          color: var(--text);
+          background: rgba(124, 58, 237, 0.32);
+          border-color: rgba(124, 58, 237, 0.5);
+          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
         }
 
         .project-head {
           display: flex;
-          justify-content: space-between;
           align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 12px;
         }
 
         .project-title {
-          font-size: 20px;
-          font-weight: 900;
-          line-height: 1.3;
-          letter-spacing: -0.5px;
-          flex: 1;
-          min-width: 200px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          margin: 0;
+          font-size: 18px;
+          line-height: 1.4;
+          font-weight: 700;
         }
 
         .badge {
@@ -962,7 +966,6 @@ export default function Page() {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           font-weight: 700;
-          flex-shrink: 0;
         }
 
         .project-desc {
@@ -1050,8 +1053,6 @@ export default function Page() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .two-col {
@@ -1127,50 +1128,9 @@ export default function Page() {
         }
 
         .grid.skills {
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        /* ============================================
-           PM Clarification Box
-           ============================================ */
-        .pm-clarification {
-          margin-top: 48px;
-          padding: 32px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(34, 197, 94, 0.08));
-          border: 1px solid rgba(124, 58, 237, 0.3);
-        }
-
-        .pm-clarification-inner {
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-        }
-
-        .pm-icon {
-          font-size: 32px;
-          flex-shrink: 0;
-        }
-
-        .pm-clarification-title {
-          font-weight: 900;
-          font-size: 16px;
-          margin-bottom: 12px;
-          color: var(--text);
-        }
-
-        .pm-clarification-text {
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-          margin: 0;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* ============================================
-           CONTACTセクション - モバイル完全対応
-           ============================================ */
         .contact-card {
           margin-top: 32px;
           display: flex;
@@ -1185,14 +1145,8 @@ export default function Page() {
         }
 
         .contact-left {
-          min-width: 240px;
+          min-width: 280px;
           flex: 1;
-        }
-
-        .contact-left .muted {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          line-height: 1.7;
         }
 
         .contact-right {
@@ -1201,9 +1155,6 @@ export default function Page() {
           flex-wrap: wrap;
         }
 
-        /* ============================================
-           Footer
-           ============================================ */
         .footer {
           border-top: 1px solid var(--border);
           padding: 32px 0;
@@ -1214,17 +1165,52 @@ export default function Page() {
           display: flex;
           justify-content: space-between;
           align-items: center;
+        }
+
+        /* モバイル対応追加スタイル */
+        .nav-links {
           flex-wrap: wrap;
-          gap: 16px;
+          justify-content: flex-end;
         }
 
-        .muted {
-          color: var(--muted);
+        .lang-switch {
+          flex-shrink: 0;
         }
 
-        /* ============================================
-           レスポンシブ対応（モバイル）
-           ============================================ */
+        .hero-title {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+
+        .hero-subtitle {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .card {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .case-text,
+        .pm-clarification-text,
+        .project-title {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .contact-left .muted,
+        .contact-left p {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.7;
+        }
+
+        .badge {
+          flex-shrink: 0;
+        }
+
         @media (max-width: 860px) {
           .container {
             padding: 0 20px;
@@ -1236,7 +1222,6 @@ export default function Page() {
 
           .nav-links {
             gap: 12px;
-            font-size: 13px;
           }
 
           .nav-links a {
@@ -1260,7 +1245,6 @@ export default function Page() {
           .hero-title {
             font-size: clamp(24px, 7vw, 36px);
             margin-bottom: 24px;
-            letter-spacing: -1px;
           }
 
           .hero-subtitle {
@@ -1343,6 +1327,11 @@ export default function Page() {
             gap: 20px;
           }
 
+          .two-col {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+
           .card {
             padding: 24px;
           }
@@ -1355,11 +1344,6 @@ export default function Page() {
           .project-title {
             font-size: 18px;
             min-width: 100%;
-          }
-
-          .two-col {
-            grid-template-columns: 1fr;
-            gap: 16px;
           }
 
           .pm-clarification {
@@ -1409,9 +1393,6 @@ export default function Page() {
           }
         }
 
-        /* ============================================
-           超小型デバイス対応（375px以下）
-           ============================================ */
         @media (max-width: 480px) {
           .container {
             padding: 0 16px;
@@ -1419,7 +1400,6 @@ export default function Page() {
 
           .nav-links {
             gap: 8px;
-            font-size: 12px;
           }
 
           .nav-links .pill {
