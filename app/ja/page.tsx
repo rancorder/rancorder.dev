@@ -478,7 +478,7 @@ export default function PageJa() {
         </div>
       </section>
 
-      {/* Contact */}
+      {/* Contact - 日本語CTA */}
       <section id="contact" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
@@ -517,24 +517,22 @@ export default function PageJa() {
         </div>
       </footer>
 
-      {/* Styles - モバイル完全対応版 */}
+      {/* Styles */}
       <style jsx global>{`
         :root {
-          --primary: #7c3aed;
-          --accent: #22c55e;
-          --accent2: #10b981;
-          --text: #e2e8f0;
-          --muted: #94a3b8;
-          --border: rgba(148, 163, 184, 0.2);
-          --bg-darker: #020617;
-          --bg-dark: #0f172a;
-          --card-bg: rgba(15, 23, 42, 0.6);
+          --bg: #05070f;
           --panel: rgba(255, 255, 255, 0.06);
+          --panel-2: rgba(255, 255, 255, 0.04);
+          --border: rgba(255, 255, 255, 0.12);
+          --text: rgba(255, 255, 255, 0.92);
+          --muted: rgba(255, 255, 255, 0.68);
+          --muted2: rgba(255, 255, 255, 0.55);
+          --accent: #7c3aed;
+          --accent2: #22c55e;
+          --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
         }
 
         * {
-          margin: 0;
-          padding: 0;
           box-sizing: border-box;
         }
 
@@ -542,20 +540,39 @@ export default function PageJa() {
           scroll-behavior: smooth;
         }
 
+        html,
         body {
+          height: 100%;
+        }
+
+        body {
+          margin: 0;
           font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-          background: var(--bg-darker);
+          background: var(--bg);
           color: var(--text);
-          line-height: 1.6;
           overflow-x: hidden;
         }
 
-        main {
-          position: relative;
-          min-height: 100vh;
-          width: 100%;
-          max-width: 100vw;
-          overflow-x: hidden;
+        .bg-gradient {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: -1;
+          background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
+            radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%);
+          animation: gradientShift 15s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.85;
+          }
         }
 
         a {
@@ -563,155 +580,124 @@ export default function PageJa() {
           text-decoration: none;
         }
 
-        .bg-gradient {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 140vh;
-          background: radial-gradient(ellipse at top, rgba(124, 58, 237, 0.25), transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(34, 197, 94, 0.15), transparent 50%);
-          pointer-events: none;
-          z-index: 0;
-        }
-
         .container {
-          max-width: 1100px;
+          width: min(1100px, calc(100% - 40px));
           margin: 0 auto;
-          padding: 0 24px;
-          width: 100%;
         }
 
         .muted {
           color: var(--muted);
         }
 
-        /* ============================================
-           ナビゲーション - モバイル完全対応
-           ============================================ */
         .nav {
           position: sticky;
           top: 0;
-          z-index: 1000;
-          background: rgba(2, 6, 23, 0.8);
-          backdrop-filter: blur(12px);
+          z-index: 20;
+          backdrop-filter: blur(12px) saturate(180%);
+          background: rgba(5, 7, 15, 0.7);
           border-bottom: 1px solid var(--border);
-          padding: 16px 0;
         }
 
         .nav-inner {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          gap: 16px;
+          justify-content: space-between;
+          padding: 16px 0;
         }
 
         .brand {
-          font-size: 20px;
-          font-weight: 900;
-          letter-spacing: -0.5px;
-          color: var(--text);
-          white-space: nowrap;
-          flex-shrink: 0;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+          transition: color 0.2s ease;
+        }
+
+        .brand:hover {
+          color: var(--accent);
         }
 
         .nav-links {
           display: flex;
-          gap: 20px;
+          gap: 16px;
           align-items: center;
-          flex-wrap: wrap;
-          justify-content: flex-end;
+          color: var(--muted);
+          font-size: 14px;
         }
 
         .nav-links a {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--muted);
           transition: color 0.2s ease;
-          white-space: nowrap;
         }
 
         .nav-links a:hover {
           color: var(--text);
         }
 
-        .nav-links .pill {
-          padding: 8px 20px;
+        .pill {
+          padding: 8px 14px;
+          border: 1px solid var(--border);
           border-radius: 999px;
-          background: rgba(124, 58, 237, 0.2);
-          border: 1px solid rgba(124, 58, 237, 0.4);
-          color: var(--text);
+          background: var(--panel-2);
+          transition: all 0.2s ease;
         }
 
-        .nav-links .pill:hover {
-          background: rgba(124, 58, 237, 0.3);
+        .pill:hover {
+          background: var(--panel);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .lang-switch {
-          padding: 6px 14px;
+          padding: 8px 14px;
+          border: 1px solid var(--accent);
           border-radius: 999px;
-          background: rgba(34, 197, 94, 0.15);
-          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgba(124, 58, 237, 0.1);
           color: var(--accent);
           font-weight: 700;
-          font-size: 12px;
-          letter-spacing: 0.5px;
           transition: all 0.2s ease;
-          flex-shrink: 0;
         }
 
         .lang-switch:hover {
-          background: rgba(34, 197, 94, 0.25);
-          border-color: rgba(34, 197, 94, 0.5);
+          background: rgba(124, 58, 237, 0.2);
+          border-color: var(--accent);
         }
 
-        /* ============================================
-           ヒーローセクション - モバイル完全対応
-           ============================================ */
         .hero {
-          position: relative;
-          padding: 120px 0 100px;
-          min-height: 90vh;
-          display: flex;
-          align-items: center;
+          padding: 100px 0 60px;
         }
 
         .kicker {
-          font-size: 14px;
+          margin: 0 0 12px;
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          color: var(--accent);
-          margin-bottom: 24px;
+          color: var(--muted2);
+          font-size: 15px;
         }
 
         .hero-title {
-          font-size: clamp(28px, 6vw, 40px);
-          font-weight: 900;
-          line-height: 1.15;
-          margin-bottom: 32px;
-          letter-spacing: -1.5px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
+          margin: 0;
+          font-size: clamp(28px, 3.2vw, 48px);
+          line-height: 1.2;
+          letter-spacing: -0.02em;
+          background: linear-gradient(135deg, var(--text), rgba(255, 255, 255, 0.7));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .hero-subtitle {
-          font-size: clamp(16px, 3vw, 20px);
-          color: var(--muted);
-          margin-bottom: 16px;
+          margin: 20px 0 0;
+          font-size: 14px;
+          color: var(--muted2);
           line-height: 1.6;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          font-style: italic;
         }
 
         .lang-note {
-          font-size: clamp(13px, 2.5vw, 14px);
-          color: var(--muted);
-          margin-top: 24px;
+          margin: 20px 0 0;
+          font-size: 13px;
+          color: var(--muted2);
           line-height: 1.6;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          padding: 12px;
+          background: rgba(124, 58, 237, 0.08);
+          border-left: 3px solid var(--accent);
+          border-radius: 4px;
         }
 
         .lang-note a {
@@ -721,223 +707,302 @@ export default function PageJa() {
 
         .cta {
           display: flex;
-          gap: 16px;
-          margin-top: 40px;
+          gap: 12px;
           flex-wrap: wrap;
+          margin-top: 24px;
         }
 
         .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 14px 32px;
+          height: 46px;
+          padding: 0 20px;
           border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--panel-2);
+          color: var(--text);
           font-weight: 700;
-          font-size: 15px;
-          transition: all 0.3s ease;
-          border: 1px solid transparent;
+          font-size: 14px;
+          transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
-          text-align: center;
-          min-width: 160px;
+        }
+
+        .btn:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.28);
         }
 
         .btn.primary {
-          background: linear-gradient(135deg, var(--primary), var(--accent));
-          color: white;
-          box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6));
+          border-color: transparent;
+          box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
         }
 
         .btn.primary:hover {
-          box-shadow: 0 6px 28px rgba(124, 58, 237, 0.6);
-          transform: translateY(-2px);
+          box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
         }
 
-        .btn.primary.pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .btn.pulse {
+          animation: pulse 3s ease-in-out infinite;
         }
 
         @keyframes pulse {
           0%,
           100% {
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
           }
           50% {
-            box-shadow: 0 4px 32px rgba(124, 58, 237, 0.8);
+            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.6);
           }
         }
 
         .btn.ghost {
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--text);
+          background: var(--panel-2);
         }
 
-        .btn.ghost:hover {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ============================================
-           Operational Highlights
-           ============================================ */
         .operational-highlights {
-          margin-top: 64px;
+          margin-top: 40px;
           padding: 32px;
+          border: 2px solid rgba(124, 58, 237, 0.4);
+          background: rgba(124, 58, 237, 0.08);
           border-radius: 20px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(34, 197, 94, 0.1));
-          border: 1px solid var(--border);
         }
 
         .op-header {
-          font-size: 13px;
           font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 1.2px;
+          font-size: 14px;
           color: var(--accent);
-          margin-bottom: 24px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 20px;
           text-align: center;
         }
 
         .stats-operational {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 24px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
         }
 
         .stat-op {
-          text-align: center;
-          padding: 20px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.03);
           border: 1px solid var(--border);
-          transition: all 0.3s ease;
+          background: var(--panel);
+          border-radius: 18px;
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
+          text-align: center;
         }
 
-        .stat-op .stat-v {
-          font-size: 28px;
-          font-weight: 900;
-          color: var(--accent);
-          margin-bottom: 8px;
+        .stat-op:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
-        .stat-op .stat-l {
-          font-size: 13px;
-          color: var(--muted);
-          line-height: 1.5;
-        }
-
-        /* ============================================
-           Traditional Stats
-           ============================================ */
         .stats {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 32px;
-          margin-top: 64px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          margin-top: 32px;
         }
 
         .stat {
-          text-align: center;
-          padding: 24px;
-          border-radius: 16px;
-          background: var(--card-bg);
-          backdrop-filter: blur(10px);
           border: 1px solid var(--border);
-          transition: all 0.3s ease;
+          background: var(--panel);
+          border-radius: 18px;
+          padding: 24px;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          cursor: pointer;
+        }
+
+        .stat:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .stat-v {
-          font-size: 42px;
           font-weight: 900;
-          color: var(--primary);
-          margin-bottom: 8px;
-          line-height: 1;
+          font-size: 32px;
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .stat-l {
-          font-size: 13px;
+          margin-top: 8px;
           color: var(--muted);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          font-size: 13px;
+          line-height: 1.5;
         }
 
-        /* ============================================
-           セクション共通
-           ============================================ */
         .section {
-          position: relative;
-          padding: 100px 0;
+          padding: 120px 0;
         }
 
         .section-title {
-          font-size: clamp(28px, 5vw, 40px);
-          font-weight: 900;
-          margin-bottom: 16px;
-          letter-spacing: -1px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          margin: 0;
+          font-size: 32px;
+          letter-spacing: -0.01em;
+          font-weight: 800;
         }
 
         .section-sub {
-          font-size: clamp(16px, 2.5vw, 18px);
+          margin: 12px 0 0;
           color: var(--muted);
-          margin-bottom: 48px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          line-height: 1.7;
+          font-size: 16px;
         }
 
-        /* ============================================
-           グリッド・カード
-           ============================================ */
         .grid {
+          margin-top: 32px;
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
           gap: 32px;
-        }
-
-        .not-optimize-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 24px;
-        }
-
-        .grid.skills {
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .card {
-          background: var(--card-bg);
-          backdrop-filter: blur(10px);
           border: 1px solid var(--border);
+          background: var(--panel);
           border-radius: 20px;
           padding: 32px;
-          transition: all 0.3s ease;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
         }
 
-        .card:hover {
-          border-color: rgba(124, 58, 237, 0.4);
+        .not-optimize-grid {
+          margin-top: 32px;
+          display: grid;
+          gap: 24px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .pm-clarification {
+          margin-top: 40px;
+          padding: 32px;
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: rgba(34, 197, 94, 0.06);
+          border-radius: 20px;
+        }
+
+        .pm-clarification-inner {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+        }
+
+        .pm-icon {
+          font-size: 32px;
+          flex-shrink: 0;
+        }
+
+        .pm-clarification-title {
+          font-weight: 900;
+          font-size: 16px;
+          margin-bottom: 12px;
+          color: var(--accent2);
+        }
+
+        .pm-clarification-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .japan-context {
+          margin-top: 40px;
+          padding: 32px;
+          border: 1px solid rgba(255, 190, 11, 0.3);
+          background: rgba(255, 190, 11, 0.06);
+          border-radius: 20px;
+        }
+
+        .japan-context-inner {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .japan-context-title {
+          font-weight: 900;
+          font-size: 16px;
+          color: #ffbe0b;
+        }
+
+        .japan-context-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .tool-approach {
+          margin-top: 40px;
+          padding: 32px;
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          background: rgba(124, 58, 237, 0.06);
+          border-radius: 20px;
+        }
+
+        .tool-approach-inner {
+          display: flex;
+          gap: 20px;
+          align-items: flex-start;
+        }
+
+        .tool-approach-icon {
+          font-size: 32px;
+          flex-shrink: 0;
+        }
+
+        .tool-approach-title {
+          font-weight: 900;
+          font-size: 16px;
+          margin-bottom: 12px;
+          color: var(--accent);
+        }
+
+        .tool-approach-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+        }
+
+        .japan-note-section {
+          padding: 60px 0;
+        }
+
+        .japan-note-card {
+          padding: 24px 32px;
+          border: 1px solid rgba(255, 190, 11, 0.3);
+          background: rgba(255, 190, 11, 0.06);
+          border-radius: 16px;
+          text-align: center;
+        }
+
+        .japan-note-text {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 14px;
+          font-style: italic;
         }
 
         .project-head {
           display: flex;
-          justify-content: space-between;
           align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 12px;
         }
 
         .project-title {
-          font-size: 20px;
-          font-weight: 900;
-          line-height: 1.3;
-          letter-spacing: -0.5px;
-          flex: 1;
-          min-width: 200px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          margin: 0;
+          font-size: 18px;
+          line-height: 1.4;
+          font-weight: 700;
         }
 
         .badge {
@@ -951,7 +1016,6 @@ export default function PageJa() {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           font-weight: 700;
-          flex-shrink: 0;
         }
 
         .case-block {
@@ -972,8 +1036,6 @@ export default function PageJa() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .mini-title {
@@ -983,8 +1045,6 @@ export default function PageJa() {
           margin-bottom: 12px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .list {
@@ -997,15 +1057,13 @@ export default function PageJa() {
 
         .list li {
           margin-bottom: 8px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .tags {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 16px;
+          margin-top: 20px;
         }
 
         .tag {
@@ -1044,141 +1102,10 @@ export default function PageJa() {
           transform: translateX(4px);
         }
 
-        /* ============================================
-           PM Clarification Box
-           ============================================ */
-        .pm-clarification {
-          margin-top: 48px;
-          padding: 32px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(34, 197, 94, 0.08));
-          border: 1px solid rgba(124, 58, 237, 0.3);
+        .grid.skills {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        .pm-clarification-inner {
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-        }
-
-        .pm-icon {
-          font-size: 32px;
-          flex-shrink: 0;
-        }
-
-        .pm-clarification-title {
-          font-weight: 900;
-          font-size: 16px;
-          margin-bottom: 12px;
-          color: var(--text);
-        }
-
-        .pm-clarification-text {
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-          margin: 0;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* ============================================
-           Japan Context Box
-           ============================================ */
-        .japan-context {
-          margin-top: 32px;
-          padding: 32px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, rgba(237, 58, 58, 0.12), rgba(197, 34, 100, 0.08));
-          border: 1px solid rgba(237, 58, 58, 0.3);
-        }
-
-        .japan-context-inner {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .japan-context-title {
-          font-weight: 900;
-          font-size: 16px;
-          color: var(--text);
-        }
-
-        .japan-context-text {
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-          margin: 0;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* ============================================
-           Tool Approach Box
-           ============================================ */
-        .tool-approach {
-          margin-top: 32px;
-          padding: 32px;
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--border);
-        }
-
-        .tool-approach-inner {
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-        }
-
-        .tool-approach-icon {
-          font-size: 32px;
-          flex-shrink: 0;
-        }
-
-        .tool-approach-title {
-          font-weight: 900;
-          font-size: 16px;
-          margin-bottom: 12px;
-          color: var(--text);
-        }
-
-        .tool-approach-text {
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-          margin: 0;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* ============================================
-           Japan Note Section
-           ============================================ */
-        .japan-note-section {
-          padding: 60px 0;
-        }
-
-        .japan-note-card {
-          padding: 24px 32px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid var(--border);
-        }
-
-        .japan-note-text {
-          color: var(--muted);
-          font-size: 13px;
-          line-height: 1.7;
-          margin: 0;
-          text-align: center;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* ============================================
-           CONTACTセクション - モバイル完全対応
-           ============================================ */
         .contact-card {
           margin-top: 32px;
           display: flex;
@@ -1193,8 +1120,64 @@ export default function PageJa() {
         }
 
         .contact-left {
-          min-width: 240px;
+          min-width: 280px;
           flex: 1;
+        }
+
+        .contact-right {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .footer {
+          border-top: 1px solid var(--border);
+          padding: 32px 0;
+          color: var(--muted);
+        }
+
+        .footer-inner {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        /* モバイル対応追加スタイル */
+        .nav-links {
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .lang-switch {
+          flex-shrink: 0;
+        }
+
+        .hero-title {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+
+        .hero-subtitle,
+        .lang-note {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .card {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .case-text,
+        .pm-clarification-text,
+        .japan-context-text,
+        .tool-approach-text,
+        .japan-note-text,
+        .project-title,
+        .mini-title {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .contact-left .muted,
@@ -1204,30 +1187,10 @@ export default function PageJa() {
           line-height: 1.7;
         }
 
-        .contact-right {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
+        .badge {
+          flex-shrink: 0;
         }
 
-        /* ============================================
-           Footer
-           ============================================ */
-        .footer {
-          border-top: 1px solid var(--border);
-          padding: 32px 0;
-          color: var(--muted);
-        }
-
-        .footer-inner {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        /* ============================================
-           レスポンシブ対応（モバイル）
-           ============================================ */
         @media (max-width: 860px) {
           .container {
             padding: 0 20px;
@@ -1239,7 +1202,6 @@ export default function PageJa() {
 
           .nav-links {
             gap: 12px;
-            font-size: 13px;
           }
 
           .nav-links a {
@@ -1263,7 +1225,6 @@ export default function PageJa() {
           .hero-title {
             font-size: clamp(24px, 7vw, 36px);
             margin-bottom: 24px;
-            letter-spacing: -1px;
           }
 
           .hero-subtitle {
@@ -1454,9 +1415,6 @@ export default function PageJa() {
           }
         }
 
-        /* ============================================
-           超小型デバイス対応（375px以下）
-           ============================================ */
         @media (max-width: 480px) {
           .container {
             padding: 0 16px;
@@ -1464,7 +1422,6 @@ export default function PageJa() {
 
           .nav-links {
             gap: 8px;
-            font-size: 12px;
           }
 
           .nav-links .pill {
