@@ -1,5 +1,10 @@
 // data/skills.ts - EY想定版（"Used for" 形式）
-import { SkillGroup } from '@/types';
+
+// ✅ 型定義をファイル内に追加
+export interface SkillGroup {
+  category: string;
+  items: string[];
+}
 
 export const skills: SkillGroup[] = [
   {
