@@ -207,7 +207,7 @@ export default function Page() {
       {/* Projects - 代表3件のみ（Problem/Action/Result型） */}
       <section id="projects" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               Representative Projects
             </motion.h2>
@@ -376,7 +376,7 @@ export default function Page() {
       {/* Skills - 役割ベース */}
       <section id="skills" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               Skills
             </motion.h2>
@@ -452,7 +452,7 @@ export default function Page() {
       {/* Contact - EY向けCTA */}
       <section id="contact" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               If your project is technically complete but cannot move to production
             </motion.h2>
