@@ -152,7 +152,7 @@ export default function Page() {
       {/* Role Clarification - やらないこと明示 + PM誤解防止 */}
       <section id="role" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               What I intentionally do NOT optimize for
             </motion.h2>
