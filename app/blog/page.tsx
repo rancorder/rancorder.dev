@@ -87,7 +87,7 @@ export default async function BlogPage() {
               {externalArticles.map((article, idx) => (
                 <a
                   key={idx}
-                  href={article.url}
+                  href={article.link}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                   className={styles.externalCard}
