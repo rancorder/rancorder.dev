@@ -13,7 +13,7 @@ export const metadata = {
 
 export default async function BlogPage() {
   const internalPosts = getAllPosts();
-  const externalArticles = await fetchAllExternalArticles();
+  const externalArticles = fetchAllExternalArticles();
 
   return (
     <div className={styles.blogPage}>
