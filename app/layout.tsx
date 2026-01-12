@@ -1,10 +1,11 @@
-// app/layout.tsx - EY想定版（SEO最適化）
+// app/layout.tsx - モバイル完全対応版
 import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'H・M | Enterprise Technical Project Manager - PoC to Production Specialist',
   description:
-    'Enterprise Technical PM with 17 years manufacturing experience. Specializing in moving stagnant PoCs to stable production through decision design, automation, and operational resilience. Proven track record: 99.8% uptime, 54-site automation platform, 11+ months continuous operation.',
+    'Enterprise Technical PM with 17 years manufacturing experience. Specializing in moving stagnant PoCs to stable production through decision design, automation, and operational resilience.',
   keywords: [
     'Technical Project Manager',
     'Enterprise PM',
@@ -46,7 +47,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="canonical" href="https://your-domain.com" />
+        {/* モバイル完全対応のビューポート設定 */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover"
+        />
+        <link rel="canonical" href="https://portfolio-react-enterprise.vercel.app" />
       </head>
       <body>{children}</body>
     </html>

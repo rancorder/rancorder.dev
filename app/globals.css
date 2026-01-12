@@ -1,0 +1,137 @@
+/* app/globals.css - モバイル完全対応版 */
+
+/* リセット */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px; /* ベースフォントサイズ - iOS自動ズーム防止 */
+  -webkit-text-size-adjust: 100%; /* iOSでのテキストサイズ自動調整を防止 */
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: #e2e8f0;
+  background: #0f172a;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+}
+
+/* 横スクロール完全防止 */
+#__next {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+main {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+/* 画像・メディア */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* リンク・ボタンのタッチターゲット */
+a,
+button {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: rgba(96, 165, 250, 0.2);
+}
+
+/* フォームのズーム防止 */
+input,
+textarea,
+select {
+  font-size: 16px; /* 16px未満だとiOSが自動ズーム */
+}
+
+/* テーブルの横スクロール */
+table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+/* コードブロックの横スクロール */
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+code {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 長いURL・テキストの折り返し */
+p,
+li,
+div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* スムーススクロール */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* モバイル専用 */
+@media (max-width: 640px) {
+  /* タッチデバイスのホバー効果を無効化 */
+  @media (hover: none) {
+    a:hover,
+    button:hover {
+      /* ホバー効果をactiveに置き換え */
+    }
+  }
+}
+
+/* 200%ズーム対応 */
+@media (min-resolution: 2dppx) {
+  body {
+    font-size: 16px; /* 高解像度でも16pxを維持 */
+  }
+}

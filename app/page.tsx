@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import BlogSection from './components/BlogSection';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -70,6 +71,7 @@ export default function Page() {
             <a href="#role">Role Definition</a>
             <a href="#projects">Projects</a>
             <a href="#skills">Skills</a>
+            <a href="/blog">Blog</a>
             <a href="#contact" className="pill">
               Contact
             </a>
@@ -443,6 +445,9 @@ export default function Page() {
           </motion.div>
         </div>
       </section>
+
+      {/* Blog Section - Latest Technical Insights */}
+      <BlogSection />
 
       {/* Contact - EY向けCTA */}
       <section id="contact" className="section">
