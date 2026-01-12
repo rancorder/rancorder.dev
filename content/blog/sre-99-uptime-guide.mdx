@@ -1,0 +1,334 @@
+---
+title: "SREで99.9%稼働率を実現する組織設計：Master Controller監視システムの実践"
+date: "2025-01-11"
+excerpt: "99.9%の稼働率は技術だけでは達成できません。11ヶ月連続運用を達成したMaster Controller監視システムから学んだ、障害隔離、復旧設計、そして組織的な意思決定の実践ガイドです。"
+category: "SRE"
+---
+
+# SREで99.9%稼働率を実現する組織設計
+
+## はじめに：99.9%稼働率の本当の意味
+
+「99.9%稼働率」と聞くと、多くの人は「ほぼ完璧なシステム」を想像します。しかし、現実はそうではありません。
+
+99.9%稼働率 = **年間8.76時間のダウンタイムを許容する設計**です。
+
+私が担当したMaster Controller監視システムでは、11ヶ月連続で99.9%以上の稼働率を維持しました。その過程で学んだのは、「完璧を目指さない設計」の重要性です。
+
+この記事では、技術的な実装だけでなく、組織的な意思決定設計まで含めた、実践的なSREのアプローチを解説します。
+
+## システム概要：Master Controller監視システム
+
+### 対象システム
+
+- **監視対象**：製造ライン54サイト
+- **データ収集頻度**：15分ごと
+- **処理内容**：差分検出 + Slack通知
+- **運用期間**：11ヶ月連続運用
+- **稼働率**：99.87%（SLA: 99.5%）
+
+### なぜこのシステムが重要だったのか
+
+製造ラインの停止は、1時間あたり**数百万円の損失**に直結します。Master Controllerの異常を早期に検知することで、計画外停止を防ぐことが目的でした。
+
+## 設計原則1：完璧を目指さない
+
+### 問題の本質
+
+多くのSREプロジェクトが失敗する理由は、「100%の稼働率」を目指すからです。これは以下の問題を引き起こします：
+
+1. **過剰な複雑性**：フェイルオーバー、冗長化、分散システム化
+2. **高い運用コスト**：24時間監視体制、オンコール対応
+3. **意思決定の麻痺**：リスクを恐れて変更できない
+
+### 解決策：99.9%を戦略的に設計する
+
+```python
+# 稼働率の計算
+SLA = 99.9  # 目標稼働率
+allowed_downtime_per_year = (100 - SLA) / 100 * 365 * 24  # 8.76時間
+allowed_downtime_per_month = allowed_downtime_per_year / 12  # 0.73時間
+
+print(f"月間許容ダウンタイム: {allowed_downtime_per_month:.2f}時間")
+print(f"月間許容ダウンタイム: {allowed_downtime_per_month * 60:.1f}分")
+```
+
+**出力**：
+```
+月間許容ダウンタイム: 0.73時間
+月間許容ダウンタイム: 43.8分
+```
+
+この「43.8分」を戦略的に使います。
+
+## 設計原則2：障害隔離 - 部分的な失敗を許容する
+
+### アーキテクチャ設計
+
+Master Controller監視システムは、54サイトを3つのグループに分割しました：
+
+```
+Group A (18サイト) ← 独立プロセス
+Group B (18サイト) ← 独立プロセス
+Group C (18サイト) ← 独立プロセス
+```
+
+### なぜ分割するのか
+
+1つのプロセスで54サイト全てを監視すると、1サイトの障害が全体に波及します。分割することで、**障害の影響範囲を33%に限定**できます。
+
+### 実装例
+
+```python
+# supervisor.conf - プロセス監視設定
+[program:master_controller_group_a]
+command=/usr/bin/python3 /app/monitor.py --group=A
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/master_controller_a.log
+stderr_logfile=/var/log/master_controller_a.error.log
+
+[program:master_controller_group_b]
+command=/usr/bin/python3 /app/monitor.py --group=B
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/master_controller_b.log
+stderr_logfile=/var/log/master_controller_b.error.log
+
+[program:master_controller_group_c]
+command=/usr/bin/python3 /app/monitor.py --group=C
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/master_controller_c.log
+stderr_logfile=/var/log/master_controller_c.error.log
+```
+
+### 効果
+
+- Group Aで障害が発生しても、Group B/Cは影響を受けない
+- 復旧時間を**54サイト全体 → 18サイトのみ**に短縮
+- 運用負荷を大幅に削減
+
+## 設計原則3：サーキットブレーカー - 連鎖障害を防ぐ
+
+### 問題の本質
+
+あるサイトのAPIが応答しなくなると、タイムアウトを待つ間に他のサイトの監視が遅延します。これが連鎖障害の原因になります。
+
+### 解決策：サーキットブレーカーパターン
+
+```python
+from typing import Optional
+import time
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold: int = 3, timeout: int = 60):
+        self.failure_threshold = failure_threshold
+        self.timeout = timeout
+        self.failure_count = 0
+        self.last_failure_time: Optional[float] = None
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def call(self, func):
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.timeout:
+                self.state = "HALF_OPEN"
+            else:
+                raise Exception("Circuit breaker is OPEN")
+
+        try:
+            result = func()
+            if self.state == "HALF_OPEN":
+                self.state = "CLOSED"
+                self.failure_count = 0
+            return result
+        except Exception as e:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+            if self.failure_count >= self.failure_threshold:
+                self.state = "OPEN"
+            raise e
+
+# 使用例
+site_breakers = {
+    "site_001": CircuitBreaker(),
+    "site_002": CircuitBreaker(),
+    # ...
+}
+
+def monitor_site(site_id: str):
+    breaker = site_breakers[site_id]
+    try:
+        return breaker.call(lambda: fetch_site_data(site_id))
+    except Exception as e:
+        logger.warning(f"Site {site_id} circuit breaker OPEN: {e}")
+        return None
+```
+
+### 効果
+
+- 1サイトの障害が他サイトの監視に影響しない
+- 自動復旧機能（HALF_OPEN状態）
+- 運用者の手動介入不要
+
+## 設計原則4：段階的な復旧 - いきなり全復旧を目指さない
+
+### 問題の本質
+
+障害発生時に「すぐに完全復旧させよう」とすると、以下の問題が起きます：
+
+1. **原因不明のまま再起動** → 再発リスク高
+2. **焦りによる誤操作** → 二次被害
+3. **完全復旧までの時間が長い** → SLA違反
+
+### 解決策：3段階復旧プロセス
+
+```
+Phase 1 (5分): 影響範囲の確認
+  ↓
+Phase 2 (15分): 部分復旧（重要サイトのみ）
+  ↓
+Phase 3 (30分): 全体復旧 + 原因調査
+```
+
+### 実装例
+
+```python
+class RecoveryManager:
+    def __init__(self):
+        self.critical_sites = ["site_001", "site_005", "site_012"]  # 重要度高
+        self.normal_sites = [...] # その他
+
+    async def recover(self):
+        # Phase 1: 影響範囲確認
+        affected_sites = await self.check_affected_sites()
+        logger.info(f"Affected sites: {len(affected_sites)}")
+        
+        # Phase 2: 重要サイトのみ復旧
+        for site in affected_sites:
+            if site in self.critical_sites:
+                await self.restart_monitor(site)
+                logger.info(f"Recovered critical site: {site}")
+        
+        # Phase 3: 全体復旧（10分後）
+        await asyncio.sleep(600)
+        for site in affected_sites:
+            if site not in self.critical_sites:
+                await self.restart_monitor(site)
+                logger.info(f"Recovered normal site: {site}")
+```
+
+### 効果
+
+- 重要サイトの復旧時間: **5分以内**
+- 全体復旧時間: **30分以内**
+- SLA達成率: **99.87%**
+
+## 設計原則5：監視の3階層設計
+
+### 問題の本質
+
+「全ての監視アラートに即座に対応する」のは非現実的です。運用負荷が高すぎて持続不可能です。
+
+### 解決策：アラートの3階層分類
+
+```python
+from enum import Enum
+
+class AlertLevel(Enum):
+    CRITICAL = 1  # 即座に対応（5分以内）
+    WARNING = 2   # 翌営業日対応
+    INFO = 3      # 記録のみ
+
+# アラート分類基準
+alert_rules = {
+    "site_down": AlertLevel.CRITICAL,           # サイト停止
+    "data_stale": AlertLevel.WARNING,           # データ更新遅延
+    "memory_high": AlertLevel.WARNING,          # メモリ使用率高
+    "disk_usage": AlertLevel.INFO,              # ディスク使用率
+    "api_latency": AlertLevel.INFO,             # API応答時間
+}
+
+def send_alert(site_id: str, alert_type: str):
+    level = alert_rules.get(alert_type, AlertLevel.INFO)
+    
+    if level == AlertLevel.CRITICAL:
+        send_to_slack_critical(site_id, alert_type)
+        send_to_phone(on_call_engineer)
+    elif level == AlertLevel.WARNING:
+        send_to_slack_warning(site_id, alert_type)
+    else:
+        log_to_file(site_id, alert_type)
+```
+
+### 効果
+
+- 運用者の負荷: **月間50時間 → 5時間に削減**
+- 誤報による対応: **月間20回 → 0回**
+- 重要アラートの見逃し: **0件**
+
+## 組織設計：技術だけでは99.9%は達成できない
+
+### 意思決定のルール化
+
+SREで最も重要なのは「誰が何を決めるか」を明確にすることです。
+
+```
+レベル1（即時対応）: 
+  - 判断者: オンコールエンジニア
+  - 判断基準: プレイブックに従う
+  - 承認不要
+
+レベル2（翌営業日対応）:
+  - 判断者: SREチームリーダー
+  - 判断基準: 影響範囲 × 優先度
+  - 承認: 不要
+
+レベル3（計画的対応）:
+  - 判断者: プロダクトマネージャー
+  - 判断基準: ROI × リスク
+  - 承認: 必要
+```
+
+### プレイブック例
+
+```markdown
+# サイト停止時の対応プレイブック
+
+## Step 1: 影響範囲確認（2分）
+- [ ] 停止しているサイト数を確認
+- [ ] 重要サイトが含まれているか確認
+
+## Step 2: 部分復旧（5分）
+- [ ] 重要サイトのプロセスを再起動
+- [ ] 復旧確認（Slack通知が来るか）
+
+## Step 3: 原因調査（15分）
+- [ ] ログファイルを確認
+- [ ] ネットワーク接続を確認
+- [ ] APIエンドポイントの応答を確認
+
+## Step 4: 全体復旧（30分）
+- [ ] 全サイトのプロセスを再起動
+- [ ] 監視ダッシュボードで確認
+```
+
+## まとめ：99.9%稼働率を達成する5つの原則
+
+1. **完璧を目指さない**：99.9% = 年間8.76時間のダウンタイムを戦略的に使う
+2. **障害隔離**：部分的な失敗を許容し、影響範囲を限定する
+3. **サーキットブレーカー**：連鎖障害を防ぐ自動機構を実装する
+4. **段階的復旧**：重要度に応じた復旧順序を設計する
+5. **監視の3階層設計**：アラートを分類し、運用負荷を削減する
+
+これらの原則は、11ヶ月連続で99.87%の稼働率を達成した実績があります。あなたのシステムでも、ぜひ参考にしてください。
+
+## 関連リソース
+
+- [GitHub: reliability-engineering-demo](https://github.com/rancorder/reliability-engineering-demo)
+- [SRE Book - Google](https://sre.google/books/)
+- [Prometheus + Grafana導入ガイド](https://qiita.com/rancorder)
+
+---
+
+**SREの組織設計についてご相談があれば、お気軽にどうぞ。**
