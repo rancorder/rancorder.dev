@@ -445,12 +445,12 @@
 }
 
 /* Smooth scroll behavior */
-html {
+:global(html) {
   scroll-behavior: smooth;
 }
 
 /* Improve text selection */
-::selection {
+:global(::selection) {
   background: rgba(96, 165, 250, 0.3);
   color: #f1f5f9;
 }
@@ -490,7 +490,7 @@ html {
     transition: none;
   }
   
-  html {
+  :global(html) {
     scroll-behavior: auto;
   }
 }
