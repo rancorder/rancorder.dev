@@ -78,15 +78,46 @@
 .grid {
   display: flex !important;
   flex-direction: column !important;
-  gap: 2rem;
+  gap: 3rem;
   width: 100%;
+  position: relative;
 }
 
 .externalGrid {
   display: flex !important;
   flex-direction: column !important;
-  gap: 2rem;
+  gap: 3rem;
   width: 100%;
+  position: relative;
+}
+
+/* Card separator line effect */
+.grid > * + *::before,
+.externalGrid > * + *::before {
+  content: '';
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(96, 165, 250, 0.3) 50%,
+    transparent 100%
+  );
+}
+
+/* Alternating card backgrounds for better separation */
+.grid > *:nth-child(even),
+.externalGrid > *:nth-child(even) {
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.grid > *:nth-child(odd),
+.externalGrid > *:nth-child(odd) {
+  background: rgba(30, 41, 59, 0.4);
 }
 
 /* Featured Cards */
@@ -284,7 +315,26 @@
 /* Divider */
 .section + .section {
   padding-top: 3rem;
-  border-top: 2px solid rgba(148, 163, 184, 0.1);
+  border-top: 2px solid rgba(148, 163, 184, 0.2);
+  position: relative;
+}
+
+/* Section divider decoration */
+.section + .section::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(96, 165, 250, 0.6) 50%,
+    transparent 100%
+  );
+  border-radius: 2px;
 }
 
 /* Focus styles for accessibility */
