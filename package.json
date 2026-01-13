@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "fetch-articles": "node scripts/fetch-external-articles.js",
+    "prebuild": "npm run fetch-articles",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
