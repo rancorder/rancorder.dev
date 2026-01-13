@@ -1,8 +1,5 @@
-/* app/blog/blog.module.css - Single Column Layout (Medium Style) */
+/* app/blog/blog.module.css - Single Column Layout (Simplified) */
 
-/* ========================================
-   Base Styles
-   ======================================== */
 .blogPage {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -11,13 +8,11 @@
 }
 
 .container {
-  max-width: 800px; /* Narrower for better readability */
+  max-width: 800px;
   margin: 0 auto;
 }
 
-/* ========================================
-   Header
-   ======================================== */
+/* Header */
 .header {
   margin-bottom: 4rem;
   text-align: center;
@@ -56,9 +51,7 @@
   line-height: 1.6;
 }
 
-/* ========================================
-   Section
-   ======================================== */
+/* Section */
 .section {
   margin-bottom: 5rem;
 }
@@ -81,26 +74,22 @@
   line-height: 1.5;
 }
 
-/* ========================================
-   Single Column Layout
-   ======================================== */
-.grid,
-.externalGrid {
-  display: flex;
-  flex-direction: column;
+/* CRITICAL: Single Column Layout - Force 1 column */
+.grid {
+  display: flex !important;
+  flex-direction: column !important;
   gap: 2rem;
+  width: 100%;
 }
 
-@media (min-width: 768px) {
-  .grid,
-  .externalGrid {
-    gap: 3rem;
-  }
+.externalGrid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2rem;
+  width: 100%;
 }
 
-/* ========================================
-   Featured Cards - List Style
-   ======================================== */
+/* Featured Cards */
 .featuredCard {
   background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(148, 163, 184, 0.1);
@@ -112,26 +101,7 @@
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Hover gradient effect */
-.featuredCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(96, 165, 250, 0.05) 0%,
-    rgba(167, 139, 250, 0.05) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
+  width: 100%;
 }
 
 .featuredCard:hover {
@@ -141,18 +111,12 @@
   background: rgba(30, 41, 59, 0.7);
 }
 
-.featuredCard:hover::before {
-  opacity: 1;
-}
-
 .cardMeta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
-  position: relative;
-  z-index: 1;
 }
 
 .category {
@@ -177,8 +141,6 @@
   color: #f1f5f9;
   margin-bottom: 1.25rem;
   line-height: 1.3;
-  position: relative;
-  z-index: 1;
 }
 
 .cardExcerpt {
@@ -186,8 +148,6 @@
   line-height: 1.7;
   font-size: 1.0625rem;
   margin-bottom: 2rem;
-  position: relative;
-  z-index: 1;
 }
 
 .cardFooter {
@@ -196,22 +156,12 @@
   align-items: center;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(148, 163, 184, 0.1);
-  position: relative;
-  z-index: 1;
 }
 
 .readTime {
   color: #94a3b8;
   font-size: 0.875rem;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.readTime::before {
-  content: '📖';
-  font-size: 1rem;
 }
 
 .arrow {
@@ -225,9 +175,7 @@
   transform: translateX(6px);
 }
 
-/* ========================================
-   External Cards - List Style
-   ======================================== */
+/* External Cards */
 .externalCard {
   background: rgba(30, 41, 59, 0.4);
   border: 1px solid rgba(148, 163, 184, 0.1);
@@ -239,25 +187,7 @@
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-}
-
-.externalCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(167, 139, 250, 0.05) 0%,
-    rgba(96, 165, 250, 0.05) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
+  width: 100%;
 }
 
 .externalCard:hover {
@@ -267,18 +197,12 @@
   background: rgba(30, 41, 59, 0.6);
 }
 
-.externalCard:hover::before {
-  opacity: 1;
-}
-
 .externalCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
   font-size: 0.875rem;
-  position: relative;
-  z-index: 1;
 }
 
 .platformBadge {
@@ -288,9 +212,6 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .platformQiita {
@@ -299,20 +220,10 @@
   border: 1px solid rgba(85, 187, 87, 0.2);
 }
 
-.platformQiita::before {
-  content: '🟢';
-  font-size: 0.875rem;
-}
-
 .platformZenn {
   background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.platformZenn::before {
-  content: '⚡';
-  font-size: 0.875rem;
 }
 
 .externalDate {
@@ -326,8 +237,6 @@
   color: #f1f5f9;
   margin-bottom: 1rem;
   line-height: 1.4;
-  position: relative;
-  z-index: 1;
 }
 
 .externalExcerpt {
@@ -335,15 +244,11 @@
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 1.5rem;
-  position: relative;
-  z-index: 1;
 }
 
 .externalFooter {
   padding-top: 1.25rem;
   border-top: 1px solid rgba(148, 163, 184, 0.1);
-  position: relative;
-  z-index: 1;
 }
 
 .externalLink {
@@ -351,36 +256,13 @@
   font-size: 0.875rem;
   font-weight: 600;
   transition: color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.externalLink::after {
-  content: '↗';
-  font-size: 1.125rem;
-  transition: transform 0.2s;
 }
 
 .externalCard:hover .externalLink {
   color: #c4b5fd;
 }
 
-.externalCard:hover .externalLink::after {
-  transform: translate(3px, -3px);
-}
-
-/* ========================================
-   Divider Between Sections
-   ======================================== */
-.section + .section {
-  padding-top: 3rem;
-  border-top: 2px solid rgba(148, 163, 184, 0.1);
-}
-
-/* ========================================
-   Enhanced First Article
-   ======================================== */
+/* Enhanced First Article */
 .grid > .featuredCard:first-child {
   background: rgba(30, 41, 59, 0.6);
   border: 2px solid rgba(96, 165, 250, 0.2);
@@ -399,9 +281,20 @@
   font-size: 1.125rem;
 }
 
-/* ========================================
-   Responsive Typography
-   ======================================== */
+/* Divider */
+.section + .section {
+  padding-top: 3rem;
+  border-top: 2px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Focus styles for accessibility */
+.featuredCard:focus,
+.externalCard:focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 4px;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .title {
     font-size: 2.25rem;
@@ -430,95 +323,5 @@
 
   .externalCard {
     padding: 1.5rem;
-  }
-}
-
-/* ========================================
-   Reading Experience Enhancements
-   ======================================== */
-
-/* Add subtle reading guide on focus */
-.featuredCard:focus,
-.externalCard:focus {
-  outline: 2px solid #60a5fa;
-  outline-offset: 4px;
-}
-
-/* Smooth scroll behavior */
-:global(html) {
-  scroll-behavior: smooth;
-}
-
-/* Improve text selection */
-:global(::selection) {
-  background: rgba(96, 165, 250, 0.3);
-  color: #f1f5f9;
-}
-
-/* ========================================
-   Loading State
-   ======================================== */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(30, 41, 59, 0.5) 0%,
-    rgba(51, 65, 85, 0.5) 50%,
-    rgba(30, 41, 59, 0.5) 100%
-  );
-  background-size: 2000px 100%;
-  animation: shimmer 2s infinite;
-  border-radius: 0.5rem;
-}
-
-/* ========================================
-   Accessibility
-   ======================================== */
-@media (prefers-reduced-motion: reduce) {
-  .featuredCard,
-  .externalCard,
-  .arrow,
-  .externalLink::after {
-    transition: none;
-  }
-  
-  :global(html) {
-    scroll-behavior: auto;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .featuredCard,
-  .externalCard {
-    border-width: 2px;
-  }
-}
-
-/* ========================================
-   Print Styles
-   ======================================== */
-@media print {
-  .blogPage {
-    background: white;
-    color: black;
-  }
-  
-  .featuredCard,
-  .externalCard {
-    border: 1px solid #000;
-    page-break-inside: avoid;
-  }
-  
-  .backLink {
-    display: none;
   }
 }
