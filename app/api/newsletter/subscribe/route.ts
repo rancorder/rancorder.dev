@@ -165,3 +165,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     service: 'Supabase',
   });
 }
+
+/**
+ * GET /api/newsletter/subscribe
+ * ヘルスチェック
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'Newsletter subscription API is running',
+    service: 'Supabase',
+  });
+}
+
+// Trigger rebuild
+```
+
+4. Commit message: `fix: trigger clean rebuild`
+5. **Commit changes**
