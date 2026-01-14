@@ -179,7 +179,3 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 // Trigger rebuild
-```
-
-4. Commit message: `fix: trigger clean rebuild`
-5. **Commit changes**
