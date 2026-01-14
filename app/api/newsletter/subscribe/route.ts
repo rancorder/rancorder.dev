@@ -5,11 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 interface SubscribeRequest {
   email: string;
@@ -19,6 +17,18 @@ interface SubscribeResponse {
   success: boolean;
   message: string;
   error?: string;
+}
+
+/**
+ * GET /api/newsletter/subscribe
+ * ヘルスチェック
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'Newsletter subscription API is running',
+    service: 'Supabase',
+  });
 }
 
 /**
@@ -39,6 +49,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<Subscribe
         { status: 500 }
       );
     }
+
+    // Supabase client (関数内で初期化)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
 
     // リクエストボディ取得
     const body: SubscribeRequest = await request.json();
@@ -152,16 +168,4 @@ export async function POST(request: NextRequest): Promise<NextResponse<Subscribe
       { status: 500 }
     );
   }
-}
-
-/**
- * GET /api/newsletter/subscribe
- * ヘルスチェック
- */
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  return NextResponse.json({
-    status: 'ok',
-    message: 'Newsletter subscription API is running',
-    service: 'Supabase',
-  });
 }
