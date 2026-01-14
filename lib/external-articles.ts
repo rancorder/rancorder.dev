@@ -2,51 +2,64 @@
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * 外部記事の型定義
+ */
 export interface ExternalArticle {
   title: string;
   link: string;
-  date: string;
   source: 'Qiita' | 'Zenn';
+  date: string;
   excerpt: string;
 }
 
 /**
- * キャッシュされた外部記事を取得
- * ビルド時に scripts/fetch-external-articles.js で生成されたJSONを読み込む
+ * キャッシュされた外部記事を全件取得
+ * 
+ * @returns 外部記事の配列（エラー時は空配列）
  */
 export function fetchAllExternalArticles(): ExternalArticle[] {
   try {
     const filePath = path.join(process.cwd(), 'public', 'external-articles.json');
     
-    // ファイルが存在しない場合は空配列
+    // ファイル存在チェック
     if (!fs.existsSync(filePath)) {
-      console.warn('External articles cache not found. Run: node scripts/fetch-external-articles.js');
+      console.warn('⚠️ external-articles.json not found. Run prebuild script first.');
       return [];
     }
     
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const articles = JSON.parse(fileContent);
     
+    // データ検証
+    if (!Array.isArray(articles)) {
+      console.error('❌ Invalid external-articles.json format (not an array)');
+      return [];
+    }
+    
+    console.log(`✅ Loaded ${articles.length} external articles`);
     return articles;
+    
   } catch (error) {
-    console.error('Failed to read external articles cache:', error);
+    if (error instanceof Error) {
+      console.error('❌ Failed to load external articles:', error.message);
+    }
     return [];
   }
 }
 
 /**
- * クライアントサイドで外部記事を取得
- * public/external-articles.json をフェッチ
+ * 最新のN件を取得
  */
-export async function fetchExternalArticlesClient(): Promise<ExternalArticle[]> {
-  try {
-    const response = await fetch('/external-articles.json');
-    if (!response.ok) return [];
-    
-    const articles = await response.json();
-    return articles;
-  } catch (error) {
-    console.error('Failed to fetch external articles:', error);
-    return [];
-  }
+export function getLatestExternalArticles(count: number = 6): ExternalArticle[] {
+  const allArticles = fetchAllExternalArticles();
+  return allArticles.slice(0, count);
+}
+
+/**
+ * プラットフォーム別にフィルタ
+ */
+export function filterBySource(source: 'Qiita' | 'Zenn'): ExternalArticle[] {
+  const allArticles = fetchAllExternalArticles();
+  return allArticles.filter(article => article.source === source);
 }
