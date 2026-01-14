@@ -1,7 +1,55 @@
 // app/sitemap.ts
 import { MetadataRoute } from 'next';
 import { getAllPosts } from '@/lib/mdx';
-import { fetchAllExternalArticles } from '@/lib/external-articles';
+import fs from 'fs';
+import path from 'path';
+
+interface ExternalArticle {
+  title: string;
+  link: string;
+  source: 'Qiita' | 'Zenn';
+  date: string;
+  excerpt: string;
+}
+
+/**
+ * 外部記事をJSONファイルから直接読み込み
+ * sitemap生成時に確実に読み込むため、lib/external-articlesに依存しない
+ */
+function loadExternalArticles(): ExternalArticle[] {
+  try {
+    // 複数のパスを試行
+    const possiblePaths = [
+      path.join(process.cwd(), 'public', 'external-articles.json'),
+      path.join(process.cwd(), '..', 'public', 'external-articles.json'),
+      './public/external-articles.json',
+    ];
+
+    for (const filePath of possiblePaths) {
+      try {
+        if (fs.existsSync(filePath)) {
+          console.log(`[Sitemap] Found external-articles.json at: ${filePath}`);
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          const articles = JSON.parse(fileContent);
+          
+          if (Array.isArray(articles)) {
+            console.log(`[Sitemap] Loaded ${articles.length} external articles`);
+            return articles;
+          }
+        }
+      } catch (err) {
+        // 次のパスを試行
+        continue;
+      }
+    }
+
+    console.warn('[Sitemap] external-articles.json not found in any location');
+    return [];
+  } catch (error) {
+    console.error('[Sitemap] Failed to load external articles:', error);
+    return [];
+  }
+}
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://rancorder.vercel.app';
@@ -16,15 +64,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     posts = [];
   }
 
-  // 外部記事（キャッシュから）
-  let externalArticles: any[] = [];
-  try {
-    externalArticles = fetchAllExternalArticles();
-    console.log(`[Sitemap] Found ${externalArticles.length} external articles from cache`);
-  } catch (error) {
-    console.error('[Sitemap] Failed to get external articles:', error);
-    externalArticles = [];
-  }
+  // 外部記事（直接読み込み）
+  const externalArticles = loadExternalArticles();
 
   // 静的ページ
   const staticPages: MetadataRoute.Sitemap = [
@@ -67,6 +108,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const allPages = [...staticPages, ...postPages, ...externalPages];
   
   console.log(`[Sitemap] Generated sitemap with ${allPages.length} total pages`);
+  console.log(`[Sitemap] Breakdown: ${staticPages.length} static + ${postPages.length} posts + ${externalPages.length} external`);
   
   return allPages;
 }
