@@ -3,21 +3,10 @@ import path from 'path';
 
 const BLOG_DIR = path.join(process.cwd(), 'content/blog');
 
-// HTMLファイルの先頭に埋め込むメタデータ形式
-// 例：
-// <!--
-// title: 〇〇
-// excerpt: 〇〇
-// date: 2026-01-20
-// category: 技術
-// readingTime: 8 min read
-// -->
-
+// HTMLコメントの Frontmatter を解析
 function parseFrontMatter(html: string) {
   const match = html.match(/<!--([\s\S]*?)-->/);
-  if (!match) {
-    return {};
-  }
+  if (!match) return {};
 
   const lines = match[1].trim().split('\n');
   const meta: Record<string, string> = {};
@@ -30,29 +19,35 @@ function parseFrontMatter(html: string) {
   return meta;
 }
 
+// 全記事取得（ビルド時に実行される）
 export function getAllPosts() {
-  const files = fs.readdirSync(BLOG_DIR);
+  try {
+    const files = fs.readdirSync(BLOG_DIR);
 
-  return files
-    .filter(f => f.endsWith('.html'))
-    .map(file => {
-      const slug = file.replace('.html', '');
-      const html = fs.readFileSync(path.join(BLOG_DIR, file), 'utf8');
+    return files
+      .filter(f => f.toLowerCase().endsWith('.html'))
+      .map(file => {
+        const slug = file.replace(/\.html$/i, '');
+        const html = fs.readFileSync(path.join(BLOG_DIR, file), 'utf8');
+        const meta = parseFrontMatter(html);
 
-      const meta = parseFrontMatter(html);
-
-      return {
-        slug,
-        html,
-        title: meta.title || 'Untitled',
-        excerpt: meta.excerpt || '',
-        date: meta.date || '',
-        category: meta.category || '',
-        readingTime: meta.readingTime || '',
-      };
-    });
+        return {
+          slug,
+          html,
+          title: meta.title || 'Untitled',
+          excerpt: meta.excerpt || '',
+          date: meta.date || '',
+          category: meta.category || '',
+          readingTime: meta.readingTime || '',
+        };
+      });
+  } catch (err) {
+    console.error('getAllPosts failed:', err);
+    return [];
+  }
 }
 
+// 個別記事取得
 export function getPost(slug: string) {
   try {
     const filePath = path.join(BLOG_DIR, `${slug}.html`);
