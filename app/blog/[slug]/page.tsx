@@ -1,17 +1,7 @@
-import { getAllPosts, getPostBySlug } from '@/lib/mdx';
 import { notFound } from 'next/navigation';
-import { MDXRemote } from 'next-mdx-remote/rsc';
-import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import styles from './article.module.css';
-
-// 全てのカスタムコンポーネントをインポート
-import FadeIn from '@/app/components/blog/FadeIn';
-import CalloutBox from '@/app/components/blog/CalloutBox';
-import PoCTimeline from '@/app/components/blog/PoCTimeline';
-import DecisionFlow from '@/app/components/blog/DecisionFlow';
-import ComparisonCard from '@/app/components/blog/ComparisonCard';
-import InteractiveChecklist from '@/app/components/blog/InteractiveChecklist';
+import { getAllPosts, getPost } from '@/lib/posts';
 
 // 静的パス生成
 export async function generateStaticParams() {
@@ -23,8 +13,8 @@ export async function generateStaticParams() {
 
 // メタデータ生成
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = getPostBySlug(params.slug);
-  
+  const post = getPost(params.slug);
+
   if (!post) {
     return {
       title: 'Article Not Found',
@@ -43,22 +33,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-// 全てのMDXコンポーネント
-const components = {
-  FadeIn,
-  CalloutBox,
-  PoCTimeline,
-  DecisionFlow,
-  ComparisonCard,
-  InteractiveChecklist,
-};
-
-export default async function BlogPostPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const post = getPostBySlug(params.slug);
+export default function BlogPostPage({ params }: { params: { slug: string } }) {
+  const post = getPost(params.slug);
 
   if (!post) {
     notFound();
@@ -78,32 +54,25 @@ export default async function BlogPostPage({
             <span className={styles.articleCategory}>{post.category}</span>
             <span className={styles.metaDivider}>•</span>
             <time className={styles.articleDate}>
-              {new Date(post.date).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {new Date(post.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
               })}
             </time>
             <span className={styles.metaDivider}>•</span>
             <span className={styles.articleReadingTime}>{post.readingTime}</span>
           </div>
-          
+
           <h1 className={styles.articleTitle}>{post.title}</h1>
           <p className={styles.articleExcerpt}>{post.excerpt}</p>
         </header>
 
         {/* Article Content */}
-        <div className={styles.articleContent}>
-          <MDXRemote 
-            source={post.content}
-            components={components}
-            options={{
-              mdxOptions: {
-                remarkPlugins: [remarkGfm],
-              },
-            }}
-          />
-        </div>
+        <div
+          className={styles.articleContent}
+          dangerouslySetInnerHTML={{ __html: post.html }}
+        />
 
         {/* Footer CTA */}
         <footer className={styles.articleFooter}>
