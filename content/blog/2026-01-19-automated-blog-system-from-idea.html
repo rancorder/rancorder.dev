@@ -1,3 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GitHubにプッシュするだけのブログ量産システム</title>
+
+<style>
+/* ====== Fade-in base ====== */
+fade-in {
+  display: block;
+  opacity: 0;
+  transform: translateY(20px) scale(0.98) rotateX(4deg);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+fade-in.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateX(0);
+}
+
+/* Delay attribute support */
+fade-in[delay] {
+  transition-delay: calc(attr(delay number) * 1ms);
+}
+
+/* ====== Stagger children ====== */
+fade-in > * {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+fade-in.visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+fade-in.visible > *:nth-child(1) { transition-delay: 0.05s; }
+fade-in.visible > *:nth-child(2) { transition-delay: 0.10s; }
+fade-in.visible > *:nth-child(3) { transition-delay: 0.15s; }
+fade-in.visible > *:nth-child(4) { transition-delay: 0.20s; }
+
+/* ====== Heading underline animation ====== */
+h2, h3 {
+  position: relative;
+  display: inline-block;
+}
+
+h2::after, h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  transition: width 0.5s ease;
+}
+
+fade-in.visible h2::after,
+fade-in.visible h3::after {
+  width: 100%;
+}
+</style>
+
+</head>
+<body>
+
+<!-- ===================== -->
+<!--   ここから記事本体   -->
+<!-- ===================== -->
+
 <!--
 title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
 date: 2026-01-20
@@ -316,3 +392,23 @@ export default async function sitemap() {
   <strong>GitHub:</strong> <a href="https://github.com/rancorder/portfolio-react-enterprise">rancorder/portfolio-react-enterprise</a><br />
   <strong>Live:</strong> <a href="https://rancorder.vercel.app">https://rancorder.vercel.app</a>
 </p>
+
+<!-- ===================== -->
+<!--   エフェクトJS       -->
+<!-- ===================== -->
+<script>
+const els = document.querySelectorAll("fade-in");
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add("visible");
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+els.forEach((el) => io.observe(el));
+</script>
+
+</body>
+</html>
