@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Components完全ガイド</title>
+  <link rel="stylesheet" href="/blog-base.css">
+  <script type="module" src="/blog-components.js"></script>
+</head>
+<body>
+  <!--
+  title: Web Components完全ガイド - 全機能デモ
+  date: 2026-01-20T00:00:00.000Z
+  excerpt: HTML + Web Componentsで作る次世代ブログシステム。MDX不要、依存関係ゼロで実現するインタラクティブコンテンツの全貌
+  category: Technical
+  readingTime: 8 min read
+  -->
+
+  <article>
+    <header>
+      <h1>Web Components完全ガイド</h1>
+      <p><strong>HTML + Web Componentsで作る次世代ブログシステム。MDX不要、依存関係ゼロで実現するインタラクティブコンテンツの全貌</strong></p>
+    </header>
+
+    <hr />
+
+    <section>
+      <h2>このシステムの特徴</h2>
+      
+      <callout-box type="info" title="なぜWeb Componentsなのか？">
+        MDXは依存関係が多く壊れやすい。Web Componentsはブラウザネイティブで、依存関係ゼロ、ビルドエラーなし。
+      </callout-box>
+
+      <fade-in delay="200">
+        <p>このページは、すべてのWeb Componentsを実際に使用したデモです。</p>
+      </fade-in>
+    </section>
+
+    <section>
+      <h2>1. Callout Box（情報ボックス）</h2>
+      <p>4種類のタイプがあります：</p>
+
+      <callout-box type="info" title="Information">
+        一般的な情報を表示します。
+      </callout-box>
+
+      <callout-box type="warning" title="Warning">
+        注意が必要な情報を表示します。
+      </callout-box>
+
+      <callout-box type="success" title="Success">
+        成功や重要なポイントを表示します。
+      </callout-box>
+
+      <callout-box type="critical" title="Critical">
+        非常に重要な警告を表示します。
+      </callout-box>
+    </section>
+
+    <section>
+      <h2>2. Code Block（コードブロック）</h2>
+      <p>コピーボタン付きのシンタックスハイライト対応コードブロック：</p>
+
+      <code-block language="javascript">
+// Web Components example
+class CalloutBox extends HTMLElement {
+  connectedCallback() {
+    const type = this.getAttribute('type') || 'info';
+    this.className = `callout callout--${type}`;
+  }
+}
+
+customElements.define('callout-box', CalloutBox);
+      </code-block>
+
+      <code-block language="python">
+# Python example
+def hello_world():
+    print("Hello, Web Components!")
+    return True
+
+if __name__ == "__main__":
+    hello_world()
+      </code-block>
+
+      <code-block language="bash">
+# Bash example
+npm install
+npm run build
+npm start
+      </code-block>
+    </section>
+
+    <section>
+      <h2>3. Interactive Checklist（チェックリスト）</h2>
+      <p>クリックして完了をマークできます：</p>
+
+      <interactive-checklist>
+        <ul>
+          <li>Web Componentsライブラリを作成</li>
+          <li>共通CSSを定義</li>
+          <li>記事テンプレートを準備</li>
+          <li>サンプル記事を作成</li>
+          <li>GitHubにプッシュ</li>
+          <li>Vercelで自動デプロイ</li>
+        </ul>
+      </interactive-checklist>
+    </section>
+
+    <section>
+      <h2>4. Tab Group（タブ切り替え）</h2>
+      <p>複数の情報を切り替えて表示：</p>
+
+      <tab-group>
+        <div class="tab-buttons">
+          <button data-tab-button>メリット</button>
+          <button data-tab-button>デメリット</button>
+          <button data-tab-button>使い方</button>
+        </div>
+        <div data-tab-panel>
+          <h3>Web Componentsのメリット</h3>
+          <ul>
+            <li>依存関係ゼロ</li>
+            <li>ブラウザネイティブ</li>
+            <li>ビルドエラーなし</li>
+            <li>爆速パフォーマンス</li>
+          </ul>
+        </div>
+        <div data-tab-panel>
+          <h3>Web Componentsのデメリット</h3>
+          <ul>
+            <li>TypeScript補完が効きにくい</li>
+            <li>SSRに制約がある</li>
+            <li>Reactエコシステムとの統合が限定的</li>
+          </ul>
+        </div>
+        <div data-tab-panel>
+          <h3>使い方</h3>
+          <code-block language="html">
+&lt;tab-group&gt;
+  &lt;div class="tab-buttons"&gt;
+    &lt;button data-tab-button&gt;Tab 1&lt;/button&gt;
+    &lt;button data-tab-button&gt;Tab 2&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div data-tab-panel&gt;Content 1&lt;/div&gt;
+  &lt;div data-tab-panel&gt;Content 2&lt;/div&gt;
+&lt;/tab-group&gt;
+          </code-block>
+        </div>
+      </tab-group>
+    </section>
+
+    <section>
+      <h2>5. Comparison Card（比較カード）</h2>
+      
+      <comparison-card 
+        title="MDX vs HTML + Web Components"
+        good="HTML + Web Components: 依存関係ゼロ、壊れない、爆速"
+        bad="MDX: 依存関係多数、ビルドエラー頻発、複雑な設定"
+      ></comparison-card>
+    </section>
+
+    <section>
+      <h2>6. Progress Bar（プログレスバー）</h2>
+      <p>進捗を視覚的に表示：</p>
+
+      <progress-bar value="25" max="100" label="初期セットアップ"></progress-bar>
+      <progress-bar value="60" max="100" label="コンポーネント開発"></progress-bar>
+      <progress-bar value="90" max="100" label="ドキュメント作成"></progress-bar>
+      <progress-bar value="100" max="100" label="デプロイ完了"></progress-bar>
+    </section>
+
+    <section>
+      <h2>7. Accordion（アコーディオン）</h2>
+      <p>詳細情報を折りたたんで表示：</p>
+
+      <accordion-item title="Web Componentsの詳細仕様">
+        <p>Web Componentsは以下の技術で構成されています：</p>
+        <ul>
+          <li><strong>Custom Elements</strong>: カスタムHTML要素の定義</li>
+          <li><strong>Shadow DOM</strong>: カプセル化されたDOM</li>
+          <li><strong>HTML Templates</strong>: 再利用可能なマークアップ</li>
+        </ul>
+      </accordion-item>
+
+      <accordion-item title="ブラウザ対応状況">
+        <p>主要ブラウザすべてでネイティブサポート：</p>
+        <ul>
+          <li>Chrome: ✅ 完全サポート</li>
+          <li>Firefox: ✅ 完全サポート</li>
+          <li>Safari: ✅ 完全サポート</li>
+          <li>Edge: ✅ 完全サポート</li>
+        </ul>
+      </accordion-item>
+
+      <accordion-item title="パフォーマンス比較">
+        <table>
+          <thead>
+            <tr>
+              <th>指標</th>
+              <th>Web Components</th>
+              <th>React</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>初期ロード</td>
+              <td>爆速</td>
+              <td>普通</td>
+            </tr>
+            <tr>
+              <td>バンドルサイズ</td>
+              <td>ゼロ</td>
+              <td>大きい</td>
+            </tr>
+            <tr>
+              <td>ビルド時間</td>
+              <td>不要</td>
+              <td>必要</td>
+            </tr>
+          </tbody>
+        </table>
+      </accordion-item>
+    </section>
+
+    <section>
+      <h2>8. Tables（テーブル）</h2>
+      <p>レスポンシブ対応の美しい表：</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>機能</th>
+            <th>MDX</th>
+            <th>HTML + Web Components</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>依存関係</td>
+            <td>多数（next-mdx-remote, remark, rehype...）</td>
+            <td>ゼロ</td>
+          </tr>
+          <tr>
+            <td>ビルドエラー</td>
+            <td>頻繁</td>
+            <td>なし</td>
+          </tr>
+          <tr>
+            <td>インタラクティブ性</td>
+            <td>React依存</td>
+            <td>ネイティブ</td>
+          </tr>
+          <tr>
+            <td>パフォーマンス</td>
+            <td>普通</td>
+            <td>爆速</td>
+          </tr>
+          <tr>
+            <td>学習コスト</td>
+            <td>高い</td>
+            <td>低い</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>9. Fade In Animation（フェードイン）</h2>
+      <p>要素を段階的に表示：</p>
+
+      <fade-in delay="0">
+        <p>すぐに表示される段落</p>
+      </fade-in>
+
+      <fade-in delay="300">
+        <p>300ms遅れて表示される段落</p>
+      </fade-in>
+
+      <fade-in delay="600">
+        <p>600ms遅れて表示される段落</p>
+      </fade-in>
+    </section>
+
+    <section>
+      <h2>10. Tooltip（ツールチップ）</h2>
+      <p>
+        <tool-tip text="これはツールチップです">
+          この文字列にマウスを乗せると
+        </tool-tip>
+        説明が表示されます。
+      </p>
+    </section>
+
+    <hr />
+
+    <section>
+      <h2>実装方法</h2>
+
+      <h3>ステップ1: ライブラリを読み込む</h3>
+      <code-block language="html">
+&lt;link rel="stylesheet" href="/blog-base.css"&gt;
+&lt;script type="module" src="/blog-components.js"&gt;&lt;/script&gt;
+      </code-block>
+
+      <h3>ステップ2: コンポーネントを使う</h3>
+      <code-block language="html">
+&lt;callout-box type="info" title="タイトル"&gt;
+  内容を書く
+&lt;/callout-box&gt;
+      </code-block>
+
+      <h3>ステップ3: 記事を作成</h3>
+      <code-block language="bash">
+node scripts/new-post.js "記事タイトル"
+# → content/blog/YYYY-MM-DD-slug.html が生成される
+      </code-block>
+
+      <h3>ステップ4: GitHubにプッシュ</h3>
+      <code-block language="bash">
+git add .
+git commit -m "Add new post"
+git push origin main
+# → Vercelで自動デプロイ（2-3分）
+      </code-block>
+    </section>
+
+    <section>
+      <h2>まとめ</h2>
+
+      <callout-box type="success" title="達成したこと">
+        <ul>
+          <li>✅ MDX不要の安定したブログシステム</li>
+          <li>✅ 依存関係ゼロのWeb Components</li>
+          <li>✅ 9種類のインタラクティブ要素</li>
+          <li>✅ レスポンシブ完全対応</li>
+          <li>✅ コピーボタン付きコードブロック</li>
+          <li>✅ 記事テンプレート自動生成</li>
+        </ul>
+      </callout-box>
+
+      <p>このシステムなら、<strong>書くことだけに集中できる</strong>。</p>
+    </section>
+
+    <hr />
+
+    <footer>
+      <h3>関連リンク</h3>
+      <ul>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components">MDN Web Components</a></li>
+        <li><a href="https://github.com/rancorder/portfolio-react-enterprise">GitHub Repository</a></li>
+        <li><a href="https://rancorder.vercel.app">Live Demo</a></li>
+      </ul>
+    </footer>
+  </article>
+
+</body>
+</html>
