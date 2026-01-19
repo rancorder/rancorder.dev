@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import styles from './FadeIn.module.css';
 
 interface FadeInProps {
   children: React.ReactNode;
@@ -26,11 +25,22 @@ export default function FadeIn({ children, delay = 0 }: FadeInProps) {
       observer.observe(ref.current);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
   }, [delay]);
 
   return (
-    <div ref={ref} className={`${styles.fadeIn} ${isVisible ? styles.visible : ''}`}>
+    <div
+      ref={ref}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'opacity 0.6s ease, transform 0.6s ease',
+      }}
+    >
       {children}
     </div>
   );

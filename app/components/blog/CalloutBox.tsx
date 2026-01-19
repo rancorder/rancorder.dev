@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import styles from './CalloutBox.module.css';
 
 interface CalloutBoxProps {
