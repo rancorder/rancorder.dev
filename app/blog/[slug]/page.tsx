@@ -4,6 +4,24 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import Link from 'next/link';
 import styles from './article.module.css';
 
+// ブログ用カスタムコンポーネントをインポート
+import FadeIn from '@/components/blog/FadeIn';
+import CalloutBox from '@/components/blog/CalloutBox';
+import PoCTimeline from '@/components/blog/PoCTimeline';
+import DecisionFlow from '@/components/blog/DecisionFlow';
+import ComparisonCard from '@/components/blog/ComparisonCard';
+import InteractiveChecklist from '@/components/blog/InteractiveChecklist';
+
+// MDXで使用可能なコンポーネントのマッピング
+const components = {
+  FadeIn,
+  CalloutBox,
+  PoCTimeline,
+  DecisionFlow,
+  ComparisonCard,
+  InteractiveChecklist,
+};
+
 // 静的パス生成
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -75,7 +93,7 @@ export default async function BlogPostPage({
 
         {/* Article Content */}
         <div className={styles.articleContent}>
-          <MDXRemote source={post.content} />
+          <MDXRemote source={post.content} components={components} />
         </div>
 
         {/* Footer CTA */}
