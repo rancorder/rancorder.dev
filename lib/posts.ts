@@ -54,18 +54,22 @@ export function getAllPosts() {
 }
 
 export function getPost(slug: string) {
-  const filePath = path.join(BLOG_DIR, `${slug}.html`);
-  const html = fs.readFileSync(filePath, 'utf8');
+  try {
+    const filePath = path.join(BLOG_DIR, `${slug}.html`);
+    const html = fs.readFileSync(filePath, 'utf8');
+    const meta = parseFrontMatter(html);
 
-  const meta = parseFrontMatter(html);
-
-  return {
-    slug,
-    html,
-    title: meta.title || 'Untitled',
-    excerpt: meta.excerpt || '',
-    date: meta.date || '',
-    category: meta.category || '',
-    readingTime: meta.readingTime || '',
-  };
+    return {
+      slug,
+      html,
+      title: meta.title || 'Untitled',
+      excerpt: meta.excerpt || '',
+      date: meta.date || '',
+      category: meta.category || '',
+      readingTime: meta.readingTime || '',
+    };
+  } catch (err) {
+    console.error(`getPost failed for slug: ${slug}`, err);
+    return null;
+  }
 }
