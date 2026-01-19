@@ -7,6 +7,33 @@ import { BlogPost } from '@/types';
 const contentDirectory = path.join(process.cwd(), 'content/blog');
 
 /**
+ * コンテンツからimport文とJSXタグを除去してクリーンなテキストを抽出
+ */
+function extractCleanExcerpt(content: string, maxLength: number = 200): string {
+  // import文を削除
+  let cleaned = content.replace(/^import\s+.+from\s+['"].+['"]\s*$/gm, '');
+  
+  // JSXタグを削除（<FadeIn>, <CalloutBox>など）
+  cleaned = cleaned.replace(/<[^>]+>/g, '');
+  
+  // Markdown記号を削除
+  cleaned = cleaned.replace(/[#*`_\[\]]/g, '');
+  
+  // 複数の改行を1つに
+  cleaned = cleaned.replace(/\n\s*\n/g, '\n');
+  
+  // 空行を削除
+  cleaned = cleaned.trim();
+  
+  // 指定文字数で切り取り
+  if (cleaned.length > maxLength) {
+    cleaned = cleaned.slice(0, maxLength) + '...';
+  }
+  
+  return cleaned;
+}
+
+/**
  * 全MDX記事を自動取得（日付降順）
  */
 export function getAllPosts(): BlogPost[] {
@@ -30,7 +57,7 @@ export function getAllPosts(): BlogPost[] {
         slug,
         title: data.title || 'Untitled',
         date: data.date || new Date().toISOString(),
-        excerpt: data.excerpt || content.slice(0, 200).replace(/[#*`]/g, '') + '...',
+        excerpt: data.description || extractCleanExcerpt(content, 200),
         category: data.category || 'Uncategorized',
         readingTime: readingTime(content).text,
         content,
@@ -54,7 +81,7 @@ export function getPostBySlug(slug: string): BlogPost | null {
       slug,
       title: data.title,
       date: data.date,
-      excerpt: data.excerpt,
+      excerpt: data.description || extractCleanExcerpt(content, 200),
       category: data.category,
       readingTime: readingTime(content).text,
       content,
