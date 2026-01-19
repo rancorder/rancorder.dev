@@ -1,0 +1,135 @@
+.timeline {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(100,100,255,0.05), rgba(200,100,255,0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+}
+
+.indicator {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+.step:hover .indicator {
+  transform: scale(1.1);
+}
+
+.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+}
+
+.error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+}
+
+.connector {
+  position: absolute;
+  left: 23px;
+  top: 48px;
+  width: 2px;
+  height: calc(100% - 48px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  z-index: 1;
+}
+
+.content {
+  flex: 1;
+  padding-top: 8px;
+}
+
+.phase {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: light) {
+  .timeline {
+    background: linear-gradient(135deg, rgba(100,100,255,0.03), rgba(200,100,255,0.03));
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  
+  .description {
+    color: rgba(0,0,0,0.6);
+  }
+  
+  .connector {
+    background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
+  }
+}
+
+@media (max-width: 640px) {
+  .timeline {
+    padding: 1.5rem;
+  }
+  
+  .step {
+    gap: 1rem;
+  }
+  
+  .indicator {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .connector {
+    left: 19px;
+    top: 40px;
+    height: calc(100% - 40px);
+  }
+  
+  .phase {
+    font-size: 1.1rem;
+  }
+  
+  .description {
+    font-size: 0.9rem;
+  }
+}

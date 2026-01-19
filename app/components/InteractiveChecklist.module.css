@@ -1,0 +1,145 @@
+.checklist {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(34,197,94,0.05), rgba(16,185,129,0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.item:hover {
+  background: rgba(255,255,255,0.05);
+  transform: translateX(4px);
+}
+
+.item.checked {
+  background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.08));
+  border-color: rgba(16,185,129,0.3);
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.item.checked .checkbox {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+}
+
+.checkbox svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.5;
+}
+
+.message {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1));
+  border-radius: 12px;
+  border: 1px solid rgba(16,185,129,0.3);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .checklist {
+    background: linear-gradient(135deg, rgba(34,197,94,0.03), rgba(16,185,129,0.03));
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  
+  .item {
+    background: rgba(0,0,0,0.02);
+  }
+  
+  .item:hover {
+    background: rgba(0,0,0,0.04);
+  }
+  
+  .item.checked {
+    background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.06));
+  }
+  
+  .checkbox {
+    border-color: rgba(0,0,0,0.2);
+  }
+  
+  .text {
+    color: rgba(0,0,0,0.85);
+  }
+  
+  .message {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.08));
+  }
+}
+
+@media (max-width: 640px) {
+  .checklist {
+    padding: 1.5rem;
+  }
+  
+  .item {
+    padding: 1rem;
+  }
+  
+  .text {
+    font-size: 1rem;
+  }
+  
+  .message {
+    font-size: 1rem;
+  }
+}

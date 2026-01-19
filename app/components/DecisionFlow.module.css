@@ -1,0 +1,134 @@
+.flow {
+  margin: 3rem 0;
+  padding: 2.5rem;
+  background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(59,130,246,0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.node,
+.question {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  justify-content: center;
+}
+
+.box {
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  line-height: 1.5;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.box:hover {
+  transform: translateY(-2px);
+}
+
+.start {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+}
+
+.check {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+  font-size: 1.1rem;
+}
+
+.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+}
+
+.arrow {
+  font-size: 2rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 700;
+}
+
+.branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 1rem;
+}
+
+.branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.label {
+  font-weight: 700;
+  font-size: 1.2rem;
+  padding: 0.5rem 1.5rem;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+@media (prefers-color-scheme: light) {
+  .flow {
+    background: linear-gradient(135deg, rgba(139,92,246,0.03), rgba(59,130,246,0.03));
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  
+  .arrow {
+    color: rgba(0,0,0,0.3);
+  }
+  
+  .label {
+    background: rgba(0,0,0,0.05);
+  }
+}
+
+@media (max-width: 768px) {
+  .flow {
+    padding: 1.5rem;
+  }
+  
+  .branches {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .box {
+    padding: 1rem 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .arrow {
+    font-size: 1.5rem;
+  }
+}

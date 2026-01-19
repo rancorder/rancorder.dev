@@ -1,0 +1,152 @@
+.comparison {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(236,72,153,0.05), rgba(168,85,247,0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  letter-spacing: -0.03em;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background-color 0.3s ease;
+}
+
+.row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.cell {
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.headerCell {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+.labelCell {
+  font-weight: 600;
+  justify-content: flex-start;
+  text-align: left;
+  background: rgba(255,255,255,0.02);
+}
+
+.manufacturing {
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.03));
+  font-weight: 500;
+}
+
+.itAi {
+  background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03));
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: light) {
+  .comparison {
+    background: linear-gradient(135deg, rgba(236,72,153,0.03), rgba(168,85,247,0.03));
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  
+  .header {
+    background: rgba(0,0,0,0.03);
+    border-bottom: 2px solid rgba(0,0,0,0.08);
+  }
+  
+  .row {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .row:hover {
+    background: rgba(0,0,0,0.02);
+  }
+  
+  .labelCell {
+    background: rgba(0,0,0,0.02);
+  }
+  
+  .manufacturing {
+    background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(16,185,129,0.02));
+  }
+  
+  .itAi {
+    background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02));
+  }
+}
+
+@media (max-width: 768px) {
+  .comparison {
+    padding: 1rem;
+  }
+  
+  .header,
+  .row {
+    grid-template-columns: 1fr;
+  }
+  
+  .cell {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  
+  .headerCell {
+    background: rgba(255,255,255,0.08);
+    font-size: 1rem;
+  }
+  
+  .labelCell {
+    font-weight: 700;
+    background: rgba(255,255,255,0.05);
+  }
+  
+  .manufacturing,
+  .itAi {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  
+  .manufacturing::before {
+    content: '製造業: ';
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+  
+  .itAi::before {
+    content: 'IT・AI: ';
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+}
