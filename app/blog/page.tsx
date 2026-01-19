@@ -1,5 +1,5 @@
 // app/blog/page.tsx
-import { getAllPosts } from '@/lib/mdx';
+import { getAllPosts } from '@/lib/posts';
 import { fetchAllExternalArticles } from '@/lib/external-articles';
 import Link from 'next/link';
 import styles from './blog.module.css';
