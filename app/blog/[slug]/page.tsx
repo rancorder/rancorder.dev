@@ -5,6 +5,14 @@ import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import styles from './article.module.css';
 
+// 全てのカスタムコンポーネントをインポート
+import FadeIn from '@/app/components/blog/FadeIn';
+import CalloutBox from '@/app/components/blog/CalloutBox';
+import PoCTimeline from '@/app/components/blog/PoCTimeline';
+import DecisionFlow from '@/app/components/blog/DecisionFlow';
+import ComparisonCard from '@/app/components/blog/ComparisonCard';
+import InteractiveChecklist from '@/app/components/blog/InteractiveChecklist';
+
 // 静的パス生成
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -34,6 +42,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     },
   };
 }
+
+// 全てのMDXコンポーネント
+const components = {
+  FadeIn,
+  CalloutBox,
+  PoCTimeline,
+  DecisionFlow,
+  ComparisonCard,
+  InteractiveChecklist,
+};
 
 export default async function BlogPostPage({
   params,
@@ -78,6 +96,7 @@ export default async function BlogPostPage({
         <div className={styles.articleContent}>
           <MDXRemote 
             source={post.content}
+            components={components}
             options={{
               mdxOptions: {
                 remarkPlugins: [remarkGfm],
