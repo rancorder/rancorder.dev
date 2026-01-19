@@ -5,12 +5,12 @@ import Link from 'next/link';
 import styles from './article.module.css';
 
 // ブログ用カスタムコンポーネントをインポート
-import FadeIn from '@/components/blog/FadeIn';
-import CalloutBox from '@/components/blog/CalloutBox';
-import PoCTimeline from '@/components/blog/PoCTimeline';
-import DecisionFlow from '@/components/blog/DecisionFlow';
-import ComparisonCard from '@/components/blog/ComparisonCard';
-import InteractiveChecklist from '@/components/blog/InteractiveChecklist';
+import FadeIn from '@/app/components/blog/FadeIn';
+import CalloutBox from '@/app/components/blog/CalloutBox';
+import PoCTimeline from '@/app/components/blog/PoCTimeline';
+import DecisionFlow from '@/app/components/blog/DecisionFlow';
+import ComparisonCard from '@/app/components/blog/ComparisonCard';
+import InteractiveChecklist from '@/app/components/blog/InteractiveChecklist';
 
 // MDXで使用可能なコンポーネントのマッピング
 const components = {
