@@ -1,27 +1,9 @@
-import remarkGfm from 'remark-gfm';
 import { getAllPosts, getPostBySlug } from '@/lib/mdx';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
+import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import styles from './article.module.css';
-
-// ブログ用カスタムコンポーネントをインポート
-import FadeIn from '@/app/components/blog/FadeIn';
-import CalloutBox from '@/app/components/blog/CalloutBox';
-import PoCTimeline from '@/app/components/blog/PoCTimeline';
-import DecisionFlow from '@/app/components/blog/DecisionFlow';
-import ComparisonCard from '@/app/components/blog/ComparisonCard';
-import InteractiveChecklist from '@/app/components/blog/InteractiveChecklist';
-
-// MDXで使用可能なコンポーネントのマッピング
-const components = {
-  FadeIn,
-  CalloutBox,
-  PoCTimeline,
-  DecisionFlow,
-  ComparisonCard,
-  InteractiveChecklist,
-};
 
 // 静的パス生成
 export async function generateStaticParams() {
@@ -94,9 +76,8 @@ export default async function BlogPostPage({
 
         {/* Article Content */}
         <div className={styles.articleContent}>
-          <MDXRemote
+          <MDXRemote 
             source={post.content}
-            components={components}
             options={{
               mdxOptions: {
                 remarkPlugins: [remarkGfm],
@@ -104,7 +85,6 @@ export default async function BlogPostPage({
             }}
           />
         </div>
-
 
         {/* Footer CTA */}
         <footer className={styles.articleFooter}>
