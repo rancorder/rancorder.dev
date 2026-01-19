@@ -1,0 +1,325 @@
+---
+title: "PoCは失敗しない"
+date: "2026-01-17"
+category: "PoC / 意思決定設計"
+tags: ["PoC", "意思決定", "プロジェクト管理", "製造業", "エンタープライズ"]
+description: "PoCは技術的に失敗していない。失敗したことにできなくなっているだけだ。判断装置としてのPoC設計について"
+author: "ひで"
+language: "ja"
+---
+
+import FadeIn from '@/app/components/blog/FadeIn'
+import CalloutBox from '@/app/components/blog/CalloutBox'
+import PoCTimeline from '@/app/components/blog/PoCTimeline'
+import DecisionFlow from '@/app/components/blog/DecisionFlow'
+import ComparisonCard from '@/app/components/blog/ComparisonCard'
+import InteractiveChecklist from '@/app/components/blog/InteractiveChecklist'
+
+<FadeIn>
+
+# PoCは失敗しない。
+
+## 失敗したことにできなくなるだけだ。
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+PoC(概念実証)が失敗した、という言葉をよく聞く。
+だが現場を見ていると、少し違う景色が見える。
+
+多くのPoCは、技術的には失敗していない。
+動いている。
+デモも通っている。
+場合によっては、実ユーザーも少し使っている。
+
+それでも、そのPoCは次に進めない。
+かといって、止める判断もできない。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<PoCTimeline />
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+結果としてどうなるか。
+
+「とりあえず継続」
+「様子見」
+「もう少し改善してから判断」
+
+こうしてPoCは、
+失敗したとは言えないが、成功とも言えない状態で漂い続ける。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={800}>
+
+## 技術ではなく、判断が詰まっている
+
+PoCが本当に詰まる瞬間は、
+バグが出たときでも、性能が足りなかったときでもない。
+
+詰まるのは、この問いに答えられなくなったときだ。
+
+</FadeIn>
+
+<FadeIn delay={1000}>
+
+<CalloutBox type="warning" title="答えられない3つの問い">
+
+- なぜ続けるのか
+- なぜ止めないのか
+- それは数字で説明できるのか
+
+</CalloutBox>
+
+</FadeIn>
+
+<FadeIn delay={1200}>
+
+多くの現場で、この問いに答えられる人がいない。
+
+なぜか。
+
+PoC開始時に「期待値」が定義されていないからだ。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={1400}>
+
+## 期待値が定義されていないPoCの末路
+
+PoCの初期によくある言葉がある。
+
+- 「まずは作ってみましょう」
+- 「小さく検証しましょう」
+- 「動くかどうか見たいだけです」
+
+これ自体は間違っていない。
+問題は、その先だ。
+
+</FadeIn>
+
+<FadeIn delay={1600}>
+
+<CalloutBox type="critical" title="定義されていない3つのこと">
+
+- 何が分かれば成功なのか
+- 何が分かれば止めるのか
+- それは誰の判断材料になるのか
+
+</CalloutBox>
+
+</FadeIn>
+
+<FadeIn delay={1800}>
+
+これを決めないままPoCを始めると、
+後からROIを説明することが構造的に不可能になる。
+
+結果として、
+
+- 技術は通っている
+- でも投資価値を説明できない
+- だから止められない
+
+という、最もコストの高い状態に入る。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={2000}>
+
+## PoCは「成功させる工程」ではない
+
+ここで視点をひっくり返す。
+
+PoCの目的は、
+成功させることではない。
+
+</FadeIn>
+
+<FadeIn delay={2200}>
+
+<CalloutBox type="info" title="PoCの本当の役割">
+
+**続けるか、止めるかを合理的に説明できる状態を作ること**
+
+</CalloutBox>
+
+</FadeIn>
+
+<FadeIn delay={2400}>
+
+つまり、PoCは判断装置だ。
+
+判断装置として設計されていないPoCは、
+どれだけ技術的にうまくいっても、
+「判断不能な成果物」になる。
+
+それは失敗ではない。
+設計不足だ。
+
+</FadeIn>
+
+<FadeIn delay={2600}>
+
+<DecisionFlow />
+
+</FadeIn>
+
+---
+
+<FadeIn delay={2800}>
+
+## 製造業で当たり前だったこと
+
+私は製造業のB2B領域で長く仕事をしてきた。
+そこでは、PoCに近い工程はあっても、
+「判断不能な状態」は基本的に許されない。
+
+なぜなら、
+
+- 品質判断は不可逆
+- 納期遅延はペナルティになる
+- 判断ミスはそのまま損失になる
+
+だから必ず先に決める。
+
+- どの条件を満たせばGoか
+- どの条件に達しなければStopか
+- その判断は誰が、何を見て行うのか
+
+この前提があるから、
+たとえ中止になっても「失敗」ではない。
+
+正しい判断だったと言い切れる。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={3000}>
+
+## IT・AI領域でこれが抜け落ちやすい理由
+
+ITやAIのPoCでは、
+
+- 修正できる
+- やり直せる
+- スケールできる
+
+という前提がある。
+
+これは強みでもあるが、
+同時に判断を先送りにする言い訳にもなる。
+
+</FadeIn>
+
+<FadeIn delay={3200}>
+
+<ComparisonCard />
+
+</FadeIn>
+
+<FadeIn delay={3400}>
+
+その結果、
+
+- 技術検証は進む
+- でも意思決定が進まない
+
+という歪みが生まれる。
+
+ここで必要なのは、
+新しい技術ではない。
+派手な機能でもない。
+
+**期待値と判断基準の言語化だ。**
+
+</FadeIn>
+
+---
+
+<FadeIn delay={3600}>
+
+## PoCで本当に設計すべきもの
+
+PoCを始める前に、最低限これだけは必要になる。
+
+</FadeIn>
+
+<FadeIn delay={3800}>
+
+<InteractiveChecklist />
+
+</FadeIn>
+
+<FadeIn delay={4000}>
+
+これが定義されていれば、
+PoCは必ず意味を持つ。
+
+成功しても、止めても。
+
+逆に言えば、
+これがないPoCは、
+どんな結果が出ても判断できない。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={4200}>
+
+## 失敗しているのはPoCではない
+
+繰り返す。
+
+PoCは失敗していない。
+失敗したことにできなくなっているだけだ。
+
+それは技術の問題ではない。
+人の能力の問題でもない。
+
+</FadeIn>
+
+<FadeIn delay={4400}>
+
+<CalloutBox type="success" title="本質は設計の問題">
+
+PoCを「作る工程」として見るか、
+「判断装置」として設計するか。
+
+この視点の違いが、
+数ヶ月後、数千万円後に、
+はっきりした差として現れる。
+
+</CalloutBox>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={4600}>
+
+PoCが進まないとき、
+次に何を作るかを考える前に、
+一度立ち止まって問い直したい。
+
+「このPoCは、続ける／止めるを本当に説明できる設計になっているか？」
+
+それが見えた瞬間、
+多くのプロジェクトはようやく前に進める。
+
+</FadeIn>
