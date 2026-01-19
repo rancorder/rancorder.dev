@@ -1,82 +1,72 @@
-<!--
-title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
-date: 2026-01-20
-category: 技術プロジェクト管理
-excerpt: Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤の設計思想と実装。
-readingTime: 14 min read
--->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHubにプッシュするだけのブログ量産システム</title>
 
-<fade-in>
-  <h1>GitHubにプッシュするだけのブログ量産システム</h1>
-  <p><strong>Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤</strong></p>
-</fade-in>
+  <style>
+    /* ====== Fade-in base ====== */
+    fade-in {
+      display: block;
+      opacity: 0;
+      transform: translateY(20px) scale(0.98) rotateX(4deg);
+      transition:
+        opacity 0.7s ease,
+        transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.4s ease;
+      will-change: opacity, transform, box-shadow;
+    }
 
-fade-in {
-  display: block;
-  opacity: 0;
-  transform: translateY(20px) scale(0.98) rotateX(4deg);
-  transition:
-    opacity 0.7s ease,
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
-}
+    fade-in.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotateX(0);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    }
 
-fade-in.visible {
-  opacity: 1;
-  transform: translateY(0) scale(1) rotateX(0);
-}
+    /* ====== Stagger children ====== */
+    fade-in > * {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
 
-/* Delay attribute support */
-fade-in[delay] {
-  transition-delay: calc(attr(delay number) * 1ms);
-}
+    fade-in.visible > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-/* ====== Stagger children ====== */
-fade-in > * {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
+    fade-in.visible > *:nth-child(1) { transition-delay: 0.05s; }
+    fade-in.visible > *:nth-child(2) { transition-delay: 0.10s; }
+    fade-in.visible > *:nth-child(3) { transition-delay: 0.15s; }
+    fade-in.visible > *:nth-child(4) { transition-delay: 0.20s; }
 
-fade-in.visible > * {
-  opacity: 1;
-  transform: translateY(0);
-}
+    /* ====== Heading underline animation (fade-in 内だけ) ====== */
+    fade-in h2,
+    fade-in h3 {
+      position: relative;
+      display: inline-block;
+    }
 
-fade-in.visible > *:nth-child(1) { transition-delay: 0.05s; }
-fade-in.visible > *:nth-child(2) { transition-delay: 0.10s; }
-fade-in.visible > *:nth-child(3) { transition-delay: 0.15s; }
-fade-in.visible > *:nth-child(4) { transition-delay: 0.20s; }
+    fade-in h2::after,
+    fade-in h3::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 0%;
+      height: 2px;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+      transition: width 0.5s ease;
+    }
 
-/* ====== Heading underline animation ====== */
-h2, h3 {
-  position: relative;
-  display: inline-block;
-}
-
-h2::after, h3::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  width: 0%;
-  height: 2px;
-  background: linear-gradient(90deg, #4f46e5, #06b6d4);
-  transition: width 0.5s ease;
-}
-
-fade-in.visible h2::after,
-fade-in.visible h3::after {
-  width: 100%;
-}
-</style>
-
+    fade-in.visible h2::after,
+    fade-in.visible h3::after {
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-
-<!-- ===================== -->
-<!--   ここから記事本体   -->
-<!-- ===================== -->
 
 <!--
 title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
@@ -397,21 +387,27 @@ export default async function sitemap() {
   <strong>Live:</strong> <a href="https://rancorder.vercel.app">https://rancorder.vercel.app</a>
 </p>
 
-<!-- ===================== -->
-<!--   エフェクトJS       -->
-<!-- ===================== -->
 <script>
-const els = document.querySelectorAll("fade-in");
-const io = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add("visible");
-      io.unobserve(entry.target);
+  // delay 属性を transitionDelay に反映
+  const fadeBlocks = document.querySelectorAll("fade-in");
+  fadeBlocks.forEach((el) => {
+    const delay = el.getAttribute("delay");
+    if (delay) {
+      el.style.transitionDelay = `${delay}ms`;
     }
   });
-}, { threshold: 0.15 });
 
-els.forEach((el) => io.observe(el));
+  // IntersectionObserver は維持しつつ visible を付与
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  fadeBlocks.forEach((el) => io.observe(el));
 </script>
 
 </body>
