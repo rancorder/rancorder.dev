@@ -1,3 +1,4 @@
+import remarkGfm from 'remark-gfm';
 import { getAllPosts, getPostBySlug } from '@/lib/mdx';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
@@ -93,8 +94,17 @@ export default async function BlogPostPage({
 
         {/* Article Content */}
         <div className={styles.articleContent}>
-          <MDXRemote source={post.content} components={components} />
+          <MDXRemote
+            source={post.content}
+            components={components}
+            options={{
+              mdxOptions: {
+                remarkPlugins: [remarkGfm],
+              },
+            }}
+          />
         </div>
+
 
         {/* Footer CTA */}
         <footer className={styles.articleFooter}>
