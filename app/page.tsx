@@ -111,6 +111,16 @@ export default function Page() {
               </a>
             </motion.div>
 
+            -      {/* Blog Section - Latest Technical Insights */}
+            -      <BlogSection />
+            +      {/* Blog Section - Latest Technical Insights */}
+            +      <section id="blog" className="section">
+            +        <div className="container">
+            +          <BlogSection />
+            +        </div>
+            +      </section>
+
+
             {/* Operational Highlights - 前面独立表示 */}
             <motion.div className="operational-highlights" variants={fadeUp}>
               <div className="op-header">Operational Highlights</div>
