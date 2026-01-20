@@ -1,92 +1,133 @@
 'use client';
 
-// app/components/BlogSection.tsx - Client Component版
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './BlogSection.module.css';
 
-interface BlogPost {
+type LatestPost = {
   slug: string;
   title: string;
   excerpt: string;
-  date: string;
-  category: string;
-  readingTime: string;
+  date: string;        // "2026-01-20"
+  category?: string;
+  readingTime?: string;
+};
+
+type ApiResponse =
+  | { ok: true; posts: LatestPost[] }
+  | { ok: false; error: string };
+
+function safeText(v: unknown): string {
+  return typeof v === 'string' ? v : '';
 }
 
 export default function BlogSection() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<LatestPost[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
+
+  const endpoint = useMemo(() => '/api/blog/latest?limit=3', []);
 
   useEffect(() => {
-    async function fetchPosts() {
+    let cancelled = false;
+
+    async function run() {
+      setStatus('loading');
+      setError('');
+
       try {
-        const response = await fetch('/api/blog/latest');
-        if (response.ok) {
-          const data = await response.json();
-          setPosts(data);
+        const res = await fetch(endpoint, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store',
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
         }
-      } catch (error) {
-        console.error('Failed to fetch blog posts:', error);
-      } finally {
-        setLoading(false);
+
+        const data = (await res.json()) as ApiResponse;
+
+        if (!data || data.ok !== true || !Array.isArray((data as any).posts)) {
+          throw new Error('Invalid JSON shape');
+        }
+
+        if (cancelled) return;
+
+        const normalized = data.posts.map((p) => ({
+          slug: safeText(p.slug),
+          title: safeText(p.title),
+          excerpt: safeText(p.excerpt),
+          date: safeText(p.date),
+          category: safeText(p.category),
+          readingTime: safeText(p.readingTime),
+        })).filter(p => p.slug && p.title);
+
+        setPosts(normalized);
+        setStatus('ok');
+      } catch (e: any) {
+        if (cancelled) return;
+        setStatus('error');
+        setError(e?.message ?? 'Unknown error');
       }
     }
 
-    fetchPosts();
-  }, []);
-
-  // 記事がない、またはローディング中は非表示
-  if (loading || posts.length === 0) {
-    return null;
-  }
+    run();
+    return () => { cancelled = true; };
+  }, [endpoint]);
 
   return (
-    <section id="blog" className={styles.blogSection}>
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>Latest Technical Insights</h2>
-          <p className={styles.subtitle}>
-            In-depth articles on enterprise PM, decision design, and production-grade systems
-          </p>
+    <section aria-labelledby="latest-articles" className={styles.wrap}>
+      <div className={styles.head}>
+        <div>
+          <h2 id="latest-articles" className={styles.title}>Latest Articles</h2>
+          <p className={styles.sub}>最近の更新（自動インデックス）</p>
         </div>
+        <a className={styles.all} href="/blog">View all →</a>
+      </div>
 
+      {status === 'loading' && (
+        <div className={styles.grid} aria-busy="true">
+          <div className={styles.skeleton} />
+          <div className={styles.skeleton} />
+          <div className={styles.skeleton} />
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className={styles.error} role="status">
+          <div className={styles.errorTitle}>Latest記事の取得に失敗</div>
+          <div className={styles.errorBody}>
+            <code>{error}</code>
+            <div className={styles.errorHint}>
+              まず <code>/api/blog/latest</code> が 200 を返してるか確認（Vercelでも同じ）。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {status === 'ok' && posts.length === 0 && (
+        <div className={styles.empty} role="status">
+          まだ記事がありません（または slug/title が取得できていません）。
+        </div>
+      )}
+
+      {status === 'ok' && posts.length > 0 && (
         <div className={styles.grid}>
-          {posts.map(post => (
-            <Link 
-              key={post.slug} 
-              href={`/blog/${post.slug}`}
-              className={styles.card}
-            >
-              <div className={styles.cardMeta}>
-                <span className={styles.category}>{post.category}</span>
-                <span className={styles.date}>
-                  {new Date(post.date).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
+          {posts.map((p) => (
+            <a key={p.slug} className={styles.card} href={`/blog/${p.slug}`}>
+              <div className={styles.meta}>
+                {p.category ? <span className={styles.badge}>{p.category}</span> : <span />}
+                <span className={styles.metaText}>
+                  {p.date}{p.readingTime ? ` • ${p.readingTime}` : ''}
                 </span>
               </div>
-              
-              <h3 className={styles.cardTitle}>{post.title}</h3>
-              <p className={styles.cardExcerpt}>{post.excerpt}</p>
-              
-              <div className={styles.cardFooter}>
-                <span className={styles.readTime}>{post.readingTime}</span>
-                <span className={styles.arrow}>→</span>
-              </div>
-            </Link>
+              <div className={styles.cardTitle}>{p.title}</div>
+              <p className={styles.cardExcerpt}>{p.excerpt}</p>
+              <div className={styles.cardArrow}>→</div>
+            </a>
           ))}
         </div>
-
-        <div className={styles.viewAll}>
-          <Link href="/blog" className={styles.viewAllButton}>
-            View All Articles
-            <span className={styles.buttonArrow}>→</span>
-          </Link>
-        </div>
-      </div>
+      )}
     </section>
   );
 }
