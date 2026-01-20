@@ -57,11 +57,11 @@ readingTime: 14 min read
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   
-  <!-- Alternate languages (if applicable) -->
+  <!-- Alternate languages -->
   <link rel="alternate" hreflang="ja" href="https://rancorder.vercel.app/blog/2026-01-19-automated-blog-system-from-idea">
   <link rel="alternate" hreflang="x-default" href="https://rancorder.vercel.app/blog/2026-01-19-automated-blog-system-from-idea">
   
-  <!-- Preconnect for performance -->
+  <!-- Preconnect -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   
@@ -701,14 +701,23 @@ export interface BlogPost {
           <code-block language="javascript">
 export async function getAllPosts() {
   const files = fs.readdirSync(BLOG_DIR);
+  
   return files
     .filter(f => f.endsWith('.html'))
     .map(file => {
-      const content = fs.readFileSync(path.join(BLOG_DIR, file));
+      const content = fs.readFileSync(
+        path.join(BLOG_DIR, file)
+      );
       const meta = parseFrontMatter(content);
-      return { slug: file.replace('.html', ''), ...meta };
+      
+      return { 
+        slug: file.replace('.html', ''), 
+        ...meta 
+      };
     })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    .sort((a, b) => 
+      new Date(b.date) - new Date(a.date)
+    );
 }
           </code-block>
           
@@ -720,15 +729,23 @@ export async function getAllPosts() {
           
           <code-block language="javascript">
 async function fetchExternalArticles() {
-  const qiita = await fetch(`https://qiita.com/api/v2/users/${USER}/items`)
-    .then(r => r.json());
-  const zenn = await fetch(`https://zenn.dev/api/articles?username=${USER}`)
-    .then(r => r.json());
-    
-  const combined = [...qiita, ...zenn].sort((a, b) => 
-    new Date(b.date) - new Date(a.date)
-  );
+  // Qiita記事を取得
+  const qiita = await fetch(
+    `https://qiita.com/api/v2/users/${USER}/items`
+  ).then(r => r.json());
   
+  // Zenn記事を取得
+  const zenn = await fetch(
+    `https://zenn.dev/api/articles?username=${USER}`
+  ).then(r => r.json());
+  
+  // 統合してソート
+  const combined = [...qiita, ...zenn]
+    .sort((a, b) => 
+      new Date(b.date) - new Date(a.date)
+    );
+  
+  // キャッシュファイルに保存
   fs.writeFileSync(
     'public/external-articles.json',
     JSON.stringify(combined)
@@ -745,12 +762,17 @@ async function fetchExternalArticles() {
           <p>Next.jsのMetadata APIを使用して完全自動生成</p>
           
           <code-block language="typescript">
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap(): 
+  Promise&lt;MetadataRoute.Sitemap&gt; {
+  
   const posts = await getAllPosts();
   const external = await getExternalArticles();
   
   return [
-    { url: 'https://example.com', priority: 1.0 },
+    { 
+      url: 'https://example.com', 
+      priority: 1.0 
+    },
     ...posts.map(post => ({
       url: `https://example.com/blog/${post.slug}`,
       lastModified: post.date,
