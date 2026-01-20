@@ -1,0 +1,24 @@
+# robots.txt
+# https://rancorder.vercel.app/robots.txt
+
+User-agent: *
+Allow: /
+
+# クローラーに優しく
+Crawl-delay: 1
+
+# サイトマップの場所
+Sitemap: https://rancorder.vercel.app/sitemap.xml
+
+# クロール不要なディレクトリ
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+# 特定のボット制御（必要に応じて）
+# User-agent: Googlebot
+# Allow: /
+
+# User-agent: Bingbot
+# Allow: /
