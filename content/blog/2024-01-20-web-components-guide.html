@@ -1,204 +1,318 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Componentsの完全ガイド | My Tech Blog</title>
-  <meta name="description" content="Web Componentsの基礎から実践まで完全解説">
-  <link rel="stylesheet" href="../style.css">
-</head>
-<body>
-  <header>
-    <nav><a href="../index.html">← ホームに戻る</a></nav>
-  </header>
+<!--
+title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
+date: 2026-01-20
+category: 技術プロジェクト管理
+excerpt: Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤の設計思想と実装。
+readingTime: 14 min read
+-->
 
-  <main>
-    <article>
-      <h1 class="fade-in-scroll">Web Componentsの完全ガイド</h1>
-      <time class="fade-in-scroll">2024-01-20</time>
+<fade-in>
+  <h1>GitHubにプッシュするだけのブログ量産システム</h1>
+  <p><strong>Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤</strong></p>
+</fade-in>
 
-      <p class="fade-in-scroll">
-        Web Componentsは、再利用可能なカスタムHTML要素を作成するための標準技術です。
-        この記事では、基礎から実践的な使い方まで詳しく解説します。
-      </p>
+<hr />
 
-      <!-- タブの例 -->
-      <h2 class="fade-in-scroll">主要な技術スタック</h2>
-      
-      <div class="tab-group fade-in-scroll">
-        <div class="tab-buttons">
-          <button class="tab-button">Custom Elements</button>
-          <button class="tab-button">Shadow DOM</button>
-          <button class="tab-button">Templates</button>
-        </div>
-        <div class="tab-panel">
-          <h3>Custom Elements（カスタム要素）</h3>
-          <p>独自のHTML要素を定義できる機能です。</p>
-          <ul>
-            <li>クラスベースで要素を定義</li>
-            <li>ライフサイクルコールバックで動作を制御</li>
-            <li>既存の要素を拡張可能</li>
-          </ul>
-        </div>
-        <div class="tab-panel">
-          <h3>Shadow DOM</h3>
-          <p>カプセル化されたDOMツリーを作成できます。</p>
-          <ul>
-            <li>スタイルの隔離</li>
-            <li>DOMの隠蔽</li>
-            <li>コンポーネントの独立性</li>
-          </ul>
-        </div>
-        <div class="tab-panel">
-          <h3>HTML Templates</h3>
-          <p>再利用可能なマークアップのテンプレートです。</p>
-          <ul>
-            <li>&lt;template&gt;タグで定義</li>
-            <li>レンダリング時までパース不要</li>
-            <li>効率的なDOM生成</li>
-          </ul>
-        </div>
-      </div>
+<fade-in delay="200">
+  <h2>なぜこのシステムが必要だったのか</h2>
+  <p>
+    私は17年間、製造業でエンタープライズPMとして「技術的に完成したPoC」を「安定稼働するProduction」に移行させる仕事をしてきた。
+    そこで学んだ最も重要な原則は、<strong>「個人の努力に依存しない構造を作る」</strong>ということだ。
+  </p>
+</fade-in>
 
-      <!-- 吹き出しの例 -->
-      <div class="callout callout-info fade-in-scroll">
-        <strong>💡 ポイント</strong>
-        <p>Web Componentsは全てのモダンブラウザでネイティブサポートされています。フレームワークなしで使えるのが大きな利点です。</p>
-      </div>
+<fade-in delay="400">
+  <h3>コンテンツ発信の構造的課題</h3>
+  <ul>
+    <li><strong>プラットフォームが分散</strong>：Qiita、Zenn、個人ブログ、note...</li>
+    <li><strong>転載の手間</strong>：複数サイトにコピペ</li>
+    <li><strong>SEO効果の分散</strong></li>
+    <li><strong>運用負荷</strong>：サイトマップ更新、インデックス管理、デザイン調整...</li>
+  </ul>
+</fade-in>
 
-      <!-- コードブロックの例 -->
-      <h2 class="fade-in-scroll">基本的な実装例</h2>
-      
-      <div class="code-block fade-in-scroll">
-<code>// カスタム要素の定義
-class MyComponent extends HTMLElement {
-  connectedCallback() {
-    this.innerHTML = `
-      &lt;div class="my-component"&gt;
-        &lt;h3&gt;Hello, Web Components!&lt;/h3&gt;
-        &lt;p&gt;This is a custom element.&lt;/p&gt;
-      &lt;/div&gt;
-    `;
+<fade-in delay="600">
+  <callout-box type="warning" title="よくある失敗パターン">
+    「技術ブログを始めよう！」→ WordPressセットアップ → プラグイン設定に2日 → デザイン調整に3日 → 疲れて記事を書かない → 放置
+  </callout-box>
+</fade-in>
+
+<fade-in delay="800">
+  <p>私が求めていたのは、<strong>「思考から公開まで」の摩擦をゼロにするシステム</strong>だった。</p>
+
+  <pre><code>
+理想のフロー:
+アイデア → MDX作成 → GitHub push → 2-3分で公開完了
+                        ↑
+                   摩擦がほぼゼロ
+  </code></pre>
+</fade-in>
+
+<hr />
+
+<fade-in delay="1000">
+  <h2>アイデアの核心：3つの設計思想</h2>
+</fade-in>
+
+<fade-in delay="1200">
+  <h3>1. 外部プラットフォームを「読み込む」発想</h3>
+
+  <callout-box type="success" title="発想の転換">
+    <strong>書く場所は自由。でも、すべてを1箇所に集約して見せる。</strong><br />
+    Qiitaに書いてもいい。Zennに書いてもいい。でも、私のサイトにアクセスすれば全ての記事が見える。
+  </callout-box>
+
+  <ul>
+    <li>各プラットフォームの読者層にリーチ</li>
+    <li>自サイトでSEO効果を統合</li>
+    <li>ポートフォリオとしての完全性を確保</li>
+  </ul>
+</fade-in>
+
+<fade-in delay="1400">
+  <h3>2. 自動化できるものは全て自動化</h3>
+  <p><strong>手動でやることは、いずれやらなくなる。</strong></p>
+
+  <table>
+    <thead>
+      <tr><th>従来の手動作業</th><th>このシステム</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>記事インデックスの更新</td><td>MDXファイルを置くだけで自動検出</td></tr>
+      <tr><td>サイトマップ生成</td><td>ビルド時に自動生成</td></tr>
+      <tr><td>外部記事の転載</td><td>prebuildで自動取得・統合</td></tr>
+      <tr><td>デプロイ作業</td><td>GitHub push → Vercel自動デプロイ</td></tr>
+      <tr><td>メタデータ設定</td><td>Frontmatterに書くだけ</td></tr>
+    </tbody>
+  </table>
+</fade-in>
+
+<fade-in delay="1600">
+  <callout-box type="info" title="自動化の本質">
+    自動化の目的は「楽をすること」ではない。<strong>「書く」ことに100%集中するため</strong>だ。
+  </callout-box>
+</fade-in>
+
+<fade-in delay="1800">
+  <h3>3. インタラクティブ性を標準装備</h3>
+  <ul>
+    <li>スクロール連動フェードイン</li>
+    <li>強調ボックス</li>
+    <li>チェックリスト</li>
+    <li>比較表</li>
+  </ul>
+</fade-in>
+
+<hr />
+
+<fade-in delay="2000">
+  <h2>採用した技術スタックとその理由</h2>
+</fade-in>
+
+<fade-in delay="2200">
+  <h3>Next.js 14 (App Router)</h3>
+  <ul>
+    <li>Server/Client Componentsの明確な分離</li>
+    <li>ファイルベースルーティング</li>
+    <li>ISR</li>
+    <li>Vercelとの統合</li>
+  </ul>
+
+  <callout-box type="success" title="重要な判断">
+    Pages RouterではなくApp Routerを採用。
+  </callout-box>
+</fade-in>
+
+<fade-in delay="2400">
+  <h3>MDX（Markdown + JSX）</h3>
+
+  <pre><code>
+&lt;CalloutBox type="warning" title="注意"&gt;
+ここに重要な警告を書く
+&lt;/CalloutBox&gt;
+  </code></pre>
+</fade-in>
+
+<fade-in delay="2600">
+  <h3>Prebuild Cache System</h3>
+
+  <pre><code>{
+  "scripts": {
+    "prebuild": "node scripts/fetch-external-articles.js",
+    "build": "next build"
   }
 }
+  </code></pre>
+</fade-in>
 
-// カスタム要素の登録
-customElements.define('my-component', MyComponent);</code>
-      </div>
+<fade-in delay="2800">
+  <callout-box type="info" title="技術的ポイント">
+    Vercelのビルド時制約を「prebuildフック」で回避。
+  </callout-box>
+</fade-in>
 
-      <!-- アコーディオンの例 -->
-      <h2 class="fade-in-scroll">よくある質問</h2>
+<fade-in delay="3000">
+  <h3>TypeScript + CSS Modules</h3>
+  <ul>
+    <li>型安全性</li>
+    <li>スタイル衝突回避</li>
+    <li>IDE補完</li>
+  </ul>
+</fade-in>
 
-      <div class="accordion fade-in-scroll">
-        <div class="accordion-header">
-          <span>Reactと併用できますか？</span>
-          <span class="accordion-icon">▼</span>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <p>はい、可能です。Reactコンポーネント内でWeb Componentsを使用できます。ただし、イベントハンドリングやプロパティの受け渡しには注意が必要です。</p>
-          </div>
-        </div>
-      </div>
+<hr />
 
-      <div class="accordion fade-in-scroll">
-        <div class="accordion-header">
-          <span>IEはサポートされていますか？</span>
-          <span class="accordion-icon">▼</span>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <p>Internet Explorerはサポートされていません。モダンブラウザ（Chrome、Firefox、Safari、Edge）のみが対象です。</p>
-          </div>
-        </div>
-      </div>
+<fade-in delay="3200">
+  <h2>実装の工夫：4つの自動化機構</h2>
+</fade-in>
 
-      <div class="accordion fade-in-scroll">
-        <div class="accordion-header">
-          <span>パフォーマンスはどうですか？</span>
-          <span class="accordion-icon">▼</span>
-        </div>
-        <div class="accordion-content">
-          <div class="accordion-body">
-            <p>ネイティブAPIなので非常に高速です。仮想DOMを使用しないため、小規模なコンポーネントでは特に効率的です。</p>
-          </div>
-        </div>
-      </div>
+<fade-in delay="3400">
+  <h3>1. 自動インデックスシステム</h3>
 
-      <!-- 別の吹き出し -->
-      <div class="callout callout-warning fade-in-scroll">
-        <strong>⚠️ 注意点</strong>
-        <p>Shadow DOMを使用すると、グローバルCSSが適用されなくなります。コンポーネント内でスタイルを定義する必要があります。</p>
-      </div>
-
-      <!-- より詳しいコード例 -->
-      <h2 class="fade-in-scroll">Shadow DOMを使った実装</h2>
-
-      <div class="code-block fade-in-scroll">
-<code>class FancyButton extends HTMLElement {
-  constructor() {
-    super();
-    // Shadow DOMをアタッチ
-    this.attachShadow({ mode: 'open' });
-  }
-
-  connectedCallback() {
-    this.shadowRoot.innerHTML = `
-      &lt;style&gt;
-        button {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          padding: 1rem 2rem;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: transform 0.3s;
-        }
-        button:hover {
-          transform: scale(1.05);
-        }
-      &lt;/style&gt;
-      &lt;button&gt;
-        &lt;slot&gt;Click me&lt;/slot&gt;
-      &lt;/button&gt;
-    `;
-  }
+  <pre><code>
+export async function getAllPosts() {
+  const files = fs.readdirSync(BLOG_DIR);
+  return files
+    .filter(f => f.endsWith('.mdx'))
+    .map(file => {
+      const content = fs.readFileSync(path.join(BLOG_DIR, file));
+      const { data } = matter(content);
+      return { slug: file.replace('.mdx', ''), ...data };
+    });
 }
+  </code></pre>
+</fade-in>
 
-customElements.define('fancy-button', FancyButton);</code>
-      </div>
+<fade-in delay="3600">
+  <h3>2. 外部記事統合（Qiita/Zenn）</h3>
 
-      <div class="callout callout-success fade-in-scroll">
-        <strong>✅ ベストプラクティス</strong>
-        <p>コンポーネント名には必ずハイフン（-）を含めてください。これにより、ネイティブHTML要素との衝突を防げます。</p>
-      </div>
+  <pre><code>
+async function fetchExternalArticles() {
+  const qiita = await fetch(...).then(r => r.json());
+  const zenn = await fetch(...).then(r => r.json());
+  fs.writeFileSync('public/external-articles.json', JSON.stringify([...qiita, ...zenn]));
+}
+  </code></pre>
+</fade-in>
 
-      <!-- まとめ -->
-      <h2 class="fade-in-scroll">まとめ</h2>
-      
-      <p class="fade-in-scroll">
-        Web Componentsは、フレームワークに依存しない強力なコンポーネント化技術です。
-        以下のような場面で特に有効です：
-      </p>
+<fade-in delay="3800">
+  <callout-box type="success" title="拡張性の高さ">
+    新しいプラットフォーム追加も容易。
+  </callout-box>
+</fade-in>
 
-      <ul class="fade-in-scroll">
-        <li>複数のフレームワーク間で共有するコンポーネント</li>
-        <li>軽量なインタラクティブ要素</li>
-        <li>デザインシステムの構築</li>
-        <li>マイクロフロントエンドアーキテクチャ</li>
-      </ul>
+<fade-in delay="4000">
+  <h3>3. サイトマップ自動生成</h3>
 
-      <p class="fade-in-scroll">
-        次回は、より実践的なパターンとライブラリの活用方法について解説します。
-      </p>
+  <pre><code>
+export default async function sitemap() {
+  const posts = await getAllPosts();
+  const external = await getExternalArticles();
+  return [...];
+}
+  </code></pre>
+</fade-in>
 
-    </article>
-  </main>
+<fade-in delay="4200">
+  <h3>4. インタラクティブMDXコンポーネント</h3>
+  <ul>
+    <li>FadeIn</li>
+    <li>CalloutBox</li>
+    <li>PoCTimeline</li>
+    <li>DecisionFlow</li>
+    <li>ComparisonCard</li>
+    <li>InteractiveChecklist</li>
+  </ul>
+</fade-in>
 
-  <footer class="fade-in-scroll">
-    <p>&copy; 2024 My Tech Blog. All rights reserved.</p>
-  </footer>
+<hr />
 
-  <script src="../blog.js"></script>
-</body>
-</html>
+<fade-in delay="4400">
+  <h2>得られた価値：投資対効果</h2>
+</fade-in>
+
+<fade-in delay="4600">
+  <h3>開発コスト vs 得られた価値</h3>
+
+  <table>
+    <thead>
+      <tr><th>指標</th><th>従来</th><th>このシステム</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>記事公開までの時間</td><td>数時間〜数日</td><td>2-3分</td></tr>
+      <tr><td>プラットフォーム横断作業</td><td>手動転載</td><td>自動統合</td></tr>
+      <tr><td>サイトマップ更新</td><td>手動</td><td>自動</td></tr>
+      <tr><td>SEO管理</td><td>分散</td><td>一元化</td></tr>
+      <tr><td>運用コスト</td><td>継続発生</td><td>ほぼゼロ</td></tr>
+    </tbody>
+  </table>
+</fade-in>
+
+<hr />
+
+<fade-in delay="5400">
+  <h3>技術的な学び</h3>
+  <ul>
+    <li>App Router採用は正解</li>
+    <li>prebuild cacheでAPI制約回避</li>
+    <li>MDXで表現力確保</li>
+    <li>CSS Modulesで安定化</li>
+  </ul>
+</fade-in>
+
+<hr />
+
+<fade-in delay="5600">
+  <h2>このシステムの本質的価値</h2>
+</fade-in>
+
+<fade-in delay="5800">
+  <p><strong>これは「思考の外部化と発信を最小限の摩擦で実現するプラットフォーム」だ。</strong></p>
+</fade-in>
+
+<fade-in delay="6000">
+  <callout-box type="critical" title="製造業17年から学んだ設計哲学">
+    <ol>
+      <li>個人依存を排除</li>
+      <li>自動化できるものは全て自動化</li>
+      <li>摩擦を最小化</li>
+    </ol>
+  </callout-box>
+</fade-in>
+
+<hr />
+
+<fade-in delay="6200">
+  <h3>今後の拡張可能性</h3>
+  <ul>
+    <li>タグフィルタ</li>
+    <li>全文検索</li>
+    <li>コメント</li>
+    <li>アナリティクス</li>
+  </ul>
+</fade-in>
+
+<fade-in delay="6600">
+  <h2>まとめ：アイデアから生まれた価値</h2>
+</fade-in>
+
+<fade-in delay="6800">
+  <ul>
+    <li>外部プラットフォームを読み込む</li>
+    <li>全自動化</li>
+    <li>インタラクティブ性</li>
+  </ul>
+</fade-in>
+
+<fade-in delay="7000">
+  <callout-box type="success" title="最も重要な価値">
+    <strong>「書く」ことに100%集中できる環境を手に入れた。</strong>
+  </callout-box>
+</fade-in>
+
+<hr />
+
+<p>
+  <strong>GitHub:</strong> <a href="https://github.com/rancorder/portfolio-react-enterprise">rancorder/portfolio-react-enterprise</a><br />
+  <strong>Live:</strong> <a href="https://rancorder.vercel.app">https://rancorder.vercel.app</a>
+</p>
