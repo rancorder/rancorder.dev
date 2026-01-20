@@ -2,13 +2,13 @@
 title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
 date: 2026-01-20
 category: 技術プロジェクト管理
-excerpt: Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤の設計思想と実装。
+excerpt: Qiita/Zenn統合、自動サイトマップ、インタラクティブHTML──30時間で構築した自動化基盤の設計思想と実装。
 readingTime: 14 min read
 -->
 
 <fade-in>
   <h1>GitHubにプッシュするだけのブログ量産システム</h1>
-  <p><strong>Qiita/Zenn統合、自動サイトマップ、インタラクティブMDX──30時間で構築した自動化基盤</strong></p>
+  <p><strong>Qiita/Zenn統合、自動サイトマップ、インタラクティブHTML──30時間で構築した自動化基盤</strong></p>
 </fade-in>
 
 <hr />
@@ -42,7 +42,7 @@ readingTime: 14 min read
 
   <pre><code>
 理想のフロー:
-アイデア → MDX作成 → GitHub push → 2-3分で公開完了
+アイデア → HTML作成 → GitHub push → 2-3分で公開完了
                         ↑
                    摩擦がほぼゼロ
   </code></pre>
@@ -78,7 +78,7 @@ readingTime: 14 min read
       <tr><th>従来の手動作業</th><th>このシステム</th></tr>
     </thead>
     <tbody>
-      <tr><td>記事インデックスの更新</td><td>MDXファイルを置くだけで自動検出</td></tr>
+      <tr><td>記事インデックスの更新</td><td>HTMLファイルを置くだけで自動検出</td></tr>
       <tr><td>サイトマップ生成</td><td>ビルド時に自動生成</td></tr>
       <tr><td>外部記事の転載</td><td>prebuildで自動取得・統合</td></tr>
       <tr><td>デプロイ作業</td><td>GitHub push → Vercel自動デプロイ</td></tr>
@@ -124,7 +124,7 @@ readingTime: 14 min read
 </fade-in>
 
 <fade-in delay="2400">
-  <h3>MDX（Markdown + JSX）</h3>
+  <h3>HTML</h3>
 
   <pre><code>
 &lt;CalloutBox type="warning" title="注意"&gt;
@@ -214,7 +214,7 @@ export default async function sitemap() {
 </fade-in>
 
 <fade-in delay="4200">
-  <h3>4. インタラクティブMDXコンポーネント</h3>
+  <h3>4. インタラクティブHTMLコンポーネント</h3>
   <ul>
     <li>FadeIn</li>
     <li>CalloutBox</li>
@@ -255,7 +255,7 @@ export default async function sitemap() {
   <ul>
     <li>App Router採用は正解</li>
     <li>prebuild cacheでAPI制約回避</li>
-    <li>MDXで表現力確保</li>
+    <li>HTMLで表現力確保</li>
     <li>CSS Modulesで安定化</li>
   </ul>
 </fade-in>
