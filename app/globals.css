@@ -1,137 +1,267 @@
-/* app/globals.css - モバイル完全対応版 */
+/* =========================================================
+   globals.css (Refactored)
+   - Readability / Performance / Maintainability
+   - Dark-first baseline, safe defaults
+   - Structural components: fade-in, callout-box, table-wrap
+========================================================= */
 
-/* リセット */
+/* -------------------------
+   Design tokens
+------------------------- */
+:root{
+  color-scheme: dark;
+
+  /* Colors */
+  --bg: #0f172a;        /* slate-900 */
+  --panel: #111827;     /* gray-900-ish */
+  --panel2: rgba(2, 6, 23, .35);
+  --fg: #e2e8f0;        /* slate-200 */
+  --muted: #94a3b8;     /* slate-400 */
+  --border: rgba(226,232,240,.14);
+
+  --link: #60a5fa;
+  --link-hover: #93c5fd;
+
+  --focus: rgba(96,165,250,.40);
+
+  /* Layout */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 12px 28px rgba(2,6,23,.35);
+
+  /* Typography */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+          Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --lh: 1.85;
+  --lh-tight: 1.35;
+
+  /* Spacing */
+  --s1: 8px;
+  --s2: 12px;
+  --s3: 16px;
+  --s4: 24px;
+  --s5: 32px;
+  --s6: 48px;
+}
+
+/* -------------------------
+   Base / Reset (minimal)
+------------------------- */
 *,
 *::before,
-*::after {
+*::after{
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-html {
-  font-size: 16px; /* ベースフォントサイズ - iOS自動ズーム防止 */
-  -webkit-text-size-adjust: 100%; /* iOSでのテキストサイズ自動調整を防止 */
+html{
   text-size-adjust: 100%;
-  overflow-x: hidden;
-  max-width: 100vw;
+  scroll-behavior: smooth;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  line-height: 1.6;
-  color: #e2e8f0;
-  background: #0f172a;
-  overflow-x: hidden;
-  max-width: 100vw;
-  width: 100%;
-  position: relative;
+body{
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  line-height: var(--lh);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 横スクロール完全防止 */
-#__next {
-  overflow-x: hidden;
-  max-width: 100vw;
-  width: 100%;
-}
-
-main {
-  overflow-x: hidden;
-  max-width: 100vw;
-  width: 100%;
-}
-
-/* 画像・メディア */
-img,
-picture,
-video,
-canvas,
-svg {
+img, svg, video, canvas{
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* リンク・ボタンのタッチターゲット */
-a,
-button {
-  min-height: 44px;
-  min-width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-tap-highlight-color: rgba(96, 165, 250, 0.2);
+input, button, textarea, select{
+  font: inherit;
 }
 
-/* フォームのズーム防止 */
-input,
-textarea,
-select {
-  font-size: 16px; /* 16px未満だとiOSが自動ズーム */
+::selection{
+  background: rgba(96,165,250,.28);
 }
 
-/* テーブルの横スクロール */
-table {
-  width: 100%;
-  max-width: 100%;
+/* -------------------------
+   Links / Focus
+------------------------- */
+a{
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+a:hover{
+  color: var(--link-hover);
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible{
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Skip link (optional utility) */
+.skip-link{
+  position: absolute;
+  left: -999px;
+  top: var(--s2);
+  z-index: 1000;
+  padding: 10px 12px;
+  background: var(--fg);
+  color: #0b1220;
+  border-radius: var(--radius-sm);
+}
+.skip-link:focus{
+  left: var(--s2);
+}
+
+/* -------------------------
+   Typography helpers
+------------------------- */
+h1, h2, h3{
+  line-height: 1.25;
+}
+p{
+  margin: 0 0 var(--s3);
+}
+ul, ol{
+  margin: 0 0 var(--s3);
+  padding-left: 1.2em;
+}
+li{
+  margin: 6px 0;
+}
+
+/* -------------------------
+   Code
+------------------------- */
+code, pre{
+  font-family: var(--mono);
+}
+
+pre{
+  margin: var(--s3) 0 var(--s4);
+  padding: 14px 14px;
+  background: #0b1220;
+  color: #e5e7eb;
+  border-radius: var(--radius);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 10px 20px rgba(2,6,23,.35);
+}
+
+:not(pre) > code{
+  background: rgba(148,163,184,.18);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+/* -------------------------
+   Tables (SAFE DEFAULTS)
+   - Do NOT break table layout.
+   - Horizontal scroll is handled by .table-wrap
+------------------------- */
+table{
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+th{
+  background: rgba(148,163,184,.12);
+  font-weight: 700;
+}
+
+/* Responsive table wrapper */
+.table-wrap{
+  margin: var(--s3) 0 var(--s4);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel2);
+}
+.table-wrap table{
+  min-width: 560px; /* 崩れ防止の核心：モバイルは横スクで耐える */
+}
+
+/* -------------------------
+   Structural components (custom tags)
+------------------------- */
+
+/* fade-in: default visible; JS adds data-fx to enable effect */
+fade-in{
   display: block;
 }
 
-/* コードブロックの横スクロール */
-pre {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+/* JSが動いた時だけ隠す（JS不発でも読める） */
+fade-in[data-fx="fade"]{
+  opacity: 0.001;
+  transform: translateY(10px);
+  transition: opacity 420ms ease, transform 420ms ease;
+  will-change: opacity, transform;
 }
 
-code {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+fade-in.is-visible{
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* 長いURL・テキストの折り返し */
-p,
-li,
-div {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
+/* callout-box: base */
+callout-box{
+  display: block;
+  margin: var(--s3) 0 var(--s4);
 }
 
-/* スムーススクロール */
-html {
-  scroll-behavior: smooth;
+callout-box .callout{
+  padding: 14px 14px;
+  border-left: 6px solid rgba(96,165,250,.55);
+  background: linear-gradient(180deg, rgba(241,245,249,.10), rgba(2,6,23,.08));
+  border-radius: var(--radius);
+  color: var(--fg);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+callout-box .callout__title{
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-weight: 800;
+  line-height: var(--lh-tight);
 }
 
-/* モバイル専用 */
-@media (max-width: 640px) {
-  /* タッチデバイスのホバー効果を無効化 */
-  @media (hover: none) {
-    a:hover,
-    button:hover {
-      /* ホバー効果をactiveに置き換え */
-    }
-  }
+callout-box .callout__title small{
+  font-weight: 600;
+  color: var(--muted);
 }
 
-/* 200%ズーム対応 */
-@media (min-resolution: 2dppx) {
-  body {
-    font-size: 16px; /* 高解像度でも16pxを維持 */
+callout-box .callout__body{
+  margin: 0;
+  color: var(--fg);
+}
+
+/* Type variants (optional) */
+callout-box .callout[data-type="info"]{ border-left-color: rgba(96,165,250,.65); }
+callout-box .callout[data-type="success"]{ border-left-color: rgba(34,197,94,.55); }
+callout-box .callout[data-type="warning"]{ border-left-color: rgba(245,158,11,.55); }
+callout-box .callout[data-type="critical"]{ border-left-color: rgba(239,68,68,.55); }
+
+/* -------------------------
+   Reduced motion
+------------------------- */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior: auto; }
+
+  fade-in[data-fx="fade"]{
+    transition: none;
+    transform: none;
+    opacity: 1;
   }
 }
