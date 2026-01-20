@@ -1,3 +1,4 @@
+import EnhanceEffects from './EnhanceEffects';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import styles from './article.module.css';
