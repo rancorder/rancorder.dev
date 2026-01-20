@@ -1,0 +1,213 @@
+<!--
+title: GitHubにプッシュするだけのブログ量産システム：アイデアから2-3分で公開完了
+date: 2026-01-20
+category: 技術プロジェクト管理
+excerpt: Qiita/Zenn統合、自動サイトマップ、インタラクティブHTML──30時間で構築した自動化基盤の設計思想と実装。
+readingTime: 14 min read
+-->
+
+<article aria-label="記事本文">
+  <fade-in>
+    <header>
+      <h1>GitHubにプッシュするだけのブログ量産システム</h1>
+      <p><strong>Qiita/Zenn統合、自動サイトマップ、インタラクティブHTML──30時間で構築した自動化基盤</strong></p>
+    </header>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="200">
+    <h2 id="why-needed">なぜこのシステムが必要だったのか</h2>
+    <p>
+      私は17年間、製造業でエンタープライズPMとして「技術的に完成したPoC」を「安定稼働するProduction」に移行させる仕事をしてきた。
+      そこで学んだ最も重要な原則は、<strong>「個人の努力に依存しない構造を作る」</strong>ということだ。
+    </p>
+  </fade-in>
+
+  <fade-in delay="400">
+    <h3 id="structural-issues">コンテンツ発信の構造的課題</h3>
+    <ul>
+      <li><strong>プラットフォームが分散</strong>：Qiita、Zenn、個人ブログ、note...</li>
+      <li><strong>転載の手間</strong>：複数サイトにコピペ</li>
+      <li><strong>SEO効果の分散</strong></li>
+      <li><strong>運用負荷</strong>：サイトマップ更新、インデックス管理、デザイン調整...</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="600">
+    <callout-box type="warning" title="よくある失敗パターン">
+      「技術ブログを始めよう！」→ WordPressセットアップ → プラグイン設定に2日 → デザイン調整に3日 → 疲れて記事を書かない → 放置
+    </callout-box>
+  </fade-in>
+
+  <fade-in delay="800">
+    <p>私が求めていたのは、<strong>「思考から公開まで」の摩擦をゼロにするシステム</strong>だった。</p>
+
+    <pre><code>
+理想のフロー:
+アイデア → HTML作成 → GitHub push → 2-3分で公開完了
+                        ↑
+                   摩擦がほぼゼロ
+    </code></pre>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="1000">
+    <h2 id="core-ideas">アイデアの核心：3つの設計思想</h2>
+  </fade-in>
+
+  <fade-in delay="1200">
+    <h3 id="import-external">1. 外部プラットフォームを「読み込む」発想</h3>
+
+    <callout-box type="success" title="発想の転換">
+      <strong>「記事を書く場所」ではなく「記事を集約する場所」を作る。</strong><br />
+      QiitaやZennの記事を自動取得して統合。プラットフォーム追加も容易。
+    </callout-box>
+
+    <div class="table-wrap" role="region" aria-label="外部記事の統合例（表）" tabindex="0">
+      <table>
+        <thead>
+          <tr><th>従来</th><th>このシステム</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>記事インデックスの更新</td><td>HTMLファイルを置くだけで自動検出</td></tr>
+          <tr><td>サイトマップ生成</td><td>ビルド時に自動生成</td></tr>
+          <tr><td>外部記事の転載</td><td>prebuildで自動取得・統合</td></tr>
+          <tr><td>デプロイ作業</td><td>GitHub push → Vercel自動デプロイ</td></tr>
+          <tr><td>メタデータ設定</td><td>Frontmatterに書くだけ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </fade-in>
+
+  <fade-in delay="1400">
+    <h3 id="automate-index">2. 記事管理の自動化</h3>
+    <p><strong>記事は「ファイルを置くだけ」。管理コストはゼロ。</strong></p>
+    <pre><code>
+/content
+  ├── 2026-01-20-web-components-guide.html
+  ├── 2026-01-15-redis-lock-guide.html
+  └── ...
+    </code></pre>
+  </fade-in>
+
+  <fade-in delay="1600">
+    <h3 id="sitemap-auto">3. サイトマップ自動生成</h3>
+    <pre><code>
+export default async function sitemap() {
+  const posts = await getAllPosts();
+  const external = await getExternalArticles();
+  return [...];
+}
+    </code></pre>
+  </fade-in>
+
+  <fade-in delay="1800">
+    <h3 id="interactive-components">4. インタラクティブHTMLコンポーネント</h3>
+    <ul>
+      <li>FadeIn</li>
+      <li>CalloutBox</li>
+      <li>PoCTimeline</li>
+      <li>DecisionFlow</li>
+      <li>ComparisonCard</li>
+      <li>InteractiveChecklist</li>
+    </ul>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="2000">
+    <h2 id="value-roi">得られた価値：投資対効果</h2>
+  </fade-in>
+
+  <fade-in delay="2200">
+    <h3 id="cost-vs-value">開発コスト vs 得られた価値</h3>
+
+    <div class="table-wrap" role="region" aria-label="開発コストと価値の比較（表）" tabindex="0">
+      <table>
+        <thead>
+          <tr><th>指標</th><th>従来</th><th>このシステム</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>記事公開までの時間</td><td>数時間〜数日</td><td>2-3分</td></tr>
+          <tr><td>プラットフォーム横断作業</td><td>手動転載</td><td>自動統合</td></tr>
+          <tr><td>サイトマップ更新</td><td>手動</td><td>自動</td></tr>
+          <tr><td>SEO管理</td><td>分散</td><td>一元化</td></tr>
+          <tr><td>運用コスト</td><td>継続発生</td><td>ほぼゼロ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="2400">
+    <h3 id="learnings">技術的な学び</h3>
+    <ul>
+      <li>App Router採用は正解</li>
+      <li>prebuild cacheでAPI制約回避</li>
+      <li>HTMLで表現力確保</li>
+      <li>CSS Modulesで安定化</li>
+    </ul>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="2600">
+    <h2 id="essence">このシステムの本質的価値</h2>
+  </fade-in>
+
+  <fade-in delay="2800">
+    <p><strong>これは「思考の外部化と発信を最小限の摩擦で実現するプラットフォーム」だ。</strong></p>
+  </fade-in>
+
+  <fade-in delay="3000">
+    <callout-box type="critical" title="製造業17年から学んだ設計哲学">
+      <ol>
+        <li>個人依存を排除</li>
+        <li>自動化できるものは全て自動化</li>
+        <li>摩擦を最小化</li>
+      </ol>
+    </callout-box>
+  </fade-in>
+
+  <hr />
+
+  <fade-in delay="3200">
+    <h3 id="future">今後の拡張可能性</h3>
+    <ul>
+      <li>タグフィルタ</li>
+      <li>全文検索</li>
+      <li>コメント</li>
+      <li>アナリティクス</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="3400">
+    <h2 id="summary">まとめ：アイデアから生まれた価値</h2>
+  </fade-in>
+
+  <fade-in delay="3600">
+    <ul>
+      <li>外部プラットフォームを読み込む</li>
+      <li>全自動化</li>
+      <li>インタラクティブ性</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="3800">
+    <callout-box type="success" title="最も重要な価値">
+      <strong>「書く」ことに100%集中できる環境を手に入れた。</strong>
+    </callout-box>
+  </fade-in>
+
+  <hr />
+
+  <footer>
+    <p>
+      <strong>GitHub:</strong> <a href="https://github.com/rancorder/portfolio-react-enterprise">rancorder/portfolio-react-enterprise</a><br />
+      <strong>Live:</strong> <a href="https://rancorder.vercel.app">https://rancorder.vercel.app</a>
+    </p>
+  </footer>
+</article>
