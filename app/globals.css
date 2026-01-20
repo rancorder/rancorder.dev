@@ -1,33 +1,51 @@
 /* =========================================================
-   globals.css (Refactored)
-   - Readability / Performance / Maintainability
-   - Dark-first baseline, safe defaults
-   - Structural components: fade-in, callout-box, table-wrap
+   app/globals.css (Chic Dark Refactor - Complete)
+   Goals:
+   - Readability first (contrast, typography rhythm)
+   - Maintainability (tokens + structural utilities)
+   - Performance (no heavy resets, minimal global rules)
+   - A11y (focus-visible, reduced motion)
+   - Safe tables (NO display:block on table)
 ========================================================= */
 
 /* -------------------------
-   Design tokens
+   Tokens
 ------------------------- */
 :root{
   color-scheme: dark;
 
-  /* Colors */
-  --bg: #0f172a;        /* slate-900 */
-  --panel: #111827;     /* gray-900-ish */
-  --panel2: rgba(2, 6, 23, .35);
-  --fg: #e2e8f0;        /* slate-200 */
-  --muted: #94a3b8;     /* slate-400 */
-  --border: rgba(226,232,240,.14);
+  /* Base palette */
+  --bg: #0b1220;             /* deep navy */
+  --bg-2: #0f172a;           /* slate-900 */
+  --text: #e6edf7;           /* readable light text */
+  --text-muted: rgba(230,237,247,.78);
+  --text-dim: rgba(230,237,247,.62);
 
-  --link: #60a5fa;
-  --link-hover: #93c5fd;
+  --link: #8ab4ff;           /* calm blue */
+  --link-hover: #b7d0ff;
 
-  --focus: rgba(96,165,250,.40);
+  --border: rgba(230,237,247,.12);
+  --border-strong: rgba(230,237,247,.18);
 
-  /* Layout */
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 12px 28px rgba(2,6,23,.35);
+  /* Surfaces (cards / article panels) */
+  --surface: rgba(255,255,255,.05);
+  --surface-2: rgba(255,255,255,.075);
+  --surface-3: rgba(255,255,255,.10);
+
+  /* Accents */
+  --accent: #60a5fa;         /* blue-400 */
+  --accent-2: #34d399;       /* emerald-400 */
+  --warning: #fbbf24;        /* amber-400 */
+  --danger: #fb7185;         /* rose-400 */
+
+  /* Focus */
+  --focus: rgba(96,165,250,.42);
+
+  /* Radius / Shadow */
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow-soft: 0 20px 60px rgba(2,6,23,.60);
+  --shadow-card: 0 12px 28px rgba(2,6,23,.45);
 
   /* Typography */
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
@@ -35,7 +53,7 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
   --lh: 1.85;
-  --lh-tight: 1.35;
+  --lh-tight: 1.30;
 
   /* Spacing */
   --s1: 8px;
@@ -47,7 +65,7 @@
 }
 
 /* -------------------------
-   Base / Reset (minimal)
+   Minimal base / reset
 ------------------------- */
 *,
 *::before,
@@ -62,8 +80,10 @@ html{
 
 body{
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
+  min-height: 100dvh;
+  background: radial-gradient(1200px 600px at 50% 0%, rgba(96,165,250,.12), transparent 55%),
+              linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
+  color: var(--text);
   font-family: var(--font);
   line-height: var(--lh);
   text-rendering: optimizeLegibility;
@@ -85,7 +105,7 @@ input, button, textarea, select{
 }
 
 /* -------------------------
-   Links / Focus
+   Links / Focus / Tap target helpers
 ------------------------- */
 a{
   color: var(--link);
@@ -103,15 +123,15 @@ a:hover{
   border-radius: var(--radius-sm);
 }
 
-/* Skip link (optional utility) */
+/* Optional: Skip link */
 .skip-link{
   position: absolute;
   left: -999px;
   top: var(--s2);
   z-index: 1000;
   padding: 10px 12px;
-  background: var(--fg);
-  color: #0b1220;
+  background: var(--text);
+  color: #08101d;
   border-radius: var(--radius-sm);
 }
 .skip-link:focus{
@@ -119,10 +139,11 @@ a:hover{
 }
 
 /* -------------------------
-   Typography helpers
+   Typography basics
 ------------------------- */
 h1, h2, h3{
   line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 p{
   margin: 0 0 var(--s3);
@@ -145,35 +166,38 @@ code, pre{
 pre{
   margin: var(--s3) 0 var(--s4);
   padding: 14px 14px;
-  background: #0b1220;
-  color: #e5e7eb;
+  background: rgba(2,6,23,.72);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  box-shadow: 0 10px 20px rgba(2,6,23,.35);
+  box-shadow: var(--shadow-card);
 }
 
 :not(pre) > code{
   background: rgba(148,163,184,.18);
   padding: 2px 6px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 /* -------------------------
    Tables (SAFE DEFAULTS)
-   - Do NOT break table layout.
+   - Never set table display:block
    - Horizontal scroll is handled by .table-wrap
 ------------------------- */
 table{
   width: 100%;
   border-collapse: collapse;
 }
+
 th, td{
   padding: 12px 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
 }
+
 th{
   background: rgba(148,163,184,.12);
   font-weight: 700;
@@ -186,17 +210,54 @@ th{
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--panel2);
+  background: rgba(2,6,23,.25);
+  box-shadow: var(--shadow-card);
 }
+
 .table-wrap table{
-  min-width: 560px; /* 崩れ防止の核心：モバイルは横スクで耐える */
+  min-width: 560px; /* 崩れ防止：モバイルは横スクで耐える */
+}
+
+.table-wrap th,
+.table-wrap td{
+  white-space: normal;
+}
+
+.table-wrap tr:last-child td{
+  border-bottom: 0;
 }
 
 /* -------------------------
-   Structural components (custom tags)
+   Structural utilities (surfaces)
 ------------------------- */
+.u-surface{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
 
-/* fade-in: default visible; JS adds data-fx to enable effect */
+.u-surface--tight{
+  border-radius: var(--radius-sm);
+}
+
+.u-surface--hover:hover{
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.u-muted{
+  color: var(--text-muted);
+}
+
+.u-dim{
+  color: var(--text-dim);
+}
+
+/* -------------------------
+   Custom tags: fade-in / callout-box
+   - Safe design: default visible, JS enables the effect
+------------------------- */
 fade-in{
   display: block;
 }
@@ -214,18 +275,21 @@ fade-in.is-visible{
   transform: translateY(0);
 }
 
-/* callout-box: base */
+/* Callout base */
 callout-box{
   display: block;
   margin: var(--s3) 0 var(--s4);
 }
 
+/* 既存HTMLが <callout-box> 内で .callout を吐く想定 */
 callout-box .callout{
   padding: 14px 14px;
   border-left: 6px solid rgba(96,165,250,.55);
-  background: linear-gradient(180deg, rgba(241,245,249,.10), rgba(2,6,23,.08));
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  color: var(--fg);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
 }
 
 callout-box .callout__title{
@@ -239,19 +303,19 @@ callout-box .callout__title{
 
 callout-box .callout__title small{
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 
 callout-box .callout__body{
   margin: 0;
-  color: var(--fg);
+  color: var(--text);
 }
 
 /* Type variants (optional) */
-callout-box .callout[data-type="info"]{ border-left-color: rgba(96,165,250,.65); }
-callout-box .callout[data-type="success"]{ border-left-color: rgba(34,197,94,.55); }
-callout-box .callout[data-type="warning"]{ border-left-color: rgba(245,158,11,.55); }
-callout-box .callout[data-type="critical"]{ border-left-color: rgba(239,68,68,.55); }
+callout-box .callout[data-type="info"]{ border-left-color: rgba(96,165,250,.70); }
+callout-box .callout[data-type="success"]{ border-left-color: rgba(52,211,153,.65); }
+callout-box .callout[data-type="warning"]{ border-left-color: rgba(251,191,36,.70); }
+callout-box .callout[data-type="critical"]{ border-left-color: rgba(251,113,133,.70); }
 
 /* -------------------------
    Reduced motion
