@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Componentsの完全ガイド | My Tech Blog</title>
+  <meta name="description" content="Web Componentsの基礎から実践まで完全解説">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header>
+    <nav><a href="../index.html">← ホームに戻る</a></nav>
+  </header>
+
+  <main>
+    <article>
+      <h1 class="fade-in-scroll">Web Componentsの完全ガイド</h1>
+      <time class="fade-in-scroll">2024-01-20</time>
+
+      <p class="fade-in-scroll">
+        Web Componentsは、再利用可能なカスタムHTML要素を作成するための標準技術です。
+        この記事では、基礎から実践的な使い方まで詳しく解説します。
+      </p>
+
+      <!-- タブの例 -->
+      <h2 class="fade-in-scroll">主要な技術スタック</h2>
+      
+      <div class="tab-group fade-in-scroll">
+        <div class="tab-buttons">
+          <button class="tab-button">Custom Elements</button>
+          <button class="tab-button">Shadow DOM</button>
+          <button class="tab-button">Templates</button>
+        </div>
+        <div class="tab-panel">
+          <h3>Custom Elements（カスタム要素）</h3>
+          <p>独自のHTML要素を定義できる機能です。</p>
+          <ul>
+            <li>クラスベースで要素を定義</li>
+            <li>ライフサイクルコールバックで動作を制御</li>
+            <li>既存の要素を拡張可能</li>
+          </ul>
+        </div>
+        <div class="tab-panel">
+          <h3>Shadow DOM</h3>
+          <p>カプセル化されたDOMツリーを作成できます。</p>
+          <ul>
+            <li>スタイルの隔離</li>
+            <li>DOMの隠蔽</li>
+            <li>コンポーネントの独立性</li>
+          </ul>
+        </div>
+        <div class="tab-panel">
+          <h3>HTML Templates</h3>
+          <p>再利用可能なマークアップのテンプレートです。</p>
+          <ul>
+            <li>&lt;template&gt;タグで定義</li>
+            <li>レンダリング時までパース不要</li>
+            <li>効率的なDOM生成</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 吹き出しの例 -->
+      <div class="callout callout-info fade-in-scroll">
+        <strong>💡 ポイント</strong>
+        <p>Web Componentsは全てのモダンブラウザでネイティブサポートされています。フレームワークなしで使えるのが大きな利点です。</p>
+      </div>
+
+      <!-- コードブロックの例 -->
+      <h2 class="fade-in-scroll">基本的な実装例</h2>
+      
+      <div class="code-block fade-in-scroll">
+<code>// カスタム要素の定義
+class MyComponent extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML = `
+      &lt;div class="my-component"&gt;
+        &lt;h3&gt;Hello, Web Components!&lt;/h3&gt;
+        &lt;p&gt;This is a custom element.&lt;/p&gt;
+      &lt;/div&gt;
+    `;
+  }
+}
+
+// カスタム要素の登録
+customElements.define('my-component', MyComponent);</code>
+      </div>
+
+      <!-- アコーディオンの例 -->
+      <h2 class="fade-in-scroll">よくある質問</h2>
+
+      <div class="accordion fade-in-scroll">
+        <div class="accordion-header">
+          <span>Reactと併用できますか？</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <p>はい、可能です。Reactコンポーネント内でWeb Componentsを使用できます。ただし、イベントハンドリングやプロパティの受け渡しには注意が必要です。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion fade-in-scroll">
+        <div class="accordion-header">
+          <span>IEはサポートされていますか？</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <p>Internet Explorerはサポートされていません。モダンブラウザ（Chrome、Firefox、Safari、Edge）のみが対象です。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion fade-in-scroll">
+        <div class="accordion-header">
+          <span>パフォーマンスはどうですか？</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="accordion-body">
+            <p>ネイティブAPIなので非常に高速です。仮想DOMを使用しないため、小規模なコンポーネントでは特に効率的です。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 別の吹き出し -->
+      <div class="callout callout-warning fade-in-scroll">
+        <strong>⚠️ 注意点</strong>
+        <p>Shadow DOMを使用すると、グローバルCSSが適用されなくなります。コンポーネント内でスタイルを定義する必要があります。</p>
+      </div>
+
+      <!-- より詳しいコード例 -->
+      <h2 class="fade-in-scroll">Shadow DOMを使った実装</h2>
+
+      <div class="code-block fade-in-scroll">
+<code>class FancyButton extends HTMLElement {
+  constructor() {
+    super();
+    // Shadow DOMをアタッチ
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.shadowRoot.innerHTML = `
+      &lt;style&gt;
+        button {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          padding: 1rem 2rem;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: transform 0.3s;
+        }
+        button:hover {
+          transform: scale(1.05);
+        }
+      &lt;/style&gt;
+      &lt;button&gt;
+        &lt;slot&gt;Click me&lt;/slot&gt;
+      &lt;/button&gt;
+    `;
+  }
+}
+
+customElements.define('fancy-button', FancyButton);</code>
+      </div>
+
+      <div class="callout callout-success fade-in-scroll">
+        <strong>✅ ベストプラクティス</strong>
+        <p>コンポーネント名には必ずハイフン（-）を含めてください。これにより、ネイティブHTML要素との衝突を防げます。</p>
+      </div>
+
+      <!-- まとめ -->
+      <h2 class="fade-in-scroll">まとめ</h2>
+      
+      <p class="fade-in-scroll">
+        Web Componentsは、フレームワークに依存しない強力なコンポーネント化技術です。
+        以下のような場面で特に有効です：
+      </p>
+
+      <ul class="fade-in-scroll">
+        <li>複数のフレームワーク間で共有するコンポーネント</li>
+        <li>軽量なインタラクティブ要素</li>
+        <li>デザインシステムの構築</li>
+        <li>マイクロフロントエンドアーキテクチャ</li>
+      </ul>
+
+      <p class="fade-in-scroll">
+        次回は、より実践的なパターンとライブラリの活用方法について解説します。
+      </p>
+
+    </article>
+  </main>
+
+  <footer class="fade-in-scroll">
+    <p>&copy; 2024 My Tech Blog. All rights reserved.</p>
+  </footer>
+
+  <script src="../blog.js"></script>
+</body>
+</html>
