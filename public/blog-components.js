@@ -125,21 +125,30 @@ class CodeBlock extends HTMLElement {
   }
 }
 
-// 5. Tab Group
+// ========================================
+// ⭐ UPDATED: Tab Group with Enhanced Styles
+// ========================================
 class TabGroup extends HTMLElement {
   connectedCallback() {
     const tabButtons = Array.from(this.querySelectorAll('[data-tab-button]'));
     const tabPanels = Array.from(this.querySelectorAll('[data-tab-panel]'));
     
+    // ⭐ スタイルを直接適用（SPA遷移対応）
+    this.applyButtonStyles(tabButtons);
+    
     tabButtons.forEach((button, index) => {
       button.addEventListener('click', () => {
         // すべて非アクティブに
-        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabButtons.forEach(btn => {
+          btn.classList.remove('active');
+          this.updateButtonStyle(btn, false);
+        });
         tabPanels.forEach(panel => panel.classList.remove('active'));
         
         // クリックされたタブをアクティブに
         button.classList.add('active');
         tabPanels[index].classList.add('active');
+        this.updateButtonStyle(button, true);
       });
     });
     
@@ -147,6 +156,72 @@ class TabGroup extends HTMLElement {
     if (tabButtons.length > 0 && tabPanels.length > 0) {
       tabButtons[0].classList.add('active');
       tabPanels[0].classList.add('active');
+      this.updateButtonStyle(tabButtons[0], true);
+    }
+  }
+  
+  // ⭐ ボタンスタイルを直接適用
+  applyButtonStyles(buttons) {
+    buttons.forEach(button => {
+      // 基本スタイルを強制適用
+      Object.assign(button.style, {
+        boxShadow: '0 2px 4px rgba(96, 165, 250, 0.1), inset 0 -1px 0 rgba(96, 165, 250, 0.2)',
+        borderRadius: '6px 6px 0 0',
+        background: 'linear-gradient(180deg, rgba(96, 165, 250, 0.03), transparent)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative'
+      });
+      
+      // ホバーエフェクト
+      button.addEventListener('mouseenter', () => {
+        if (!button.classList.contains('active')) {
+          Object.assign(button.style, {
+            boxShadow: '0 4px 12px rgba(96, 165, 250, 0.25), inset 0 -1px 0 rgba(96, 165, 250, 0.3)',
+            transform: 'translateY(-2px)',
+            background: 'linear-gradient(180deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05))'
+          });
+        }
+      });
+      
+      button.addEventListener('mouseleave', () => {
+        if (!button.classList.contains('active')) {
+          Object.assign(button.style, {
+            boxShadow: '0 2px 4px rgba(96, 165, 250, 0.1), inset 0 -1px 0 rgba(96, 165, 250, 0.2)',
+            transform: '',
+            background: 'linear-gradient(180deg, rgba(96, 165, 250, 0.03), transparent)'
+          });
+        }
+      });
+      
+      // クリックアニメーション
+      button.addEventListener('mousedown', () => {
+        button.style.transform = 'translateY(-1px) scale(0.98)';
+      });
+      
+      button.addEventListener('mouseup', () => {
+        if (button.classList.contains('active')) {
+          button.style.transform = 'translateY(0)';
+        } else {
+          button.style.transform = 'translateY(-2px)';
+        }
+      });
+    });
+  }
+  
+  // ⭐ アクティブ状態のスタイル更新
+  updateButtonStyle(button, isActive) {
+    if (isActive) {
+      Object.assign(button.style, {
+        boxShadow: '0 6px 20px rgba(96, 165, 250, 0.4), inset 0 1px 3px rgba(96, 165, 250, 0.15)',
+        background: 'linear-gradient(180deg, rgba(96, 165, 250, 0.15), rgba(96, 165, 250, 0.08))',
+        transform: 'translateY(0)'
+      });
+    } else {
+      Object.assign(button.style, {
+        boxShadow: '0 2px 4px rgba(96, 165, 250, 0.1), inset 0 -1px 0 rgba(96, 165, 250, 0.2)',
+        background: 'linear-gradient(180deg, rgba(96, 165, 250, 0.03), transparent)',
+        transform: ''
+      });
     }
   }
 }
@@ -256,4 +331,4 @@ customElements.define('progress-bar', ProgressBar);
 customElements.define('accordion-item', AccordionItem);
 customElements.define('tool-tip', ToolTip);
 
-console.log('✅ Blog Web Components loaded successfully');
+console.log('✅ Blog Web Components loaded successfully (with enhanced tab styles)');
