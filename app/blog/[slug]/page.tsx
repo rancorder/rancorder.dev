@@ -34,7 +34,8 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className={styles.articlePage}>
-      <article className={styles.articleContainer}>
+    　<EnhanceEffects />
+    　<article className={styles.articleContainer}>
         
         <Link href="/blog" className={styles.backLink}>
           ← Back to Blog
