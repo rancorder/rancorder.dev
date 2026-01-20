@@ -6,24 +6,67 @@ import styles from './BlogSection.module.css';
 type LatestPost = {
   slug: string;
   title: string;
-  excerpt: string;
-  date: string;        // "2026-01-20"
+  excerpt?: string;
+  date?: string;
   category?: string;
   readingTime?: string;
 };
 
-type ApiResponse =
-  | { ok: true; posts: LatestPost[] }
-  | { ok: false; error: string };
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
 
-function safeText(v: unknown): string {
+function pickArray(data: unknown): unknown[] | null {
+  // APIの返し方が変わっても拾えるようにする
+  if (Array.isArray(data)) return data;
+  if (!isRecord(data)) return null;
+
+  const candidates = ['posts', 'articles', 'items', 'data', 'latest', 'results'];
+  for (const key of candidates) {
+    const v = data[key];
+    if (Array.isArray(v)) return v;
+  }
+
+  // ok:true の包み
+  const ok = data['ok'];
+  const posts = data['posts'];
+  if (ok === true && Array.isArray(posts)) return posts;
+
+  return null;
+}
+
+function safeStr(v: unknown): string {
   return typeof v === 'string' ? v : '';
+}
+
+function normalizePost(p: unknown): LatestPost | null {
+  if (!isRecord(p)) return null;
+
+  // slug候補（APIにより名前が違う）
+  const slug =
+    safeStr(p.slug) ||
+    safeStr(p.id) ||
+    safeStr(p.path) ||
+    safeStr(p.url).replace(/^\/blog\//, '');
+
+  const title = safeStr(p.title) || safeStr(p.name);
+  if (!slug || !title) return null;
+
+  return {
+    slug,
+    title,
+    excerpt: safeStr(p.excerpt) || safeStr(p.description) || '',
+    date: safeStr(p.date) || safeStr(p.publishedAt) || '',
+    category: safeStr(p.category) || '',
+    readingTime: safeStr(p.readingTime) || safeStr(p.readTime) || '',
+  };
 }
 
 export default function BlogSection() {
   const [posts, setPosts] = useState<LatestPost[]>([]);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle'|'loading'|'ok'|'error'>('idle');
   const [error, setError] = useState<string>('');
+  const [debugKeys, setDebugKeys] = useState<string>('');
 
   const endpoint = useMemo(() => '/api/blog/latest?limit=3', []);
 
@@ -33,34 +76,22 @@ export default function BlogSection() {
     async function run() {
       setStatus('loading');
       setError('');
+      setDebugKeys('');
 
       try {
-        const res = await fetch(endpoint, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-          cache: 'no-store',
-        });
+        const res = await fetch(endpoint, { cache: 'no-store', headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const arr = pickArray(data);
+        if (!arr) {
+          if (isRecord(data)) setDebugKeys(Object.keys(data).join(', '));
+          throw new Error('API returned unexpected JSON shape');
         }
 
-        const data = (await res.json()) as ApiResponse;
-
-        if (!data || data.ok !== true || !Array.isArray((data as any).posts)) {
-          throw new Error('Invalid JSON shape');
-        }
-
+        const normalized = arr.map(normalizePost).filter(Boolean) as LatestPost[];
         if (cancelled) return;
-
-        const normalized = data.posts.map((p) => ({
-          slug: safeText(p.slug),
-          title: safeText(p.title),
-          excerpt: safeText(p.excerpt),
-          date: safeText(p.date),
-          category: safeText(p.category),
-          readingTime: safeText(p.readingTime),
-        })).filter(p => p.slug && p.title);
 
         setPosts(normalized);
         setStatus('ok');
@@ -98,8 +129,13 @@ export default function BlogSection() {
           <div className={styles.errorTitle}>Latest記事の取得に失敗</div>
           <div className={styles.errorBody}>
             <code>{error}</code>
+            {debugKeys && (
+              <div className={styles.errorHint}>
+                受け取ったJSONのキー: <code>{debugKeys}</code>
+              </div>
+            )}
             <div className={styles.errorHint}>
-              まず <code>/api/blog/latest</code> が 200 を返してるか確認（Vercelでも同じ）。
+              まず <code>/api/blog/latest</code> が 200 と JSON を返してるか確認（Vercelでも同じ）。
             </div>
           </div>
         </div>
@@ -107,7 +143,7 @@ export default function BlogSection() {
 
       {status === 'ok' && posts.length === 0 && (
         <div className={styles.empty} role="status">
-          まだ記事がありません（または slug/title が取得できていません）。
+          記事が0件です（slug/title が取れていない可能性）。
         </div>
       )}
 
@@ -122,7 +158,7 @@ export default function BlogSection() {
                 </span>
               </div>
               <div className={styles.cardTitle}>{p.title}</div>
-              <p className={styles.cardExcerpt}>{p.excerpt}</p>
+              {p.excerpt ? <p className={styles.cardExcerpt}>{p.excerpt}</p> : null}
               <div className={styles.cardArrow}>→</div>
             </a>
           ))}
