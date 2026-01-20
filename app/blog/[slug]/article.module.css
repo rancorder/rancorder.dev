@@ -1,180 +1,313 @@
-/* app/blog/[slug]/article.module.css
-   目的：読みやすさ / 壊れにくさ / 上書き競合の最小化
-*/
+/* app/blog/[slug]/article.module.css (Refactored) */
 
 .articlePage{
-  width: 100%;
-  max-width: 100%;
+  min-height: 100vh;
+  color: var(--text);
+  padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2rem);
 }
 
 .articleContainer{
-  width: min(1000px, 100%);
+  max-width: 880px;
+  width: 100%;
   margin: 0 auto;
-  padding: 24px 16px 64px;
 }
 
-/* ---- 記事の“面”を作る：白背景でも文字が白くならないよう固定 ---- */
-.articleSurface{
-  background: #0f172a; /* 全体がダークなら合わせる。白カードにするならここだけ変える */
-  color: #e2e8f0;
+/* Back link: tap-safe here (not global) */
+.backLink{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--link);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+}
+.backLink:hover{
+  background: rgba(255,255,255,.08);
+  border-color: var(--border-strong);
 }
 
-/* 記事本文：ここだけは必ず読める色に固定（白背景部品の事故を防ぐ） */
-.articleContent{
-  max-width: 72ch;
-  margin: 0 auto;
-  line-height: 1.85;
-  color: #e2e8f0;
+/* ===== Hero ===== */
+.articleHero{
+  margin-top: 14px;
+  margin-bottom: clamp(1.75rem, 4vw, 3.5rem);
+  padding: clamp(1.1rem, 2.6vw, 1.6rem);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+.articleHero::before{
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 220px;
+  background: radial-gradient(closest-side, rgba(96,165,250,.20), transparent 65%);
+  pointer-events: none;
 }
 
-/* 見出しのリズム */
-.articleContent :global(h1){
-  font-size: clamp(28px, 3.2vw, 42px);
-  line-height: 1.15;
+.metaRow{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.badge{
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.06);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.2;
+}
+.badge strong{
+  color: var(--text);
+  font-weight: 800;
+}
+
+.metaText{
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.dot{
+  margin: 0 8px;
+  opacity: .7;
+}
+
+.heroTitle{
+  margin: 0 0 10px;
+  font-size: clamp(28px, 3.4vw, 48px);
+  font-weight: 900;
+  line-height: 1.12;
   letter-spacing: -0.02em;
+  position: relative;
+}
+
+.heroDek{
   margin: 0 0 14px;
+  color: var(--muted);
+  font-size: clamp(0.98rem, 1.4vw, 1.1rem);
+  line-height: 1.7;
+  position: relative;
 }
 
+.heroActions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.actionLink{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  text-decoration: none;
+}
+.actionLink:hover{
+  background: rgba(255,255,255,.10);
+  border-color: var(--border-strong);
+}
+.actionLinkPrimary{
+  border-color: rgba(96,165,250,.45);
+  background: rgba(96,165,250,.14);
+}
+.actionLinkPrimary:hover{
+  background: rgba(96,165,250,.20);
+}
+
+/* ===== Article content ===== */
+.articleContent{
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* Prevent “double H1” if content still has one */
+.articleContent :global(h1){
+  display: none;
+}
+
+/* Headings rhythm */
 .articleContent :global(h2){
-  font-size: 22px;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  margin: 56px 0 10px;
+  margin: clamp(2rem, 4vw, 3rem) 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(96,165,250,.25);
+  font-size: clamp(1.35rem, 2.2vw, 2.05rem);
+  font-weight: 800;
+  color: var(--text);
 }
-
 .articleContent :global(h3){
-  font-size: 17px;
-  line-height: 1.35;
-  margin: 28px 0 10px;
+  margin: 22px 0 10px;
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  font-weight: 800;
+  color: var(--text);
 }
 
-/* 段落・リスト */
 .articleContent :global(p){
   margin: 0 0 14px;
+  line-height: 1.85;
+  color: var(--text);
+  font-size: clamp(0.98rem, 1.2vw, 1.06rem);
 }
 
 .articleContent :global(ul),
 .articleContent :global(ol){
-  margin: 0 0 14px;
+  margin: 14px 0 18px;
   padding-left: 1.2em;
 }
 
 .articleContent :global(li){
-  margin: 6px 0;
+  margin: 8px 0;
+  line-height: 1.75;
 }
 
-/* 区切り線：<hr> 連打でも読めるよう上品に */
-.articleContent :global(hr){
-  border: 0;
-  border-top: 1px solid rgba(226,232,240,.14);
-  margin: 32px 0;
-}
-
-/* リンク */
 .articleContent :global(a){
-  color: #60a5fa;
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: .2em;
 }
 .articleContent :global(a:hover){
-  text-decoration-thickness: 2px;
+  color: var(--link-hover);
 }
 
-/* 画像：CLSはHTML側でwidth/height推奨、ここは表示安定 */
-.articleContent :global(img){
-  max-width: 100%;
-  height: auto;
-  border-radius: 12px;
-}
-
-/* 引用 */
-.articleContent :global(blockquote){
-  margin: 18px 0;
-  padding: 12px 14px;
-  border-left: 4px solid rgba(96,165,250,.55);
-  background: rgba(30,41,59,.55);
-  border-radius: 12px;
-}
-
-/* ---- コード ---- */
 .articleContent :global(pre){
-  margin: 14px 0 18px;
-  padding: 14px 14px;
-  background: #0b1220;
-  color: #e5e7eb;
+  background: rgba(2,6,23,.72);
+  border: 1px solid var(--border);
   border-radius: 14px;
+  padding: 14px 14px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  margin: 16px 0 22px;
+}
+.articleContent :global(pre code){
+  background: none;
+  padding: 0;
+  color: var(--text);
+  white-space: pre;
+  display: block;
+  font-size: 0.9rem;
 }
 
 .articleContent :global(code){
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
-  line-height: 1.65;
-  tab-size: 2;
-}
-
-/* インラインコード（pre内は除外） */
-.articleContent :global(p code),
-.articleContent :global(li code){
-  background: rgba(148,163,184,.16);
+  background: rgba(96,165,250,.14);
   padding: 2px 6px;
-  border-radius: 8px;
+  border-radius: 10px;
+  color: #b7d0ff;
 }
 
-/* ---- 表：壊れない設計（table自体は壊さない） ---- */
-/* MDX側で <div className="table-wrap"> に包むのが前提 */
-.articleContent :global(.table-wrap){
-  margin: 16px 0 20px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border: 1px solid rgba(226,232,240,.14);
+/* Images */
+.articleContent :global(img){
   border-radius: 14px;
-  background: rgba(2,6,23,.25);
+  margin: 18px 0 22px;
 }
 
-.articleContent :global(.table-wrap table){
-  width: 100%;
-  min-width: 560px; /* モバイルで崩さず横スク */
-  border-collapse: collapse;
+/* Tables: SAFE (no display:block on table) */
+.articleContent :global(.table-wrap){
+  margin: 16px 0 22px;
 }
 
-.articleContent :global(.table-wrap th),
-.articleContent :global(.table-wrap td){
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(226,232,240,.14);
-  text-align: left;
-  vertical-align: top;
-  white-space: normal;
-  color: #e2e8f0;
+/* ===== Footer ===== */
+.articleFooter{
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
 }
 
-.articleContent :global(.table-wrap th){
-  background: rgba(148,163,184,.12);
-  font-weight: 700;
+.footerTitle{
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 900;
 }
 
-.articleContent :global(.table-wrap tr:last-child td){
-  border-bottom: 0;
+.footerGrid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (min-width: 720px){
+  .footerGrid{ grid-template-columns: 1fr 1fr; }
 }
 
-/* ---- callout-box は globals.css 側で基本スタイル推奨。
-   ここでは本文領域に収まる余白だけを補助 ---- */
-.articleContent :global(callout-box){
-  margin: 16px 0 20px;
+.linkCard{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  text-decoration: none;
+  color: var(--text);
+}
+.linkCard:hover{
+  background: rgba(255,255,255,.09);
+  border-color: var(--border-strong);
+}
+.linkCard small{
+  color: var(--dim);
+}
+.cardHint{
+  color: var(--muted);
+  font-size: 13px;
 }
 
-/* ---- モバイル調整 ---- */
+.footerCta{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(96,165,250,.10), rgba(52,211,153,.06));
+}
+
+.footerCtaText{
+  margin: 0;
+  color: var(--muted);
+}
+
+.ctaButton{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid rgba(96,165,250,.45);
+  background: rgba(96,165,250,.16);
+  font-weight: 800;
+}
+.ctaButton:hover{
+  background: rgba(96,165,250,.22);
+}
+
+/* Mobile tightening */
 @media (max-width: 640px){
-  .articleContainer{
-    padding: 18px 14px 56px;
-  }
-
-  .articleContent{
-    max-width: 100%;
-  }
-
-  .articleContent :global(h2){
-    margin-top: 44px;
-  }
+  .metaRow{ justify-content: flex-start; }
+  .footerCta{ text-align: left; }
 }
