@@ -68,6 +68,7 @@ export default function Page() {
             <a href="#projects">Projects</a>
             <a href="#skills">Skills</a>
             <a href="#contact" className="pill">
+　　　　　　　　<a href="/blog">Blog</a>
               Contact
             </a>
             <a href="/ja" className="lang-switch">
