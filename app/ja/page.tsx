@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import BlogSectionJa from '../components/BlogSectionJa';
 
+// ============================================
+// Animation Variants
+// ============================================
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
@@ -14,8 +17,16 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-// カウントアップコンポーネント
-function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: string; decimals?: number }) {
+// ============================================
+// CountUp Component
+// ============================================
+interface CountUpProps {
+  end: number;
+  suffix?: string;
+  decimals?: number;
+}
+
+function CountUp({ end, suffix = '', decimals = 0 }: CountUpProps) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.5 });
@@ -45,29 +56,80 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
   );
 }
 
+// ============================================
+// Mobile Navigation Component
+// ============================================
+function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      className="mobile-menu"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <div className="mobile-menu-inner">
+        <nav className="mobile-nav-links">
+          <a href="#role" onClick={onClose}>
+            役割定義
+          </a>
+          <a href="#projects" onClick={onClose}>
+            実績
+          </a>
+          <a href="#skills" onClick={onClose}>
+            スキル
+          </a>
+          <a href="/blog" onClick={onClose}>
+            ブログ
+          </a>
+          <a href="#contact" className="mobile-cta" onClick={onClose}>
+            Contact
+          </a>
+          <a href="/" className="mobile-lang" onClick={onClose}>
+            EN
+          </a>
+        </nav>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// Main Page Component
+// ============================================
 export default function PageJa() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
-  
   const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
 
   return (
     <main>
       {/* 動的背景 */}
-      <motion.div
-        className="bg-gradient"
-        style={{
-          y: bgY,
-        }}
-      />
+      <motion.div className="bg-gradient" style={{ y: bgY }} />
 
       {/* Top Nav */}
       <header className="nav">
         <div className="container nav-inner">
-          <a href="#top" className="brand">
+          <a href="#top" className="brand" aria-label="Home">
             H・M
           </a>
-          <nav className="nav-links">
+
+          {/* Desktop Navigation */}
+          <nav className="nav-links" aria-label="Primary">
             <a href="#role">役割定義</a>
             <a href="#projects">実績</a>
             <a href="#skills">スキル</a>
@@ -79,8 +141,23 @@ export default function PageJa() {
               EN
             </a>
           </nav>
+
+          {/* Mobile Hamburger */}
+          <button
+            className="hamburger"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="メニューを開く"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span className={mobileMenuOpen ? 'open' : ''}></span>
+            <span className={mobileMenuOpen ? 'open' : ''}></span>
+            <span className={mobileMenuOpen ? 'open' : ''}></span>
+          </button>
         </div>
       </header>
+
+      {/* Mobile Navigation */}
+      <MobileNav isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Hero - 判断設計に寄せ切る */}
       <section id="top" className="hero">
@@ -160,7 +237,7 @@ export default function PageJa() {
       {/* Role Clarification - なぜ判断設計が必要か */}
       <section id="role" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               なぜ「判断設計」が必要なのか
             </motion.h2>
@@ -220,7 +297,7 @@ export default function PageJa() {
       {/* Projects - 代表3件（Problem/Action/Result型） */}
       <section id="projects" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               代表実績
             </motion.h2>
@@ -233,10 +310,7 @@ export default function PageJa() {
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -278,10 +352,7 @@ export default function PageJa() {
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -334,10 +405,7 @@ export default function PageJa() {
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -382,7 +450,7 @@ export default function PageJa() {
       {/* Skills - 役割ベース */}
       <section id="skills" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               スキル
             </motion.h2>
@@ -395,10 +463,7 @@ export default function PageJa() {
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">プロジェクト・意思決定設計</div>
@@ -414,10 +479,7 @@ export default function PageJa() {
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">運用・技術文脈の理解</div>
@@ -433,10 +495,7 @@ export default function PageJa() {
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">ツール</div>
@@ -470,7 +529,7 @@ export default function PageJa() {
       {/* 日本向け注釈 */}
       <section className="section japan-note-section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.div className="japan-note-card" variants={fadeUp}>
               <p className="japan-note-text">
                 ※ 日本企業・日本拠点のプロジェクトにおいても、意思決定構造・責任設計の考え方は同様に適用しています。
@@ -486,7 +545,7 @@ export default function PageJa() {
       {/* Contact - 日本語CTA */}
       <section id="contact" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               技術的には完成しているが、本番に移せないプロジェクトがあれば
             </motion.h2>
@@ -522,7 +581,9 @@ export default function PageJa() {
         </div>
       </footer>
 
-      {/* Styles */}
+      {/* ============================================ */}
+      {/* Global Styles - Mobile First Approach */}
+      {/* ============================================ */}
       <style jsx global>{`
         :root {
           --bg: #05070f;
@@ -535,6 +596,9 @@ export default function PageJa() {
           --accent: #7c3aed;
           --accent2: #22c55e;
           --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+          
+          /* Touch target minimum */
+          --touch-target: 44px;
         }
 
         * {
@@ -558,12 +622,17 @@ export default function PageJa() {
           overflow-x: hidden;
         }
 
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        /* ============================================ */
+        /* Background Gradient */
+        /* ============================================ */
         .bg-gradient {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           z-index: -1;
           background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
             radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%);
@@ -580,20 +649,35 @@ export default function PageJa() {
           }
         }
 
-        a {
-          color: inherit;
-          text-decoration: none;
+        /* ============================================ */
+        /* Container - Mobile First */
+        /* ============================================ */
+        .container {
+          width: 100%;
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 20px;
         }
 
-        .container {
-          width: min(1100px, calc(100% - 40px));
-          margin: 0 auto;
+        @media (min-width: 768px) {
+          .container {
+            padding: 0 32px;
+          }
+        }
+
+        @media (min-width: 1140px) {
+          .container {
+            padding: 0 40px;
+          }
         }
 
         .muted {
           color: var(--muted);
         }
 
+        /* ============================================ */
+        /* Navigation - Mobile First */
+        /* ============================================ */
         .nav {
           position: sticky;
           top: 0;
@@ -608,40 +692,170 @@ export default function PageJa() {
           align-items: center;
           justify-content: space-between;
           padding: 16px 0;
+          min-height: var(--touch-target);
         }
 
         .brand {
           font-weight: 800;
+          font-size: 18px;
           letter-spacing: 0.3px;
           transition: color 0.2s ease;
+          padding: 8px;
+          margin: -8px;
+          min-width: var(--touch-target);
+          min-height: var(--touch-target);
+          display: flex;
+          align-items: center;
         }
 
         .brand:hover {
           color: var(--accent);
         }
 
+        /* Desktop Navigation - Hidden on Mobile */
         .nav-links {
+          display: none;
+        }
+
+        @media (min-width: 768px) {
+          .nav-links {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 14px;
+          }
+
+          .nav-links a {
+            transition: color 0.2s ease;
+            white-space: nowrap;
+            padding: 8px 12px;
+            min-height: var(--touch-target);
+            display: flex;
+            align-items: center;
+          }
+
+          .nav-links a:hover {
+            color: var(--text);
+          }
+        }
+
+        /* ============================================ */
+        /* Hamburger Menu - Mobile Only */
+        /* ============================================ */
+        .hamburger {
           display: flex;
-          gap: 16px;
+          flex-direction: column;
+          justify-content: center;
           align-items: center;
-          color: var(--muted);
-          font-size: 14px;
+          width: var(--touch-target);
+          height: var(--touch-target);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          z-index: 21;
         }
 
-        .nav-links a {
-          transition: color 0.2s ease;
+        .hamburger span {
+          width: 24px;
+          height: 2px;
+          background: var(--text);
+          border-radius: 2px;
+          transition: all 0.3s ease;
+          display: block;
         }
 
-        .nav-links a:hover {
-          color: var(--text);
+        .hamburger span:not(:last-child) {
+          margin-bottom: 5px;
         }
 
+        .hamburger span.open:nth-child(1) {
+          transform: translateY(7px) rotate(45deg);
+        }
+
+        .hamburger span.open:nth-child(2) {
+          opacity: 0;
+        }
+
+        .hamburger span.open:nth-child(3) {
+          transform: translateY(-7px) rotate(-45deg);
+        }
+
+        @media (min-width: 768px) {
+          .hamburger {
+            display: none;
+          }
+        }
+
+        /* ============================================ */
+        /* Mobile Menu Overlay */
+        /* ============================================ */
+        .mobile-menu {
+          position: fixed;
+          top: 61px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(5, 7, 15, 0.98);
+          backdrop-filter: blur(20px);
+          z-index: 19;
+          overflow-y: auto;
+        }
+
+        .mobile-menu-inner {
+          padding: 24px 20px;
+        }
+
+        .mobile-nav-links {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .mobile-nav-links a {
+          padding: 16px 20px;
+          border-radius: 12px;
+          background: var(--panel-2);
+          border: 1px solid var(--border);
+          transition: all 0.2s ease;
+          min-height: var(--touch-target);
+          display: flex;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 500;
+        }
+
+        .mobile-nav-links a:active {
+          transform: scale(0.98);
+        }
+
+        .mobile-nav-links a.mobile-cta {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6));
+          border-color: transparent;
+          font-weight: 700;
+          margin-top: 8px;
+        }
+
+        .mobile-nav-links a.mobile-lang {
+          background: rgba(124, 58, 237, 0.1);
+          border-color: var(--accent);
+          color: var(--accent);
+          font-weight: 700;
+        }
+
+        /* ============================================ */
+        /* Pills & Buttons - Desktop Only */
+        /* ============================================ */
         .pill {
           padding: 8px 14px;
           border: 1px solid var(--border);
           border-radius: 999px;
           background: var(--panel-2);
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
 
         .pill:hover {
@@ -657,52 +871,97 @@ export default function PageJa() {
           color: var(--accent);
           font-weight: 700;
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
 
         .lang-switch:hover {
           background: rgba(124, 58, 237, 0.2);
-          border-color: var(--accent);
         }
 
+        /* ============================================ */
+        /* Hero Section - Mobile First */
+        /* ============================================ */
         .hero {
-          padding: 100px 0 60px;
+          padding: 60px 0 40px;
+        }
+
+        @media (min-width: 768px) {
+          .hero {
+            padding: 100px 0 60px;
+          }
         }
 
         .kicker {
           margin: 0 0 12px;
           font-weight: 700;
           color: var(--muted2);
-          font-size: 15px;
+          font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+          .kicker {
+            font-size: 15px;
+          }
         }
 
         .hero-title {
           margin: 0;
-          font-size: clamp(28px, 3.2vw, 48px);
-          line-height: 1.2;
+          font-size: 22px;
+          line-height: 1.3;
           letter-spacing: -0.02em;
           background: linear-gradient(135deg, var(--text), rgba(255, 255, 255, 0.7));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 480px) {
+          .hero-title {
+            font-size: 26px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .hero-title {
+            font-size: 34px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .hero-title {
+            font-size: 48px;
+          }
         }
 
         .hero-subtitle {
-          margin: 20px 0 0;
+          margin: 16px 0 0;
           font-size: 14px;
           color: var(--muted2);
           line-height: 1.6;
           font-style: italic;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .lang-note {
-          margin: 20px 0 0;
-          font-size: 13px;
+          margin: 16px 0 0;
+          font-size: 12px;
           color: var(--muted2);
           line-height: 1.6;
           padding: 12px;
           background: rgba(124, 58, 237, 0.08);
           border-left: 3px solid var(--accent);
           border-radius: 4px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .lang-note {
+            font-size: 13px;
+          }
         }
 
         .lang-note a {
@@ -710,18 +969,28 @@ export default function PageJa() {
           text-decoration: underline;
         }
 
+        /* ============================================ */
+        /* CTA Buttons - Mobile First */
+        /* ============================================ */
         .cta {
           display: flex;
+          flex-direction: column;
           gap: 12px;
-          flex-wrap: wrap;
           margin-top: 24px;
+        }
+
+        @media (min-width: 640px) {
+          .cta {
+            flex-direction: row;
+            flex-wrap: wrap;
+          }
         }
 
         .btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          height: 46px;
+          min-height: var(--touch-target);
           padding: 0 20px;
           border-radius: 12px;
           border: 1px solid var(--border);
@@ -731,11 +1000,29 @@ export default function PageJa() {
           font-size: 14px;
           transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
+          white-space: nowrap;
+          width: 100%;
         }
 
-        .btn:hover {
-          transform: translateY(-2px);
-          border-color: rgba(255, 255, 255, 0.28);
+        @media (min-width: 640px) {
+          .btn {
+            width: auto;
+          }
+        }
+
+        .btn:active {
+          transform: scale(0.98);
+        }
+
+        @media (min-width: 768px) {
+          .btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.28);
+          }
+
+          .btn:active {
+            transform: translateY(-1px);
+          }
         }
 
         .btn.primary {
@@ -744,8 +1031,10 @@ export default function PageJa() {
           box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
         }
 
-        .btn.primary:hover {
-          box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
+        @media (min-width: 768px) {
+          .btn.primary:hover {
+            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
+          }
         }
 
         .btn.pulse {
@@ -766,252 +1055,464 @@ export default function PageJa() {
           background: var(--panel-2);
         }
 
+        /* ============================================ */
+        /* Operational Highlights - Mobile First */
+        /* ============================================ */
         .operational-highlights {
-          margin-top: 40px;
-          padding: 32px;
+          margin-top: 32px;
+          padding: 24px 20px;
           border: 2px solid rgba(124, 58, 237, 0.4);
           background: rgba(124, 58, 237, 0.08);
-          border-radius: 20px;
+          border-radius: 16px;
+        }
+
+        @media (min-width: 768px) {
+          .operational-highlights {
+            padding: 32px;
+            border-radius: 20px;
+          }
         }
 
         .op-header {
           font-weight: 900;
-          font-size: 14px;
+          font-size: 12px;
           color: var(--accent);
           text-transform: uppercase;
           letter-spacing: 1px;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           text-align: center;
+        }
+
+        @media (min-width: 768px) {
+          .op-header {
+            font-size: 14px;
+            margin-bottom: 20px;
+          }
         }
 
         .stats-operational {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+          grid-template-columns: 1fr;
+          gap: 12px;
         }
 
-        .stat-op {
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 18px;
-          padding: 24px;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          cursor: pointer;
-          text-align: center;
+        @media (min-width: 640px) {
+          .stats-operational {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
-        .stat-op:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.22);
+        @media (min-width: 1024px) {
+          .stats-operational {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+          }
         }
 
         .stats {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          margin-top: 32px;
+          grid-template-columns: 1fr;
+          gap: 12px;
+          margin-top: 24px;
         }
 
-        .stat {
+        @media (min-width: 640px) {
+          .stats {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .stats {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 32px;
+          }
+        }
+
+        .stat,
+        .stat-op {
           border: 1px solid var(--border);
           background: var(--panel);
-          border-radius: 18px;
-          padding: 24px;
+          border-radius: 16px;
+          padding: 20px;
           transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
+          text-align: left;
         }
 
-        .stat:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.22);
+        @media (min-width: 768px) {
+          .stat,
+          .stat-op {
+            border-radius: 18px;
+            padding: 24px;
+          }
+        }
+
+        .stat-op {
+          text-align: center;
+        }
+
+        .stat:active,
+        .stat-op:active {
+          transform: scale(0.98);
+        }
+
+        @media (min-width: 768px) {
+          .stat:hover,
+          .stat-op:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.22);
+          }
+
+          .stat:active,
+          .stat-op:active {
+            transform: scale(1);
+          }
         }
 
         .stat-v {
           font-weight: 900;
-          font-size: 32px;
+          font-size: 28px;
           background: linear-gradient(135deg, var(--accent), var(--accent2));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
+        @media (min-width: 768px) {
+          .stat-v {
+            font-size: 32px;
+          }
+        }
+
         .stat-l {
           margin-top: 8px;
           color: var(--muted);
-          font-size: 13px;
+          font-size: 12px;
           line-height: 1.5;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
+        @media (min-width: 768px) {
+          .stat-l {
+            font-size: 13px;
+          }
+        }
+
+        /* ============================================ */
+        /* Section - Mobile First */
+        /* ============================================ */
         .section {
-          padding: 120px 0;
+          padding: 60px 0;
+        }
+
+        @media (min-width: 768px) {
+          .section {
+            padding: 80px 0;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .section {
+            padding: 120px 0;
+          }
         }
 
         .section-title {
           margin: 0;
-          font-size: 32px;
+          font-size: 24px;
           letter-spacing: -0.01em;
           font-weight: 800;
+          line-height: 1.2;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .section-title {
+            font-size: 28px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .section-title {
+            font-size: 32px;
+          }
         }
 
         .section-sub {
           margin: 12px 0 0;
           color: var(--muted);
           line-height: 1.7;
-          font-size: 16px;
+          font-size: 14px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
+        @media (min-width: 768px) {
+          .section-sub {
+            font-size: 16px;
+          }
+        }
+
+        /* ============================================ */
+        /* Grid Layout - Mobile First */
+        /* ============================================ */
         .grid {
-          margin-top: 32px;
+          margin-top: 24px;
           display: grid;
-          gap: 32px;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 20px;
+          grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+          .grid {
+            margin-top: 32px;
+            gap: 24px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 32px;
+          }
         }
 
         .card {
           border: 1px solid var(--border);
           background: var(--panel);
-          border-radius: 20px;
-          padding: 32px;
+          border-radius: 16px;
+          padding: 24px;
           transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
           will-change: transform;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
+        @media (min-width: 768px) {
+          .card {
+            border-radius: 20px;
+            padding: 32px;
+          }
+        }
+
+        /* ============================================ */
+        /* Not Optimize Grid - Mobile First */
+        /* ============================================ */
         .not-optimize-grid {
-          margin-top: 32px;
+          margin-top: 24px;
           display: grid;
-          gap: 24px;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+          grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+          .not-optimize-grid {
+            gap: 20px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .not-optimize-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+          }
+        }
+
+        /* ============================================ */
+        /* PM Clarification & Context Cards */
+        /* ============================================ */
+        .pm-clarification,
+        .japan-context,
+        .tool-approach {
+          margin-top: 32px;
+          padding: 24px 20px;
+          border-radius: 16px;
+        }
+
+        @media (min-width: 768px) {
+          .pm-clarification,
+          .japan-context,
+          .tool-approach {
+            padding: 32px;
+            border-radius: 20px;
+            margin-top: 40px;
+          }
         }
 
         .pm-clarification {
-          margin-top: 40px;
-          padding: 32px;
           border: 1px solid rgba(34, 197, 94, 0.3);
           background: rgba(34, 197, 94, 0.06);
-          border-radius: 20px;
         }
 
-        .pm-clarification-inner {
+        .japan-context {
+          border: 1px solid rgba(255, 190, 11, 0.3);
+          background: rgba(255, 190, 11, 0.06);
+        }
+
+        .tool-approach {
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          background: rgba(124, 58, 237, 0.06);
+        }
+
+        .pm-clarification-inner,
+        .japan-context-inner,
+        .tool-approach-inner {
           display: flex;
-          gap: 20px;
+          gap: 16px;
           align-items: flex-start;
+          flex-direction: column;
         }
 
-        .pm-icon {
-          font-size: 32px;
+        @media (min-width: 640px) {
+          .pm-clarification-inner,
+          .tool-approach-inner {
+            flex-direction: row;
+            gap: 20px;
+          }
+        }
+
+        .japan-context-inner {
+          flex-direction: column;
+        }
+
+        .pm-icon,
+        .tool-approach-icon {
+          font-size: 28px;
           flex-shrink: 0;
+        }
+
+        @media (min-width: 768px) {
+          .pm-icon,
+          .tool-approach-icon {
+            font-size: 32px;
+          }
         }
 
         .pm-clarification-title {
           font-weight: 900;
-          font-size: 16px;
+          font-size: 15px;
           margin-bottom: 12px;
           color: var(--accent2);
         }
 
-        .pm-clarification-text {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-        }
-
-        .japan-context {
-          margin-top: 40px;
-          padding: 32px;
-          border: 1px solid rgba(255, 190, 11, 0.3);
-          background: rgba(255, 190, 11, 0.06);
-          border-radius: 20px;
-        }
-
-        .japan-context-inner {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
         .japan-context-title {
           font-weight: 900;
-          font-size: 16px;
+          font-size: 15px;
           color: #ffbe0b;
-        }
-
-        .japan-context-text {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-        }
-
-        .tool-approach {
-          margin-top: 40px;
-          padding: 32px;
-          border: 1px solid rgba(124, 58, 237, 0.3);
-          background: rgba(124, 58, 237, 0.06);
-          border-radius: 20px;
-        }
-
-        .tool-approach-inner {
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-        }
-
-        .tool-approach-icon {
-          font-size: 32px;
-          flex-shrink: 0;
         }
 
         .tool-approach-title {
           font-weight: 900;
-          font-size: 16px;
+          font-size: 15px;
           margin-bottom: 12px;
           color: var(--accent);
         }
 
+        @media (min-width: 768px) {
+          .pm-clarification-title,
+          .japan-context-title,
+          .tool-approach-title {
+            font-size: 16px;
+          }
+        }
+
+        .pm-clarification-text,
+        .japan-context-text,
         .tool-approach-text {
           margin: 0;
           color: var(--muted);
           line-height: 1.75;
-          font-size: 14px;
+          font-size: 13px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
+        @media (min-width: 768px) {
+          .pm-clarification-text,
+          .japan-context-text,
+          .tool-approach-text {
+            font-size: 14px;
+          }
+        }
+
+        /* ============================================ */
+        /* Japan Note Section */
+        /* ============================================ */
         .japan-note-section {
-          padding: 60px 0;
+          padding: 40px 0;
+        }
+
+        @media (min-width: 768px) {
+          .japan-note-section {
+            padding: 60px 0;
+          }
         }
 
         .japan-note-card {
-          padding: 24px 32px;
+          padding: 20px 24px;
           border: 1px solid rgba(255, 190, 11, 0.3);
           background: rgba(255, 190, 11, 0.06);
           border-radius: 16px;
           text-align: center;
         }
 
+        @media (min-width: 768px) {
+          .japan-note-card {
+            padding: 24px 32px;
+          }
+        }
+
         .japan-note-text {
           margin: 0;
           color: var(--muted);
           line-height: 1.75;
-          font-size: 14px;
+          font-size: 12px;
           font-style: italic;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
+        @media (min-width: 768px) {
+          .japan-note-text {
+            font-size: 14px;
+          }
+        }
+
+        /* ============================================ */
+        /* Project Cards - Mobile First */
+        /* ============================================ */
         .project-head {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 12px;
+          flex-wrap: wrap;
         }
 
         .project-title {
           margin: 0;
-          font-size: 18px;
+          font-size: 16px;
           line-height: 1.4;
           font-weight: 700;
+          flex: 1;
+          min-width: 200px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .project-title {
+            font-size: 18px;
+          }
         }
 
         .badge {
-          font-size: 11px;
+          font-size: 10px;
           padding: 6px 12px;
           border-radius: 999px;
           border: 1px solid var(--border);
@@ -1021,6 +1522,13 @@ export default function PageJa() {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        @media (min-width: 768px) {
+          .badge {
+            font-size: 11px;
+          }
         }
 
         .case-block {
@@ -1041,15 +1549,31 @@ export default function PageJa() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .case-text {
+            font-size: 14px;
+          }
         }
 
         .mini-title {
           font-weight: 900;
-          font-size: 13px;
+          font-size: 12px;
           color: var(--text);
           margin-bottom: 12px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .mini-title {
+            font-size: 13px;
+          }
         }
 
         .list {
@@ -1060,19 +1584,27 @@ export default function PageJa() {
           font-size: 13px;
         }
 
+        @media (min-width: 768px) {
+          .list {
+            font-size: 14px;
+          }
+        }
+
         .list li {
           margin-bottom: 8px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .tags {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-top: 20px;
+          margin-top: 16px;
         }
 
         .tag {
-          font-size: 12px;
+          font-size: 11px;
           padding: 6px 12px;
           border-radius: 999px;
           border: 1px solid var(--border);
@@ -1081,9 +1613,15 @@ export default function PageJa() {
           transition: all 0.2s ease;
         }
 
-        .tag:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.18);
+        @media (min-width: 768px) {
+          .tag {
+            font-size: 12px;
+          }
+
+          .tag:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.18);
+          }
         }
 
         .project-links {
@@ -1100,368 +1638,111 @@ export default function PageJa() {
           transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
+          min-height: var(--touch-target);
         }
 
-        .project-link:hover {
-          color: var(--accent2);
-          transform: translateX(4px);
+        @media (min-width: 768px) {
+          .project-link:hover {
+            color: var(--accent2);
+            transform: translateX(4px);
+          }
         }
 
+        /* ============================================ */
+        /* Skills Grid - Mobile First */
+        /* ============================================ */
         .grid.skills {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: 1fr;
         }
 
+        @media (min-width: 768px) {
+          .grid.skills {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .grid.skills {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+
+        /* ============================================ */
+        /* Contact Card - Mobile First */
+        /* ============================================ */
         .contact-card {
-          margin-top: 32px;
+          margin-top: 24px;
           display: flex;
-          gap: 24px;
-          align-items: center;
+          gap: 20px;
+          align-items: flex-start;
           justify-content: space-between;
-          flex-wrap: wrap;
+          flex-direction: column;
           border: 1px solid var(--border);
           background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(34, 197, 94, 0.1));
-          border-radius: 20px;
-          padding: 32px;
+          border-radius: 16px;
+          padding: 24px 20px;
+        }
+
+        @media (min-width: 768px) {
+          .contact-card {
+            flex-direction: row;
+            align-items: center;
+            border-radius: 20px;
+            padding: 32px;
+            gap: 24px;
+            margin-top: 32px;
+          }
         }
 
         .contact-left {
-          min-width: 280px;
           flex: 1;
+          min-width: 0;
         }
 
         .contact-right {
           display: flex;
           gap: 12px;
-          flex-wrap: wrap;
+          flex-direction: column;
+          width: 100%;
         }
 
+        @media (min-width: 640px) {
+          .contact-right {
+            flex-direction: row;
+            width: auto;
+          }
+        }
+
+        /* ============================================ */
+        /* Footer - Mobile First */
+        /* ============================================ */
         .footer {
           border-top: 1px solid var(--border);
-          padding: 32px 0;
+          padding: 24px 0;
           color: var(--muted);
+        }
+
+        @media (min-width: 768px) {
+          .footer {
+            padding: 32px 0;
+          }
         }
 
         .footer-inner {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
+          text-align: center;
+          font-size: 13px;
         }
 
-        /* モバイル対応追加スタイル */
-        .nav-links {
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .lang-switch {
-          flex-shrink: 0;
-        }
-
-        .hero-title {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
-        }
-
-        .hero-subtitle,
-        .lang-note {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .card {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .case-text,
-        .pm-clarification-text,
-        .japan-context-text,
-        .tool-approach-text,
-        .japan-note-text,
-        .project-title,
-        .mini-title {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .contact-left .muted,
-        .contact-left p {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          line-height: 1.7;
-        }
-
-        .badge {
-          flex-shrink: 0;
-        }
-
-        @media (max-width: 860px) {
-          .container {
-            padding: 0 20px;
-          }
-
-          .nav {
-            padding: 12px 0;
-          }
-
-          .nav-links {
-            gap: 12px;
-          }
-
-          .nav-links a {
-            font-size: 13px;
-          }
-
-          .lang-switch {
-            padding: 6px 12px;
-            font-size: 11px;
-          }
-
-          .hero {
-            padding: 100px 0 80px;
-            min-height: auto;
-          }
-
-          .kicker {
-            font-size: 12px;
-          }
-
-          .hero-title {
-            font-size: clamp(24px, 7vw, 36px);
-            margin-bottom: 24px;
-          }
-
-          .hero-subtitle {
-            font-size: clamp(14px, 4vw, 18px);
-          }
-
-          .lang-note {
-            font-size: 12px;
-          }
-
-          .cta {
-            gap: 12px;
-            margin-top: 32px;
-          }
-
-          .btn {
-            padding: 12px 24px;
-            font-size: 14px;
-            min-width: 140px;
-            width: 100%;
-          }
-
-          .operational-highlights {
-            padding: 24px 20px;
-            margin-top: 48px;
-          }
-
-          .stats-operational {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-
-          .stat-op {
-            padding: 16px;
-          }
-
-          .stat-op .stat-v {
-            font-size: 24px;
-          }
-
-          .stat-op .stat-l {
-            font-size: 12px;
-          }
-
-          .stats {
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-top: 48px;
-          }
-
-          .stat {
-            padding: 20px;
-          }
-
-          .stat-v {
-            font-size: 36px;
-          }
-
-          .section {
-            padding: 80px 0;
-          }
-
-          .section-title {
-            font-size: clamp(24px, 6vw, 36px);
-            margin-bottom: 12px;
-          }
-
-          .section-sub {
-            font-size: clamp(14px, 3.5vw, 16px);
-            margin-bottom: 32px;
-          }
-
-          .grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-
-          .grid.skills {
-            grid-template-columns: 1fr;
-          }
-
-          .not-optimize-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
-
-          .card {
-            padding: 24px;
-          }
-
-          .project-head {
-            flex-direction: column;
-            gap: 12px;
-          }
-
-          .project-title {
-            font-size: 18px;
-            min-width: 100%;
-          }
-
-          .pm-clarification {
-            padding: 24px;
-            margin-top: 32px;
-          }
-
-          .pm-clarification-inner {
-            flex-direction: column;
-            gap: 16px;
-          }
-
-          .pm-icon {
-            font-size: 28px;
-          }
-
-          .pm-clarification-title {
-            font-size: 15px;
-          }
-
-          .pm-clarification-text {
-            font-size: 13px;
-          }
-
-          .japan-context {
-            padding: 24px;
-          }
-
-          .japan-context-title {
-            font-size: 15px;
-          }
-
-          .japan-context-text {
-            font-size: 13px;
-          }
-
-          .tool-approach {
-            padding: 24px;
-          }
-
-          .tool-approach-inner {
-            flex-direction: column;
-            gap: 16px;
-          }
-
-          .tool-approach-icon {
-            font-size: 28px;
-          }
-
-          .tool-approach-title {
-            font-size: 15px;
-          }
-
-          .tool-approach-text {
-            font-size: 13px;
-          }
-
-          .japan-note-section {
-            padding: 40px 0;
-          }
-
-          .japan-note-card {
-            padding: 20px 24px;
-          }
-
-          .japan-note-text {
-            font-size: 12px;
-          }
-
-          .contact-card {
-            padding: 24px;
-            gap: 20px;
-          }
-
-          .contact-left {
-            min-width: 100%;
-          }
-
-          .contact-right {
-            width: 100%;
-            flex-direction: column;
-          }
-
-          .contact-right .btn {
-            width: 100%;
-          }
-
+        @media (min-width: 768px) {
           .footer-inner {
-            text-align: center;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .container {
-            padding: 0 16px;
-          }
-
-          .nav-links {
-            gap: 8px;
-          }
-
-          .nav-links .pill {
-            padding: 6px 14px;
-            font-size: 12px;
-          }
-
-          .hero-title {
-            font-size: 22px;
-            letter-spacing: -0.5px;
-          }
-
-          .btn {
-            padding: 10px 20px;
-            font-size: 13px;
-            min-width: 120px;
-          }
-
-          .card {
-            padding: 20px;
-          }
-
-          .project-title {
-            font-size: 16px;
-          }
-
-          .case-text,
-          .pm-clarification-text,
-          .japan-context-text,
-          .tool-approach-text,
-          .list {
-            font-size: 12px;
+            justify-content: space-between;
+            font-size: 14px;
           }
         }
       `}</style>
     </main>
   );
-}
+}=
