@@ -1745,4 +1745,4 @@ export default function PageJa() {
       `}</style>
     </main>
   );
-}=
+}
