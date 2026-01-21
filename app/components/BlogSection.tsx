@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './BlogSection.module.css';
 
 type LatestPost = {
-  /** 内部詳細ページ用（無ければlink直） */
-  slug?: string;
-  /** 表示に必須 */
   title: string;
-  /** 外部/内部のリンク（最優先） */
   link: string;
-
+  slug?: string;
   excerpt?: string;
   date?: string;
   category?: string;
   readingTime?: string;
-
-  /** 任意：Qiita/Zenn/note/Localなど */
   platform?: string;
 };
 
@@ -30,28 +24,36 @@ function safeStr(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-function safeNum(v: unknown): number | null {
-  return typeof v === 'number' && Number.isFinite(v) ? v : null;
-}
-
 function pickArray(data: unknown): unknown[] | null {
-  // APIの返し方が変わっても拾えるようにする
   if (Array.isArray(data)) return data;
   if (!isRecord(data)) return null;
 
-  const candidates = ['posts', 'articles', 'items', 'data', 'latest', 'results'];
+  const candidates = [
+    'posts',
+    'articles',
+    'items',
+    'data',
+    'latest',
+    'results',
+    'latestPosts',
+    'latest_posts',
+    'entries',
+  ];
+
   for (const key of candidates) {
     const v = data[key];
     if (Array.isArray(v)) return v;
   }
 
-  // ok:true の包み
-  if (data.ok === true && Array.isArray(data.posts)) return data.posts;
+  if (data.ok === true) {
+    const v = data.posts;
+    if (Array.isArray(v)) return v;
+  }
 
   return null;
 }
 
-function guessPlatformFromLink(link: string): string {
+function guessPlatformFromLink(link: string) {
   const l = link.toLowerCase();
   if (l.includes('qiita.com')) return 'Qiita';
   if (l.includes('zenn.dev')) return 'Zenn';
@@ -60,12 +62,10 @@ function guessPlatformFromLink(link: string): string {
 }
 
 function normalizeDate(v: string): string {
-  // そのままでも良いけど、ISOっぽい場合だけ軽く整形
   const s = v.trim();
   if (!s) return '';
   const t = Date.parse(s);
   if (Number.isNaN(t)) return s;
-  // YYYY-MM-DD
   const d = new Date(t);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -77,7 +77,6 @@ function slugFromLink(link: string): string {
   try {
     const u = new URL(link);
     const seg = u.pathname.split('/').filter(Boolean).pop() ?? '';
-    // セグメントが取れない場合の保険
     return seg || u.pathname.replace(/\//g, '-').replace(/^-+|-+$/g, '') || 'post';
   } catch {
     return link
@@ -87,95 +86,74 @@ function slugFromLink(link: string): string {
   }
 }
 
-function normalizePost(p: unknown): LatestPost | null {
-  if (!isRecord(p)) return null;
+function normalizePost(raw: unknown): LatestPost | null {
+  if (!isRecord(raw)) return null;
 
-  // ★最優先：link/url/canonical（外部記事はこれが真実）
+  // link候補（外部RSSはだいたいこれが本体）
   const link =
-    safeStr(p.link) ||
-    safeStr(p.url) ||
-    safeStr(p.canonical) ||
-    safeStr(p.href) ||
+    safeStr(raw.link) ||
+    safeStr(raw.url) ||
+    safeStr(raw.canonical) ||
+    safeStr(raw.href) ||
     '';
+
+  // slug候補（内部記事）
+  let slug =
+    safeStr(raw.slug) ||
+    safeStr(raw.id) ||
+    safeStr(raw.path) ||
+    '';
+  slug = slug.replace(/^\/?blog\//, '');
 
   // title候補
   const title =
-    safeStr(p.title) ||
-    safeStr(p.name) ||
-    safeStr(p.headline) ||
+    safeStr(raw.title) ||
+    safeStr(raw.name) ||
+    safeStr(raw.headline) ||
     '';
 
-  // ここを「slug/title必須」にしない（落としすぎが0件の原因）
-  // titleが無い場合も最低限表示できるようにする
-  const finalTitle = title || (link ? link : 'Untitled');
+  // ★救済：linkが無いがslugがある → 内部リンクにする
+  const finalLink = link || (slug ? `/blog/${slug}` : '');
 
-  // slug候補（内部記事向け）
-  let slug =
-    safeStr(p.slug) ||
-    safeStr(p.id) ||
-    safeStr(p.path) ||
-    '';
-
-  // たまに "/blog/xxx" が入ってくるケース
-  slug = slug.replace(/^\/?blog\//, '');
-
-  // slugが無いがlinkがあるなら生成しておく（内部URLに使うかは後段で判断）
+  // ★救済：slugが無いがlinkがある → 生成しておく（内部化はしないがkey等に使える）
   if (!slug && link) slug = slugFromLink(link);
 
-  // excerpt
+  // ★最低条件：遷移できるlinkがあること。titleは無くても表示可能にする
+  if (!finalLink) return null;
+
+  const finalTitle = title || finalLink;
+
   const excerpt =
-    safeStr(p.excerpt) ||
-    safeStr(p.description) ||
-    safeStr(p.summary) ||
+    safeStr(raw.excerpt) ||
+    safeStr(raw.description) ||
+    safeStr(raw.summary) ||
     '';
 
-  const date =
-    normalizeDate(
-      safeStr(p.date) ||
-      safeStr(p.publishedAt) ||
-      safeStr(p.published_at) ||
-      safeStr(p.pubDate) ||
-      safeStr(p.updatedAt) ||
+  const date = normalizeDate(
+    safeStr(raw.date) ||
+      safeStr(raw.publishedAt) ||
+      safeStr(raw.published_at) ||
+      safeStr(raw.pubDate) ||
+      safeStr(raw.updatedAt) ||
       ''
-    );
+  );
 
-  const category = safeStr(p.category) || safeStr(p.topic) || '';
+  const category = safeStr(raw.category) || safeStr(raw.topic) || '';
 
   const readingTime =
-    safeStr(p.readingTime) ||
-    safeStr(p.readTime) ||
-    (() => {
-      const minutes = safeNum(p.readingMinutes);
-      return minutes !== null ? `${minutes} min` : '';
-    })();
+    safeStr(raw.readingTime) ||
+    safeStr(raw.readTime) ||
+    '';
 
   const platform =
-    safeStr(p.platform) ||
-    safeStr(p.source) ||
-    (link ? guessPlatformFromLink(link) : '');
-
-  // linkが無い記事は遷移できないので除外（最低条件）
-  if (!link) {
-    // ただし内部記事が slug だけで来るAPIもありうるので救う
-    if (slug) {
-      return {
-        slug,
-        title: finalTitle,
-        link: `/blog/${slug}`,
-        excerpt,
-        date,
-        category,
-        readingTime,
-        platform: platform || 'Blog',
-      };
-    }
-    return null;
-  }
+    safeStr(raw.platform) ||
+    safeStr(raw.source) ||
+    (finalLink ? guessPlatformFromLink(finalLink) : '');
 
   return {
-    slug,
     title: finalTitle,
-    link,
+    link: finalLink,
+    slug,
     excerpt,
     date,
     category,
@@ -184,60 +162,44 @@ function normalizePost(p: unknown): LatestPost | null {
   };
 }
 
-function uniqueByLink(posts: LatestPost[]): LatestPost[] {
+function uniqueByLink(posts: LatestPost[]) {
   const seen = new Set<string>();
   const out: LatestPost[] = [];
   for (const p of posts) {
-    const key = p.link;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seen.has(p.link)) continue;
+    seen.add(p.link);
     out.push(p);
   }
   return out;
 }
 
-/**
- * ★将来の「GitHub取り込み（静的）」に備えたローカルfallback
- * - いまは空配列でもOK（後で data/articles.ts などに差し替え）
- */
-function localFallback(limit: number): LatestPost[] {
-  // TODO: data/articles.ts に置き換える（GitHub Actions生成物）
-  // 例:
-  // import { articles } from '@/data/articles';
-  // return articles.slice(0, limit);
-  return [];
-}
-
 export default function BlogSection() {
   const [posts, setPosts] = useState<LatestPost[]>([]);
   const [status, setStatus] = useState<Status>('idle');
-  const [error, setError] = useState<string>('');
-  const [debugKeys, setDebugKeys] = useState<string>('');
-
-  // 本番で余計な情報を出さない（Nextはこの環境変数がクライアントに渡る）
-  const isDev = process.env.NEXT_PUBLIC_ENV === 'dev' || process.env.NODE_ENV !== 'production';
+  const [error, setError] = useState('');
+  const [debug, setDebug] = useState<{
+    endpoint: string;
+    httpStatus?: number;
+    contentType?: string;
+    rawHead?: string;
+    jsonKeys?: string;
+    arrayLen?: number;
+    normalizedLen?: number;
+    sampleItemKeys?: string;
+  } | null>(null);
 
   const limit = 3;
   const endpoint = useMemo(() => `/api/blog/latest?limit=${limit}`, [limit]);
 
-  // 二重fetchを避けたい時の保険（StrictModeでdevは2回走ることがある）
-  const fetchedOnce = useRef(false);
+  // 診断表示ON/OFF（本番は消してOK）
+  const DEBUG = true;
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function run() {
-      // devのStrictModeによる二重実行を抑制（必要なければ消してOK）
-      if (fetchedOnce.current && !isDev) return;
-      fetchedOnce.current = true;
-
       setStatus('loading');
       setError('');
-      setDebugKeys('');
-
-      // まずローカルfallbackを入れて「0件表示」を避ける（UX）
-      const fallback = localFallback(limit);
-      if (fallback.length > 0) setPosts(fallback);
 
       try {
         const res = await fetch(endpoint, {
@@ -246,43 +208,61 @@ export default function BlogSection() {
           headers: { Accept: 'application/json' },
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get('content-type') ?? '';
+        const text = await res.text(); // ← これが超重要（HTML/404でも見える）
 
-        const data = await res.json();
-        const arr = pickArray(data);
-
-        if (!arr) {
-          if (isDev && isRecord(data)) setDebugKeys(Object.keys(data).join(', '));
-          throw new Error('API returned unexpected JSON shape');
+        let data: unknown = null;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // JSONじゃない（= 404 HTMLなど）
+          if (DEBUG) {
+            setDebug({
+              endpoint,
+              httpStatus: res.status,
+              contentType,
+              rawHead: text.slice(0, 400),
+            });
+          }
+          throw new Error(`Response is not JSON (HTTP ${res.status})`);
         }
 
+        const arr = pickArray(data);
+        const jsonKeys = isRecord(data) ? Object.keys(data).join(', ') : '';
+
+        const arrayLen = arr?.length ?? 0;
+        const sampleItemKeys =
+          arr && arr[0] && isRecord(arr[0]) ? Object.keys(arr[0]).join(', ') : '';
+
         const normalized = uniqueByLink(
-          arr.map(normalizePost).filter(Boolean) as LatestPost[]
+          (arr ?? []).map(normalizePost).filter(Boolean) as LatestPost[]
         ).slice(0, limit);
+
+        if (DEBUG) {
+          setDebug({
+            endpoint,
+            httpStatus: res.status,
+            contentType,
+            rawHead: text.slice(0, 400),
+            jsonKeys,
+            arrayLen,
+            normalizedLen: normalized.length,
+            sampleItemKeys,
+          });
+        }
 
         setPosts(normalized);
         setStatus('ok');
       } catch (e: any) {
         if (controller.signal.aborted) return;
-
-        // APIが死んだときは、fallbackがあるならerror扱いにしない（検索装置の思想）
-        const msg = e?.message ?? 'Unknown error';
-        setError(msg);
-
-        if (posts.length > 0) {
-          setStatus('ok'); // 既にfallbackが表示できている
-        } else {
-          setStatus('error');
-        }
+        setStatus('error');
+        setError(e?.message ?? 'Unknown error');
       }
     }
 
     run();
     return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint]);
-
-  const hasPosts = status === 'ok' && posts.length > 0;
 
   return (
     <section aria-labelledby="latest-articles" className={styles.wrap}>
@@ -293,6 +273,27 @@ export default function BlogSection() {
         </div>
         <a className={styles.all} href="/blog">View all →</a>
       </div>
+
+      {DEBUG && debug && (
+        <div className={styles.error} role="status">
+          <div className={styles.errorTitle}>Debug</div>
+          <div className={styles.errorBody}>
+            <div>endpoint: <code>{debug.endpoint}</code></div>
+            {debug.httpStatus !== undefined && <div>HTTP: <code>{debug.httpStatus}</code></div>}
+            {debug.contentType && <div>content-type: <code>{debug.contentType}</code></div>}
+            {debug.jsonKeys && <div>json keys: <code>{debug.jsonKeys}</code></div>}
+            {debug.arrayLen !== undefined && <div>arrayLen: <code>{debug.arrayLen}</code></div>}
+            {debug.normalizedLen !== undefined && <div>normalizedLen: <code>{debug.normalizedLen}</code></div>}
+            {debug.sampleItemKeys && <div>sample item keys: <code>{debug.sampleItemKeys}</code></div>}
+            {debug.rawHead && (
+              <div style={{ marginTop: 8 }}>
+                raw head:
+                <pre style={{ whiteSpace: 'pre-wrap' }}>{debug.rawHead}</pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {status === 'loading' && (
         <div className={styles.grid} aria-busy="true">
@@ -307,41 +308,25 @@ export default function BlogSection() {
           <div className={styles.errorTitle}>Latest記事の取得に失敗</div>
           <div className={styles.errorBody}>
             <code>{error}</code>
-            {isDev && debugKeys && (
-              <div className={styles.errorHint}>
-                受け取ったJSONのキー: <code>{debugKeys}</code>
-              </div>
-            )}
-            {isDev && (
-              <div className={styles.errorHint}>
-                まず <code>/api/blog/latest</code> が 200 と JSON を返してるか確認（Vercelでも同じ）。
-              </div>
-            )}
           </div>
         </div>
       )}
 
       {status === 'ok' && posts.length === 0 && (
         <div className={styles.empty} role="status">
-          記事が0件です（APIの返却形式 or link/title の欠損の可能性）。
+          記事が0件です（APIの返却形式 / link欠損 / normalizeで落としている可能性）。
         </div>
       )}
 
-      {hasPosts && (
+      {status === 'ok' && posts.length > 0 && (
         <div className={styles.grid}>
           {posts.map((p) => {
-            // 内部詳細が存在するなら内部へ、そうでなければ外部へ
-            const isInternal = p.link.startsWith('/blog/');
-            const href = isInternal ? p.link : p.link;
-
-            // 外部リンクは新規タブ、内部は通常遷移
-            const isExternal = !isInternal && /^https?:\/\//.test(href);
-
+            const isExternal = /^https?:\/\//.test(p.link);
             return (
               <a
                 key={p.link}
                 className={styles.card}
-                href={href}
+                href={p.link}
                 target={isExternal ? '_blank' : undefined}
                 rel={isExternal ? 'noreferrer' : undefined}
               >
@@ -353,7 +338,6 @@ export default function BlogSection() {
                     {p.date}{p.readingTime ? ` • ${p.readingTime}` : ''}
                   </span>
                 </div>
-
                 <div className={styles.cardTitle}>{p.title}</div>
                 {p.excerpt ? <p className={styles.cardExcerpt}>{p.excerpt}</p> : null}
                 <div className={styles.cardArrow}>→</div>
