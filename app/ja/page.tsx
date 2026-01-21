@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
-import BlogSectionJa from '../components/BlogSectionJa';
 
 // ============================================
 // Animation Variants
@@ -538,9 +537,6 @@ export default function PageJa() {
           </motion.div>
         </div>
       </section>
-
-      {/* Blog Section - 最新の技術記事 */}
-      <BlogSectionJa />
 
       {/* Contact - 日本語CTA */}
       <section id="contact" className="section">
