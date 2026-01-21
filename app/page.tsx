@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useSpring, useTransform, useInView } from 'framer-motion';
+import { motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -21,10 +21,11 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
 
   useEffect(() => {
     if (!isInView) return;
+
     let start = 0;
     const duration = 1500;
-    const stepMs = 16;
-    const increment = end / (duration / stepMs);
+    const steps = duration / 16;
+    const increment = end / steps;
 
     const timer = setInterval(() => {
       start += increment;
@@ -34,7 +35,7 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
       } else {
         setCount(decimals > 0 ? parseFloat(start.toFixed(decimals)) : Math.floor(start));
       }
-    }, stepMs);
+    }, 16);
 
     return () => clearInterval(timer);
   }, [isInView, end, decimals]);
@@ -60,16 +61,23 @@ export default function Page() {
       {/* Top Nav */}
       <header className="nav">
         <div className="container nav-inner">
-          <a href="#top" className="brand" aria-label="Back to top">
+          <a href="#top" className="brand" aria-label="Home">
             H・M
           </a>
+
           <nav className="nav-links" aria-label="Primary">
             <a href="#role">Role Definition</a>
             <a href="#projects">Projects</a>
             <a href="#skills">Skills</a>
+
+            {/* ✅ Blog を復活（/blog へ） */}
+            <a href="/blog">Blog</a>
+
+            {/* ✅ Contact は pill 単独（Blogと結合しない） */}
             <a href="#contact" className="pill">
-            <a href="#blog">Blog</a>
-            <a href="#contact" classNam
+              Contact
+            </a>
+
             <a href="/ja" className="lang-switch">
               JA
             </a>
@@ -144,7 +152,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Role Clarification */}
+      {/* Role */}
       <section id="role" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -188,9 +196,7 @@ export default function Page() {
                   <div className="pm-clarification-title">My PM Approach</div>
                   <p className="pm-clarification-text">
                     I manage projects primarily through decision clarity and ownership design, not through excessive
-                    tooling. Tools (JIRA, Asana, etc.) are introduced only when they reduce cognitive load. My value is
-                    in designing decisions that prevent projects from stalling after development is technically
-                    complete.
+                    tooling. Tools (JIRA, Asana, etc.) are introduced only when they reduce cognitive load.
                   </p>
                 </div>
               </div>
@@ -212,12 +218,7 @@ export default function Page() {
 
             <motion.div className="grid" variants={stagger}>
               {/* Case 1 */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.article className="card" variants={fadeUp} whileHover={{ y: -8 }} transition={{ duration: 0.3 }}>
                 <div className="project-head">
                   <h3 className="project-title">Manufacturing B2B System (21 SKUs, Simultaneous Launch)</h3>
                   <span className="badge">enterprise</span>
@@ -227,22 +228,20 @@ export default function Page() {
                   <div className="case-label">Problem</div>
                   <p className="case-text">
                     21-product simultaneous launch stalled by conflicting stakeholder requirements across 5 companies.
-                    Specification changes threatened delivery deadlines and escalating costs.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Action</div>
                   <p className="case-text">
-                    Designed 3-tier quality baseline (Required/Recommended/Ideal) to localize change impact. Unified
-                    stakeholder coordination through single decision window, accelerating approvals by 3x.
+                    Designed 3-tier quality baseline (Required/Recommended/Ideal) to localize change impact.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Result</div>
                   <ul className="list">
-                    <li>100% on-time delivery rate maintained for 17 months (zero delays)</li>
+                    <li>100% on-time delivery rate maintained</li>
                     <li>30% reduction in specification change requests</li>
                     <li>Largest-scale project in 17-year career</li>
                   </ul>
@@ -256,12 +255,7 @@ export default function Page() {
               </motion.article>
 
               {/* Case 2 */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.article className="card" variants={fadeUp} whileHover={{ y: -8 }} transition={{ duration: 0.3 }}>
                 <div className="project-head">
                   <h3 className="project-title">Automation Platform (54 Sites, 24/7 Operation for 11 Months)</h3>
                   <span className="badge">product</span>
@@ -269,18 +263,13 @@ export default function Page() {
 
                 <div className="case-block">
                   <div className="case-label">Problem</div>
-                  <p className="case-text">
-                    Manual monitoring of 54 e-commerce sites consuming 1,000+ hours annually. PoC implementations
-                    historically failed to reach production due to operational complexity.
-                  </p>
+                  <p className="case-text">Manual monitoring of 54 e-commerce sites consuming 1,000+ hours annually.</p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Action</div>
                   <p className="case-text">
-                    Designed for failure isolation from day one using SQLite WAL for recovery speed. Prioritized
-                    operational simplicity over architectural elegance. Defined quality baseline as "tolerate false
-                    negatives, minimize false positives."
+                    Designed for failure isolation from day one. Prioritized operational simplicity over elegance.
                   </p>
                 </div>
 
@@ -288,18 +277,13 @@ export default function Page() {
                   <div className="case-label">Result</div>
                   <ul className="list">
                     <li>99.8% uptime over 11 months continuous operation</li>
-                    <li>1,000+ hours annual labor reduction (¥720K monthly equivalent)</li>
-                    <li>54 sites integrated / 100K+ monthly processing</li>
+                    <li>1,000+ hours annual labor reduction</li>
+                    <li>54 sites integrated</li>
                   </ul>
                 </div>
 
                 <div className="project-links">
-                  <a
-                    href="https://github.com/rancorder/master_controller"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="project-link"
-                  >
+                  <a href="https://github.com/rancorder/master_controller" target="_blank" rel="noreferrer" className="project-link">
                     GitHub →
                   </a>
                 </div>
@@ -312,12 +296,7 @@ export default function Page() {
               </motion.article>
 
               {/* Case 3 */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.article className="card" variants={fadeUp} whileHover={{ y: -8 }} transition={{ duration: 0.3 }}>
                 <div className="project-head">
                   <h3 className="project-title">Multi-stakeholder Product Specification PM</h3>
                   <span className="badge">enterprise</span>
@@ -326,25 +305,25 @@ export default function Page() {
                 <div className="case-block">
                   <div className="case-label">Problem</div>
                   <p className="case-text">
-                    Home appliance product specification deadlocked by competing department priorities. Ambiguous
-                    requirements generating costly design changes and timeline slippage.
+                    Product specification deadlocked by competing department priorities. Ambiguous requirements created
+                    costly changes.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Action</div>
                   <p className="case-text">
-                    Classified requirements into "Decide Now" vs "Defer Later" to eliminate wasteful debate. Established
-                    3-tier change impact evaluation (Minor/Moderate/Critical) with clear acceptance criteria.
+                    Classified requirements into &quot;Decide Now&quot; vs &quot;Defer Later&quot; to eliminate wasteful
+                    debate.
                   </p>
                 </div>
 
                 <div className="case-block">
                   <div className="case-label">Result</div>
                   <ul className="list">
-                    <li>Zero specification-related delays for 14 months</li>
-                    <li>60% reduction in design change costs</li>
-                    <li>85%+ stakeholder satisfaction maintained quarterly</li>
+                    <li>Zero specification-related delays</li>
+                    <li>60% reduction in change costs</li>
+                    <li>Stakeholder satisfaction maintained</li>
                   </ul>
                 </div>
 
@@ -371,12 +350,7 @@ export default function Page() {
             </motion.p>
 
             <motion.div className="grid skills" variants={stagger}>
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div className="card" variants={fadeUp} whileHover={{ y: -6 }} transition={{ duration: 0.3 }}>
                 <div className="mini-title">Project & Decision Design</div>
                 <ul className="list">
                   <li>Clarifying ambiguous requirements</li>
@@ -386,27 +360,17 @@ export default function Page() {
                 </ul>
               </motion.div>
 
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div className="card" variants={fadeUp} whileHover={{ y: -6 }} transition={{ duration: 0.3 }}>
                 <div className="mini-title">Operational & Technical Context</div>
                 <ul className="list">
-                  <li>Long-running automation systems (11+ months continuous operation)</li>
+                  <li>Long-running automation systems</li>
                   <li>Monitoring, failure isolation, circuit breakers</li>
                   <li>Production-focused design reviews</li>
-                  <li>Manufacturing precision (0.01mm) × Technology speed (24/7)</li>
+                  <li>Manufacturing precision × Technology speed</li>
                 </ul>
               </motion.div>
 
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div className="card" variants={fadeUp} whileHover={{ y: -6 }} transition={{ duration: 0.3 }}>
                 <div className="mini-title">Tools</div>
                 <ul className="list">
                   <li>Python, FastAPI, React, TypeScript, Next.js</li>
@@ -428,7 +392,7 @@ export default function Page() {
               If your project is technically complete but cannot move to production
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
-              I'm happy to have a conversation
+              I&apos;m happy to have a conversation
             </motion.p>
 
             <motion.div className="contact-card" variants={fadeUp}>
@@ -458,7 +422,7 @@ export default function Page() {
         </div>
       </footer>
 
-      {/* Styles */}
+      {/* ✅ ここが壊れると <main> で落ちる：バッククォート必ず閉じる */}
       <style jsx global>{`
         :root {
           --bg: #05070f;
@@ -470,7 +434,6 @@ export default function Page() {
           --muted2: rgba(255, 255, 255, 0.55);
           --accent: #7c3aed;
           --accent2: #22c55e;
-          --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
         }
 
         * {
@@ -494,12 +457,14 @@ export default function Page() {
           overflow-x: hidden;
         }
 
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+
         .bg-gradient {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           z-index: -1;
           background: radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.22), transparent 60%),
             radial-gradient(900px 700px at 80% 25%, rgba(34, 197, 94, 0.16), transparent 55%);
@@ -514,11 +479,6 @@ export default function Page() {
           50% {
             opacity: 0.85;
           }
-        }
-
-        a {
-          color: inherit;
-          text-decoration: none;
         }
 
         .container {
@@ -558,16 +518,18 @@ export default function Page() {
 
         .nav-links {
           display: flex;
-          gap: 16px;
           align-items: center;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          column-gap: 16px;
+          row-gap: 12px;
           color: var(--muted);
           font-size: 14px;
-          flex-wrap: wrap;
-          justify-content: flex-end;
         }
 
         .nav-links a {
           transition: color 0.2s ease;
+          white-space: nowrap;
         }
 
         .nav-links a:hover {
@@ -580,6 +542,7 @@ export default function Page() {
           border-radius: 999px;
           background: var(--panel-2);
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
 
         .pill:hover {
@@ -595,12 +558,11 @@ export default function Page() {
           color: var(--accent);
           font-weight: 700;
           transition: all 0.2s ease;
-          flex-shrink: 0;
+          white-space: nowrap;
         }
 
         .lang-switch:hover {
           background: rgba(124, 58, 237, 0.2);
-          border-color: var(--accent);
         }
 
         .hero {
@@ -623,9 +585,6 @@ export default function Page() {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
         }
 
         .hero-subtitle {
@@ -634,47 +593,6 @@ export default function Page() {
           color: var(--muted2);
           line-height: 1.6;
           font-style: italic;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .operational-highlights {
-          margin-top: 40px;
-          padding: 32px;
-          border: 2px solid rgba(124, 58, 237, 0.4);
-          background: rgba(124, 58, 237, 0.08);
-          border-radius: 20px;
-        }
-
-        .op-header {
-          font-weight: 900;
-          font-size: 14px;
-          color: var(--accent);
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 20px;
-          text-align: center;
-        }
-
-        .stats-operational {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-        }
-
-        .stat-op {
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 18px;
-          padding: 24px;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          cursor: pointer;
-          text-align: center;
-        }
-
-        .stat-op:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.22);
         }
 
         .cta {
@@ -698,6 +616,7 @@ export default function Page() {
           font-size: 14px;
           transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
+          white-space: nowrap;
         }
 
         .btn:hover {
@@ -733,6 +652,30 @@ export default function Page() {
           background: var(--panel-2);
         }
 
+        .operational-highlights {
+          margin-top: 40px;
+          padding: 32px;
+          border: 2px solid rgba(124, 58, 237, 0.4);
+          background: rgba(124, 58, 237, 0.08);
+          border-radius: 20px;
+        }
+
+        .op-header {
+          font-weight: 900;
+          font-size: 14px;
+          color: var(--accent);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+
+        .stats-operational {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+
         .stats {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -740,16 +683,23 @@ export default function Page() {
           margin-top: 32px;
         }
 
-        .stat {
+        .stat,
+        .stat-op {
           border: 1px solid var(--border);
           background: var(--panel);
           border-radius: 18px;
           padding: 24px;
           transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
           cursor: pointer;
+          text-align: left;
         }
 
-        .stat:hover {
+        .stat-op {
+          text-align: center;
+        }
+
+        .stat:hover,
+        .stat-op:hover {
           background: rgba(255, 255, 255, 0.08);
           border-color: rgba(255, 255, 255, 0.22);
         }
@@ -844,8 +794,6 @@ export default function Page() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 14px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .project-head {
@@ -860,8 +808,6 @@ export default function Page() {
           font-size: 18px;
           line-height: 1.4;
           font-weight: 700;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .badge {
@@ -896,8 +842,6 @@ export default function Page() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
         .mini-title {
@@ -917,10 +861,6 @@ export default function Page() {
           font-size: 13px;
         }
 
-        .list li {
-          margin-bottom: 8px;
-        }
-
         .tags {
           display: flex;
           flex-wrap: wrap;
@@ -934,26 +874,16 @@ export default function Page() {
           border: 1px solid var(--border);
           color: var(--muted);
           background: rgba(255, 255, 255, 0.03);
-          transition: all 0.2s ease;
-        }
-
-        .tag:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.18);
         }
 
         .project-links {
           margin-top: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
         }
 
         .project-link {
           font-size: 13px;
           color: var(--accent);
           font-weight: 700;
-          transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
         }
@@ -1008,96 +938,20 @@ export default function Page() {
             padding: 0 20px;
           }
 
-          .nav-links {
-            gap: 12px;
-          }
-
-          .nav-links a {
-            font-size: 13px;
-          }
-
-          .lang-switch {
-            padding: 6px 12px;
-            font-size: 11px;
-          }
-
           .hero {
             padding: 100px 0 80px;
           }
 
-          .kicker {
-            font-size: 12px;
-          }
-
-          .hero-title {
-            font-size: clamp(24px, 7vw, 36px);
-            margin-bottom: 24px;
-          }
-
-          .hero-subtitle {
-            font-size: clamp(14px, 4vw, 18px);
-          }
-
-          .cta {
-            gap: 12px;
-            margin-top: 32px;
-          }
-
-          .btn {
-            padding: 12px 24px;
-            font-size: 14px;
-            min-width: 140px;
-            width: 100%;
-          }
-
-          .operational-highlights {
-            padding: 24px 20px;
-            margin-top: 48px;
-          }
-
           .stats-operational {
             grid-template-columns: 1fr;
-            gap: 16px;
-          }
-
-          .stat-op {
-            padding: 16px;
-          }
-
-          .stat-op .stat-v {
-            font-size: 24px;
-          }
-
-          .stat-op .stat-l {
-            font-size: 12px;
           }
 
           .stats {
             grid-template-columns: 1fr;
-            gap: 20px;
-            margin-top: 48px;
-          }
-
-          .stat {
-            padding: 20px;
-          }
-
-          .stat-v {
-            font-size: 36px;
           }
 
           .section {
             padding: 80px 0;
-          }
-
-          .section-title {
-            font-size: clamp(28px, 6vw, 40px);
-            margin-bottom: 12px;
-          }
-
-          .section-sub {
-            font-size: clamp(14px, 3.5vw, 16px);
-            margin-bottom: 32px;
           }
 
           .grid {
@@ -1112,46 +966,6 @@ export default function Page() {
           .not-optimize-grid {
             grid-template-columns: 1fr;
             gap: 20px;
-          }
-
-          .card {
-            padding: 24px;
-          }
-
-          .project-head {
-            flex-direction: column;
-            gap: 12px;
-          }
-
-          .pm-clarification {
-            padding: 24px;
-            margin-top: 32px;
-          }
-
-          .pm-clarification-inner {
-            flex-direction: column;
-            gap: 16px;
-          }
-
-          .pm-icon {
-            font-size: 28px;
-          }
-
-          .pm-clarification-title {
-            font-size: 15px;
-          }
-
-          .pm-clarification-text {
-            font-size: 13px;
-          }
-
-          .contact-card {
-            padding: 24px;
-            gap: 20px;
-          }
-
-          .contact-left {
-            min-width: 100%;
           }
 
           .contact-right {
@@ -1175,37 +989,13 @@ export default function Page() {
             padding: 0 16px;
           }
 
-          .nav-links {
-            gap: 8px;
-          }
-
-          .nav-links .pill {
-            padding: 6px 14px;
-            font-size: 12px;
-          }
-
           .hero-title {
             font-size: 22px;
             letter-spacing: -0.5px;
           }
 
           .btn {
-            padding: 10px 20px;
-            font-size: 13px;
-            min-width: 120px;
-          }
-
-          .card {
-            padding: 20px;
-          }
-
-          .project-title {
-            font-size: 16px;
-          }
-
-          .case-text,
-          .list {
-            font-size: 12px;
+            width: 100%;
           }
         }
       `}</style>
