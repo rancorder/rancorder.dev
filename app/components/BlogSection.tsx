@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './BlogSection.module.css';
 
-type Status = 'idle' | 'loading' | 'ok' | 'error';
-
 type LatestPost = {
   slug: string;
   title: string;
@@ -12,20 +10,15 @@ type LatestPost = {
   date?: string;
   category?: string;
   readingTime?: string;
-  platform?: string; // 'external' | 'internal' | 'Qiita' | 'Zenn' | 'note' などでもOK
-  link?: string;     // 外部記事ならここにURLが入る想定（無くても動く）
+  platform?: string; // "external" | "internal"
+  link?: string;     // externalの場合の遷移先
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-function safeStr(v: unknown): string {
-  return typeof v === 'string' ? v : '';
-}
-
 function pickArray(data: unknown): unknown[] | null {
-  // APIの返し方が変わっても拾えるようにする（堅牢）
   if (Array.isArray(data)) return data;
   if (!isRecord(data)) return null;
 
@@ -35,77 +28,77 @@ function pickArray(data: unknown): unknown[] | null {
     if (Array.isArray(v)) return v;
   }
 
-  // ok:true の包み
-  if (data.ok === true && Array.isArray(data.posts)) return data.posts;
-
+  if (data['ok'] === true && Array.isArray(data['posts'])) return data['posts'] as unknown[];
   return null;
 }
 
-function normalizeDate(v: string): string {
-  // "2026-01-01" / ISO / RFC をなるべく YYYY-MM-DD に寄せる（失敗したらそのまま）
-  if (!v) return '';
-  const t = Date.parse(v);
-  if (Number.isNaN(t)) return v;
-  const d = new Date(t);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+function safeStr(v: unknown): string {
+  return typeof v === 'string' ? v : '';
 }
 
 function normalizePost(p: unknown): LatestPost | null {
   if (!isRecord(p)) return null;
 
+  const slug =
+    safeStr(p.slug) ||
+    safeStr(p.id) ||
+    safeStr(p.path) ||
+    safeStr(p.url).replace(/^\/blog\//, '');
+
   const title = safeStr(p.title) || safeStr(p.name);
-  const slug = safeStr(p.slug) || safeStr(p.id) || safeStr(p.path);
-  const link = safeStr(p.link) || safeStr(p.url);
-
-  // 最低限：title は必須。slug/link のどちらかが無いと遷移できないので落とす
   if (!title) return null;
-  if (!slug && !link) return null;
 
+  const platform = safeStr(p.platform) || '';
+  const link = safeStr(p.link) || safeStr(p.url) || '';
+
+  // internalはslug必須 / externalはlink必須（slugは識別子としてあってもいい）
+  if (platform.toLowerCase() === 'external') {
+    if (!/^https?:\/\//i.test(link)) return null;
+    return {
+      slug: slug || link, // slugが無くても落とさない（識別用）
+      title,
+      excerpt: safeStr(p.excerpt) || safeStr(p.description) || '',
+      date: safeStr(p.date) || safeStr(p.publishedAt) || '',
+      category: safeStr(p.category) || '',
+      readingTime: safeStr(p.readingTime) || safeStr(p.readTime) || '',
+      platform: 'external',
+      link,
+    };
+  }
+
+  if (!slug) return null;
   return {
-    slug: slug || link, // linkしか無い場合の救済（slug扱いにする）
+    slug,
     title,
     excerpt: safeStr(p.excerpt) || safeStr(p.description) || '',
-    date: normalizeDate(safeStr(p.date) || safeStr(p.publishedAt) || safeStr(p.updatedAt)),
+    date: safeStr(p.date) || safeStr(p.publishedAt) || '',
     category: safeStr(p.category) || '',
     readingTime: safeStr(p.readingTime) || safeStr(p.readTime) || '',
-    platform: safeStr(p.platform) || '',
-    link: link || undefined,
+    platform: platform || 'internal',
   };
 }
 
-function isExternalPost(post: LatestPost): boolean {
-  // platform が external の時、または link が http(s) の時は外部扱い
-  if ((post.platform || '').toLowerCase() === 'external') return true;
-  if (post.link && /^https?:\/\//i.test(post.link)) return true;
-  // slug が http(s) の時も外部扱い
-  if (/^https?:\/\//i.test(post.slug)) return true;
-  return false;
-}
+function resolveHref(p: LatestPost): { href: string; external: boolean } {
+  const platform = (p.platform || '').toLowerCase();
 
-function resolveHref(post: LatestPost): { href: string; external: boolean } {
-  const external = isExternalPost(post);
-
-  if (external) {
-    // link があれば最優先。無ければ slug をURL扱い
-    const href = post.link && /^https?:\/\//i.test(post.link) ? post.link : post.slug;
-    return { href, external: true };
+  // ✅ externalは絶対に外へ
+  if (platform === 'external') {
+    if (p.link && /^https?:\/\//i.test(p.link)) {
+      return { href: p.link, external: true };
+    }
+    // ここに来たらデータ不正。事故るので /blog に逃がす
+    return { href: '/blog', external: false };
   }
 
-  // 内部記事
-  // slug が "xxxx/articles/xxxx" のようにスラッシュを含んでも Next 側で受けられるならOK。
-  // 受けられない場合は slug を encodeURIComponent する設計に寄せる（ここでは安全側）
-  const safeSlug = encodeURIComponent(post.slug);
-  return { href: `/blog/${safeSlug}`, external: false };
+  // internalは /blog/[slug]
+  const safe = encodeURIComponent(p.slug);
+  return { href: `/blog/${safe}`, external: false };
 }
 
 export default function BlogSection() {
   const [posts, setPosts] = useState<LatestPost[]>([]);
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [error, setError] = useState<string>('');
-  const [debug, setDebug] = useState<string>('');
 
   const endpoint = useMemo(() => '/api/blog/latest?limit=3', []);
 
@@ -115,42 +108,19 @@ export default function BlogSection() {
     async function run() {
       setStatus('loading');
       setError('');
-      setDebug('');
 
       try {
         const res = await fetch(endpoint, {
           cache: 'no-store',
           headers: { Accept: 'application/json' },
         });
-
-        const ct = res.headers.get('content-type') || '';
-        const http = res.status;
-
-        if (!res.ok) throw new Error(`HTTP ${http}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-        const arr = pickArray(data) ?? [];
+        const arr = pickArray(data) ?? (Array.isArray(data) ? data : null);
+        if (!arr) throw new Error('API returned unexpected JSON shape');
 
         const normalized = arr.map(normalizePost).filter(Boolean) as LatestPost[];
-
-        // デバッグ（必要なら出せるように）
-        if (!cancelled) {
-          const sample = normalized[0];
-          const sampleKeys = sample ? Object.keys(sample).join(', ') : '(none)';
-          const rawHead = JSON.stringify(arr.slice(0, 1));
-          setDebug(
-            [
-              `endpoint: ${endpoint}`,
-              `HTTP: ${http}`,
-              `content-type: ${ct || '(none)'}`,
-              `arrayLen: ${arr.length}`,
-              `normalizedLen: ${normalized.length}`,
-              `sample item keys: ${sampleKeys}`,
-              `raw head: ${rawHead}`,
-            ].join('\n')
-          );
-        }
-
         if (cancelled) return;
 
         setPosts(normalized);
@@ -172,17 +142,12 @@ export default function BlogSection() {
     <section aria-labelledby="latest-articles" className={styles.wrap}>
       <div className={styles.head}>
         <div>
-          <h2 id="latest-articles" className={styles.title}>
-            Latest Articles
-          </h2>
+          <h2 id="latest-articles" className={styles.title}>Latest Articles</h2>
           <p className={styles.sub}>最近の更新（自動インデックス）</p>
         </div>
-        <a className={styles.all} href="/blog">
-          View all →
-        </a>
+        <a className={styles.all} href="/blog">View all →</a>
       </div>
 
-      {/* Loading */}
       {status === 'loading' && (
         <div className={styles.grid} aria-busy="true">
           <div className={styles.skeleton} />
@@ -191,70 +156,49 @@ export default function BlogSection() {
         </div>
       )}
 
-      {/* Error */}
       {status === 'error' && (
         <div className={styles.error} role="status">
           <div className={styles.errorTitle}>Latest記事の取得に失敗</div>
           <div className={styles.errorBody}>
             <code>{error}</code>
-            <div className={styles.errorHint}>
-              まず <code>/api/blog/latest</code> が 200 と JSON を返してるか確認（Vercelでも同じ）。
-            </div>
           </div>
         </div>
       )}
 
-      {/* OK but empty */}
       {status === 'ok' && posts.length === 0 && (
         <div className={styles.empty} role="status">
-          記事が0件です（title/slug/link の欠損 or normalize で落ちている可能性）。
-          <details className={styles.debugBox}>
-            <summary>Debug</summary>
-            <pre className={styles.debugPre}>{debug}</pre>
-          </details>
+          記事が0件です（データ不足 / link欠損 / 正規化で落ちた可能性）。
         </div>
       )}
 
-      {/* OK */}
       {status === 'ok' && posts.length > 0 && (
-        <>
-          <div className={styles.grid}>
-            {posts.map((p) => {
-              const { href, external } = resolveHref(p);
-              return (
-                <a
-                  key={`${p.slug}-${p.title}`}
-                  className={styles.card}
-                  href={href}
-                  target={external ? '_blank' : undefined}
-                  rel={external ? 'noreferrer' : undefined}
-                >
-                  <div className={styles.meta}>
-                    {p.category ? <span className={styles.badge}>{p.category}</span> : <span />}
-                    <span className={styles.metaText}>
-                      {p.date}
-                      {p.readingTime ? ` • ${p.readingTime}` : ''}
-                      {p.platform ? ` • ${p.platform}` : ''}
-                    </span>
-                  </div>
+        <div className={styles.grid}>
+          {posts.map((p) => {
+            const { href, external } = resolveHref(p);
 
-                  <div className={styles.cardTitle}>{p.title}</div>
-                  {p.excerpt ? <p className={styles.cardExcerpt}>{p.excerpt}</p> : null}
-
-                  <div className={styles.cardArrow} aria-hidden="true">
-                    →
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-
-          {/* Debug（必要なときだけ開ける） */}
-          <details className={styles.debugBox}>
-            <summary>Debug</summary>
-            <pre className={styles.debugPre}>{debug}</pre>
-          </details>
-        </>
+            return (
+              <a
+                key={`${p.platform ?? 'unknown'}:${p.slug}:${p.title}`}
+                className={styles.card}
+                href={href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noreferrer' : undefined}
+              >
+                <div className={styles.meta}>
+                  {p.category ? <span className={styles.badge}>{p.category}</span> : <span />}
+                  <span className={styles.metaText}>
+                    {p.date}
+                    {p.readingTime ? ` • ${p.readingTime}` : ''}
+                    {p.platform ? ` • ${p.platform}` : ''}
+                  </span>
+                </div>
+                <div className={styles.cardTitle}>{p.title}</div>
+                {p.excerpt ? <p className={styles.cardExcerpt}>{p.excerpt}</p> : null}
+                <div className={styles.cardArrow}>→</div>
+              </a>
+            );
+          })}
+        </div>
       )}
     </section>
   );
