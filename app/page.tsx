@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
-import BlogSection from './components/BlogSection';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useSpring, useTransform, useInView } from 'framer-motion';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -24,7 +23,9 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
     if (!isInView) return;
     let start = 0;
     const duration = 1500;
-    const increment = end / (duration / 16);
+    const stepMs = 16;
+    const increment = end / (duration / stepMs);
+
     const timer = setInterval(() => {
       start += increment;
       if (start >= end) {
@@ -33,7 +34,8 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
       } else {
         setCount(decimals > 0 ? parseFloat(start.toFixed(decimals)) : Math.floor(start));
       }
-    }, 16);
+    }, stepMs);
+
     return () => clearInterval(timer);
   }, [isInView, end, decimals]);
 
@@ -47,31 +49,24 @@ function CountUp({ end, suffix = '', decimals = 0 }: { end: number; suffix?: str
 
 export default function Page() {
   const { scrollYProgress } = useScroll();
-  
   const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
 
   return (
     <main>
       {/* 動的背景 */}
-      <motion.div
-        className="bg-gradient"
-        style={{
-          y: bgY,
-        }}
-      />
+      <motion.div className="bg-gradient" style={{ y: bgY }} />
 
       {/* Top Nav */}
       <header className="nav">
         <div className="container nav-inner">
-          <a href="#top" className="brand">
+          <a href="#top" className="brand" aria-label="Back to top">
             H・M
           </a>
-          <nav className="nav-links">
+          <nav className="nav-links" aria-label="Primary">
             <a href="#role">Role Definition</a>
             <a href="#projects">Projects</a>
             <a href="#skills">Skills</a>
-            <a href="/blog">Blog</a>
             <a href="#contact" className="pill">
               Contact
             </a>
@@ -82,7 +77,7 @@ export default function Page() {
         </div>
       </header>
 
-      {/* Hero - EY想定版：判断設計に寄せ切る */}
+      {/* Hero */}
       <section id="top" className="hero">
         <div className="container">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
@@ -111,7 +106,7 @@ export default function Page() {
               </a>
             </motion.div>
 
-            {/* Operational Highlights - 前面独立表示 */}
+            {/* Operational Highlights */}
             <motion.div className="operational-highlights" variants={fadeUp}>
               <div className="op-header">Operational Highlights</div>
               <div className="stats-operational">
@@ -149,7 +144,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Role Clarification - やらないこと明示 + PM誤解防止 */}
+      {/* Role Clarification */}
       <section id="role" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -204,7 +199,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Projects - 代表3件のみ（Problem/Action/Result型） */}
+      {/* Projects */}
       <section id="projects" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -216,14 +211,11 @@ export default function Page() {
             </motion.p>
 
             <motion.div className="grid" variants={stagger}>
-              {/* Case 1: Manufacturing B2B */}
+              {/* Case 1 */}
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -263,14 +255,11 @@ export default function Page() {
                 </div>
               </motion.article>
 
-              {/* Case 2: Automation Platform */}
+              {/* Case 2 */}
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -322,14 +311,11 @@ export default function Page() {
                 </div>
               </motion.article>
 
-              {/* Case 3: Multi-stakeholder */}
+              {/* Case 3 */}
               <motion.article
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
-                }}
+                whileHover={{ y: -8, boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="project-head">
@@ -373,7 +359,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Skills - 役割ベース */}
+      {/* Skills */}
       <section id="skills" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -385,14 +371,10 @@ export default function Page() {
             </motion.p>
 
             <motion.div className="grid skills" variants={stagger}>
-              {/* Project & Decision Design */}
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">Project & Decision Design</div>
@@ -404,14 +386,10 @@ export default function Page() {
                 </ul>
               </motion.div>
 
-              {/* Operational & Technical Context */}
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">Operational & Technical Context</div>
@@ -423,14 +401,10 @@ export default function Page() {
                 </ul>
               </motion.div>
 
-              {/* Tools */}
               <motion.div
                 className="card"
                 variants={fadeUp}
-                whileHover={{
-                  y: -6,
-                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-                }}
+                whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)' }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="mini-title">Tools</div>
@@ -444,17 +418,9 @@ export default function Page() {
             </motion.div>
           </motion.div>
         </div>
-      </section>  
-
-      {/* Blog Section - Latest Technical Insights (below Skills) */}
-      <section id="blog" className="section">
-        <div className="container">
-          <BlogSection />
-        </div>
       </section>
 
-
-      {/* Contact - EY向けCTA */}
+      {/* Contact */}
       <section id="contact" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -596,6 +562,8 @@ export default function Page() {
           align-items: center;
           color: var(--muted);
           font-size: 14px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
         }
 
         .nav-links a {
@@ -627,6 +595,7 @@ export default function Page() {
           color: var(--accent);
           font-weight: 700;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
 
         .lang-switch:hover {
@@ -654,6 +623,9 @@ export default function Page() {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
 
         .hero-subtitle {
@@ -662,56 +634,10 @@ export default function Page() {
           color: var(--muted2);
           line-height: 1.6;
           font-style: italic;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
-        .hero-sub {
-          margin: 20px 0 0;
-          font-size: 17px;
-          color: var(--muted);
-          line-height: 1.7;
-        }
-
-        .hero-desc {
-          margin: 12px 0 0;
-          font-size: 15px;
-          color: var(--muted2);
-          line-height: 1.8;
-          max-width: 900px;
-        }
-
-        /* 🆕 Role Definition Block */
-        .role-definition {
-          margin: 32px 0;
-          padding: 28px;
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 20px;
-        }
-
-        .role-item {
-          margin-bottom: 20px;
-        }
-
-        .role-item:last-child {
-          margin-bottom: 0;
-        }
-
-        .role-label {
-          font-weight: 900;
-          font-size: 12px;
-          color: var(--accent);
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-          margin-bottom: 8px;
-        }
-
-        .role-value {
-          font-size: 14px;
-          color: var(--muted);
-          line-height: 1.75;
-        }
-
-        /* 🆕 Operational Highlights */
         .operational-highlights {
           margin-top: 40px;
           padding: 32px;
@@ -876,9 +802,10 @@ export default function Page() {
           padding: 32px;
           transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
           will-change: transform;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
-        /* 🆕 Not Optimize Grid */
         .not-optimize-grid {
           margin-top: 32px;
           display: grid;
@@ -886,7 +813,6 @@ export default function Page() {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        /* 🆕 PM Clarification Box */
         .pm-clarification {
           margin-top: 40px;
           padding: 32px;
@@ -918,37 +844,8 @@ export default function Page() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 14px;
-        }
-
-        .filters {
-          margin-top: 24px;
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .chip {
-          border: 1px solid var(--border);
-          background: var(--panel-2);
-          color: var(--muted);
-          border-radius: 999px;
-          padding: 10px 16px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .chip:hover {
-          border-color: rgba(255, 255, 255, 0.28);
-          background: var(--panel);
-        }
-
-        .chip.active {
-          color: var(--text);
-          background: rgba(124, 58, 237, 0.32);
-          border-color: rgba(124, 58, 237, 0.5);
-          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .project-head {
@@ -963,6 +860,8 @@ export default function Page() {
           font-size: 18px;
           line-height: 1.4;
           font-weight: 700;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .badge {
@@ -976,73 +875,7 @@ export default function Page() {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           font-weight: 700;
-        }
-
-        .project-desc {
-          margin: 16px 0 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 14px;
-        }
-
-        .pm-box {
-          margin-top: 20px;
-          padding: 20px;
-          border-radius: 16px;
-          border: 1px solid rgba(124, 58, 237, 0.4);
-          background: rgba(124, 58, 237, 0.14);
-          position: relative;
-        }
-
-        .pm-box::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border-radius: 16px;
-          padding: 1px;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(34, 197, 94, 0.3));
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          opacity: 0;
-          animation: pmGlow 3s ease-in-out infinite;
-        }
-
-        @keyframes pmGlow {
-          0%,
-          100% {
-            opacity: 0;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-
-        .pm-title {
-          font-weight: 900;
-          margin-bottom: 12px;
-          font-size: 13px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .pm-list {
-          margin: 0;
-          padding-left: 20px;
-          color: var(--muted);
-          line-height: 1.8;
-          font-size: 13px;
-        }
-
-        .pm-list li {
-          margin-bottom: 8px;
-        }
-
-        .pm-list li:last-child {
-          margin-bottom: 0;
+          flex-shrink: 0;
         }
 
         .case-block {
@@ -1063,15 +896,8 @@ export default function Page() {
           color: var(--muted);
           line-height: 1.75;
           font-size: 13px;
-        }
-
-        .two-col {
-          margin-top: 24px;
-          display: grid;
-          grid-template-columns: 1.2fr 1fr;
-          gap: 20px;
-          border-top: 1px solid var(--border);
-          padding-top: 24px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .mini-title {
@@ -1177,57 +1003,9 @@ export default function Page() {
           align-items: center;
         }
 
-        /* モバイル対応追加スタイル */
-        .nav-links {
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .lang-switch {
-          flex-shrink: 0;
-        }
-
-        .hero-title {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          hyphens: auto;
-        }
-
-        .hero-subtitle {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .card {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .case-text,
-        .pm-clarification-text,
-        .project-title {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .contact-left .muted,
-        .contact-left p {
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          line-height: 1.7;
-        }
-
-        .badge {
-          flex-shrink: 0;
-        }
-
         @media (max-width: 860px) {
           .container {
             padding: 0 20px;
-          }
-
-          .nav {
-            padding: 12px 0;
           }
 
           .nav-links {
@@ -1245,7 +1023,6 @@ export default function Page() {
 
           .hero {
             padding: 100px 0 80px;
-            min-height: auto;
           }
 
           .kicker {
@@ -1337,11 +1114,6 @@ export default function Page() {
             gap: 20px;
           }
 
-          .two-col {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-
           .card {
             padding: 24px;
           }
@@ -1349,11 +1121,6 @@ export default function Page() {
           .project-head {
             flex-direction: column;
             gap: 12px;
-          }
-
-          .project-title {
-            font-size: 18px;
-            min-width: 100%;
           }
 
           .pm-clarification {
@@ -1437,7 +1204,6 @@ export default function Page() {
           }
 
           .case-text,
-          .pm-list,
           .list {
             font-size: 12px;
           }
