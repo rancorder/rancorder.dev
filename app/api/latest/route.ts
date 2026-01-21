@@ -1,71 +1,73 @@
-// app/api/latest/route.ts
 import { NextResponse } from 'next/server';
-import { articles, type Article } from '@/data/articles';
+import fs from 'fs';
+import path from 'path';
+import matter from 'gray-matter';
 
-/**
- * utility
- */
-function toNumber(v: string | null, fallback: number) {
-  if (!v) return fallback;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
+export const runtime = 'nodejs'; // ← 超重要（fs を使うため）
 
-function normalizeDateKey(s?: string) {
-  if (!s) return 0;
-  const t = Date.parse(s);
-  return Number.isNaN(t) ? 0 : t;
-}
+type Post = {
+  slug: string;
+  title: string;
+  date: string;
+  category?: string;
+  excerpt?: string;
+};
 
-function dedupeByLink(list: Article[]) {
-  const seen = new Set<string>();
-  const out: Article[] = [];
-  for (const a of list) {
-    if (!a?.link) continue;
-    if (seen.has(a.link)) continue;
-    seen.add(a.link);
-    out.push(a);
+const BLOG_DIR = path.join(process.cwd(), 'content', 'blog');
+
+function getAllPosts(): Post[] {
+  if (!fs.existsSync(BLOG_DIR)) return [];
+
+  const files = fs.readdirSync(BLOG_DIR).filter((f) => f.endsWith('.md'));
+
+  const posts: Post[] = [];
+
+  for (const file of files) {
+    const fullPath = path.join(BLOG_DIR, file);
+    const raw = fs.readFileSync(fullPath, 'utf-8');
+
+    const { data, content } = matter(raw);
+
+    if (!data?.title || !data?.date) continue;
+    if (data.published === false) continue;
+
+    posts.push({
+      slug: file.replace(/\.md$/, ''),
+      title: String(data.title),
+      date: String(data.date),
+      category: data.category ? String(data.category) : undefined,
+      excerpt:
+        data.excerpt
+          ? String(data.excerpt)
+          : content.slice(0, 120).replace(/\n/g, ' ') + '…',
+    });
   }
-  return out;
+
+  return posts;
 }
 
-/**
- * Next.js settings
- */
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export async function GET() {
+  try {
+    const posts = getAllPosts();
 
-/**
- * GET /api/latest?limit=3
- */
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const limit = Math.min(
-    Math.max(toNumber(searchParams.get('limit'), 3), 1),
-    30
-  );
+    // 新しい順に並べる
+    posts.sort((a, b) => b.date.localeCompare(a.date));
 
-  // 1) 重複除去
-  const base = dedupeByLink(articles);
+    // 最新3件だけ返す
+    const latest = posts.slice(0, 3);
 
-  // 2) 日付降順（dateが無いものは後ろ）
-  const sorted = base
-    .slice()
-    .sort((a, b) => normalizeDateKey(b.date) - normalizeDateKey(a.date));
-
-  // 3) limit 適用
-  const out = sorted.slice(0, limit);
-
-  return NextResponse.json(
-    {
-      ok: true,
-      count: out.length,
-      items: out,
-    },
-    {
+    return NextResponse.json(latest, {
       headers: {
         'Cache-Control': 'no-store',
       },
-    }
-  );
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: e?.message ?? 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
 }
