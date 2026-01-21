@@ -68,13 +68,10 @@ export default function Page() {
             <a href="#projects">Projects</a>
             <a href="#skills">Skills</a>
             <a href="#contact" className="pill">
-　　　　　　　
-　　　　　　　　 {/* ✅ Blog は単独 */}
-             <a href="/blog">Blog</a>
-
-             {/* ✅ Contact も単独 */}
-             <a href="#contact" classNam
-
+　　　　　　　　{/* ✅ Blog は単独 */}
+            <a href="/blog">Blog</a>
+            {/* ✅ Contact も単独 */}
+            <a href="#contact" classNam
             </a>
             <a href="/ja" className="lang-switch">
               JA
