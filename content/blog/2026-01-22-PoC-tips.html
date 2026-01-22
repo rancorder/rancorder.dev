@@ -1,0 +1,198 @@
+<!--
+title: PoCを本番に移行するコツ（「動く」から「使える」への判断設計）
+date: 2026-01-22
+category: PoC→Production
+excerpt: PoCが止まる理由は技術ではなく、運用・責任・計測の未設計が多い。本番に進める／止める／追加検証する判断を可能にする型をまとめる。
+readingTime: 9 min read
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>PoCを本番に移行するコツ（「動く」から「使える」への判断設計）</title>
+  <meta name="description" content="PoCが止まる理由は技術ではなく、運用・責任・計測の未設計が多い。本番に進める／止める／追加検証する判断を可能にする型をまとめる。" />
+
+  <meta property="og:title" content="PoCを本番に移行するコツ（「動く」から「使える」への判断設計）" />
+  <meta property="og:description" content="PoCが止まる理由は技術ではなく、運用・責任・計測の未設計。本番判断のための実務的な型。" />
+  <meta property="og:type" content="article" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="PoCを本番に移行するコツ" />
+  <meta name="twitter:description" content="PoCを進める／止める／追加検証する判断ができる状態を作る。" />
+</head>
+
+<body>
+  <article aria-label="記事本文">
+    <header>
+      <h1>PoCを本番に移行するコツ</h1>
+      <p>
+        PoCが「動いた」。  
+        この一言で、次に何をすべきかが曖昧になる現場は多い。
+      </p>
+    </header>
+
+    <fade-in delay="0.05">
+      <p>
+        よくある誤解はこれです。  
+        <strong>「PoCが動いた＝本番に進める」</strong>
+      </p>
+      <p>
+        その感覚は自然です。PoCは「動くかどうか」を確かめるための実験だから。  
+        ただし、本番で求められるのは別物です。
+      </p>
+      <p>
+        本番で問われるのは、<strong>壊れたときに、誰が、どこまで、どう戻すか</strong>。  
+        ここが未設計なPoCは、成功していても止まります。
+      </p>
+    </fade-in>
+
+    <h2>なぜそれが起きるか（構造）</h2>
+
+    <p>
+      PoCが本番に移行できない理由は、個人の技術力の問題ではありません。
+      構造的に、次のズレが起きやすい。
+    </p>
+
+    <h3>成功条件が「デモ成功」で止まっている</h3>
+    <p>
+      画面が表示された、精度がそれっぽい、レスポンスが速い気がする。  
+      これらはPoCとしては成功でも、本番の成功条件ではありません。
+    </p>
+
+    <h3>責任境界が決まらないまま関係者が増える</h3>
+    <p>
+      本番では障害、問い合わせ、権限管理、監査対応が発生します。  
+      誰が一次対応で、誰が判断し、誰が直すのか。  
+      これが決まらない限り、「進めない判断」は合理的です。
+    </p>
+
+    <h3>計測がなく、議論が感想戦になる</h3>
+    <p>
+      「速い」「使いやすい」という言葉だけでは、意思決定できません。  
+      計測がないPoCは、改善の優先順位が決まらず、止まります。
+    </p>
+
+    <callout-box type="success" title="要点（観測）">
+      <p>
+        PoCが止まる原因は「作れなかった」ではない。  
+        <strong>本番を前提にした設計が存在しない</strong>ことが多い。
+      </p>
+    </callout-box>
+
+    <h2>解決の方針（設計原則3つ）</h2>
+
+    <h3>原則1：成功条件を「運用可能性」まで含めて定義する</h3>
+    <p>
+      PoCの成功条件に、可用性、権限、ログ、監視、復旧手順を含める。  
+      ここまで定義できると、議論が前に進みます。
+    </p>
+
+    <h3>原則2：保守性を「変更コスト」として扱う</h3>
+    <p>
+      本番では必ず変更が入る。  
+      保守性は美しさではなく、<strong>変更時の痛みを減らす設計</strong>です。
+    </p>
+
+    <h3>原則3：性能は最適化より「測れる状態」を作る</h3>
+    <p>
+      Lighthouseは万能ではありませんが、最低限の健康診断になります。  
+      重要なのはスコアではなく、<strong>同条件で差分を追えること</strong>です。
+    </p>
+
+    <h2>実装/運用の具体</h2>
+
+    <h3>ステップ0：PoCの範囲を明確にする</h3>
+    <p>
+      どこまでがPoCで、どこからが未対応か。  
+      スタブや仮実装は、仮であることを明示します。
+    </p>
+
+    <h3>ステップ1：計測点を最小限で入れる</h3>
+    <ul>
+      <li>フロント：Lighthouse（同条件で再計測可能）</li>
+      <li>バックエンド：主要APIのレイテンシ</li>
+      <li>運用：エラー時の一次対応手順</li>
+    </ul>
+
+    <h3>ステップ2：運用手順を文章で書く</h3>
+    <p>
+      コードより先に文章を書く。  
+      書けない手順は、運用できません。
+    </p>
+
+    <pre><code>［PoC→本番 最小構成（概念）］
+Browser
+  ↓
+Next.js（単一HTML /content）
+  ↓
+API / Backend
+  ↓
+DB / External Service
+
+＋ 運用
+- Logs / Metrics
+- 障害時手順
+- 責任者</code></pre>
+
+    <h2>失敗パターン</h2>
+
+    <callout-box type="warning" title="PoCが止まる典型例">
+      <ul>
+        <li>成功条件がデモ止まり</li>
+        <li>運用手順が存在しない</li>
+        <li>計測がなく比較できない</li>
+        <li>責任境界が曖昧</li>
+        <li>保守性が議論されていない</li>
+      </ul>
+    </callout-box>
+
+    <h2>意思決定のチェックリスト</h2>
+
+    <div class="table-wrap" role="region" tabindex="0" aria-label="PoC本番移行 判断チェック">
+      <table>
+        <thead>
+          <tr>
+            <th>観点</th>
+            <th>確認内容</th>
+            <th>判断</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>成功条件</td>
+            <td>本番OK条件が文章で定義されている</td>
+            <td>進める／追加検証</td>
+          </tr>
+          <tr>
+            <td>責任</td>
+            <td>障害時の担当が決まっている</td>
+            <td>進める／止める</td>
+          </tr>
+          <tr>
+            <td>計測</td>
+            <td>最低限の指標が取れている</td>
+            <td>進める／追加検証</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>まとめ</h2>
+    <p>
+      PoCを本番に進めるかどうかは、勢いでは決めない。  
+      判断できる材料が揃っているかで決める。
+    </p>
+
+    <footer>
+      <p>
+        使える部分だけ拾ってください。  
+        GitHub: <a href="#" rel="noopener">Repository</a> /
+        Live: <a href="#" rel="noopener">Demo</a> /
+        問い合わせ: <a href="#" rel="noopener">Contact</a>
+      </p>
+    </footer>
+  </article>
+</body>
+</html>
