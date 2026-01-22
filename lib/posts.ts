@@ -24,7 +24,7 @@ export function getAllPosts() {
   try {
     const files = fs.readdirSync(BLOG_DIR);
 
-    return files
+    const posts = files
       .filter(f => f.toLowerCase().endsWith('.html'))
       .map(file => {
         const slug = file.replace(/\.html$/i, '');
@@ -41,6 +41,15 @@ export function getAllPosts() {
           readingTime: meta.readingTime || '',
         };
       });
+
+    // 日付でソート（新しい順）
+    posts.sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return dateB - dateA; // 降順
+    });
+
+    return posts;
   } catch (err) {
     console.error('getAllPosts failed:', err);
     return [];
@@ -64,7 +73,7 @@ export function getPost(slug: string) {
       readingTime: meta.readingTime || '',
     };
   } catch (err) {
-    console.error(`getPost failed for slug: ${slug}`, err);
+    console.error(`getPost failed for slug: ${slug}`, error);
     return null;
   }
 }
