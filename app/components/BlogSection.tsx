@@ -1,3 +1,4 @@
+// app/components/BlogSection.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -10,8 +11,9 @@ type LatestPost = {
   date?: string;
   category?: string;
   readingTime?: string;
-  platform?: string; // "external" | "internal"
-  link?: string;     // externalの場合の遷移先
+  platform?: string;
+  link?: string;
+  fileType?: 'html' | 'mdx' | 'md';
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -51,11 +53,11 @@ function normalizePost(p: unknown): LatestPost | null {
   const platform = safeStr(p.platform) || '';
   const link = safeStr(p.link) || safeStr(p.url) || '';
 
-  // internalはslug必須 / externalはlink必須（slugは識別子としてあってもいい）
+  // externalはlink必須
   if (platform.toLowerCase() === 'external') {
     if (!/^https?:\/\//i.test(link)) return null;
     return {
-      slug: slug || link, // slugが無くても落とさない（識別用）
+      slug: slug || link,
       title,
       excerpt: safeStr(p.excerpt) || safeStr(p.description) || '',
       date: safeStr(p.date) || safeStr(p.publishedAt) || '',
@@ -66,6 +68,7 @@ function normalizePost(p: unknown): LatestPost | null {
     };
   }
 
+  // internal（HTML/MDX/MD記事）
   if (!slug) return null;
   return {
     slug,
@@ -75,18 +78,18 @@ function normalizePost(p: unknown): LatestPost | null {
     category: safeStr(p.category) || '',
     readingTime: safeStr(p.readingTime) || safeStr(p.readTime) || '',
     platform: platform || 'internal',
+    fileType: safeStr(p.fileType) as 'html' | 'mdx' | 'md' | undefined,
   };
 }
 
 function resolveHref(p: LatestPost): { href: string; external: boolean } {
   const platform = (p.platform || '').toLowerCase();
 
-  // ✅ externalは絶対に外へ
+  // externalは外部リンク
   if (platform === 'external') {
     if (p.link && /^https?:\/\//i.test(p.link)) {
       return { href: p.link, external: true };
     }
-    // ここに来たらデータ不正。事故るので /blog に逃がす
     return { href: '/blog', external: false };
   }
 
@@ -167,7 +170,7 @@ export default function BlogSection() {
 
       {status === 'ok' && posts.length === 0 && (
         <div className={styles.empty} role="status">
-          記事が0件です（データ不足 / link欠損 / 正規化で落ちた可能性）。
+          記事が0件です。
         </div>
       )}
 
@@ -182,19 +185,29 @@ export default function BlogSection() {
                 className={styles.card}
                 href={href}
                 target={external ? '_blank' : undefined}
-                rel={external ? 'noreferrer' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
               >
                 <div className={styles.meta}>
-                  {p.category ? <span className={styles.badge}>{p.category}</span> : <span />}
-                  <span className={styles.metaText}>
-                    {p.date}
-                    {p.readingTime ? ` • ${p.readingTime}` : ''}
-                    {p.platform ? ` • ${p.platform}` : ''}
-                  </span>
+                  {p.category && <span className={styles.cat}>{p.category}</span>}
+                  {p.date && (
+                    <time dateTime={p.date} className={styles.date}>
+                      {new Date(p.date).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </time>
+                  )}
                 </div>
-                <div className={styles.cardTitle}>{p.title}</div>
-                {p.excerpt ? <p className={styles.cardExcerpt}>{p.excerpt}</p> : null}
-                <div className={styles.cardArrow}>→</div>
+
+                <h3 className={styles.cardTitle}>{p.title}</h3>
+
+                {p.excerpt && <p className={styles.ex}>{p.excerpt}</p>}
+
+                <div className={styles.foot}>
+                  {p.readingTime && <span className={styles.time}>{p.readingTime}</span>}
+                  <span className={styles.arrow}>{external ? '↗' : '→'}</span>
+                </div>
               </a>
             );
           })}
