@@ -73,7 +73,7 @@ export function getPost(slug: string) {
       readingTime: meta.readingTime || '',
     };
   } catch (err) {
-    console.error(`getPost failed for slug: ${slug}`, error);
+    console.error(`getPost failed for slug: ${slug}`, err);
     return null;
   }
 }
