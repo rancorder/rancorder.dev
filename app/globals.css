@@ -1,4 +1,4 @@
-/* app/globals.css の先頭に追加 */
+/* app/globals.css の先頭に追加（既存を置き換え） */
 
 /* ============================================
    テーマカラー変数
@@ -18,51 +18,14 @@
 
 /* ライトモード */
 [data-theme='light'] {
-  --bg: #ffffff;
+  --bg: #f8fafc;
   --text: #0f172a;
-  --muted: #64748b;
+  --muted: #475569;
   --accent: #7c3aed;
   --accent2: #22c55e;
-  --border: rgba(15, 23, 42, 0.1);
-  --panel: rgba(15, 23, 42, 0.02);
-  --panel-2: rgba(15, 23, 42, 0.04);
-}
-
-/* ライトモード用の追加調整 */
-[data-theme='light'] {
-  /* 背景グラデーション */
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
-}
-
-[data-theme='light'] .nav {
-  background: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-}
-
-[data-theme='light'] .bg-gradient {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(124, 58, 237, 0.15),
-    rgba(255, 255, 255, 0)
-  );
-}
-
-/* カードのホバー効果をライトモード用に調整 */
-[data-theme='light'] .card:hover,
-[data-theme='light'] .stat:hover {
-  background: rgba(15, 23, 42, 0.05);
-  border-color: rgba(124, 58, 237, 0.3);
-}
-
-/* ボタンのライトモード調整 */
-[data-theme='light'] .btn {
-  background: rgba(15, 23, 42, 0.04);
-  border-color: rgba(15, 23, 42, 0.15);
-}
-
-[data-theme='light'] .btn:hover {
-  background: rgba(15, 23, 42, 0.08);
-  border-color: rgba(15, 23, 42, 0.25);
+  --border: rgba(15, 23, 42, 0.15);
+  --panel: rgba(15, 23, 42, 0.04);
+  --panel-2: rgba(15, 23, 42, 0.08);
 }
 
 /* ページロード時のちらつき防止 */
@@ -75,4 +38,157 @@ body {
   background-color: var(--bg);
   color: var(--text);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================
+   ライトモード用の追加調整
+   ============================================ */
+
+/* 背景グラデーション */
+[data-theme='light'] .bg-gradient {
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(124, 58, 237, 0.08),
+    rgba(255, 255, 255, 0)
+  ) !important;
+}
+
+/* ナビゲーション */
+[data-theme='light'] .nav {
+  background: rgba(248, 250, 252, 0.9) !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+}
+
+/* Hero セクション */
+[data-theme='light'] .hero {
+  background: transparent;
+}
+
+[data-theme='light'] .hero h1,
+[data-theme='light'] .hero-title,
+[data-theme='light'] .section-title {
+  color: var(--text) !important;
+}
+
+[data-theme='light'] .hero p,
+[data-theme='light'] .hero-sub,
+[data-theme='light'] .section-sub {
+  color: var(--muted) !important;
+}
+
+/* カードのホバー効果 */
+[data-theme='light'] .card:hover,
+[data-theme='light'] .stat:hover,
+[data-theme='light'] .stat-op:hover {
+  background: rgba(124, 58, 237, 0.05) !important;
+  border-color: rgba(124, 58, 237, 0.25) !important;
+}
+
+/* ボタン */
+[data-theme='light'] .btn {
+  background: rgba(15, 23, 42, 0.05) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  color: var(--text) !important;
+}
+
+[data-theme='light'] .btn:hover {
+  background: rgba(15, 23, 42, 0.1) !important;
+  border-color: rgba(15, 23, 42, 0.3) !important;
+}
+
+[data-theme='light'] .btn.primary {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6)) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+/* 統計カード */
+[data-theme='light'] .stat-v {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Operational Highlights */
+[data-theme='light'] .operational-highlights {
+  background: rgba(124, 58, 237, 0.04) !important;
+  border-color: rgba(124, 58, 237, 0.2) !important;
+}
+
+/* プロジェクトカード */
+[data-theme='light'] .project-card {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme='light'] .project-title {
+  color: var(--text) !important;
+}
+
+/* モバイルメニュー */
+[data-theme='light'] .mobile-menu {
+  background: rgba(248, 250, 252, 0.98) !important;
+}
+
+[data-theme='light'] .mobile-nav-links a {
+  color: var(--text) !important;
+}
+
+[data-theme='light'] .mobile-nav-links a:hover {
+  color: var(--accent) !important;
+}
+
+/* 言語切替ボタン */
+[data-theme='light'] .lang-switch,
+[data-theme='light'] .mobile-lang {
+  background: rgba(124, 58, 237, 0.1) !important;
+  color: var(--accent) !important;
+}
+
+/* pill ボタン */
+[data-theme='light'] .pill,
+[data-theme='light'] .mobile-cta {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(34, 197, 94, 0.6)) !important;
+  color: white !important;
+}
+
+/* ブランドロゴ */
+[data-theme='light'] .brand {
+  color: var(--text) !important;
+}
+
+[data-theme='light'] .brand:hover {
+  color: var(--accent) !important;
+}
+
+/* リンク */
+[data-theme='light'] a {
+  color: var(--accent);
+}
+
+[data-theme='light'] a:hover {
+  color: var(--accent2);
+}
+
+/* テキスト全般 */
+[data-theme='light'] h1,
+[data-theme='light'] h2,
+[data-theme='light'] h3,
+[data-theme='light'] h4,
+[data-theme='light'] h5,
+[data-theme='light'] h6 {
+  color: var(--text) !important;
+}
+
+[data-theme='light'] p,
+[data-theme='light'] span,
+[data-theme='light'] li {
+  color: var(--text);
+}
+
+/* stat-l（統計の説明文） */
+[data-theme='light'] .stat-l {
+  color: var(--muted) !important;
 }
