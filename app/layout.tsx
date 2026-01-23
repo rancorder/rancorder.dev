@@ -1,8 +1,9 @@
-// app/layout.tsx (Analytics追加版)
+// app/layout.tsx
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import ThemeScript from './components/ThemeScript';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
-        {/* RSS Feed */}
+        <ThemeScript />
         <link
           rel="alternate"
           type="application/rss+xml"
