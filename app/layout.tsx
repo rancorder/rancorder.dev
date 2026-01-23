@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import ThemeScript from './components/ThemeScript';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -28,7 +27,22 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
-        <ThemeScript />
+        {/* テーマスクリプト（ちらつき防止） */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                  document.documentElement.setAttribute('data-theme', theme);
+                } catch (e) {
+                  console.error('Theme initialization failed:', e);
+                }
+              })();
+            `,
+          }}
+        />
         <link
           rel="alternate"
           type="application/rss+xml"
