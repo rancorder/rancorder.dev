@@ -1,7 +1,11 @@
+// app/blog/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import styles from './article.module.css';
-import { getAllPosts, getPost } from '@/lib/posts';
+import { getAllPosts, getPost, getRelatedPosts } from '@/lib/posts';
+import TableOfContents from './TableOfContents';
+import ShareButtons from './ShareButtons';
+import RelatedArticles from './RelatedArticles';
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -21,12 +25,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       type: 'article',
       publishedTime: post.date,
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+    },
   };
 }
 
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug);
   if (!post) notFound();
+
+  const relatedPosts = getRelatedPosts(post, 3);
+  const currentUrl = `https://rancorder.vercel.app/blog/${post.slug}`;
 
   return (
     <div className={styles.articlePage}>
@@ -42,7 +54,13 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               <strong>{post.category}</strong>
             </span>
             <span className={styles.metaText}>
-              <time dateTime={post.date}>{post.date}</time>
+              <time dateTime={post.date}>
+                {new Date(post.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </time>
               <span className={styles.dot}>•</span>
               <span>{post.readingTime}</span>
             </span>
@@ -51,45 +69,60 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <h1 className={styles.heroTitle}>{post.title}</h1>
           <p className={styles.heroDek}>{post.excerpt}</p>
 
-          <div className={styles.heroActions}>
-            <a className={`${styles.actionLink} ${styles.actionLinkPrimary}`} href="#content">
-              本文へ
-            </a>
-            <a className={styles.actionLink} href="#resources">
-              参考リンクへ
-            </a>
-          </div>
+          {/* タグ表示 */}
+          {post.tags.length > 0 && (
+            <div className={styles.tagList}>
+              {post.tags.map(tag => (
+                <Link
+                  key={tag}
+                  href={`/blog?tag=${encodeURIComponent(tag)}`}
+                  className={styles.tag}
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* シェアボタン */}
+          <ShareButtons url={currentUrl} title={post.title} />
         </header>
 
-        {/* Content */}
-        <div id="content" className={styles.articleContent} dangerouslySetInnerHTML={{ __html: post.html }} />
+        {/* 2カラムレイアウト */}
+        <div className={styles.articleLayout}>
+          {/* 目次（サイドバー） */}
+          <aside className={styles.sidebar}>
+            <div className={styles.stickyToc}>
+              <TableOfContents html={post.html} />
+            </div>
+          </aside>
 
-        {/* Footer */}
-        <footer id="resources" className={styles.articleFooter} aria-label="記事のフッター">
-          <h2 className={styles.footerTitle}>Resources</h2>
+          {/* メインコンテンツ */}
+          <div className={styles.mainContent}>
+            <div
+              id="content"
+              className={styles.articleContent}
+              dangerouslySetInnerHTML={{ __html: post.html }}
+            />
 
-          <div className={styles.footerGrid}>
-            <a className={styles.linkCard} href="https://github.com/rancorder/portfolio-react-enterprise">
-              <small>GitHub</small>
-              <strong>rancorder/portfolio-react-enterprise</strong>
-              <span className={styles.cardHint}>実装・構成を見る</span>
-            </a>
-
-            <a className={styles.linkCard} href="https://rancorder.vercel.app">
-              <small>Live</small>
-              <strong>https://rancorder.vercel.app</strong>
-              <span className={styles.cardHint}>動作デモを見る</span>
-            </a>
+            {/* シェアボタン（記事下） */}
+            <div className={styles.shareFooter}>
+              <p className={styles.shareText}>この記事が役に立ったらシェアしてください</p>
+              <ShareButtons url={currentUrl} title={post.title} />
+            </div>
           </div>
+        </div>
 
-          <div className={styles.footerCta}>
-            <p className={styles.footerCtaText}>
-              「この設計、うちの案件だとどうなる？」みたいな壁打ちは歓迎。
-            </p>
-            <Link href="/#contact" className={styles.ctaButton}>
-              お問い合わせ
-            </Link>
-          </div>
+        {/* 関連記事 */}
+        {relatedPosts.length > 0 && (
+          <RelatedArticles posts={relatedPosts} />
+        )}
+
+        {/* フッター */}
+        <footer className={styles.articleFooter}>
+          <Link href="/blog" className={styles.backToList}>
+            ← すべての記事を見る
+          </Link>
         </footer>
       </article>
     </div>
