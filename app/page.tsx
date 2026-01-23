@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useScroll, useSpring, useTransform } from 'framer-motion';
+import ThemeToggle from './components/ThemeToggle';
 
 // ============================================
 // Animation Variants
