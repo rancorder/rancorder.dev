@@ -543,13 +543,13 @@
 /* ============================================
    横スクロール防止
    ============================================ */
-* {
+.blogPage :global(*) {
   box-sizing: border-box;
 }
 
-img,
-video,
-iframe {
+.blogPage :global(img),
+.blogPage :global(video),
+.blogPage :global(iframe) {
   max-width: 100%;
   height: auto;
 }
