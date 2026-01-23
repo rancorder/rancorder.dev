@@ -1,0 +1,75 @@
+/* app/blog/[slug]/TableOfContents.module.css */
+
+.toc {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.tocTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tocList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tocItem {
+  margin-bottom: 0.5rem;
+}
+
+.tocLink {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #94a3b8;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border: none;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.tocLink:hover {
+  color: #e2e8f0;
+  background: rgba(96, 165, 250, 0.1);
+  border-left-color: #60a5fa;
+  padding-left: 1rem;
+}
+
+.level2 {
+  padding-left: 0;
+}
+
+.level3 {
+  padding-left: 1rem;
+}
+
+.level3 .tocLink {
+  font-size: 0.85rem;
+}
+
+.active .tocLink {
+  color: #60a5fa;
+  border-left-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+  .toc {
+    display: none;
+  }
+}
