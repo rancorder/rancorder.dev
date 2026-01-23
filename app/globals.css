@@ -192,3 +192,42 @@ body {
 [data-theme='light'] .stat-l {
   color: var(--muted) !important;
 }
+
+/* globals.css の末尾に追加 */
+
+/* ============================================
+   モバイルメニュー：ライトモード対応
+   ============================================ */
+
+[data-theme='light'] .mobile-menu {
+  background: rgba(248, 250, 252, 0.98) !important;
+  backdrop-filter: blur(20px);
+}
+
+[data-theme='light'] .mobile-menu-inner {
+  background: transparent;
+}
+
+[data-theme='light'] .mobile-nav-links a {
+  color: var(--text) !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme='light'] .mobile-nav-links a:hover,
+[data-theme='light'] .mobile-nav-links a:active {
+  background: rgba(124, 58, 237, 0.08) !important;
+  border-color: rgba(124, 58, 237, 0.25) !important;
+}
+
+[data-theme='light'] .mobile-nav-links a.mobile-cta {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(34, 197, 94, 0.6)) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+[data-theme='light'] .mobile-nav-links a.mobile-lang {
+  background: rgba(124, 58, 237, 0.1) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
