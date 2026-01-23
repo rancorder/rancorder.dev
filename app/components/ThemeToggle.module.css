@@ -1,0 +1,52 @@
+/* app/components/ThemeToggle.module.css */
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s;
+}
+
+.toggle:hover .icon {
+  transform: rotate(20deg);
+}
+
+.label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .label {
+    display: inline;
+  }
+}
+
+.placeholder {
+  width: 68px;
+  height: 36px;
+}
+
+@media (min-width: 768px) {
+  .placeholder {
+    width: 85px;
+  }
+}
