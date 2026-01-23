@@ -99,6 +99,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
           <a href="/blog" onClick={onClose}>
             Blog
           </a>
+          <ThemeToggle />
           <a href="#contact" className="mobile-cta" onClick={onClose}>
             Contact
           </a>
