@@ -13,7 +13,23 @@ function parseFrontMatter(html: string) {
 
   for (const line of lines) {
     const [key, ...rest] = line.split(':');
-    meta[key.trim()] = rest.join(':').trim();
+    let value = rest.join(':').trim();
+    
+    // 配列形式のタグ ["tag1", "tag2"] を処理
+    if (key.trim() === 'tags' && value.startsWith('[') && value.endsWith(']')) {
+      // JSON配列をカンマ区切り文字列に変換
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          value = parsed.join(', ');
+        }
+      } catch (e) {
+        // JSON パースに失敗したらそのまま
+        console.warn('Failed to parse tags array:', e);
+      }
+    }
+    
+    meta[key.trim()] = value;
   }
 
   return meta;
