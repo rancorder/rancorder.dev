@@ -24,18 +24,19 @@
 ### 🔥 コアコンセプト
 
 ```mermaid
-graph LR
-    A[💡 アイデア] --> B[📝 記事作成]
-    B --> C[📤 Git Push]
-    C --> D[⚡ 自動ビルド]
-    D --> E[🌐 公開完了]
+flowchart TD
+    A[💡 アイデア] --> B[📝 記事作成<br/>HTML/MDX]
+    B --> C[📤 Git Push<br/>GitHub]
+    C --> D[⚡ 自動ビルド<br/>2-3分]
+    D --> E[🌐 公開完了<br/>Vercel CDN]
     
-    style A fill:#7c3aed,color:#fff
-    style E fill:#22c55e,color:#fff
+    F[🚫 DB管理] -.不要.-> G[設定ゼロ]
+    H[🚫 サーバー運用] -.不要.-> G
+    I[🚫 CMS設定] -.不要.-> G
     
-    F[🚫 DB管理] -.x.- G[設定不要]
-    H[🚫 サーバー] -.x.- G
-    I[🚫 CMS] -.x.- G
+    style A fill:#7c3aed,stroke:#7c3aed,color:#fff
+    style E fill:#22c55e,stroke:#22c55e,color:#fff
+    style G fill:#64748b,stroke:#64748b,color:#fff
 ```
 
 | **従来のCMS** | **このシステム** |
@@ -47,32 +48,67 @@ graph LR
 
 ---
 
-## 🏗️ アーキテクチャ
+## 🏗️ アーキテクチャフロー
 
+```mermaid
+graph TB
+    subgraph "📱 ユーザー"
+        U[ブラウザ]
+    end
+    
+    subgraph "🌐 CDN Layer"
+        CDN[Vercel Edge Network<br/>完全静的配信]
+    end
+    
+    subgraph "⚡ Build Time (2-3分)"
+        BUILD[Static Site Generation]
+        BUILD --> SSG1[内部記事<br/>content/blog/*.html]
+        BUILD --> SSG2[外部記事<br/>Qiita/Zenn API]
+        BUILD --> SSG3[サイトマップ<br/>自動生成]
+        BUILD --> SSG4[目次<br/>自動抽出]
+    end
+    
+    subgraph "📁 Content Source"
+        GIT[Git Repository]
+        GIT --> HTML[HTMLファイル]
+        GIT --> MDX[MDXファイル]
+        GIT --> META[Frontmatter<br/>メタデータ]
+    end
+    
+    U --> CDN
+    CDN --> BUILD
+    GIT --> BUILD
+    
+    style U fill:#3b82f6,color:#fff
+    style CDN fill:#22c55e,color:#fff
+    style BUILD fill:#7c3aed,color:#fff
+    style GIT fill:#64748b,color:#fff
 ```
-┌─────────────────────────────────────────────────────┐
-│                   🌐 CDN (Vercel)                   │
-│                  完全静的配信のみ                    │
-└─────────────────────────────────────────────────────┘
-                         ↑
-                         │
-┌─────────────────────────────────────────────────────┐
-│              ⚡ Build Time (2-3分)                  │
-├─────────────────────────────────────────────────────┤
-│  📦 Static Site Generation (SSG)                    │
-│  ├─ 内部記事: content/blog/*.html                   │
-│  ├─ 外部記事: Qiita/Zenn API → キャッシュ           │
-│  ├─ サイトマップ: 自動生成                          │
-│  └─ 目次: 自動抽出                                  │
-└─────────────────────────────────────────────────────┘
-                         ↑
-                         │
-┌─────────────────────────────────────────────────────┐
-│              📁 Content Source                      │
-│  ├─ Git: 記事ファイル（HTML/MDX）                   │
-│  ├─ Frontmatter: メタデータ                         │
-│  └─ Web Components: インタラクティブ要素            │
-└─────────────────────────────────────────────────────┘
+
+### 🔄 記事公開フロー
+
+```mermaid
+sequenceDiagram
+    participant 👤 Author
+    participant 📝 Editor
+    participant 🔧 Git
+    participant ⚡ Vercel
+    participant 🌐 CDN
+    participant 👁️ Reader
+    
+    👤 Author->>📝 Editor: 記事を書く
+    📝 Editor->>🔧 Git: git push
+    🔧 Git->>⚡ Vercel: Webhook通知
+    
+    Note over ⚡ Vercel: ビルド開始 (2-3分)
+    
+    ⚡ Vercel->>⚡ Vercel: 記事を検出
+    ⚡ Vercel->>⚡ Vercel: サイトマップ生成
+    ⚡ Vercel->>⚡ Vercel: 静的HTML生成
+    ⚡ Vercel->>🌐 CDN: デプロイ完了
+    
+    👁️ Reader->>🌐 CDN: アクセス
+    🌐 CDN->>👁️ Reader: 高速配信 ⚡
 ```
 
 ---
@@ -81,17 +117,52 @@ graph LR
 
 ### 📝 ブログシステム
 
-- ✅ **ファイルベースCMS** - GitがそのままCMS
-- ✅ **自動インデックス** - ファイルを置くだけで記事一覧に追加
-- ✅ **自動サイトマップ** - ビルド時に生成
-- ✅ **外部記事統合** - Qiita/Zennの記事を自動取得
-- ✅ **フルテキスト検索** - タイトル・本文・タグで検索
-- ✅ **タグ・カテゴリ** - 自動集計とフィルタリング
-- ✅ **目次自動生成** - 見出しから自動抽出
-- ✅ **読了時間** - 自動計算
-- ✅ **関連記事** - カテゴリ・タグベースで自動提案
+<table>
+<tr>
+<td width="50%">
+
+**コンテンツ管理**
+- ✅ ファイルベースCMS
+- ✅ 自動インデックス
+- ✅ 自動サイトマップ
+- ✅ 外部記事統合
+- ✅ Git履歴 = バックアップ
+
+</td>
+<td width="50%">
+
+**ユーザー体験**
+- ✅ フルテキスト検索
+- ✅ タグ・カテゴリフィルタ
+- ✅ 目次自動生成
+- ✅ 読了時間表示
+- ✅ 関連記事提案
+
+</td>
+</tr>
+</table>
 
 ### 🎨 インタラクティブコンポーネント
+
+```mermaid
+mindmap
+  root((Web Components))
+    UI要素
+      Callout Box
+      Code Block
+      Tab Group
+      Accordion
+    機能
+      コピー機能
+      折りたたみ
+      タブ切り替え
+    アニメーション
+      Fade-in
+      Slide-in
+      Scale-in
+```
+
+**使用例:**
 
 ```html
 <!-- Callout Box -->
@@ -112,75 +183,104 @@ const hello = "world";
   <div data-tab-panel>Content 2</div>
 </tab-group>
 
-<!-- Interactive Checklist -->
-<interactive-checklist>
-  <ul>
-    <li>タスク1</li>
-    <li>タスク2</li>
-  </ul>
-</interactive-checklist>
-
 <!-- Fade-in Animation -->
 <fade-in delay="200">
   <p>段階的に表示される内容</p>
 </fade-in>
 ```
 
-### 🎯 ポートフォリオ
+### 🎯 ポートフォリオ機能
 
-- ✅ **モダンUI** - Framer Motion による滑らかなアニメーション
-- ✅ **レスポンシブ** - モバイルファースト設計
-- ✅ **多言語対応** - 日本語/英語切り替え
-- ✅ **ダーク/ライトモード** - テーマ切り替え
-- ✅ **プロジェクトフィルタ** - カテゴリ別表示
+```mermaid
+graph LR
+    A[訪問者] --> B{言語選択}
+    B -->|English| C[EN Portfolio]
+    B -->|日本語| D[JA Portfolio]
+    
+    C --> E[Projects]
+    C --> F[Skills]
+    C --> G[Blog]
+    
+    D --> H[実績]
+    D --> I[スキル]
+    D --> J[ブログ]
+    
+    E --> K[フィルタリング]
+    K --> L[Backend]
+    K --> M[Frontend]
+    K --> N[Infrastructure]
+    
+    style A fill:#3b82f6,color:#fff
+    style C fill:#22c55e,color:#fff
+    style D fill:#22c55e,color:#fff
+```
 
 ---
 
 ## 🚀 クイックスタート
 
-### 📦 インストール
+### 📦 セットアップフロー
+
+```mermaid
+graph LR
+    A[📥 Clone] --> B[📦 npm install]
+    B --> C[🚀 npm run dev]
+    C --> D[🌐 localhost:3000]
+    
+    style A fill:#7c3aed,color:#fff
+    style D fill:#22c55e,color:#fff
+```
+
+**コマンド:**
 
 ```bash
-# リポジトリをクローン
+# 1. リポジトリをクローン
 git clone https://github.com/rancorder/portfolio-react-enterprise.git
 cd portfolio-react-enterprise
 
-# 依存関係をインストール
+# 2. 依存関係をインストール
 npm install
 
-# 開発サーバー起動
+# 3. 開発サーバー起動
 npm run dev
 ```
 
-開発サーバー: **http://localhost:3000**
+→ **http://localhost:3000** で開発開始！
 
-### 📝 記事を追加
+---
 
-**方法1: 自動生成スクリプト**
+### 📝 記事追加フロー
+
+```mermaid
+graph TD
+    A[記事アイデア] --> B{作成方法}
+    B -->|自動| C[node scripts/new-post.js]
+    B -->|手動| D[ファイル作成]
+    
+    C --> E[テンプレート生成]
+    D --> E
+    
+    E --> F[記事を書く]
+    F --> G[git push]
+    G --> H[自動ビルド]
+    H --> I[🎉 公開完了]
+    
+    style A fill:#7c3aed,color:#fff
+    style I fill:#22c55e,color:#fff
+```
+
+**方法1: 自動生成**
 
 ```bash
 node scripts/new-post.js "記事タイトル"
+# → content/blog/YYYY-MM-DD-title-slug.html 生成
 ```
-
-→ `content/blog/YYYY-MM-DD-title-slug.html` が自動生成される
 
 **方法2: 手動作成**
 
 ```bash
-# 記事ファイルを作成
 touch content/blog/2026-01-25-my-article.html
-
-# メタデータを追加
-<!--
-title: 記事タイトル
-date: 2026-01-25
-category: Technical
-excerpt: 記事の概要
-readingTime: 5 min read
-tags: ["Next.js", "TypeScript"]
--->
-
-# Git push するだけで公開！
+# メタデータを追加して git push
 git add .
 git commit -m "feat: Add new article"
 git push
@@ -192,48 +292,103 @@ git push
 
 ## 📁 プロジェクト構造
 
+```mermaid
+graph TB
+    ROOT[portfolio-react-enterprise/]
+    
+    ROOT --> APP[📁 app/]
+    ROOT --> CONTENT[📁 content/]
+    ROOT --> LIB[📁 lib/]
+    ROOT --> PUBLIC[📁 public/]
+    ROOT --> SCRIPTS[📁 scripts/]
+    
+    APP --> BLOG[📁 blog/]
+    APP --> JA[📁 ja/]
+    APP --> LAYOUT[layout.tsx]
+    APP --> PAGE[page.tsx]
+    
+    BLOG --> SLUG[📁 [slug]/]
+    SLUG --> DETAIL[page.tsx]
+    
+    CONTENT --> ARTICLES[📄 *.html]
+    
+    LIB --> POSTS[posts.ts]
+    LIB --> EXTERNAL[external-articles.ts]
+    
+    style ROOT fill:#7c3aed,color:#fff
+    style APP fill:#3b82f6,color:#fff
+    style CONTENT fill:#22c55e,color:#fff
+    style LIB fill:#f59e0b,color:#fff
+```
+
+**詳細:**
+
 ```
 portfolio-react-enterprise/
 ├── 📁 app/                    # Next.js App Router
-│   ├── 📁 blog/               # ブログページ
-│   │   ├── 📁 [slug]/         # 記事詳細ページ
-│   │   │   ├── page.tsx       # 記事表示
-│   │   │   ├── TableOfContents.tsx
-│   │   │   ├── ShareButtons.tsx
-│   │   │   └── RelatedArticles.tsx
-│   │   ├── page.tsx           # 記事一覧
-│   │   └── BlogPageClient.tsx # 検索・フィルタ
-│   ├── 📁 ja/                 # 日本語ページ
+│   ├── 📁 blog/               # ブログ
+│   │   ├── 📁 [slug]/         # 記事詳細
+│   │   └── page.tsx           # 記事一覧
+│   ├── 📁 ja/                 # 日本語版
 │   ├── layout.tsx             # Root Layout
-│   ├── page.tsx               # トップページ
-│   └── globals.css            # グローバルスタイル
+│   └── page.tsx               # トップページ
 │
-├── 📁 content/                # コンテンツ
-│   └── 📁 blog/               # 記事ファイル
-│       ├── 2026-01-20-article1.html
-│       ├── 2026-01-21-article2.html
-│       └── ...
+├── 📁 content/blog/           # 記事ファイル
+│   ├── 2026-01-20-*.html
+│   └── 2026-01-21-*.html
 │
-├── 📁 lib/                    # ユーティリティ
-│   ├── posts.ts               # 記事取得ロジック
-│   ├── external-articles.ts   # Qiita/Zenn統合
-│   └── blog-loader.ts         # HTML/MDXローダー
+├── 📁 lib/                    # ロジック
+│   ├── posts.ts               # 記事取得
+│   └── external-articles.ts   # 外部統合
 │
 ├── 📁 public/                 # 静的ファイル
-│   ├── blog-base.css          # ブログ基本スタイル
-│   └── blog-components.js     # Web Components
+│   ├── blog-base.css
+│   └── blog-components.js
 │
-├── 📁 scripts/                # ツール
-│   └── new-post.js            # 記事生成スクリプト
-│
-├── 📄 next.config.js          # Next.js設定
-├── 📄 tsconfig.json           # TypeScript設定
-└── 📄 package.json            # 依存関係
+└── 📁 scripts/                # ツール
+    └── new-post.js
 ```
 
 ---
 
 ## ⚙️ 技術スタック
+
+```mermaid
+graph TD
+    subgraph "Frontend"
+        F1[Next.js 14]
+        F2[React 18]
+        F3[TypeScript 5.0]
+        F4[Framer Motion]
+    end
+    
+    subgraph "Styling"
+        S1[CSS Modules]
+        S2[CSS Variables]
+        S3[Responsive Design]
+    end
+    
+    subgraph "CMS & Data"
+        C1[File-based CMS]
+        C2[Git Version Control]
+        C3[Frontmatter]
+    end
+    
+    subgraph "Deployment"
+        D1[Vercel]
+        D2[CDN Edge Network]
+        D3[Auto Deploy]
+    end
+    
+    F1 --> S1
+    F2 --> S2
+    C1 --> D1
+    
+    style F1 fill:#000,color:#fff
+    style F2 fill:#61dafb,color:#000
+    style F3 fill:#3178c6,color:#fff
+    style D1 fill:#000,color:#fff
+```
 
 <div align="center">
 
@@ -254,9 +409,26 @@ portfolio-react-enterprise/
 
 ## 🎨 カスタマイズ
 
-### 🎭 テーマの変更
+### テーマカラー変更フロー
 
-`app/globals.css` のCSS変数を編集：
+```mermaid
+graph LR
+    A[globals.css] --> B[CSS Variables]
+    B --> C[ダークモード]
+    B --> D[ライトモード]
+    
+    C --> E[--bg: #05070f]
+    C --> F[--text: #e2e8f0]
+    
+    D --> G[--bg: #f8fafc]
+    D --> H[--text: #0f172a]
+    
+    style A fill:#7c3aed,color:#fff
+    style C fill:#1e293b,color:#fff
+    style D fill:#f8fafc,color:#000
+```
+
+**編集: `app/globals.css`**
 
 ```css
 :root {
@@ -264,7 +436,6 @@ portfolio-react-enterprise/
   --bg: #05070f;
   --text: #e2e8f0;
   --accent: #7c3aed;
-  --accent-green: #22c55e;
 }
 
 [data-theme='light'] {
@@ -274,123 +445,141 @@ portfolio-react-enterprise/
 }
 ```
 
-### 📝 記事テンプレートの変更
-
-`scripts/new-post.js` を編集して、デフォルトのメタデータやHTML構造を変更できます。
-
-### 🔌 外部サービスの追加
-
-`lib/external-articles.ts` に新しいプラットフォームを追加：
-
-```typescript
-export async function fetchMediumArticles() {
-  // Medium RSS実装
-}
-```
-
 ---
 
 ## 📊 パフォーマンス
 
 ### Lighthouse スコア
 
-```
-Performance:  ████████████████████ 95
-Accessibility: ████████████████████ 100
-Best Practices: ████████████████████ 100
-SEO:          ████████████████████ 100
+```mermaid
+%%{init: {'theme':'base'}}%%
+pie title "Lighthouse Scores"
+    "Performance" : 95
+    "Accessibility" : 100
+    "Best Practices" : 100
+    "SEO" : 100
 ```
 
-### 指標
+### Core Web Vitals
 
-| **メトリクス** | **値** |
-|:--------------|:------|
-| First Contentful Paint | < 1.2s |
-| Largest Contentful Paint | < 2.0s |
-| Time to Interactive | < 2.5s |
-| Cumulative Layout Shift | < 0.1 |
-| Total Blocking Time | < 200ms |
+```mermaid
+gantt
+    title Performance Metrics
+    dateFormat X
+    axisFormat %s
+    
+    section FCP
+    Target (1.8s)     :0, 1800
+    Actual (1.2s)     :done, 0, 1200
+    
+    section LCP
+    Target (2.5s)     :0, 2500
+    Actual (2.0s)     :done, 0, 2000
+    
+    section TTI
+    Target (3.8s)     :0, 3800
+    Actual (2.5s)     :done, 0, 2500
+```
+
+| **メトリクス** | **目標** | **実測値** | **評価** |
+|:-------------|:--------|:----------|:--------|
+| FCP | < 1.8s | **1.2s** | ✅ Good |
+| LCP | < 2.5s | **2.0s** | ✅ Good |
+| TTI | < 3.8s | **2.5s** | ✅ Good |
+| CLS | < 0.1 | **< 0.1** | ✅ Good |
+| TBT | < 300ms | **< 200ms** | ✅ Good |
 
 ---
 
 ## 🌐 デプロイ
 
-### Vercel（推奨・自動デプロイ）
+### デプロイフロー
+
+```mermaid
+sequenceDiagram
+    participant 💻 Local
+    participant 🔧 GitHub
+    participant ⚡ Vercel
+    participant 🌐 CDN
+    
+    💻 Local->>🔧 GitHub: git push
+    🔧 GitHub->>⚡ Vercel: Webhook通知
+    
+    Note over ⚡ Vercel: ビルド開始
+    
+    ⚡ Vercel->>⚡ Vercel: npm run build
+    ⚡ Vercel->>⚡ Vercel: 静的ファイル生成
+    ⚡ Vercel->>🌐 CDN: デプロイ
+    
+    Note over 🌐 CDN: 2-3分で公開完了
+    
+    🌐 CDN->>🌐 CDN: Edge配信開始 ⚡
+```
+
+**コマンド:**
 
 ```bash
 # GitHubにプッシュ
 git push origin main
 
-# Vercelが自動デプロイ（2-3分）
+# → Vercelが自動デプロイ（2-3分）
 # → https://your-project.vercel.app
-```
-
-### 手動デプロイ
-
-```bash
-# ビルド
-npm run build
-
-# Vercel CLIでデプロイ
-npx vercel --prod
-```
-
-### 環境変数（必要な場合）
-
-```bash
-# Vercel Dashboard → Settings → Environment Variables
-QIITA_ACCESS_TOKEN=your_token_here
-ZENN_RSS_URL=https://zenn.dev/username/feed
-```
-
----
-
-## 🎓 ドキュメント
-
-### 📖 記事作成ガイド
-
-詳細は [BLOG-PROMPT-HTML.md](docs/BLOG-PROMPT-HTML.md) を参照
-
-### 🔧 開発ガイド
-
-```bash
-# 開発サーバー
-npm run dev
-
-# ビルド
-npm run build
-
-# プロダクションサーバー
-npm start
-
-# Lint
-npm run lint
-
-# 型チェック
-npx tsc --noEmit
 ```
 
 ---
 
 ## 💡 設計思想
 
-### 1. 依存を減らし、判断点を消す
+```mermaid
+mindmap
+  root((設計思想))
+    依存を減らす
+      DB不要
+      サーバー不要
+      CMS不要
+    判断点を消す
+      自動検出
+      自動生成
+      自動デプロイ
+    壊れ方を決める
+      失敗の隔離
+      復旧手順
+      監視ポイント
+    摩擦をゼロに
+      書くだけ
+      Push するだけ
+      待つだけ
+```
 
-DB・CMS・サーバーという依存を減らすことで、運用中に発生する「どうする？」を最小化。
+### 3つの原則
 
-### 2. 壊れ方を先に決める
+1. **依存を減らし、判断点を消す**  
+   DB・CMS・サーバーという依存を減らし、運用中の「どうする？」を最小化
 
-製造業で学んだのは、「失敗しない設計」ではなく「失敗しても迷わない設計」。
+2. **壊れ方を先に決める**  
+   「失敗しない設計」ではなく「失敗しても迷わない設計」
 
-### 3. 書く以外の摩擦をゼロにする
-
-記事を書く以外の作業が増えた瞬間、ブログは止まる。
+3. **書く以外の摩擦をゼロにする**  
+   記事を書く以外の作業が増えた瞬間、ブログは止まる
 
 ---
 
 ## 🤝 コントリビューション
 
-プルリクエスト歓迎！以下の流れで：
+```mermaid
+graph LR
+    A[Fork] --> B[Branch]
+    B --> C[Commit]
+    C --> D[Push]
+    D --> E[Pull Request]
+    E --> F[Review]
+    F --> G[Merge]
+    
+    style A fill:#7c3aed,color:#fff
+    style G fill:#22c55e,color:#fff
+```
+
+プルリクエスト歓迎！
 
 1. Fork する
 2. Feature ブランチ作成 (`git checkout -b feature/amazing-feature`)
