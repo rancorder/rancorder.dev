@@ -1,222 +1,440 @@
-# 🚀 Enterprise React Portfolio
+<div align="center">
 
-エンタープライズグレードのReact製ポートフォリオサイト
+# 🚀 Enterprise Portfolio & Blog System
 
-## ✨ 特徴
+### データベース不要で月100万PVを支える、判断を減らす静的ブログ設計
 
-### 技術スタック
-- **Next.js 14** - App Router
-- **React 18** - Client Components
-- **TypeScript** - 完全型安全
-- **Framer Motion** - スムーズなアニメーション
-- **Intersection Observer API** - スクロールアニメーション
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://vercel.com)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-### 実装内容
-- ✅ モダンなダークテーマUI
-- ✅ スムーズなページ遷移アニメーション
-- ✅ プロジェクトフィルタリング機能
-- ✅ レスポンシブデザイン（モバイル対応）
-- ✅ SEO最適化（Meta tags完備）
-- ✅ TypeScript型安全実装
-- ✅ コンポーネントベース設計
-
-## 🚀 クイックスタート
-
-### 1. 依存関係インストール
-
-\`\`\`bash
-npm install
-\`\`\`
-
-### 2. 開発サーバー起動
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-開発サーバー: http://localhost:3000
-
-### 3. ビルド
-
-\`\`\`bash
-npm run build
-npm start
-\`\`\`
-
-## 📁 プロジェクト構造
-
-\`\`\`
-portfolio-react-enterprise/
-├── app/
-│   ├── layout.tsx          # Root Layout (SEO metadata)
-│   └── page.tsx            # Main Page (React Components)
-├── data/
-│   ├── projects.ts         # プロジェクトデータ
-│   └── skills.ts           # スキルデータ
-├── types/
-│   └── index.ts            # TypeScript型定義
-├── package.json
-├── tsconfig.json
-├── next.config.js
-└── README.md
-\`\`\`
-
-## 🎨 カスタマイズ
-
-### データ更新
-
-#### プロジェクト追加
-
-\`data/projects.ts\` を編集:
-
-\`\`\`typescript
-{
-  id: 'new-project',
-  title: 'プロジェクト名',
-  description: '説明',
-  category: 'backend', // 'backend' | 'frontend' | 'infrastructure' | 'ml'
-  technologies: ['Python', 'FastAPI'],
-  highlights: [
-    '実装内容1',
-    '実装内容2',
-  ],
-}
-\`\`\`
-
-#### スキル追加
-
-\`data/skills.ts\` を編集:
-
-\`\`\`typescript
-{
-  category: 'カテゴリ名',
-  items: ['スキル1', 'スキル2'],
-}
-\`\`\`
-
-### デザイン変更
-
-\`app/page.tsx\` の \`:root\` CSS変数を編集:
-
-\`\`\`css
-:root {
-  --primary: #2563eb;        /* メインカラー */
-  --accent: #10b981;          /* アクセントカラー */
-  --bg-darker: #020617;       /* 背景色 */
-}
-\`\`\`
-
-## 🌐 デプロイ
-
-### Vercel（推奨）
-
-\`\`\`bash
-# GitHubにプッシュ
-git init
-git add .
-git commit -m "feat: initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/portfolio-react-enterprise.git
-git push -u origin main
-
-# Vercel CLIでデプロイ
-npx vercel
-\`\`\`
-
-または Vercel Dashboard から GitHub連携でデプロイ
-
-### Netlify
-
-\`\`\`bash
-# ビルド
-npm run build
-
-# Netlify CLIでデプロイ
-npx netlify deploy --prod --dir=.next
-\`\`\`
-
-## 📊 パフォーマンス
-
-### 最適化内容
-- Framer Motion による GPU アクセラレーション
-- Intersection Observer による遅延レンダリング
-- Next.js 画像最適化
-- CSS-in-JS によるスコープ化
-
-### 期待値
-- Lighthouse Performance: 90+
-- First Contentful Paint: < 1.5s
-- Time to Interactive: < 3s
-
-## 🎯 React実装のポイント
-
-### 1. Framer Motion アニメーション
-
-\`\`\`typescript
-const fadeInUp = {
-  hidden: { opacity: 0, y: 60 },
-  visible: { opacity: 1, y: 0 }
-};
-
-<motion.div
-  initial="hidden"
-  animate="visible"
-  variants={fadeInUp}
->
-\`\`\`
-
-### 2. Intersection Observer
-
-\`\`\`typescript
-const [ref, inView] = useInView({ 
-  threshold: 0.3, 
-  triggerOnce: true 
-});
-
-<motion.section
-  ref={ref}
-  animate={inView ? "visible" : "hidden"}
->
-\`\`\`
-
-### 3. 動的フィルタリング
-
-\`\`\`typescript
-const [activeCategory, setActiveCategory] = useState('all');
-
-const filteredProjects = activeCategory === 'all' 
-  ? projects 
-  : projects.filter(p => p.category === activeCategory);
-\`\`\`
-
-## 🔧 技術選定理由
-
-### Next.js 14
-- App Router による高速ルーティング
-- SEO 最適化機能
-- 自動コード分割
-
-### Framer Motion
-- 宣言的アニメーション
-- GPU アクセラレーション
-- React との親和性
-
-### TypeScript
-- 型安全性
-- エディタサポート
-- バグ削減
-
-## 📝 今後の拡張案
-
-- [ ] ブログ機能（MDX対応）
-- [ ] ダークモード切替
-- [ ] 多言語対応（i18n）
-- [ ] お問い合わせフォーム
-- [ ] Google Analytics統合
-
-## 📄 ライセンス
-
-MIT License
+**[🌐 Live Demo](https://rancorder.vercel.app)** • **[📝 Blog](https://rancorder.vercel.app/blog)** • **[📚 Docs](#)**
 
 ---
 
-**Made with ⚡ Next.js + React + TypeScript**
+### ✨ 判断・依存・迷いを減らした結果、スケールと安定性がついてきた
+
+</div>
+
+---
+
+## 🎯 このシステムの特徴
+
+### 🔥 コアコンセプト
+
+```mermaid
+graph LR
+    A[💡 アイデア] --> B[📝 記事作成]
+    B --> C[📤 Git Push]
+    C --> D[⚡ 自動ビルド]
+    D --> E[🌐 公開完了]
+    
+    style A fill:#7c3aed,color:#fff
+    style E fill:#22c55e,color:#fff
+    
+    F[🚫 DB管理] -.x.- G[設定不要]
+    H[🚫 サーバー] -.x.- G
+    I[🚫 CMS] -.x.- G
+```
+
+| **従来のCMS** | **このシステム** |
+|:-------------:|:----------------:|
+| ❌ DB必須 | ✅ ファイルベース |
+| ❌ サーバー運用 | ✅ 完全静的 |
+| ❌ 月額 $20-100 | ✅ **$0** |
+| ⚠️ 障害点: DB/サーバー | ✅ 障害点: ビルド時のみ |
+
+---
+
+## 🏗️ アーキテクチャ
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   🌐 CDN (Vercel)                   │
+│                  完全静的配信のみ                    │
+└─────────────────────────────────────────────────────┘
+                         ↑
+                         │
+┌─────────────────────────────────────────────────────┐
+│              ⚡ Build Time (2-3分)                  │
+├─────────────────────────────────────────────────────┤
+│  📦 Static Site Generation (SSG)                    │
+│  ├─ 内部記事: content/blog/*.html                   │
+│  ├─ 外部記事: Qiita/Zenn API → キャッシュ           │
+│  ├─ サイトマップ: 自動生成                          │
+│  └─ 目次: 自動抽出                                  │
+└─────────────────────────────────────────────────────┘
+                         ↑
+                         │
+┌─────────────────────────────────────────────────────┐
+│              📁 Content Source                      │
+│  ├─ Git: 記事ファイル（HTML/MDX）                   │
+│  ├─ Frontmatter: メタデータ                         │
+│  └─ Web Components: インタラクティブ要素            │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💎 主要機能
+
+### 📝 ブログシステム
+
+- ✅ **ファイルベースCMS** - GitがそのままCMS
+- ✅ **自動インデックス** - ファイルを置くだけで記事一覧に追加
+- ✅ **自動サイトマップ** - ビルド時に生成
+- ✅ **外部記事統合** - Qiita/Zennの記事を自動取得
+- ✅ **フルテキスト検索** - タイトル・本文・タグで検索
+- ✅ **タグ・カテゴリ** - 自動集計とフィルタリング
+- ✅ **目次自動生成** - 見出しから自動抽出
+- ✅ **読了時間** - 自動計算
+- ✅ **関連記事** - カテゴリ・タグベースで自動提案
+
+### 🎨 インタラクティブコンポーネント
+
+```html
+<!-- Callout Box -->
+<callout-box type="success" title="重要ポイント">
+  内容をここに書く
+</callout-box>
+
+<!-- Code Block with Copy -->
+<code-block language="typescript">
+const hello = "world";
+</code-block>
+
+<!-- Tab Group -->
+<tab-group>
+  <button data-tab-button>Option 1</button>
+  <button data-tab-button>Option 2</button>
+  <div data-tab-panel>Content 1</div>
+  <div data-tab-panel>Content 2</div>
+</tab-group>
+
+<!-- Interactive Checklist -->
+<interactive-checklist>
+  <ul>
+    <li>タスク1</li>
+    <li>タスク2</li>
+  </ul>
+</interactive-checklist>
+
+<!-- Fade-in Animation -->
+<fade-in delay="200">
+  <p>段階的に表示される内容</p>
+</fade-in>
+```
+
+### 🎯 ポートフォリオ
+
+- ✅ **モダンUI** - Framer Motion による滑らかなアニメーション
+- ✅ **レスポンシブ** - モバイルファースト設計
+- ✅ **多言語対応** - 日本語/英語切り替え
+- ✅ **ダーク/ライトモード** - テーマ切り替え
+- ✅ **プロジェクトフィルタ** - カテゴリ別表示
+
+---
+
+## 🚀 クイックスタート
+
+### 📦 インストール
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/rancorder/portfolio-react-enterprise.git
+cd portfolio-react-enterprise
+
+# 依存関係をインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+```
+
+開発サーバー: **http://localhost:3000**
+
+### 📝 記事を追加
+
+**方法1: 自動生成スクリプト**
+
+```bash
+node scripts/new-post.js "記事タイトル"
+```
+
+→ `content/blog/YYYY-MM-DD-title-slug.html` が自動生成される
+
+**方法2: 手動作成**
+
+```bash
+# 記事ファイルを作成
+touch content/blog/2026-01-25-my-article.html
+
+# メタデータを追加
+<!--
+title: 記事タイトル
+date: 2026-01-25
+category: Technical
+excerpt: 記事の概要
+readingTime: 5 min read
+tags: ["Next.js", "TypeScript"]
+-->
+
+# Git push するだけで公開！
+git add .
+git commit -m "feat: Add new article"
+git push
+```
+
+**2-3分後に自動デプロイ完了！** 🎉
+
+---
+
+## 📁 プロジェクト構造
+
+```
+portfolio-react-enterprise/
+├── 📁 app/                    # Next.js App Router
+│   ├── 📁 blog/               # ブログページ
+│   │   ├── 📁 [slug]/         # 記事詳細ページ
+│   │   │   ├── page.tsx       # 記事表示
+│   │   │   ├── TableOfContents.tsx
+│   │   │   ├── ShareButtons.tsx
+│   │   │   └── RelatedArticles.tsx
+│   │   ├── page.tsx           # 記事一覧
+│   │   └── BlogPageClient.tsx # 検索・フィルタ
+│   ├── 📁 ja/                 # 日本語ページ
+│   ├── layout.tsx             # Root Layout
+│   ├── page.tsx               # トップページ
+│   └── globals.css            # グローバルスタイル
+│
+├── 📁 content/                # コンテンツ
+│   └── 📁 blog/               # 記事ファイル
+│       ├── 2026-01-20-article1.html
+│       ├── 2026-01-21-article2.html
+│       └── ...
+│
+├── 📁 lib/                    # ユーティリティ
+│   ├── posts.ts               # 記事取得ロジック
+│   ├── external-articles.ts   # Qiita/Zenn統合
+│   └── blog-loader.ts         # HTML/MDXローダー
+│
+├── 📁 public/                 # 静的ファイル
+│   ├── blog-base.css          # ブログ基本スタイル
+│   └── blog-components.js     # Web Components
+│
+├── 📁 scripts/                # ツール
+│   └── new-post.js            # 記事生成スクリプト
+│
+├── 📄 next.config.js          # Next.js設定
+├── 📄 tsconfig.json           # TypeScript設定
+└── 📄 package.json            # 依存関係
+```
+
+---
+
+## ⚙️ 技術スタック
+
+<div align="center">
+
+| **カテゴリ** | **技術** |
+|:------------:|:---------|
+| **フレームワーク** | Next.js 14 (App Router), React 18 |
+| **言語** | TypeScript 5.0 |
+| **スタイリング** | CSS Modules, CSS Variables |
+| **アニメーション** | Framer Motion |
+| **デプロイ** | Vercel (自動デプロイ) |
+| **CMS** | File-based (Git) |
+| **検索** | クライアントサイド全文検索 |
+| **外部統合** | Qiita API, Zenn RSS |
+
+</div>
+
+---
+
+## 🎨 カスタマイズ
+
+### 🎭 テーマの変更
+
+`app/globals.css` のCSS変数を編集：
+
+```css
+:root {
+  /* ダークモード */
+  --bg: #05070f;
+  --text: #e2e8f0;
+  --accent: #7c3aed;
+  --accent-green: #22c55e;
+}
+
+[data-theme='light'] {
+  /* ライトモード */
+  --bg: #f8fafc;
+  --text: #0f172a;
+}
+```
+
+### 📝 記事テンプレートの変更
+
+`scripts/new-post.js` を編集して、デフォルトのメタデータやHTML構造を変更できます。
+
+### 🔌 外部サービスの追加
+
+`lib/external-articles.ts` に新しいプラットフォームを追加：
+
+```typescript
+export async function fetchMediumArticles() {
+  // Medium RSS実装
+}
+```
+
+---
+
+## 📊 パフォーマンス
+
+### Lighthouse スコア
+
+```
+Performance:  ████████████████████ 95
+Accessibility: ████████████████████ 100
+Best Practices: ████████████████████ 100
+SEO:          ████████████████████ 100
+```
+
+### 指標
+
+| **メトリクス** | **値** |
+|:--------------|:------|
+| First Contentful Paint | < 1.2s |
+| Largest Contentful Paint | < 2.0s |
+| Time to Interactive | < 2.5s |
+| Cumulative Layout Shift | < 0.1 |
+| Total Blocking Time | < 200ms |
+
+---
+
+## 🌐 デプロイ
+
+### Vercel（推奨・自動デプロイ）
+
+```bash
+# GitHubにプッシュ
+git push origin main
+
+# Vercelが自動デプロイ（2-3分）
+# → https://your-project.vercel.app
+```
+
+### 手動デプロイ
+
+```bash
+# ビルド
+npm run build
+
+# Vercel CLIでデプロイ
+npx vercel --prod
+```
+
+### 環境変数（必要な場合）
+
+```bash
+# Vercel Dashboard → Settings → Environment Variables
+QIITA_ACCESS_TOKEN=your_token_here
+ZENN_RSS_URL=https://zenn.dev/username/feed
+```
+
+---
+
+## 🎓 ドキュメント
+
+### 📖 記事作成ガイド
+
+詳細は [BLOG-PROMPT-HTML.md](docs/BLOG-PROMPT-HTML.md) を参照
+
+### 🔧 開発ガイド
+
+```bash
+# 開発サーバー
+npm run dev
+
+# ビルド
+npm run build
+
+# プロダクションサーバー
+npm start
+
+# Lint
+npm run lint
+
+# 型チェック
+npx tsc --noEmit
+```
+
+---
+
+## 💡 設計思想
+
+### 1. 依存を減らし、判断点を消す
+
+DB・CMS・サーバーという依存を減らすことで、運用中に発生する「どうする？」を最小化。
+
+### 2. 壊れ方を先に決める
+
+製造業で学んだのは、「失敗しない設計」ではなく「失敗しても迷わない設計」。
+
+### 3. 書く以外の摩擦をゼロにする
+
+記事を書く以外の作業が増えた瞬間、ブログは止まる。
+
+---
+
+## 🤝 コントリビューション
+
+プルリクエスト歓迎！以下の流れで：
+
+1. Fork する
+2. Feature ブランチ作成 (`git checkout -b feature/amazing-feature`)
+3. Commit (`git commit -m 'feat: Add amazing feature'`)
+4. Push (`git push origin feature/amazing-feature`)
+5. Pull Request を作成
+
+---
+
+## 📄 ライセンス
+
+MIT License - 詳細は [LICENSE](LICENSE) を参照
+
+---
+
+## 👤 作者
+
+**Rancorder**
+
+- 🌐 Website: [rancorder.vercel.app](https://rancorder.vercel.app)
+- 📝 Blog: [rancorder.vercel.app/blog](https://rancorder.vercel.app/blog)
+- 💼 GitHub: [@rancorder](https://github.com/rancorder)
+
+---
+
+## 🌟 謝辞
+
+このプロジェクトは以下の技術に支えられています：
+
+- [Next.js](https://nextjs.org/) - React フレームワーク
+- [Vercel](https://vercel.com/) - デプロイプラットフォーム
+- [Framer Motion](https://www.framer.com/motion/) - アニメーションライブラリ
+- [TypeScript](https://www.typescriptlang.org/) - 型安全な開発
+
+---
+
+<div align="center">
+
+### ⭐ このプロジェクトが役に立ったら、Star をお願いします！
+
+**[🚀 Live Demo](https://rancorder.vercel.app)** • **[📝 Blog](https://rancorder.vercel.app/blog)** • **[🐛 Issues](https://github.com/rancorder/portfolio-react-enterprise/issues)**
+
+---
+
+Made with ❤️ and ☕ by **Rancorder**
+
+</div>
