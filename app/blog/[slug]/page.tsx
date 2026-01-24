@@ -69,21 +69,6 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <h1 className={styles.heroTitle}>{post.title}</h1>
           <p className={styles.heroDek}>{post.excerpt}</p>
 
-          {/* タグ表示 */}
-          {post.tags.length > 0 && (
-            <div className={styles.tagList}>
-              {post.tags.map(tag => (
-                <Link
-                  key={tag}
-                  href={`/blog?tag=${encodeURIComponent(tag)}`}
-                  className={styles.tag}
-                >
-                  #{tag}
-                </Link>
-              ))}
-            </div>
-          )}
-
           {/* シェアボタン */}
           <ShareButtons url={currentUrl} title={post.title} />
         </header>
