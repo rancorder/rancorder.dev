@@ -4,257 +4,646 @@ date: 2026-01-24
 category: Architecture / Web
 excerpt: ブログにDBやCMSは本当に必要か。製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。
 readingTime: 9 min read
+tags: ["Architecture", "静的サイト", "意思決定設計", "Next.js"]
 -->
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>データベース不要で月100万PVを支える、判断を減らす静的ブログ設計</title>
+  <meta name="description" content="ブログにDBやCMSは本当に必要か。製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。" />
+  
+  <!-- OGP -->
+  <meta property="og:title" content="データベース不要で月100万PVを支える、判断を減らす静的ブログ設計" />
+  <meta property="og:description" content="ブログにDBやCMSは本当に必要か。製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。" />
+  <meta property="og:type" content="article" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="データベース不要で月100万PVを支える静的ブログ設計" />
+  <meta name="twitter:description" content="判断と運用コストを削るファイルベース×完全静的設計" />
+  
+  <style>
+    /* アニメーション定義 */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 20px rgba(124, 58, 237, 0);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+    
+    /* 視覚装飾 */
+    .hero-decoration {
+      position: relative;
+      padding: 3rem 0;
+    }
+    
+    .hero-decoration::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #7c3aed, #22c55e, transparent);
+      animation: pulse 2s infinite;
+    }
+    
+    /* 数字の強調 */
+    .highlight-number {
+      font-size: 2.5em;
+      font-weight: 900;
+      background: linear-gradient(135deg, #7c3aed, #22c55e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    /* アイコン装飾 */
+    .icon-decoration {
+      display: inline-block;
+      font-size: 1.5em;
+      margin-right: 0.5rem;
+      filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.6));
+    }
+    
+    /* カード風装飾 */
+    .visual-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 2rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .visual-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    /* グリッドレイアウト */
+    .principle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    
+    .principle-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    
+    .principle-item:hover {
+      transform: translateY(-8px);
+      border-color: rgba(124, 58, 237, 0.6);
+      box-shadow: 0 12px 24px rgba(124, 58, 237, 0.2);
+    }
+    
+    .principle-number {
+      position: absolute;
+      top: -15px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #7c3aed, #22c55e);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.2em;
+      color: white;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    }
+    
+    /* タイムライン風 */
+    .timeline {
+      position: relative;
+      padding-left: 3rem;
+      margin: 2rem 0;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, #7c3aed, #22c55e);
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    
+    .timeline-item::before {
+      content: '●';
+      position: absolute;
+      left: -3.35rem;
+      font-size: 1.5em;
+      color: #7c3aed;
+      animation: pulse 2s infinite;
+    }
+    
+    /* 比較表の視覚強化 */
+    .enhanced-table {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(34, 197, 94, 0.05));
+      border-radius: 16px;
+      padding: 1rem;
+      overflow: hidden;
+    }
+    
+    .enhanced-table table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+    }
+    
+    .enhanced-table th {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(34, 197, 94, 0.3));
+      padding: 1rem;
+      font-weight: 700;
+      border-radius: 8px;
+    }
+    
+    .enhanced-table td {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    
+    .enhanced-table tr:hover td {
+      background: rgba(124, 58, 237, 0.1);
+      transform: scale(1.02);
+      transition: all 0.2s;
+    }
+    
+    /* チェックリストの視覚化 */
+    .checklist-item {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 4px solid #7c3aed;
+      padding: 1rem 1rem 1rem 2rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .checklist-item::before {
+      content: '✓';
+      position: absolute;
+      left: 0.75rem;
+      font-size: 1.2em;
+      color: #22c55e;
+      font-weight: 900;
+    }
+    
+    .checklist-item:hover {
+      background: rgba(124, 58, 237, 0.1);
+      border-left-width: 8px;
+      padding-left: 1.75rem;
+    }
+    
+    /* フッターの装飾 */
+    .footer-enhanced {
+      margin-top: 4rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
+      border-radius: 16px;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .footer-enhanced::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    /* レスポンシブ調整 */
+    @media (max-width: 768px) {
+      .principle-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .timeline {
+        padding-left: 2rem;
+      }
+      
+      .timeline-item::before {
+        left: -2.35rem;
+      }
+    }
+  </style>
+</head>
+<body>
 <article aria-label="記事本文">
 
-  <!-- Hero -->
-  <fade-in delay="0ms">
-    <h1>データベース不要で月100万PVを支える、判断を減らす静的ブログ設計</h1>
-  </fade-in>
+  <!-- Hero with Visual Enhancement -->
+  <div class="hero-decoration">
+    <fade-in delay="0">
+      <h1>
+        <span class="icon-decoration">🚀</span>
+        データベース不要で月<span class="highlight-number">100万PV</span>を支える、判断を減らす静的ブログ設計
+      </h1>
+    </fade-in>
+  </div>
 
-  <fade-in delay="120ms">
+  <fade-in delay="120">
     <p>
       ブログを作るなら、WordPressかHeadless CMS。<br>
       データはデータベースで管理し、サーバーを立てる。
     </p>
   </fade-in>
 
-  <fade-in delay="260ms">
+  <fade-in delay="260">
     <p>
       それで困らないケースも、確かに多い。
     </p>
   </fade-in>
 
-  <fade-in delay="520ms">
+  <fade-in delay="520">
     <p>
       ただ、私はその前提をすべて捨てた。
     </p>
   </fade-in>
 
-  <fade-in delay="720ms">
+  <fade-in delay="720">
+    <div class="visual-card">
+      <p>
+        <span class="icon-decoration">❌</span> データベースは使わない。<br>
+        <span class="icon-decoration">❌</span> サーバーも持たない。
+      </p>
+    </div>
+  </fade-in>
+
+  <fade-in delay="920">
     <p>
-      データベースは使わない。<br>
-      サーバーも持たない。
+      それでもこのサイトは、月<span class="highlight-number">100万PV</span>規模まで同一コストで運用できている。
     </p>
   </fade-in>
 
-  <fade-in delay="920ms">
-    <p>
-      それでもこのサイトは、月100万PV規模まで同一コストで運用できている。
-    </p>
+  <fade-in delay="1100">
+    <callout-box type="critical" title="この記事の焦点">
+      <p>
+        本稿は「どう作ったか」よりも、<br>
+        <strong>なぜその設計判断を選んだか</strong>に焦点を当てる。
+      </p>
+    </callout-box>
   </fade-in>
 
-  <callout-box type="critical" title="この記事の焦点">
-    <p>
-      本稿は「どう作ったか」よりも、<br>
-      <strong>なぜその設計判断を選んだか</strong>に焦点を当てる。
-    </p>
-  </callout-box>
-
-  <!-- Structure -->
-  <h2>なぜそれが起きるか（構造）</h2>
-
-  <fade-in delay="0ms">
-    <p>
-      ブログ運用で本当に重いのは、表示速度でも機能不足でもない。
-    </p>
+  <!-- Structure Section with Timeline -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">🔍</span> なぜそれが起きるか（構造）</h2>
   </fade-in>
 
-  <fade-in delay="300ms">
-    <p>
-      <strong>判断が必要になる依存が増えること</strong>だ。
-    </p>
-  </fade-in>
+  <div class="timeline">
+    <fade-in delay="0">
+      <div class="timeline-item">
+        <p>
+          ブログ運用で本当に重いのは、表示速度でも機能不足でもない。
+        </p>
+      </div>
+    </fade-in>
 
-  <fade-in delay="520ms">
-    <ul>
-      <li>DB障害時にどう復旧するか考える</li>
-      <li>バックアップやマイグレーションに悩む</li>
-      <li>スケール時の構成を議論する</li>
-    </ul>
-  </fade-in>
+    <fade-in delay="300">
+      <div class="timeline-item">
+        <p>
+          <strong>判断が必要になる依存が増えること</strong>だ。
+        </p>
+      </div>
+    </fade-in>
 
-  <fade-in delay="760ms">
-    <p>
-      これらはすべて、「書く」という行為と無関係だ。
-    </p>
-  </fade-in>
+    <fade-in delay="520">
+      <div class="timeline-item visual-card">
+        <ul>
+          <li><span class="icon-decoration">⚠️</span> DB障害時にどう復旧するか考える</li>
+          <li><span class="icon-decoration">💾</span> バックアップやマイグレーションに悩む</li>
+          <li><span class="icon-decoration">📈</span> スケール時の構成を議論する</li>
+        </ul>
+      </div>
+    </fade-in>
 
-  <!-- Principles -->
-  <h2>解決の方針（設計原則3つ）</h2>
-
-  <fade-in delay="0ms">
-    <h3>1. 依存を減らし、判断点を消す</h3>
-    <p>
-      DB・CMS・サーバーという依存を減らすことで、<br>
-      運用中に発生する「どうする？」を最小化する。
-    </p>
-  </fade-in>
-
-  <fade-in delay="220ms">
-    <h3>2. 壊れ方を先に決める</h3>
-    <p>
-      製造業で学んだのは、<br>
-      「失敗しない設計」ではなく「失敗しても迷わない設計」だった。
-    </p>
-  </fade-in>
-
-  <fade-in delay="440ms">
-    <h3>3. 書く以外の摩擦をゼロにする</h3>
-    <p>
-      記事を書く以外の作業が増えた瞬間、ブログは止まる。
-    </p>
-  </fade-in>
-
-  <!-- Implementation -->
-  <h2>実装 / 運用の具体</h2>
-
-  <fade-in delay="0ms">
-    <h3>ファイルベースCMS</h3>
-    <p>
-      記事はHTMLファイルとして管理する。<br>
-      GitがそのままCMSになる。
-    </p>
-    <ul>
-      <li>データベース不要</li>
-      <li>履歴＝バックアップ</li>
-      <li>ホスティング移行が容易</li>
-    </ul>
-  </fade-in>
-
-  <fade-in delay="260ms">
-    <h3>完全静的生成（SSG）</h3>
-    <p>
-      Next.jsで静的生成し、CDN配信のみ。<br>
-      トラフィック増加＝コスト増加、にはならない。
-    </p>
-  </fade-in>
-
-  <fade-in delay="520ms">
-    <h3>prebuildキャッシュ</h3>
-    <p>
-      外部サービス（Qiita / Zenn等）はビルド時に一度だけ取得。<br>
-      本番アクセス時にAPIは叩かない。
-    </p>
-  </fade-in>
-
-  <!-- Comparison -->
-  <h2>他システムとの比較</h2>
-
-  <div class="table-wrap" role="region" tabindex="0" aria-label="CMS構成比較表">
-    <table>
-      <thead>
-        <tr>
-          <th>項目</th>
-          <th>一般的なCMS</th>
-          <th>本システム</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>データベース</td>
-          <td>必須</td>
-          <td>不要</td>
-        </tr>
-        <tr>
-          <td>サーバー</td>
-          <td>必須</td>
-          <td>不要</td>
-        </tr>
-        <tr>
-          <td>月額コスト</td>
-          <td>$20〜100</td>
-          <td>$0</td>
-        </tr>
-        <tr>
-          <td>障害点</td>
-          <td>DB / サーバー</td>
-          <td>ビルド時のみ</td>
-        </tr>
-      </tbody>
-    </table>
+    <fade-in delay="760">
+      <div class="timeline-item">
+        <p>
+          これらはすべて、<strong>「書く」という行為と無関係</strong>だ。
+        </p>
+      </div>
+    </fade-in>
   </div>
 
-  <!-- Failure -->
-  <h2>失敗パターン</h2>
-
-  <callout-box type="warning" title="よくある失敗">
-    <ul>
-      <li>新しい技術を使うことが目的化する</li>
-      <li>運用を後回しにする</li>
-      <li>判断基準を決めないまま作り始める</li>
-    </ul>
-  </callout-box>
-
-  <!-- Checklist -->
-  <h2>意思決定のチェックリスト</h2>
-
-  <fade-in delay="0ms">
-    <ul>
-      <li>障害時に、誰が判断するか決まっているか</li>
-    </ul>
+  <!-- Principles with Grid -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">⚙️</span> 解決の方針（設計原則3つ）</h2>
   </fade-in>
 
-  <fade-in delay="200ms">
-    <ul>
-      <li>アクセス増加時の追加コストを説明できるか</li>
-    </ul>
+  <div class="principle-grid">
+    <fade-in delay="0">
+      <div class="principle-item">
+        <div class="principle-number">1</div>
+        <h3>依存を減らし、判断点を消す</h3>
+        <p>
+          DB・CMS・サーバーという依存を減らすことで、<br>
+          運用中に発生する「どうする？」を最小化する。
+        </p>
+      </div>
+    </fade-in>
+
+    <fade-in delay="220">
+      <div class="principle-item">
+        <div class="principle-number">2</div>
+        <h3>壊れ方を先に決める</h3>
+        <p>
+          製造業で学んだのは、<br>
+          「失敗しない設計」ではなく「失敗しても迷わない設計」だった。
+        </p>
+      </div>
+    </fade-in>
+
+    <fade-in delay="440">
+      <div class="principle-item">
+        <div class="principle-number">3</div>
+        <h3>書く以外の摩擦をゼロにする</h3>
+        <p>
+          記事を書く以外の作業が増えた瞬間、ブログは止まる。
+        </p>
+      </div>
+    </fade-in>
+  </div>
+
+  <!-- Implementation -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">🛠️</span> 実装 / 運用の具体</h2>
   </fade-in>
 
-  <fade-in delay="400ms">
-    <ul>
-      <li>書く以外の作業が増えない設計か</li>
-    </ul>
+  <div class="timeline">
+    <fade-in delay="0">
+      <div class="timeline-item visual-card">
+        <h3><span class="icon-decoration">📁</span> ファイルベースCMS</h3>
+        <p>
+          記事はHTMLファイルとして管理する。<br>
+          GitがそのままCMSになる。
+        </p>
+        <ul>
+          <li>✅ データベース不要</li>
+          <li>✅ 履歴＝バックアップ</li>
+          <li>✅ ホスティング移行が容易</li>
+        </ul>
+      </div>
+    </fade-in>
+
+    <fade-in delay="260">
+      <div class="timeline-item visual-card">
+        <h3><span class="icon-decoration">⚡</span> 完全静的生成（SSG）</h3>
+        <p>
+          Next.jsで静的生成し、CDN配信のみ。<br>
+          トラフィック増加＝コスト増加、にはならない。
+        </p>
+      </div>
+    </fade-in>
+
+    <fade-in delay="520">
+      <div class="timeline-item visual-card">
+        <h3><span class="icon-decoration">🔄</span> prebuildキャッシュ</h3>
+        <p>
+          外部サービス（Qiita / Zenn等）はビルド時に一度だけ取得。<br>
+          本番アクセス時にAPIは叩かない。
+        </p>
+      </div>
+    </fade-in>
+  </div>
+
+  <!-- Comparison with Enhanced Table -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">📊</span> 他システムとの比較</h2>
   </fade-in>
 
-  <fade-in delay="600ms">
-    <ul>
-      <li>やめる判断を即座に出せるか</li>
-    </ul>
+  <fade-in delay="200">
+    <div class="enhanced-table" role="region" tabindex="0" aria-label="CMS構成比較表">
+      <table>
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th>一般的なCMS</th>
+            <th>本システム</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>データベース</strong></td>
+            <td>❌ 必須</td>
+            <td>✅ 不要</td>
+          </tr>
+          <tr>
+            <td><strong>サーバー</strong></td>
+            <td>❌ 必須</td>
+            <td>✅ 不要</td>
+          </tr>
+          <tr>
+            <td><strong>月額コスト</strong></td>
+            <td>💸 $20〜100</td>
+            <td>🎉 <span class="highlight-number">$0</span></td>
+          </tr>
+          <tr>
+            <td><strong>障害点</strong></td>
+            <td>⚠️ DB / サーバー</td>
+            <td>✅ ビルド時のみ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </fade-in>
 
-  <fade-in delay="900ms">
-    <p>
-      すべて「Yes」と言えないなら、<br>
-      その設計は運用フェーズで必ず重くなる。
-    </p>
+  <!-- Failure Patterns -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">⚠️</span> 失敗パターン</h2>
+  </fade-in>
+
+  <fade-in delay="200">
+    <callout-box type="warning" title="よくある失敗">
+      <ul>
+        <li>🚫 新しい技術を使うことが目的化する</li>
+        <li>🚫 運用を後回しにする</li>
+        <li>🚫 判断基準を決めないまま作り始める</li>
+      </ul>
+    </callout-box>
+  </fade-in>
+
+  <!-- Checklist with Visual Enhancement -->
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">✓</span> 意思決定のチェックリスト</h2>
+  </fade-in>
+
+  <fade-in delay="0">
+    <div class="checklist-item">
+      障害時に、誰が判断するか決まっているか
+    </div>
+  </fade-in>
+
+  <fade-in delay="200">
+    <div class="checklist-item">
+      アクセス増加時の追加コストを説明できるか
+    </div>
+  </fade-in>
+
+  <fade-in delay="400">
+    <div class="checklist-item">
+      書く以外の作業が増えない設計か
+    </div>
+  </fade-in>
+
+  <fade-in delay="600">
+    <div class="checklist-item">
+      やめる判断を即座に出せるか
+    </div>
+  </fade-in>
+
+  <fade-in delay="900">
+    <callout-box type="critical" title="重要">
+      <p>
+        すべて「Yes」と言えないなら、<br>
+        その設計は運用フェーズで必ず重くなる。
+      </p>
+    </callout-box>
   </fade-in>
 
   <!-- Summary -->
-  <h2>まとめ</h2>
+  <fade-in delay="0">
+    <h2><span class="icon-decoration">💡</span> まとめ</h2>
+  </fade-in>
 
-  <fade-in delay="300ms">
+  <fade-in delay="300">
     <p>
       このブログシステムは、派手な技術の集合体ではない。
     </p>
   </fade-in>
 
-  <fade-in delay="600ms">
-    <p>
-      判断・依存・迷いを減らした結果として、<br>
-      スケールと安定性がついてきただけだ。
-    </p>
+  <fade-in delay="600">
+    <div class="visual-card">
+      <p>
+        判断・依存・迷いを減らした結果として、<br>
+        スケールと安定性がついてきただけだ。
+      </p>
+    </div>
   </fade-in>
 
-  <fade-in delay="1000ms">
-    <p>
-      技術選定で迷ったときは、<br>
-      「それは判断を減らすか？」と自分に問い直してみてほしい。
-    </p>
+  <fade-in delay="1000">
+    <callout-box type="success" title="最後に">
+      <p>
+        技術選定で迷ったときは、<br>
+        <strong>「それは判断を減らすか？」</strong>と自分に問い直してみてほしい。
+      </p>
+    </callout-box>
   </fade-in>
 
-  <!-- Footer -->
-  <footer>
-    <p>
-      GitHub:
-      <a href="https://github.com/rancorder/portfolio-react-enterprise">repository</a><br>
-      Live:
-      <a href="https://rancorder.vercel.app">site</a>
-    </p>
-    <p>
-      設計や判断の話が合いそうなら、静かに連絡してください。
-    </p>
-  </footer>
+  <!-- Enhanced Footer -->
+  <fade-in delay="0">
+    <footer class="footer-enhanced">
+      <p>
+        <span class="icon-decoration">🔗</span>
+        <strong>GitHub:</strong>
+        <a href="https://github.com/rancorder/portfolio-react-enterprise">repository</a>
+      </p>
+      <p>
+        <span class="icon-decoration">🌐</span>
+        <strong>Live:</strong>
+        <a href="https://rancorder.vercel.app">site</a>
+      </p>
+      <p style="margin-top: 1.5rem;">
+        <span class="icon-decoration">💬</span>
+        設計や判断の話が合いそうなら、静かに連絡してください。
+      </p>
+    </footer>
+  </fade-in>
 
 </article>
+</body>
+</html>
