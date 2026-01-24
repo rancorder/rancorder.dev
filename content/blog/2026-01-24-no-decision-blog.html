@@ -1,15 +1,16 @@
 <!--
-title: データベース不要で月100万PVを支える、ファイルベース×完全静的ブログ設計
+title: データベース不要で月100万PVを支える、判断を減らす静的ブログ設計
 date: 2026-01-24
 category: Architecture / Web
-excerpt: ブログにDBやCMSは本当に必要か？製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。
+excerpt: ブログにDBやCMSは本当に必要か。製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。
 readingTime: 9 min read
 -->
 
 <article aria-label="記事本文">
 
+  <!-- Hero -->
   <fade-in delay="0ms">
-    <h1>データベース不要で月100万PVを支える、ファイルベース×完全静的ブログ設計</h1>
+    <h1>データベース不要で月100万PVを支える、判断を減らす静的ブログ設計</h1>
   </fade-in>
 
   <fade-in delay="120ms">
@@ -17,70 +18,96 @@ readingTime: 9 min read
       ブログを作るなら、WordPressかHeadless CMS。<br>
       データはデータベースで管理し、サーバーを立てる。
     </p>
+  </fade-in>
+
+  <fade-in delay="260ms">
     <p>
-      多くの人が、そう考えると思う。<br>
-      実際、それで困らないケースも多い。
+      それで困らないケースも、確かに多い。
     </p>
   </fade-in>
 
-  <fade-in delay="240ms">
+  <fade-in delay="520ms">
     <p>
-      ただ、私はその前提をすべて捨てた。<br>
-      データベースは使わない。サーバーも持たない。
+      ただ、私はその前提をすべて捨てた。
     </p>
+  </fade-in>
+
+  <fade-in delay="720ms">
+    <p>
+      データベースは使わない。<br>
+      サーバーも持たない。
+    </p>
+  </fade-in>
+
+  <fade-in delay="920ms">
     <p>
       それでもこのサイトは、月100万PV規模まで同一コストで運用できている。
     </p>
   </fade-in>
 
-  <fade-in delay="360ms">
+  <callout-box type="critical" title="この記事の焦点">
     <p>
-      この記事では「どう作ったか」よりも、<br>
-      <strong>なぜこの設計を選んだのか</strong>を中心に書く。
+      本稿は「どう作ったか」よりも、<br>
+      <strong>なぜその設計判断を選んだか</strong>に焦点を当てる。
     </p>
-  </fade-in>
+  </callout-box>
 
+  <!-- Structure -->
   <h2>なぜそれが起きるか（構造）</h2>
 
   <fade-in delay="0ms">
     <p>
-      ブログ運用で本当に重いのは、表示速度でも機能不足でもない。<br>
-      <strong>判断が必要になる依存が増えること</strong>だ。
-    </p>
-    <p>
-      データベースがあると、
-    </p>
-    <ul>
-      <li>バックアップをどうするか考える</li>
-      <li>障害時の切り分けに時間がかかる</li>
-      <li>スケール時の構成を議論する</li>
-    </ul>
-    <p>
-      これらはすべて「書く」という行為とは無関係だ。
+      ブログ運用で本当に重いのは、表示速度でも機能不足でもない。
     </p>
   </fade-in>
 
+  <fade-in delay="300ms">
+    <p>
+      <strong>判断が必要になる依存が増えること</strong>だ。
+    </p>
+  </fade-in>
+
+  <fade-in delay="520ms">
+    <ul>
+      <li>DB障害時にどう復旧するか考える</li>
+      <li>バックアップやマイグレーションに悩む</li>
+      <li>スケール時の構成を議論する</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="760ms">
+    <p>
+      これらはすべて、「書く」という行為と無関係だ。
+    </p>
+  </fade-in>
+
+  <!-- Principles -->
   <h2>解決の方針（設計原則3つ）</h2>
 
   <fade-in delay="0ms">
     <h3>1. 依存を減らし、判断点を消す</h3>
     <p>
       DB・CMS・サーバーという依存を減らすことで、<br>
-      運用中に発生する「どうする？」を極力なくす。
+      運用中に発生する「どうする？」を最小化する。
     </p>
+  </fade-in>
 
+  <fade-in delay="220ms">
     <h3>2. 壊れ方を先に決める</h3>
     <p>
       製造業で学んだのは、<br>
-      「失敗しない設計」ではなく「失敗しても迷わない設計」。
+      「失敗しない設計」ではなく「失敗しても迷わない設計」だった。
     </p>
+  </fade-in>
 
+  <fade-in delay="440ms">
     <h3>3. 書く以外の摩擦をゼロにする</h3>
     <p>
       記事を書く以外の作業が増えた瞬間、ブログは止まる。
     </p>
   </fade-in>
 
+  <!-- Implementation -->
   <h2>実装 / 運用の具体</h2>
 
   <fade-in delay="0ms">
@@ -96,17 +123,15 @@ readingTime: 9 min read
     </ul>
   </fade-in>
 
-  <fade-in delay="120ms">
+  <fade-in delay="260ms">
     <h3>完全静的生成（SSG）</h3>
     <p>
-      Next.jsで静的生成し、CDN配信のみ。
-    </p>
-    <p>
-      アクセス増加＝コスト増加、にはならない。
+      Next.jsで静的生成し、CDN配信のみ。<br>
+      トラフィック増加＝コスト増加、にはならない。
     </p>
   </fade-in>
 
-  <fade-in delay="240ms">
+  <fade-in delay="520ms">
     <h3>prebuildキャッシュ</h3>
     <p>
       外部サービス（Qiita / Zenn等）はビルド時に一度だけ取得。<br>
@@ -114,6 +139,7 @@ readingTime: 9 min read
     </p>
   </fade-in>
 
+  <!-- Comparison -->
   <h2>他システムとの比較</h2>
 
   <div class="table-wrap" role="region" tabindex="0" aria-label="CMS構成比較表">
@@ -150,6 +176,7 @@ readingTime: 9 min read
     </table>
   </div>
 
+  <!-- Failure -->
   <h2>失敗パターン</h2>
 
   <callout-box type="warning" title="よくある失敗">
@@ -160,41 +187,70 @@ readingTime: 9 min read
     </ul>
   </callout-box>
 
+  <!-- Checklist -->
   <h2>意思決定のチェックリスト</h2>
 
   <fade-in delay="0ms">
     <ul>
-      <li>その構成は、障害時に誰が判断するか決まっているか</li>
-      <li>アクセス増加時の追加コストは説明できるか</li>
+      <li>障害時に、誰が判断するか決まっているか</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="200ms">
+    <ul>
+      <li>アクセス増加時の追加コストを説明できるか</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="400ms">
+    <ul>
       <li>書く以外の作業が増えない設計か</li>
+    </ul>
+  </fade-in>
+
+  <fade-in delay="600ms">
+    <ul>
       <li>やめる判断を即座に出せるか</li>
     </ul>
   </fade-in>
 
-  <fade-in delay="120ms">
+  <fade-in delay="900ms">
     <p>
       すべて「Yes」と言えないなら、<br>
       その設計は運用フェーズで必ず重くなる。
     </p>
   </fade-in>
 
+  <!-- Summary -->
   <h2>まとめ</h2>
 
-  <fade-in delay="0ms">
+  <fade-in delay="300ms">
     <p>
-      このブログシステムは、派手な技術の集合体ではない。<br>
-      判断・依存・迷いを減らした結果として、スケールと安定性が得られただけだ。
+      このブログシステムは、派手な技術の集合体ではない。
     </p>
+  </fade-in>
+
+  <fade-in delay="600ms">
+    <p>
+      判断・依存・迷いを減らした結果として、<br>
+      スケールと安定性がついてきただけだ。
+    </p>
+  </fade-in>
+
+  <fade-in delay="1000ms">
     <p>
       技術選定で迷ったときは、<br>
       「それは判断を減らすか？」と自分に問い直してみてほしい。
     </p>
   </fade-in>
 
+  <!-- Footer -->
   <footer>
     <p>
-      GitHub: <a href="https://github.com/rancorder/portfolio-react-enterprise">repository</a><br>
-      Live: <a href="https://rancorder.vercel.app">site</a>
+      GitHub:
+      <a href="https://github.com/rancorder/portfolio-react-enterprise">repository</a><br>
+      Live:
+      <a href="https://rancorder.vercel.app">site</a>
     </p>
     <p>
       設計や判断の話が合いそうなら、静かに連絡してください。
