@@ -62,47 +62,35 @@ function calculateReadingTime(content: string): string {
 }
 
 export function getAllPosts(): BlogPost[] {
-  // デバッグログ追加
-  console.log('[DEBUG] BLOG_DIR:', BLOG_DIR);
-  
   if (!fs.existsSync(BLOG_DIR)) {
-    console.warn(`[DEBUG] Blog directory not found: ${BLOG_DIR}`);
+    console.warn(`Blog directory not found: ${BLOG_DIR}`);
     return [];
   }
 
   const files = fs.readdirSync(BLOG_DIR);
-  console.log('[DEBUG] Files in BLOG_DIR:', files);
   
-  const htmlFiles = files.filter(filename => filename.endsWith('.html'));
-  console.log('[DEBUG] HTML files:', htmlFiles);
-  
-  const posts = htmlFiles
+  const posts = files
+    .filter(filename => filename.endsWith('.html'))
     .map(filename => {
       const slug = filename.replace(/\.html$/, '');
-      console.log('[DEBUG] Processing slug:', slug);
       return getPost(slug);
     })
     .filter((post): post is BlogPost => post !== null)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  console.log('[DEBUG] Total posts found:', posts.length);
   return posts;
 }
 
 export function getPost(slug: string): BlogPost | null {
   try {
     const filePath = path.join(BLOG_DIR, `${slug}.html`);
-    console.log('[DEBUG] Looking for file:', filePath);
     
     if (!fs.existsSync(filePath)) {
-      console.warn(`[DEBUG] File not found: ${filePath}`);
       return null;
     }
 
     const html = fs.readFileSync(filePath, 'utf8');
     const meta = parseFrontMatter(html);
-    
-    console.log('[DEBUG] Parsed meta:', meta);
     
     const tagsString = meta.tags || '';
     const tags = tagsString
@@ -123,7 +111,7 @@ export function getPost(slug: string): BlogPost | null {
       tags,
     };
   } catch (err) {
-    console.error(`[DEBUG] getPost failed for slug: ${slug}`, err);
+    console.error(`getPost failed for slug: ${slug}`, err);
     return null;
   }
 }
@@ -158,4 +146,30 @@ export function getRelatedPosts(currentPost: BlogPost, limit: number = 3): BlogP
     .sort((a, b) => b.score - a.score);
   
   return scored.slice(0, limit).map(item => item.post);
+}
+
+// 追加: すべてのタグを取得
+export function getAllTags(): string[] {
+  const allPosts = getAllPosts();
+  const tagsSet = new Set<string>();
+  
+  allPosts.forEach(post => {
+    post.tags.forEach(tag => tagsSet.add(tag));
+  });
+  
+  return Array.from(tagsSet).sort();
+}
+
+// 追加: すべてのカテゴリを取得
+export function getAllCategories(): string[] {
+  const allPosts = getAllPosts();
+  const categoriesSet = new Set<string>();
+  
+  allPosts.forEach(post => {
+    if (post.category) {
+      categoriesSet.add(post.category);
+    }
+  });
+  
+  return Array.from(categoriesSet).sort();
 }
