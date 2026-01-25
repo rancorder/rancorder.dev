@@ -147,7 +147,7 @@ export function getRelatedPosts(currentPost: BlogPost, limit: number = 3): BlogP
   return scored.slice(0, limit).map(item => item.post);
 }
 
-// 修正: タグをカウント付きで返す
+// タグをカウント付きで返す
 export function getAllTags(): { tag: string; count: number; }[] {
   const allPosts = getAllPosts();
   const tagCounts = new Map<string, number>();
@@ -163,18 +163,16 @@ export function getAllTags(): { tag: string; count: number; }[] {
     .sort((a, b) => b.count - a.count);
 }
 
-// 修正: カテゴリをカウント付きで返す
-export function getAllCategories(): { category: string; count: number; }[] {
+// カテゴリを文字列配列で返す（型エラー対応）
+export function getAllCategories(): string[] {
   const allPosts = getAllPosts();
-  const categoryCounts = new Map<string, number>();
+  const categoriesSet = new Set<string>();
   
   allPosts.forEach(post => {
     if (post.category) {
-      categoryCounts.set(post.category, (categoryCounts.get(post.category) || 0) + 1);
+      categoriesSet.add(post.category);
     }
   });
   
-  return Array.from(categoryCounts.entries())
-    .map(([category, count]) => ({ category, count }))
-    .sort((a, b) => b.count - a.count);
+  return Array.from(categoriesSet).sort();
 }
