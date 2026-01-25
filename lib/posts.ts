@@ -15,15 +15,17 @@ export interface BlogPost {
   tags: string[];
 }
 
-function parseFrontMatter(html: string): Record<string, string> {
+function parseFrontMatter(html: string): { meta: Record<string, string>; content: string } {
   const meta: Record<string, string> = {};
+  let content = html;
   
   // パターン1: YAML形式 (---)
-  const yamlMatch = html.match(/^---\n([\s\S]*?)\n---/);
+  const yamlMatch = html.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (yamlMatch) {
     const frontMatter = yamlMatch[1];
-    const lines = frontMatter.split('\n');
+    content = yamlMatch[2]; // frontmatter を除去した本文
     
+    const lines = frontMatter.split('\n');
     for (const line of lines) {
       const colonIndex = line.indexOf(':');
       if (colonIndex === -1) continue;
@@ -51,15 +53,16 @@ function parseFrontMatter(html: string): Record<string, string> {
       meta[key] = value;
     }
     
-    return meta;
+    return { meta, content };
   }
   
   // パターン2: HTMLコメント形式 (<!-- -->)
-  const commentMatch = html.match(/^<!--\n([\s\S]*?)\n-->/);
+  const commentMatch = html.match(/^<!--\n([\s\S]*?)\n-->\n([\s\S]*)$/);
   if (commentMatch) {
     const frontMatter = commentMatch[1];
-    const lines = frontMatter.split('\n');
+    content = commentMatch[2]; // frontmatter を除去した本文
     
+    const lines = frontMatter.split('\n');
     for (const line of lines) {
       const colonIndex = line.indexOf(':');
       if (colonIndex === -1) continue;
@@ -87,10 +90,10 @@ function parseFrontMatter(html: string): Record<string, string> {
       meta[key] = value;
     }
     
-    return meta;
+    return { meta, content };
   }
   
-  return meta;
+  return { meta, content };
 }
 
 function calculateReadingTime(content: string): string {
@@ -129,7 +132,7 @@ export function getPost(slug: string): BlogPost | null {
     }
 
     const html = fs.readFileSync(filePath, 'utf8');
-    const meta = parseFrontMatter(html);
+    const { meta, content } = parseFrontMatter(html); // frontmatter を除去
     
     const tagsString = meta.tags || '';
     const tags = tagsString
@@ -137,11 +140,11 @@ export function getPost(slug: string): BlogPost | null {
       .map(t => t.trim())
       .filter(t => t.length > 0);
     
-    const readingTime = meta.readingTime || calculateReadingTime(html);
+    const readingTime = meta.readingTime || calculateReadingTime(content);
     
     return {
       slug,
-      html,
+      html: content, // frontmatter を除去した本文
       title: meta.title || 'Untitled',
       excerpt: meta.excerpt || '',
       date: meta.date || '',
