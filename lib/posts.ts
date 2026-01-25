@@ -30,12 +30,20 @@ function parseFrontMatter(html: string): Record<string, string> {
       }
     }
     if (inFrontMatter) {
+      // 修正: ダブルクォートを含む値に対応
       const match = line.match(/^(\w+):\s*(.+)$/);
       if (match) {
         let [, key, value] = match;
+        key = key.trim();
         value = value.trim();
         
-        if (key.trim() === 'tags' && value.startsWith('[') && value.endsWith(']')) {
+        // ダブルクォートで囲まれている場合は除去
+        if (value.startsWith('"') && value.endsWith('"')) {
+          value = value.slice(1, -1);
+        }
+        
+        // タグの配列形式を検出してパース
+        if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
           try {
             const parsed = JSON.parse(value);
             if (Array.isArray(parsed)) {
@@ -46,7 +54,7 @@ function parseFrontMatter(html: string): Record<string, string> {
           }
         }
         
-        meta[key.trim()] = value;
+        meta[key] = value;
       }
     }
   }
@@ -147,7 +155,6 @@ export function getRelatedPosts(currentPost: BlogPost, limit: number = 3): BlogP
   return scored.slice(0, limit).map(item => item.post);
 }
 
-// タグをカウント付きで返す
 export function getAllTags(): { tag: string; count: number; }[] {
   const allPosts = getAllPosts();
   const tagCounts = new Map<string, number>();
@@ -163,7 +170,6 @@ export function getAllTags(): { tag: string; count: number; }[] {
     .sort((a, b) => b.count - a.count);
 }
 
-// カテゴリを文字列配列で返す（型エラー対応）
 export function getAllCategories(): string[] {
   const allPosts = getAllPosts();
   const categoriesSet = new Set<string>();
