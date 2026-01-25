@@ -6,6 +6,7 @@ import { getAllPosts, getPost, getRelatedPosts } from '@/lib/posts';
 import TableOfContents from './TableOfContents';
 import ShareButtons from './ShareButtons';
 import RelatedArticles from './RelatedArticles';
+import EnhanceEffects from './EnhanceEffects'; // ← ★ 追加
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -42,6 +43,11 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className={styles.articlePage}>
+
+      {/* ★★★ ここが “完全版” の決定的ポイント ★★★ */}
+      {/* 記事 slug に応じて JS を読み込む。内部遷移でも必ず実行される */}
+      <EnhanceEffects slug={post.slug} />
+
       <article className={styles.articleContainer}>
         <Link href="/blog" className={styles.backLink}>
           ← Back to Blog
