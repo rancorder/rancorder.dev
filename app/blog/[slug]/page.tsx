@@ -1,4 +1,3 @@
-// app/blog/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import styles from './article.module.css';
@@ -7,7 +6,7 @@ import { extractHeadings } from '@/lib/extractHeadings';
 import TableOfContents from './TableOfContents';
 import ShareButtons from './ShareButtons';
 import RelatedArticles from './RelatedArticles';
-import ArticleEffects from './ArticleEffects'; // ★ 追加
+import ArticleEffects from './ArticleEffects';
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
@@ -42,13 +41,13 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const relatedPosts = getRelatedPosts(post, 3);
   const currentUrl = `https://rancorder.vercel.app/blog/${post.slug}`;
 
-  // ★ HTML を 1 回だけ解析して TOC を作る
-  const toc = extractHeadings(post.html);
+  // ★ 見出し抽出 + id 自動付与
+  const { toc, htmlWithIds } = extractHeadings(post.html);
 
   return (
     <div className={styles.articlePage}>
 
-      {/* ★ 記事ごとの JS を自動読み込み（F5 不要で動く） */}
+      {/* ★ 記事ごとの JS を自動読み込み */}
       <ArticleEffects slug={post.slug} />
 
       <article className={styles.articleContainer}>
@@ -56,7 +55,6 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           ← Back to Blog
         </Link>
 
-        {/* Hero Header */}
         <header className={styles.articleHero} aria-label="記事の概要">
           <div className={styles.metaRow}>
             <span className={styles.badge}>
@@ -81,21 +79,18 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <ShareButtons url={currentUrl} title={post.title} />
         </header>
 
-        {/* 2カラムレイアウト */}
         <div className={styles.articleLayout}>
-          {/* 目次（サイドバー） */}
           <aside className={styles.sidebar}>
             <div className={styles.stickyToc}>
-              <TableOfContents toc={toc} /> {/* ★ HTML を渡さない */}
+              <TableOfContents toc={toc} />
             </div>
           </aside>
 
-          {/* メインコンテンツ */}
           <div className={styles.mainContent}>
             <div
               id="content"
               className={styles.articleContent}
-              dangerouslySetInnerHTML={{ __html: post.html }} // ★ HTML はここだけ
+              dangerouslySetInnerHTML={{ __html: htmlWithIds }}
             />
 
             <div className={styles.shareFooter}>
