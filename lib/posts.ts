@@ -16,48 +16,80 @@ export interface BlogPost {
 }
 
 function parseFrontMatter(html: string): Record<string, string> {
-  const lines = html.split('\n');
   const meta: Record<string, string> = {};
-  let inFrontMatter = false;
-
-  for (const line of lines) {
-    if (line.trim() === '---') {
-      if (!inFrontMatter) {
-        inFrontMatter = true;
-        continue;
-      } else {
-        break;
+  
+  // パターン1: YAML形式 (---)
+  const yamlMatch = html.match(/^---\n([\s\S]*?)\n---/);
+  if (yamlMatch) {
+    const frontMatter = yamlMatch[1];
+    const lines = frontMatter.split('\n');
+    
+    for (const line of lines) {
+      const colonIndex = line.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      let key = line.substring(0, colonIndex).trim();
+      let value = line.substring(colonIndex + 1).trim();
+      
+      // ダブルクォートを除去
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1);
       }
-    }
-    if (inFrontMatter) {
-      // 修正: ダブルクォートを含む値に対応
-      const match = line.match(/^(\w+):\s*(.+)$/);
-      if (match) {
-        let [, key, value] = match;
-        key = key.trim();
-        value = value.trim();
-        
-        // ダブルクォートで囲まれている場合は除去
-        if (value.startsWith('"') && value.endsWith('"')) {
-          value = value.slice(1, -1);
-        }
-        
-        // タグの配列形式を検出してパース
-        if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
-          try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) {
-              value = parsed.join(', ');
-            }
-          } catch (e) {
-            console.warn('Failed to parse tags array:', e);
+      
+      // タグの配列をパース
+      if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            value = parsed.join(', ');
           }
+        } catch (e) {
+          console.warn('Failed to parse tags array:', e);
         }
-        
-        meta[key] = value;
       }
+      
+      meta[key] = value;
     }
+    
+    return meta;
   }
+  
+  // パターン2: HTMLコメント形式 (<!-- -->)
+  const commentMatch = html.match(/^<!--\n([\s\S]*?)\n-->/);
+  if (commentMatch) {
+    const frontMatter = commentMatch[1];
+    const lines = frontMatter.split('\n');
+    
+    for (const line of lines) {
+      const colonIndex = line.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      let key = line.substring(0, colonIndex).trim();
+      let value = line.substring(colonIndex + 1).trim();
+      
+      // ダブルクォートを除去
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1);
+      }
+      
+      // タグの配列をパース
+      if (key === 'tags' && value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            value = parsed.join(', ');
+          }
+        } catch (e) {
+          console.warn('Failed to parse tags array:', e);
+        }
+      }
+      
+      meta[key] = value;
+    }
+    
+    return meta;
+  }
+  
   return meta;
 }
 
