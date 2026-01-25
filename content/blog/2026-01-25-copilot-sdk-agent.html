@@ -13,164 +13,176 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GitHub Copilot SDKは何を変えたのか ─ Code Review Agentから読み解く判断設計の思想</title>
   <style>
-    /* 変数定義 */
+    /* ---------------------------------------------------------
+       DESIGN SYSTEM & VARIABLES
+    --------------------------------------------------------- */
     :root {
-      --primary: #7c3aed;
-      --secondary: #22c55e;
+      --primary-gradient: linear-gradient(90deg, #7c3aed, #22c55e);
+      --accent-color: #7c3aed;
+      --success-color: #22c55e;
+      --info-color: #3b82f6;
+      --warning-color: #fbbf24;
+      --critical-color: #ef4444;
       --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
       --text-main: #e2e8f0;
       --text-muted: #94a3b8;
-      --card-bg: rgba(30, 41, 59, 0.5);
-      --border-color: rgba(124, 58, 237, 0.3);
+      --border-rgba: rgba(124, 58, 237, 0.3);
     }
 
-    /* ベーススタイル */
+    /* ---------------------------------------------------------
+       BASE LAYOUT
+    --------------------------------------------------------- */
     body {
       background-color: var(--bg-dark);
       color: var(--text-main);
-      font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
       line-height: 1.8;
       margin: 0;
-      word-wrap: break-word;
+      -webkit-font-smoothing: antialiased;
     }
 
     article {
-      max-width: 800px;
+      max-width: 850px;
       margin: 0 auto;
-      padding: 4rem 1.5rem;
+      padding: 5rem 1.5rem;
     }
 
-    /* Heroセクション */
-    .hero {
+    /* ---------------------------------------------------------
+       TYPOGRAPHY & HEADERS
+    --------------------------------------------------------- */
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .hero-subtitle {
+      font-size: 1.6rem;
+      color: var(--text-muted);
       text-align: center;
       margin-bottom: 4rem;
-      position: relative;
+      font-weight: 400;
     }
 
-    .hero::after {
-      content: '';
-      display: block;
-      width: 200px;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
-      margin: 2rem auto;
-    }
-
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 0.5rem;
-      line-height: 1.3;
-    }
-
-    .subtitle {
-      font-size: 1.4rem;
-      color: var(--text-muted);
-      font-weight: normal;
-    }
-
-    /* セクション見出し */
     h2 {
-      font-size: 1.8rem;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 0.5rem;
-      margin-top: 3.5rem;
+      font-size: 2rem;
+      margin-top: 4.5rem;
+      margin-bottom: 1.5rem;
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      border-bottom: 1px solid var(--border-rgba);
+      padding-bottom: 0.5rem;
     }
 
-    /* 視覚的強調カード */
+    p { margin-bottom: 1.5rem; }
+
+    strong { color: #fff; font-weight: 700; }
+
+    /* ---------------------------------------------------------
+       COMPONENTS (Refactored for Stability)
+    --------------------------------------------------------- */
+    
+    /* 1. Visual Card */
     .visual-card {
       background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
-      border: 2px solid var(--border-color);
+      border: 2px solid var(--border-rgba);
       border-radius: 16px;
-      padding: 2rem;
-      margin: 2.5rem 0;
+      padding: 2.5rem;
+      margin: 3rem 0;
       position: relative;
+      overflow: hidden;
     }
 
-    /* コールアウト（崩れを修正したバージョン） */
+    /* 2. Callout Box (崩れ修正版) */
     .callout {
-      border-left: 5px solid var(--primary);
-      background: rgba(255, 255, 255, 0.05);
+      margin: 2.5rem 0;
+      padding: 1.5rem 2rem;
       border-radius: 0 12px 12px 0;
-      padding: 1.5rem;
-      margin: 2rem 0;
+      border-left: 5px solid transparent;
     }
 
-    .callout-header {
+    .callout-title {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-weight: bold;
-      margin-bottom: 0.8rem;
-      font-size: 1.1rem;
+      gap: 0.6rem;
+      font-weight: 800;
+      font-size: 1.15rem;
+      margin-bottom: 0.75rem;
     }
 
-    .callout.info { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-    .callout.success { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-    .callout.warning { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
-    .callout.critical { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .callout.info { background: rgba(59, 130, 246, 0.1); border-left-color: var(--info-color); }
+    .callout.success { background: rgba(34, 197, 94, 0.1); border-left-color: var(--success-color); }
+    .callout.warning { background: rgba(251, 191, 36, 0.1); border-left-color: var(--warning-color); }
+    .callout.critical { background: rgba(239, 68, 68, 0.1); border-left-color: var(--critical-color); }
 
-    /* コードブロック */
-    .code-block {
+    /* 3. Code Block */
+    .code-wrapper {
       background: #011627;
-      padding: 1.5rem;
       border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border: 1px solid #334155;
       overflow-x: auto;
+    }
+
+    pre {
+      margin: 0;
       font-family: 'Fira Code', 'Courier New', monospace;
       font-size: 0.95rem;
-      line-height: 1.5;
-      border: 1px solid #334155;
-      margin: 1.5rem 0;
+      color: #d6deeb;
+      line-height: 1.6;
     }
 
-    .code-block pre { margin: 0; color: #d6deeb; }
-
-    /* チェックリスト */
+    /* 4. Checklist */
     .checklist-item {
       background: rgba(255, 255, 255, 0.03);
-      border-left: 4px solid var(--primary);
-      padding: 1.2rem 1.5rem;
-      margin: 1rem 0;
-      border-radius: 4px;
-      transition: background 0.3s;
+      border-left: 4px solid var(--accent-color);
+      padding: 1.25rem 2rem;
+      margin: 1.2rem 0;
+      border-radius: 8px;
+      transition: transform 0.2s ease;
     }
-
+    
     .checklist-item:hover {
-      background: rgba(124, 58, 237, 0.1);
+      background: rgba(124, 58, 237, 0.08);
+      transform: translateX(5px);
     }
 
-    /* フッター */
+    /* 5. Footer */
     .footer-enhanced {
-      margin-top: 5rem;
-      padding: 3rem;
+      margin-top: 6rem;
+      padding: 4rem 2rem;
       background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(34, 197, 94, 0.05));
-      border: 2px solid var(--border-color);
-      border-radius: 20px;
+      border: 2px solid var(--border-rgba);
+      border-radius: 24px;
       text-align: center;
     }
 
     .footer-links {
       display: flex;
       justify-content: center;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
+      gap: 2.5rem;
+      margin-bottom: 2rem;
     }
 
-    a { color: #60a5fa; text-decoration: none; font-weight: bold; }
-    a:hover { text-decoration: underline; }
+    a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid transparent; }
+    a:hover { border-bottom-color: #60a5fa; }
 
-    strong { color: #fff; }
-    p { margin-bottom: 1.5rem; }
+    /* Decorations */
+    .icon-deco { font-size: 1.4em; vertical-align: middle; }
+
   </style>
 </head>
 <body>
 
 <article>
-  <header class="hero">
-    <h1>🚀 GitHub Copilot SDKは何を変えたのか</h1>
-    <div class="subtitle">─ Code Review Agentから読み解く判断設計の思想</div>
+  <header>
+    <h1><span class="icon-deco">🚀</span> GitHub Copilot SDKは何を変えたのか</h1>
+    <p class="hero-subtitle">─ Code Review Agentから読み解く判断設計の思想</p>
   </header>
 
   <section>
@@ -187,19 +199,19 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
   </section>
 
   <section>
-    <h2><span>🔍</span> コードレビューは作業ではなく判断である</h2>
+    <h2><span class="icon-deco">🔍</span> コードレビューは作業ではなく判断である</h2>
     <p>コードレビューは、しばしば「チェック作業」として扱われる。<br>
     Lintに通っているか、書き方が汚くないか、既存ルールに違反していないか。<br>
     しかし実際の現場で価値を生んでいるレビューは、そこでは止まらない。</p>
 
-    <aside class="callout info">
-      <div class="callout-header">ℹ️ 本質的なレビュー観点</div>
-      <p>
-        ・この変更は半年後に理解できるか<br>
-        ・運用フェーズで破綻しないか<br>
-        ・この書き方はチームの判断基準と整合しているか
-      </p>
-    </aside>
+    <div class="callout info">
+      <div class="callout-title">ℹ️ 本質的なレビュー観点</div>
+      <ul>
+        <li>この変更は半年後に理解できるか</li>
+        <li>運用フェーズで破綻しないか</li>
+        <li>この書き方はチームの判断基準と整合しているか</li>
+      </ul>
+    </div>
 
     <p>これらはすべて、明文化されていない<strong>判断</strong>だ。<br>
     人は経験や勘、過去の事故の記憶を使って、無意識にそれを行っている。</p>
@@ -210,23 +222,28 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
   </section>
 
   <section>
-    <h2><span>⚡</span> Copilot SDKが壊した前提</h2>
-    <p>従来のAI活用では、プロンプトがすべてだった。だがこのやり方には限界がある。なぜなら、判断の前提が固定されないからだ。</p>
+    <h2><span class="icon-deco">⚡</span> Copilot SDKが壊した前提</h2>
+    <p>従来のAI活用では、プロンプトがすべてだった。どう聞くか、どう誘導するか、どう曖昧さを減らすか。<br>
+    だがこのやり方には限界がある。</p>
 
-    <aside class="callout success">
-      <div class="callout-header">✅ Agentという考え方</div>
+    <p>なぜなら、判断の前提が固定されないからだ。同じ質問をしても、文脈が少し変われば答えは揺れる。これはAIの問題ではなく、<strong>設計が存在しない</strong>ことが原因だ。</p>
+
+    <div class="callout success">
+      <div class="callout-title">✅ Agentという考え方</div>
       <p>
         Copilot SDKは、ここに<strong>Agent</strong>という考え方を持ち込む。<br>
         Agentとは「役割を持った判断主体」であり、その役割・前提・観点をセットで定義できる存在だ。
       </p>
-    </aside>
+    </div>
+
+    <p>Code Review Agentは、この思想を体現する。レビューの観点を明示し、判断基準を構造化し、チームの暗黙知を外に出す。</p>
   </section>
 
   <section>
-    <h2><span>💻</span> Code Review Agentの実装</h2>
-    <p>ポイントは「判断基準を明示的に定義する」ことにある。</p>
+    <h2><span class="icon-deco">💻</span> Code Review Agentの実装</h2>
+    <p>実際のCode Review Agentの実装を見てみよう。ポイントは「判断基準を明示的に定義する」ことにある。</p>
 
-    <div class="code-block">
+    <div class="code-wrapper">
 <pre>
 const reviewAgent = {
   name: "CodeReviewAgent",
@@ -261,10 +278,12 @@ const reviewAgent = {
   
   execute: async (code, context) => {
     const reviews = [];
+    
     for (const criterion of reviewAgent.reviewCriteria) {
       const result = await analyzeCriterion(code, criterion, context);
       reviews.push(result);
     }
+    
     return {
       summary: generateSummary(reviews),
       details: reviews,
@@ -275,78 +294,115 @@ const reviewAgent = {
 </pre>
     </div>
 
-    <aside class="callout info">
-      <div class="callout-header">ℹ️ 実装のポイント</div>
-      <p>
-        ・<strong>reviewCriteria</strong>: 判断基準を明示的に定義<br>
-        ・<strong>checkPoints</strong>: 具体的な確認項目をリスト化<br>
-        ・<strong>context</strong>: チームの過去の知見を注入可能
-      </p>
-    </aside>
+    <div class="callout info">
+      <div class="callout-title">ℹ️ 実装のポイント</div>
+      <ul>
+        <li><strong>reviewCriteria</strong>: 判断基準を明示的に定義</li>
+        <li><strong>checkPoints</strong>: 具体的な確認項目をリスト化</li>
+        <li><strong>context</strong>: チームの過去の知見を注入可能</li>
+      </ul>
+    </div>
+
+    <p>このAgentの強みは、<strong>判断の再現性</strong>にある。同じコードを何度レビューしても、同じ基準で、同じ観点から判断が下される。</p>
   </section>
 
   <section>
-    <h2><span>🧩</span> 判断を外部化する設計思想</h2>
+    <h2><span class="icon-deco">🧩</span> 判断を外部化する設計思想</h2>
     <p>Code Review Agentが示す本質は、<strong>「判断を外に出す」</strong>という設計思想だ。</p>
+
+    <p>従来のアプローチでは、判断は人の頭の中にあった。経験豊富なエンジニアが「なんとなく」気づき、「感覚的に」指摘する。それでは、その判断を他の人が再利用できない。</p>
 
     <div class="visual-card">
       <p><strong>判断を外部化する</strong>とは：</p>
-      <p>
-        ・判断基準を明文化する<br>
-        ・判断のロジックを構造化する<br>
-        ・判断の結果を検証可能にする
-      </p>
+      <ul>
+        <li>判断基準を明文化する</li>
+        <li>判断のロジックを構造化する</li>
+        <li>判断の結果を検証可能にする</li>
+      </ul>
     </div>
-    <p>これにより、個人の暗黙知がチームの明示知に変わる。</p>
+
+    <p>これにより、チーム全体で判断基準を共有し、改善し、進化させることができる。個人の暗黙知が、チームの明示知に変わる。</p>
   </section>
 
   <section>
-    <h2><span>🌟</span> 他の活用シーン</h2>
+    <h2><span class="icon-deco">🌟</span> 他の活用シーン</h2>
+    <p>Code Review Agent以外にも、判断を外部化する場面は多くある。</p>
+
     <div class="checklist-item">
-      <strong>Architecture Decision Agent</strong>: 技術選定の判断基準を明示化し、過去の失敗から学ぶ
+      <strong>Architecture Decision Agent</strong><br>
+      技術選定の判断基準を明示化し、過去の失敗から学ぶ
     </div>
+
     <div class="checklist-item">
-      <strong>Incident Response Agent</strong>: 障害対応の判断フローを構造化し、再現性を高める
+      <strong>Incident Response Agent</strong><br>
+      障害対応の判断フローを構造化し、再現性を高める
     </div>
+
     <div class="checklist-item">
-      <strong>Refactoring Agent</strong>: リファクタリングの優先順位を判断し、影響範囲を可視化
+      <strong>Refactoring Agent</strong><br>
+      リファクタリングの優先順位を判断し、影響範囲を可視化
     </div>
+
     <div class="checklist-item">
-      <strong>Security Review Agent</strong>: セキュリティ観点を明文化し、見落としを防ぐ
+      <strong>Security Review Agent</strong><br>
+      セキュリティ観点を明文化し、見落としを防ぐ
+    </div>
+
+    <div class="callout success">
+      <div class="callout-title">✅ 共通点</div>
+      <p>すべてに共通するのは、<strong>「暗黙の判断を明示化する」</strong>という設計思想だ。</p>
     </div>
   </section>
 
   <section>
-    <h2><span>🎯</span> 実践する際のポイント</h2>
-    <aside class="callout warning">
-      <div class="callout-header">⚠️ 実践のガイドライン</div>
-      <p>
-        1. <strong>完璧を目指さない</strong>: まずは核となる3-5個の観点から始める<br>
-        2. <strong>チームの文脈を埋め込む</strong>: チーム固有の「過去の失敗」を明文化する<br>
-        3. <strong>判断の根拠を記録する</strong>: なぜその基準を採用したかの背景を残す<br>
-        4. <strong>定期的に見直す</strong>: 技術の変化に合わせてAgentも進化させる
-      </p>
-    </aside>
+    <h2><span class="icon-deco">🎯</span> 実践する際のポイント</h2>
+    <p>GitHub Copilot SDKを使って判断を外部化する際、以下のポイントを押さえる。</p>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ 1. 完璧を目指さない</div>
+      <p>最初から完全な判断基準を作ろうとしない。まずは核となる3-5個の観点から始め、運用しながら改善していく。</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ 2. チームの文脈を埋め込む</div>
+      <p>一般的な基準ではなく、チーム固有の「過去の失敗」「暗黙のルール」を明文化する。それがAgentの真の価値になる。</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ 3. 判断の根拠を記録する</div>
+      <p>なぜその判断基準を採用したのか、背景を残す。将来の改善時に、意図を理解できるようにする。</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ 4. 定期的に見直す</div>
+      <p>判断基準は固定ではない。チームの成長、技術の変化に合わせて、Agentも進化させる。</p>
+    </div>
   </section>
 
   <section>
-    <h2><span>💡</span> 結論：判断を設計する時代</h2>
+    <h2><span class="icon-deco">💡</span> 結論：判断を設計する時代</h2>
     <p>GitHub Copilot SDKは、AIツールではない。それは<strong>判断を外部化し、検証可能にする設計ツール</strong>である。</p>
-    
+
     <div class="visual-card">
-      <p>これからのソフトウェア開発は、コードを書くだけでなく<strong>判断を設計する</strong>能力が問われる時代になる。</p>
+      <p>Code Review Agentは、その思想を最もシンプルに体現した実装だ。レビュー観点を明示し、判断の前提を固定し、チームの基準を構造化する。</p>
     </div>
 
-    <aside class="callout critical">
-      <div class="callout-header">🔥 最後に</div>
-      <p>「このコードは正しいか？」と問う前に、<strong>「何を基準に正しいと判断するのか？」</strong>を設計せよ。</p>
-    </aside>
+    <p>これからのソフトウェア開発は、コードを書くだけでなく、<strong>判断を設計する</strong>能力が問われる時代になる。</p>
+
+    <div class="callout critical">
+      <div class="callout-title">🔥 最後に</div>
+      <p>
+        「このコードは正しいか？」と問う前に、<br>
+        <strong>「何を基準に正しいと判断するのか？」</strong>を設計せよ。<br>
+        それがCopilot SDKが持ち込んだ、本質的な変化である。
+      </p>
+    </div>
   </section>
 
   <footer class="footer-enhanced">
     <div class="footer-links">
-      <span>🔗 <strong>GitHub:</strong> <a href="#">repository</a></span>
-      <span>🌐 <strong>Blog:</strong> <a href="#">site</a></span>
+      <span>🔗 <strong>GitHub:</strong> <a href="https://github.com/rancorder/rancorder.dev">repository</a></span>
+      <span>🌐 <strong>Blog:</strong> <a href="https://rancorder.vercel.app">site</a></span>
     </div>
     <p>💬 判断設計の話が合いそうなら、連絡してください。</p>
   </footer>
