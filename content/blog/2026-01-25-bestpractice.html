@@ -1,0 +1,319 @@
+---
+title: "データベース不要で月100万PVを支える、判断を減らす静的ブログ設計"
+date: "2026-01-25"
+category: "Architecture / Web"
+excerpt: "ブログにDBやCMSは本当に必要か。製造業PMの視点で「判断と運用コスト」を削るために選んだ、ファイルベース×完全静的という設計。"
+readingTime: "9 min read"
+tags: ["Architecture", "静的サイト", "意思決定設計", "Next.js"]
+---
+
+export function ParticleBackground() {
+  const canvasRef = React.useRef(null);
+  
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 0.5 - 0.25;
+        this.speedY = Math.random() * 0.5 - 0.25;
+        const colors = ['rgba(124, 58, 237, 0.6)', 'rgba(34, 197, 94, 0.6)', 'rgba(96, 165, 250, 0.6)'];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.opacity = Math.random() * 0.5 + 0.3;
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        if (this.y < 0) this.y = canvas.height;
+      }
+      
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    
+    const particles = [];
+    for (let i = 0; i < 100; i++) {
+      particles.push(new Particle());
+    }
+    
+    let animationId;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      
+      particles.forEach((particle, i) => {
+        particles.slice(i + 1).forEach(otherParticle => {
+          const dx = particle.x - otherParticle.x;
+          const dy = particle.y - otherParticle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 150) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(124, 58, 237, ${0.2 * (1 - distance / 150)})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(otherParticle.x, otherParticle.y);
+            ctx.stroke();
+          }
+        });
+      });
+      
+      animationId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
+  
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }} />;
+}
+
+export function AnimatedNumber({ value, prefix = '', suffix = '' }) {
+  const [count, setCount] = React.useState(0);
+  const ref = React.useRef(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+  
+  React.useEffect(() => {
+    if (!isVisible) return;
+    
+    let startTime;
+    let animationFrame;
+    const duration = 2000;
+    
+    const animate = (currentTime) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      setCount(Math.floor(progress * value));
+      
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+    
+    animationFrame = requestAnimationFrame(animate);
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isVisible, value]);
+  
+  return <span ref={ref} style={{ fontWeight: 'bold', background: 'linear-gradient(135deg, #7c3aed, #22c55e)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '1.2em' }}>{prefix}{count.toLocaleString()}{suffix}</span>;
+}
+
+export function CalloutBox({ children, type = 'info', title }) {
+  const colors = {
+    info: { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', icon: '💡' },
+    warning: { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', icon: '⚠️' },
+    success: { bg: 'rgba(34, 197, 94, 0.1)', border: '#22c55e', icon: '✅' },
+    critical: { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', icon: '🔴' },
+  };
+  
+  const style = colors[type];
+  
+  return (
+    <div style={{ background: style.bg, borderLeft: `4px solid ${style.border}`, borderRadius: '12px', padding: '1.5rem', margin: '1.5rem 0' }}>
+      {title && (
+        <div style={{ fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '1.2em' }}>{style.icon}</span>
+          {title}
+        </div>
+      )}
+      <div>{children}</div>
+    </div>
+  );
+}
+
+export function VisualCard({ children, number }) {
+  return (
+    <div style={{ background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1))', border: '2px solid rgba(124, 58, 237, 0.3)', borderRadius: '16px', padding: '2rem', position: 'relative', margin: '1rem 0' }}>
+      {number && (
+        <div style={{ position: 'absolute', top: '-15px', left: '20px', width: '40px', height: '40px', background: 'linear-gradient(135deg, #7c3aed, #22c55e)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2em', color: 'white', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.4)' }}>{number}</div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+<ParticleBackground />
+
+# 🚀 データベース不要で月<AnimatedNumber value={1000000} />PVを支える、判断を減らす静的ブログ設計
+
+ブログを作るなら、WordPressかHeadless CMS。  
+データはデータベースで管理し、サーバーを立てる。
+
+それで困らないケースも、確かに多い。
+
+ただ、私はその前提をすべて捨てた。
+
+<VisualCard>
+❌ データベースは使わない。  
+❌ サーバーも持たない。
+</VisualCard>
+
+それでもこのサイトは、月<AnimatedNumber value={1000000} suffix="PV" />規模まで同一コストで運用できている。
+
+<CalloutBox type="critical" title="この記事の焦点">
+本稿は「どう作ったか」よりも、  
+**なぜその設計判断を選んだか**に焦点を当てる。
+</CalloutBox>
+
+---
+
+## 🔍 なぜそれが起きるか（構造）
+
+ブログ運用で本当に重いのは、表示速度でも機能不足でもない。
+
+**判断が必要になる依存が増えること**だ。
+
+<VisualCard>
+- ⚠️ DB障害時にどう復旧するか考える
+- 💾 バックアップやマイグレーションに悩む
+- 📈 スケール時の構成を議論する
+</VisualCard>
+
+これらはすべて、**「書く」という行為と無関係**だ。
+
+---
+
+## ⚙️ 解決の方針（設計原則3つ）
+
+<VisualCard number={1}>
+
+### 依存を減らし、判断点を消す
+
+DB・CMS・サーバーという依存を減らすことで、  
+運用中に発生する「どうする？」を最小化する。
+
+</VisualCard>
+
+<VisualCard number={2}>
+
+### 壊れ方を先に決める
+
+製造業で学んだのは、  
+「失敗しない設計」ではなく「失敗しても迷わない設計」だった。
+
+</VisualCard>
+
+<VisualCard number={3}>
+
+### 書く以外の摩擦をゼロにする
+
+記事を書く以外の作業が増えた瞬間、ブログは止まる。
+
+</VisualCard>
+
+---
+
+## 🛠️ 実装 / 運用の具体
+
+### 📁 ファイルベースCMS
+
+<VisualCard>
+記事はHTMLファイルとして管理する。  
+GitがそのままCMSになる。
+
+- ✅ データベース不要
+- ✅ 履歴＝バックアップ
+- ✅ ホスティング移行が容易
+</VisualCard>
+
+### ⚡ 完全静的生成（SSG）
+
+<VisualCard>
+Next.jsで静的生成し、CDN配信のみ。  
+トラフィック増加＝コスト増加、にはならない。
+</VisualCard>
+
+---
+
+## 📊 他システムとの比較
+
+| 項目 | 一般的なCMS | 本システム |
+|------|------------|-----------|
+| **データベース** | ❌ 必須 | ✅ 不要 |
+| **サーバー** | ❌ 必須 | ✅ 不要 |
+| **月額コスト** | 💸 $20〜100 | 🎉 <AnimatedNumber value={0} prefix="$" /> |
+| **障害点** | ⚠️ DB / サーバー | ✅ ビルド時のみ |
+
+---
+
+## 💡 まとめ
+
+このブログシステムは、派手な技術の集合体ではない。
+
+<VisualCard>
+判断・依存・迷いを減らした結果として、  
+スケールと安定性がついてきただけだ。
+</VisualCard>
+
+<CalloutBox type="success" title="最後に">
+技術選定で迷ったときは、  
+**「それは判断を減らすか？」**と自分に問い直してみてほしい。
+</CalloutBox>
+
+<style jsx global>{`
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animated-number {
+    display: inline-block;
+    animation: float 3s ease-in-out infinite;
+  }
+`}</style>
