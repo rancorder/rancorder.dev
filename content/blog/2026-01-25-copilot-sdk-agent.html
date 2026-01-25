@@ -6,320 +6,226 @@ excerpt: GitHub Copilot SDKは補完ツールの延長ではない。Code Review
 readingTime: 20 min read
 tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判断の外部化"]
 -->
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GitHub Copilot SDKは何を変えたのか ─ Code Review Agentから読み解く判断設計の思想</title>
-  <meta name="description" content="GitHub Copilot SDKは補完ツールの延長ではない。Code Review Agentを例に、SDKの使い方と『判断を外部化する』という設計思想を掘り下げる。" />
-  
-  <!-- OGP -->
-  <meta property="og:title" content="GitHub Copilot SDKは何を変えたのか" />
-  <meta property="og:description" content="Code Review Agentから読み解く判断設計の思想" />
-  <meta property="og:type" content="article" />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GitHub Copilot SDKは何を変えたのか" />
-  <meta name="twitter:description" content="判断を外部化する設計思想" />
-  
   <style>
-    /* アニメーション定義 */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    /* 変数定義 */
+    :root {
+      --primary: #7c3aed;
+      --secondary: #22c55e;
+      --bg-dark: #0f172a;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --card-bg: rgba(30, 41, 59, 0.5);
+      --border-color: rgba(124, 58, 237, 0.3);
     }
-    
-    @keyframes pulse {
-      0%, 100% {
-        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
-      }
-      50% {
-        box-shadow: 0 0 0 20px rgba(124, 58, 237, 0);
-      }
+
+    /* ベーススタイル */
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      line-height: 1.8;
+      margin: 0;
+      word-wrap: break-word;
     }
-    
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0px);
-      }
-      50% {
-        transform: translateY(-10px);
-      }
+
+    article {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
     }
-    
-    /* Hero装飾 */
-    .hero-decoration {
+
+    /* Heroセクション */
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
       position: relative;
-      padding: 3rem 0;
     }
-    
-    .hero-decoration::before {
+
+    .hero::after {
       content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
+      display: block;
       width: 200px;
       height: 4px;
-      background: linear-gradient(90deg, transparent, #7c3aed, #22c55e, transparent);
-      animation: pulse 2s infinite;
+      background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
+      margin: 2rem auto;
     }
-    
-    /* 数字強調 */
-    .highlight-number {
-      font-size: 2.5em;
-      font-weight: 900;
-      background: linear-gradient(135deg, #7c3aed, #22c55e);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      display: inline-block;
-      animation: float 3s ease-in-out infinite;
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
     }
-    
-    /* アイコン装飾 */
-    .icon-decoration {
-      display: inline-block;
-      font-size: 1.5em;
-      margin-right: 0.5rem;
-      filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.6));
+
+    .subtitle {
+      font-size: 1.4rem;
+      color: var(--text-muted);
+      font-weight: normal;
     }
-    
-    /* カード風装飾 */
+
+    /* セクション見出し */
+    h2 {
+      font-size: 1.8rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      margin-top: 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* 視覚的強調カード */
     .visual-card {
       background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
-      border: 2px solid rgba(124, 58, 237, 0.3);
+      border: 2px solid var(--border-color);
       border-radius: 16px;
       padding: 2rem;
-      margin: 2rem 0;
+      margin: 2.5rem 0;
       position: relative;
-      overflow: hidden;
     }
-    
-    .visual-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
-      animation: float 6s ease-in-out infinite;
+
+    /* コールアウト（崩れを修正したバージョン） */
+    .callout {
+      border-left: 5px solid var(--primary);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0 12px 12px 0;
+      padding: 1.5rem;
+      margin: 2rem 0;
     }
-    
+
+    .callout-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: bold;
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
+    }
+
+    .callout.info { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+    .callout.success { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+    .callout.warning { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+    .callout.critical { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+    /* コードブロック */
+    .code-block {
+      background: #011627;
+      padding: 1.5rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      border: 1px solid #334155;
+      margin: 1.5rem 0;
+    }
+
+    .code-block pre { margin: 0; color: #d6deeb; }
+
     /* チェックリスト */
     .checklist-item {
       background: rgba(255, 255, 255, 0.03);
-      border-left: 4px solid #7c3aed;
-      padding: 1rem 1rem 1rem 2rem;
+      border-left: 4px solid var(--primary);
+      padding: 1.2rem 1.5rem;
       margin: 1rem 0;
-      border-radius: 8px;
-      transition: all 0.3s;
-      position: relative;
+      border-radius: 4px;
+      transition: background 0.3s;
     }
-    
-    .checklist-item::before {
-      content: '✓';
-      position: absolute;
-      left: 0.75rem;
-      font-size: 1.2em;
-      color: #22c55e;
-      font-weight: 900;
-    }
-    
+
     .checklist-item:hover {
       background: rgba(124, 58, 237, 0.1);
-      border-left-width: 8px;
-      padding-left: 1.75rem;
     }
-    
-    /* コードブロック */
-    .code-block {
-      background: rgba(0, 0, 0, 0.3);
-      border-left: 4px solid #7c3aed;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin: 1.5rem 0;
-      font-family: 'Courier New', monospace;
-      overflow-x: auto;
-    }
-    
+
     /* フッター */
     .footer-enhanced {
-      margin-top: 4rem;
-      padding: 2rem;
-      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
-      border-radius: 16px;
-      border: 2px solid rgba(124, 58, 237, 0.3);
+      margin-top: 5rem;
+      padding: 3rem;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(34, 197, 94, 0.05));
+      border: 2px solid var(--border-color);
+      border-radius: 20px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
     }
-    
-    .footer-enhanced::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-      animation: shimmer 3s infinite;
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
     }
-    
-    @keyframes shimmer {
-      0% { left: -100%; }
-      100% { left: 100%; }
-    }
+
+    a { color: #60a5fa; text-decoration: none; font-weight: bold; }
+    a:hover { text-decoration: underline; }
+
+    strong { color: #fff; }
+    p { margin-bottom: 1.5rem; }
   </style>
 </head>
 <body>
-<article aria-label="記事本文">
 
-  <!-- Hero -->
-  <div class="hero-decoration">
-    <fade-in delay="0">
-      <h1>
-        <span class="icon-decoration">🚀</span>
-        GitHub Copilot SDKは何を変えたのか
-      </h1>
-      <h2>─ Code Review Agentから読み解く判断設計の思想</h2>
-    </fade-in>
-  </div>
+<article>
+  <header class="hero">
+    <h1>🚀 GitHub Copilot SDKは何を変えたのか</h1>
+    <div class="subtitle">─ Code Review Agentから読み解く判断設計の思想</div>
+  </header>
 
-  <!-- 導入 -->
-  <fade-in delay="120">
-    <p>
-      GitHub Copilot SDKと聞いて、多くの人は「Copilotを拡張するための開発キット」だと理解する。<br>
-      その理解は間違ってはいないが、核心には触れていない。
-    </p>
-  </fade-in>
+  <section>
+    <p>GitHub Copilot SDKと聞いて、多くの人は「Copilotを拡張するための開発キット」だと理解する。<br>
+    その理解は間違ってはいないが、核心には触れていない。</p>
 
-  <fade-in delay="260">
-    <p>
-      このSDKが本当に持ち込んだ変化は、<br>
-      <strong>AIに何を書かせるか</strong>ではなく、<br>
-      <strong>AIにどんな判断をさせるか</strong>を設計対象に引き上げた点にある。
-    </p>
-  </fade-in>
+    <p>このSDKが本当に持ち込んだ変化は、<strong>AIに何を書かせるか</strong>ではなく、<strong>AIにどんな判断をさせるか</strong>を設計対象に引き上げた点にある。</p>
 
-  <fade-in delay="400">
     <div class="visual-card">
-      <p>
-        ここで扱う <strong>GitHub Copilot SDK</strong> は、<br>
-        コード補完の延長線ではなく、<br>
-        人間が暗黙に行ってきた判断を<strong>「構造」として外に出す</strong>ための道具だ。
-      </p>
+      <p>ここで扱う <strong>GitHub Copilot SDK</strong> は、コード補完の延長線ではなく、人間が暗黙に行ってきた判断を<strong>「構造」として外に出す</strong>ための道具だ。</p>
     </div>
-  </fade-in>
 
-  <fade-in delay="540">
-    <p>
-      その思想が、もっとも分かりやすい形で表れているのが<br>
-      <strong>Code Review Agent</strong> という実装である。
-    </p>
-  </fade-in>
+    <p>その思想が、もっとも分かりやすい形で表れているのが <strong>Code Review Agent</strong> という実装である。</p>
+  </section>
 
-  <!-- セクション1 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">🔍</span> コードレビューは作業ではなく判断である</h2>
-  </fade-in>
+  <section>
+    <h2><span>🔍</span> コードレビューは作業ではなく判断である</h2>
+    <p>コードレビューは、しばしば「チェック作業」として扱われる。<br>
+    Lintに通っているか、書き方が汚くないか、既存ルールに違反していないか。<br>
+    しかし実際の現場で価値を生んでいるレビューは、そこでは止まらない。</p>
 
-  <fade-in delay="120">
-    <p>
-      コードレビューは、しばしば「チェック作業」として扱われる。<br>
-      Lintに通っているか、書き方が汚くないか、既存ルールに違反していないか。<br>
-      しかし実際の現場で価値を生んでいるレビューは、そこでは止まらない。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
-    <callout-box type="info" title="本質的なレビュー観点">
+    <aside class="callout info">
+      <div class="callout-header">ℹ️ 本質的なレビュー観点</div>
       <p>
         ・この変更は半年後に理解できるか<br>
         ・運用フェーズで破綻しないか<br>
         ・この書き方はチームの判断基準と整合しているか
       </p>
-    </callout-box>
-  </fade-in>
+    </aside>
 
-  <fade-in delay="400">
-    <p>
-      これらはすべて、明文化されていない<strong>判断</strong>だ。<br>
-      人は経験や勘、過去の事故の記憶を使って、無意識にそれを行っている。
-    </p>
-  </fade-in>
+    <p>これらはすべて、明文化されていない<strong>判断</strong>だ。<br>
+    人は経験や勘、過去の事故の記憶を使って、無意識にそれを行っている。</p>
 
-  <fade-in delay="540">
     <div class="visual-card">
-      <p>
-        GitHub Copilot SDKは、この暗黙知を<br>
-        「AIに任せるため」ではなく<br>
-        <strong>言語化し、再利用可能にするため</strong>に存在する。
-      </p>
+      <p>GitHub Copilot SDKは、この暗黙知を「AIに任せるため」ではなく<strong>言語化し、再利用可能にするため</strong>に存在する。</p>
     </div>
-  </fade-in>
+  </section>
 
-  <!-- セクション2 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">⚡</span> Copilot SDKが壊した前提</h2>
-  </fade-in>
+  <section>
+    <h2><span>⚡</span> Copilot SDKが壊した前提</h2>
+    <p>従来のAI活用では、プロンプトがすべてだった。だがこのやり方には限界がある。なぜなら、判断の前提が固定されないからだ。</p>
 
-  <fade-in delay="120">
-    <p>
-      従来のAI活用では、プロンプトがすべてだった。<br>
-      どう聞くか、どう誘導するか、どう曖昧さを減らすか。<br>
-      だがこのやり方には限界がある。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
-    <p>
-      なぜなら、判断の前提が固定されないからだ。<br>
-      同じ質問をしても、文脈が少し変われば答えは揺れる。<br>
-      これはAIの問題ではなく、<strong>設計が存在しない</strong>ことが原因だ。
-    </p>
-  </fade-in>
-
-  <fade-in delay="400">
-    <callout-box type="success" title="Agentという考え方">
+    <aside class="callout success">
+      <div class="callout-header">✅ Agentという考え方</div>
       <p>
         Copilot SDKは、ここに<strong>Agent</strong>という考え方を持ち込む。<br>
-        Agentとは「役割を持った判断主体」であり、<br>
-        その役割・前提・観点をセットで定義できる存在だ。
+        Agentとは「役割を持った判断主体」であり、その役割・前提・観点をセットで定義できる存在だ。
       </p>
-    </callout-box>
-  </fade-in>
+    </aside>
+  </section>
 
-  <fade-in delay="540">
-    <p>
-      Code Review Agentは、この思想を体現する。<br>
-      レビューの観点を明示し、判断基準を構造化し、チームの暗黙知を外に出す。
-    </p>
-  </fade-in>
+  <section>
+    <h2><span>💻</span> Code Review Agentの実装</h2>
+    <p>ポイントは「判断基準を明示的に定義する」ことにある。</p>
 
-  <!-- セクション3: コード例 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">💻</span> Code Review Agentの実装</h2>
-  </fade-in>
-
-  <fade-in delay="120">
-    <p>
-      実際のCode Review Agentの実装を見てみよう。<br>
-      ポイントは「判断基準を明示的に定義する」ことにある。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
     <div class="code-block">
 <pre>
 const reviewAgent = {
@@ -355,12 +261,10 @@ const reviewAgent = {
   
   execute: async (code, context) => {
     const reviews = [];
-    
     for (const criterion of reviewAgent.reviewCriteria) {
       const result = await analyzeCriterion(code, criterion, context);
       reviews.push(result);
     }
-    
     return {
       summary: generateSummary(reviews),
       details: reviews,
@@ -370,288 +274,84 @@ const reviewAgent = {
 };
 </pre>
     </div>
-  </fade-in>
 
-  <fade-in delay="400">
-    <callout-box type="info" title="実装のポイント">
+    <aside class="callout info">
+      <div class="callout-header">ℹ️ 実装のポイント</div>
       <p>
         ・<strong>reviewCriteria</strong>: 判断基準を明示的に定義<br>
         ・<strong>checkPoints</strong>: 具体的な確認項目をリスト化<br>
         ・<strong>context</strong>: チームの過去の知見を注入可能
       </p>
-    </callout-box>
-  </fade-in>
+    </aside>
+  </section>
 
-  <fade-in delay="540">
-    <p>
-      このAgentの強みは、<strong>判断の再現性</strong>にある。<br>
-      同じコードを何度レビューしても、同じ基準で、同じ観点から判断が下される。
-    </p>
-  </fade-in>
+  <section>
+    <h2><span>🧩</span> 判断を外部化する設計思想</h2>
+    <p>Code Review Agentが示す本質は、<strong>「判断を外に出す」</strong>という設計思想だ。</p>
 
-  <!-- セクション4: 判断の外部化 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">🧩</span> 判断を外部化する設計思想</h2>
-  </fade-in>
-
-  <fade-in delay="120">
-    <p>
-      Code Review Agentが示す本質は、<strong>「判断を外に出す」</strong>という設計思想だ。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
-    <p>
-      従来のアプローチでは、判断は人の頭の中にあった。<br>
-      経験豊富なエンジニアが「なんとなく」気づき、「感覚的に」指摘する。<br>
-      それでは、その判断を他の人が再利用できない。
-    </p>
-  </fade-in>
-
-  <fade-in delay="400">
     <div class="visual-card">
-      <p>
-        <strong>判断を外部化する</strong>とは：
-      </p>
+      <p><strong>判断を外部化する</strong>とは：</p>
       <p>
         ・判断基準を明文化する<br>
         ・判断のロジックを構造化する<br>
         ・判断の結果を検証可能にする
       </p>
     </div>
-  </fade-in>
+    <p>これにより、個人の暗黙知がチームの明示知に変わる。</p>
+  </section>
 
-  <fade-in delay="540">
-    <p>
-      これにより、チーム全体で判断基準を共有し、改善し、進化させることができる。<br>
-      個人の暗黙知が、チームの明示知に変わる。
-    </p>
-  </fade-in>
-
-  <!-- セクション5: 他の活用例 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">🌟</span> 他の活用シーン</h2>
-  </fade-in>
-
-  <fade-in delay="120">
-    <p>
-      Code Review Agent以外にも、判断を外部化する場面は多くある。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
+  <section>
+    <h2><span>🌟</span> 他の活用シーン</h2>
     <div class="checklist-item">
-      <strong>Architecture Decision Agent</strong><br>
-      技術選定の判断基準を明示化し、過去の失敗から学ぶ
+      <strong>Architecture Decision Agent</strong>: 技術選定の判断基準を明示化し、過去の失敗から学ぶ
     </div>
-  </fade-in>
-
-  <fade-in delay="400">
     <div class="checklist-item">
-      <strong>Incident Response Agent</strong><br>
-      障害対応の判断フローを構造化し、再現性を高める
+      <strong>Incident Response Agent</strong>: 障害対応の判断フローを構造化し、再現性を高める
     </div>
-  </fade-in>
-
-  <fade-in delay="540">
     <div class="checklist-item">
-      <strong>Refactoring Agent</strong><br>
-      リファクタリングの優先順位を判断し、影響範囲を可視化
+      <strong>Refactoring Agent</strong>: リファクタリングの優先順位を判断し、影響範囲を可視化
     </div>
-  </fade-in>
-
-  <fade-in delay="680">
     <div class="checklist-item">
-      <strong>Security Review Agent</strong><br>
-      セキュリティ観点を明文化し、見落としを防ぐ
+      <strong>Security Review Agent</strong>: セキュリティ観点を明文化し、見落としを防ぐ
     </div>
-  </fade-in>
+  </section>
 
-  <fade-in delay="820">
-    <callout-box type="success" title="共通点">
+  <section>
+    <h2><span>🎯</span> 実践する際のポイント</h2>
+    <aside class="callout warning">
+      <div class="callout-header">⚠️ 実践のガイドライン</div>
       <p>
-        すべてに共通するのは、<br>
-        <strong>「暗黙の判断を明示化する」</strong>という設計思想だ。
+        1. <strong>完璧を目指さない</strong>: まずは核となる3-5個の観点から始める<br>
+        2. <strong>チームの文脈を埋め込む</strong>: チーム固有の「過去の失敗」を明文化する<br>
+        3. <strong>判断の根拠を記録する</strong>: なぜその基準を採用したかの背景を残す<br>
+        4. <strong>定期的に見直す</strong>: 技術の変化に合わせてAgentも進化させる
       </p>
-    </callout-box>
-  </fade-in>
+    </aside>
+  </section>
 
-  <!-- セクション6: 実践のポイント -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">🎯</span> 実践する際のポイント</h2>
-  </fade-in>
-
-  <fade-in delay="120">
-    <p>
-      GitHub Copilot SDKを使って判断を外部化する際、以下のポイントを押さえる。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
-    <callout-box type="warning" title="1. 完璧を目指さない">
-      <p>
-        最初から完全な判断基準を作ろうとしない。<br>
-        まずは核となる3-5個の観点から始め、運用しながら改善していく。
-      </p>
-    </callout-box>
-  </fade-in>
-
-  <fade-in delay="400">
-    <callout-box type="warning" title="2. チームの文脈を埋め込む">
-      <p>
-        一般的な基準ではなく、チーム固有の「過去の失敗」「暗黙のルール」を明文化する。<br>
-        それがAgentの真の価値になる。
-      </p>
-    </callout-box>
-  </fade-in>
-
-  <fade-in delay="540">
-    <callout-box type="warning" title="3. 判断の根拠を記録する">
-      <p>
-        なぜその判断基準を採用したのか、背景を残す。<br>
-        将来の改善時に、意図を理解できるようにする。
-      </p>
-    </callout-box>
-  </fade-in>
-
-  <fade-in delay="680">
-    <callout-box type="warning" title="4. 定期的に見直す">
-      <p>
-        判断基準は固定ではない。<br>
-        チームの成長、技術の変化に合わせて、Agentも進化させる。
-      </p>
-    </callout-box>
-  </fade-in>
-
-  <!-- 結論 -->
-  <fade-in delay="0">
-    <h2><span class="icon-decoration">💡</span> 結論：判断を設計する時代</h2>
-  </fade-in>
-
-  <fade-in delay="120">
-    <p>
-      GitHub Copilot SDKは、AIツールではない。<br>
-      それは<strong>判断を外部化し、検証可能にする設計ツール</strong>である。
-    </p>
-  </fade-in>
-
-  <fade-in delay="260">
+  <section>
+    <h2><span>💡</span> 結論：判断を設計する時代</h2>
+    <p>GitHub Copilot SDKは、AIツールではない。それは<strong>判断を外部化し、検証可能にする設計ツール</strong>である。</p>
+    
     <div class="visual-card">
-      <p>
-        Code Review Agentは、その思想を最もシンプルに体現した実装だ。<br>
-        レビュー観点を明示し、判断の前提を固定し、チームの基準を構造化する。
-      </p>
+      <p>これからのソフトウェア開発は、コードを書くだけでなく<strong>判断を設計する</strong>能力が問われる時代になる。</p>
     </div>
-  </fade-in>
 
-  <fade-in delay="400">
-    <p>
-      これからのソフトウェア開発は、コードを書くだけでなく<br>
-      <strong>判断を設計する</strong>能力が問われる時代になる。
-    </p>
-  </fade-in>
+    <aside class="callout critical">
+      <div class="callout-header">🔥 最後に</div>
+      <p>「このコードは正しいか？」と問う前に、<strong>「何を基準に正しいと判断するのか？」</strong>を設計せよ。</p>
+    </aside>
+  </section>
 
-  <fade-in delay="540">
-    <callout-box type="critical" title="最後に">
-      <p>
-        「このコードは正しいか？」と問う前に、<br>
-        <strong>「何を基準に正しいと判断するのか？」</strong>を設計せよ。<br>
-        それがCopilot SDKが持ち込んだ、本質的な変化である。
-      </p>
-    </callout-box>
-  </fade-in>
-
-  <!-- フッター -->
-  <fade-in delay="0">
-    <footer class="footer-enhanced">
-      <p>
-        <span class="icon-decoration">🔗</span>
-        <strong>GitHub:</strong>
-        <a href="https://github.com/rancorder/rancorder.dev">repository</a>
-      </p>
-      <p>
-        <span class="icon-decoration">🌐</span>
-        <strong>Blog:</strong>
-        <a href="https://rancorder.vercel.app">site</a>
-      </p>
-      <p style="margin-top: 1.5rem;">
-        <span class="icon-decoration">💬</span>
-        判断設計の話が合いそうなら、連絡してください。
-      </p>
-    </footer>
-  </fade-in>
+  <footer class="footer-enhanced">
+    <div class="footer-links">
+      <span>🔗 <strong>GitHub:</strong> <a href="#">repository</a></span>
+      <span>🌐 <strong>Blog:</strong> <a href="#">site</a></span>
+    </div>
+    <p>💬 判断設計の話が合いそうなら、連絡してください。</p>
+  </footer>
 
 </article>
-
-<script>
-(function() {
-  'use strict';
-  
-  // カスタム要素: fade-in
-  class FadeIn extends HTMLElement {
-    connectedCallback() {
-      const delay = this.getAttribute('delay') || 0;
-      this.style.opacity = '0';
-      this.style.transform = 'translateY(30px)';
-      this.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setTimeout(() => {
-              this.style.opacity = '1';
-              this.style.transform = 'translateY(0)';
-            }, parseInt(delay));
-            observer.unobserve(this);
-          }
-        });
-      }, { threshold: 0.1, rootMargin: '0px 0px -100px 0px' });
-      
-      observer.observe(this);
-    }
-  }
-  
-  // カスタム要素: callout-box
-  class CalloutBox extends HTMLElement {
-    connectedCallback() {
-      const type = this.getAttribute('type') || 'info';
-      const title = this.getAttribute('title') || '';
-      
-      const colors = {
-        info: { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', icon: 'ℹ️' },
-        success: { bg: 'rgba(34, 197, 94, 0.1)', border: '#22c55e', icon: '✅' },
-        warning: { bg: 'rgba(251, 191, 36, 0.1)', border: '#fbbf24', icon: '⚠️' },
-        critical: { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', icon: '🔥' }
-      };
-      
-      const color = colors[type] || colors.info;
-      
-      this.style.cssText = `
-        background: ${color.bg};
-        border-left: 4px solid ${color.border};
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin: 1.5rem 0;
-      `;
-      
-      if (title) {
-        const titleEl = document.createElement('div');
-        titleEl.style.cssText = 'font-weight: 700; margin-bottom: 0.5rem;';
-        titleEl.innerHTML = `${color.icon} ${title}`;
-        this.prepend(titleEl);
-      }
-    }
-  }
-  
-  // カスタム要素を登録
-  if (!customElements.get('fade-in')) {
-    customElements.define('fade-in', FadeIn);
-  }
-  if (!customElements.get('callout-box')) {
-    customElements.define('callout-box', CalloutBox);
-  }
-})();
-</script>
 
 </body>
 </html>
