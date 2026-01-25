@@ -1,0 +1,663 @@
+---
+title: "GitHub Copilot SDKは何を変えたのか ─ Code Review Agentから読み解く判断設計の思想"
+date: "2026-01-25"
+category: "技術解説"
+excerpt: "GitHub Copilot SDKは補完ツールの延長ではない。Code Review Agentを例に、SDKの使い方と『判断を外部化する』という設計思想を3000字で掘り下げる。"
+tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想"]
+readingTime: "20 min"
+---
+
+export function ParticleBackground() {
+  const canvasRef = React.useRef(null);
+  
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 0.5 - 0.25;
+        this.speedY = Math.random() * 0.5 - 0.25;
+        const colors = ['rgba(124, 58, 237, 0.6)', 'rgba(34, 197, 94, 0.6)', 'rgba(96, 165, 250, 0.6)'];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.opacity = Math.random() * 0.5 + 0.3;
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        if (this.y < 0) this.y = canvas.height;
+      }
+      
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    
+    const particles = [];
+    for (let i = 0; i < 100; i++) {
+      particles.push(new Particle());
+    }
+    
+    let animationId;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      
+      particles.forEach((particle, i) => {
+        particles.slice(i + 1).forEach(otherParticle => {
+          const dx = particle.x - otherParticle.x;
+          const dy = particle.y - otherParticle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 150) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(124, 58, 237, ${0.2 * (1 - distance / 150)})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(otherParticle.x, otherParticle.y);
+            ctx.stroke();
+          }
+        });
+      });
+      
+      animationId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
+  
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }} />;
+}
+
+export function FadeIn({ children, delay = 0 }) {
+  const ref = React.useRef(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setIsVisible(true), delay);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    
+    return () => observer.disconnect();
+  }, [delay]);
+  
+  return (
+    <div 
+      ref={ref} 
+      style={{ 
+        opacity: isVisible ? 1 : 0, 
+        transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+        transition: 'opacity 0.6s ease-out, transform 0.6s ease-out'
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function GlowText({ children, color = '#7c3aed' }) {
+  return (
+    <span style={{ 
+      background: `linear-gradient(135deg, ${color}, #22c55e)`,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      fontWeight: 'bold',
+      textShadow: `0 0 20px ${color}40`,
+      fontSize: '1.1em'
+    }}>
+      {children}
+    </span>
+  );
+}
+
+export function CalloutBox({ children, type = 'info', title, icon }) {
+  const styles = {
+    info: { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', emoji: '💡' },
+    warning: { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', emoji: '⚠️' },
+    success: { bg: 'rgba(34, 197, 94, 0.1)', border: '#22c55e', emoji: '✅' },
+    critical: { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', emoji: '🔴' },
+  };
+  
+  const style = styles[type];
+  
+  return (
+    <div style={{ 
+      background: style.bg, 
+      borderLeft: `4px solid ${style.border}`, 
+      borderRadius: '12px', 
+      padding: '1.5rem', 
+      margin: '2rem 0',
+      boxShadow: `0 4px 12px ${style.border}20`
+    }}>
+      {title && (
+        <div style={{ 
+          fontWeight: 700, 
+          marginBottom: '0.5rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem',
+          fontSize: '1.1em'
+        }}>
+          <span style={{ fontSize: '1.3em' }}>{icon || style.emoji}</span>
+          {title}
+        </div>
+      )}
+      <div>{children}</div>
+    </div>
+  );
+}
+
+export function VisualCard({ children, number, gradient = 'purple' }) {
+  const gradients = {
+    purple: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(34, 197, 94, 0.15))',
+    blue: 'linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(124, 58, 237, 0.15))',
+    green: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(96, 165, 250, 0.15))',
+  };
+  
+  return (
+    <div style={{ 
+      background: gradients[gradient],
+      border: '2px solid rgba(124, 58, 237, 0.3)', 
+      borderRadius: '16px', 
+      padding: '2rem', 
+      position: 'relative', 
+      margin: '1.5rem 0',
+      boxShadow: '0 8px 24px rgba(124, 58, 237, 0.1)',
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+    }}>
+      {number && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '-20px', 
+          left: '20px', 
+          width: '50px', 
+          height: '50px', 
+          background: 'linear-gradient(135deg, #7c3aed, #22c55e)', 
+          borderRadius: '50%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          fontWeight: 900, 
+          fontSize: '1.4em', 
+          color: 'white', 
+          boxShadow: '0 6px 16px rgba(124, 58, 237, 0.5)'
+        }}>
+          {number}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function FloatingIcon({ children }) {
+  return (
+    <span style={{ 
+      display: 'inline-block',
+      animation: 'float 3s ease-in-out infinite',
+      margin: '0 0.25rem'
+    }}>
+      {children}
+    </span>
+  );
+}
+
+export function HighlightBox({ children, color = '#7c3aed' }) {
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${color}15, transparent)`,
+      borderLeft: `4px solid ${color}`,
+      padding: '1rem 1.5rem',
+      margin: '1rem 0',
+      borderRadius: '8px',
+      fontStyle: 'italic'
+    }}>
+      {children}
+    </div>
+  );
+}
+
+<ParticleBackground />
+
+<FadeIn delay={0}>
+
+# <FloatingIcon>🚀</FloatingIcon> GitHub Copilot SDKは何を変えたのか
+
+## ─ Code Review Agentから読み解く判断設計の思想
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+GitHub Copilot SDKと聞いて、多くの人は「Copilotを拡張するための開発キット」だと理解する。  
+その理解は間違ってはいないが、核心には触れていない。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+このSDKが本当に持ち込んだ変化は、  
+<GlowText>AIに何を書かせるか</GlowText>ではなく、  
+<GlowText>AIにどんな判断をさせるか</GlowText>を設計対象に引き上げた点にある。
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<VisualCard gradient="purple">
+
+ここで扱う **GitHub Copilot SDK** は、  
+コード補完の延長線ではなく、  
+人間が暗黙に行ってきた判断を<GlowText color="#22c55e">「構造」として外に出す</GlowText>ための道具だ。
+
+</VisualCard>
+
+</FadeIn>
+
+<FadeIn delay={800}>
+
+その思想が、もっとも分かりやすい形で表れているのが  
+<GlowText>Code Review Agent</GlowText> という実装である。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>🔍</FloatingIcon> コードレビューは作業ではなく判断である
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+コードレビューは、しばしば「チェック作業」として扱われる。  
+Lintに通っているか、書き方が汚くないか、既存ルールに違反していないか。  
+しかし実際の現場で価値を生んでいるレビューは、そこでは止まらない。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<HighlightBox color="#3b82f6">
+
+「この変更は半年後に理解できるか」  
+「運用フェーズで破綻しないか」  
+「この書き方はチームの判断基準と整合しているか」
+
+</HighlightBox>
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+これらはすべて、明文化されていない<GlowText>判断</GlowText>だ。  
+人は経験や勘、過去の事故の記憶を使って、無意識にそれを行っている。
+
+</FadeIn>
+
+<FadeIn delay={800}>
+
+<VisualCard gradient="blue">
+
+GitHub Copilot SDKは、この暗黙知を  
+「AIに任せるため」ではなく  
+<GlowText color="#22c55e">言語化し、再利用可能にするため</GlowText>に存在する。
+
+</VisualCard>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>⚡</FloatingIcon> Copilot SDKが壊した前提
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+従来のAI活用では、プロンプトがすべてだった。  
+どう聞くか、どう誘導するか、どう曖昧さを減らすか。  
+だがこのやり方には限界がある。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+なぜなら、判断の前提が固定されないからだ。  
+同じ質問をしても、文脈が少し変われば答えは揺れる。  
+これはAIの問題ではなく、<GlowText>設計が存在しない</GlowText>ことが原因だ。
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<CalloutBox type="success" title="Agentという考え方" icon="🎯">
+
+Copilot SDKは、ここに<strong>Agent</strong>という考え方を持ち込む。  
+Agentとは「役割を持った判断主体」であり、  
+その役割・前提・観点をセットで定義できる存在だ。
+
+</CalloutBox>
+
+</FadeIn>
+
+<FadeIn delay={800}>
+
+<VisualCard number={1} gradient="purple">
+
+これにより、  
+「今回はどの立場で判断するのか」  
+「何を重視し、何を無視してよいのか」  
+を<GlowText>コードとして固定</GlowText>できるようになった。
+
+</VisualCard>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>🎨</FloatingIcon> なぜCode Review Agentなのか
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+Code Reviewは、Agent設計の題材として非常に優れている。  
+理由は単純で、  
+人間が行っている判断の層が多く、かつ再現性が求められるからだ。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<HighlightBox color="#22c55e">
+
+レビューには、設計、保守性、セキュリティ、運用、チーム文化など、  
+複数の観点が同時に存在する。  
+優れたレビューアーほど、無意識にこれらを切り替えている。
+
+</HighlightBox>
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<VisualCard gradient="green">
+
+Code Review Agentは、  
+その切り替えを<GlowText>明示的な役割定義</GlowText>として外に出す。
+
+ここで重要なのは、  
+AIが「正しいレビュー」を返すことではない。  
+<GlowText color="#3b82f6">どの観点で、どんな前提に基づいて判断したのか</GlowText>が  
+言葉として残ることに価値がある。
+
+</VisualCard>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>⚠️</FloatingIcon> 「自動レビュー」ではPoCで終わる
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+多くの自動レビュー系ツールが現場に定着しない理由は明確だ。  
+便利ではあるが、判断基準がブラックボックスだからである。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<CalloutBox type="critical" title="失敗パターン" icon="❌">
+
+指摘は出るが、なぜそれが問題なのか分からない。  
+チームの思想と合っているのか判断できない。  
+結果として、使われなくなる。
+
+</CalloutBox>
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<VisualCard number={2} gradient="purple">
+
+Code Review Agentの構成は、この失敗を避けている。  
+なぜなら、  
+<GlowText>レビュー基準そのものがコードとプロンプトとして管理されている</GlowText>からだ。
+
+判断はログとして残り、  
+差分として改善され、  
+チームの資産として蓄積されていく。
+
+<strong style={{ color: '#22c55e', fontSize: '1.1em' }}>これはPoCではない。運用可能な設計だ。</strong>
+
+</VisualCard>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>💡</FloatingIcon> 判断を外に出すということ
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+「判断を外部化する」という言葉は、  
+AIに任せることと誤解されやすい。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<VisualCard gradient="blue">
+
+しかし、ここで言う外部化とは  
+<GlowText>最終判断をAIに委ねることではない</GlowText>。
+
+人間が頭の中でやっている前処理、  
+つまり<GlowText color="#22c55e">「考える前の考え」</GlowText>を外に出すことだ。
+
+</VisualCard>
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<HighlightBox color="#7c3aed">
+
+どこを見るのか。  
+何を重要とみなすのか。  
+どこから先は人が決めるのか。
+
+</HighlightBox>
+
+</FadeIn>
+
+<FadeIn delay={800}>
+
+これを言語として固定することで、  
+人間はより高いレイヤーの判断に集中できる。
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>🔮</FloatingIcon> Copilot SDKが示す設計の未来
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+GitHub Copilot SDKの本当の価値は、  
+Code Reviewに限られない。
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+<VisualCard number={3} gradient="green">
+
+要件定義の妥当性チェック、  
+設計書のレビュー、  
+運用手順の抜け漏れ確認。  
+
+いずれも本質は同じだ。  
+人間が暗黙に行ってきた判断を、  
+一度、<GlowText>外に出せるかどうか</GlowText>。
+
+</VisualCard>
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<CalloutBox type="success" title="設計の進化" icon="✨">
+
+Agentという形でそれを設計できるようになったことで、  
+AIは「便利な道具」から  
+<strong style={{ color: '#7c3aed' }}>判断を磨くための鏡</strong>へと変わる。
+
+</CalloutBox>
+
+</FadeIn>
+
+---
+
+<FadeIn delay={0}>
+
+## <FloatingIcon>🎯</FloatingIcon> まとめ
+
+</FadeIn>
+
+<FadeIn delay={200}>
+
+<VisualCard gradient="purple">
+
+GitHub Copilot SDKは、  
+コードを書く速度を上げるためのSDKではない。
+
+<div style={{ 
+  fontSize: '1.3em', 
+  fontWeight: 'bold', 
+  margin: '1rem 0',
+  background: 'linear-gradient(135deg, #7c3aed, #22c55e)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent'
+}}>
+判断を設計し、再利用可能にするためのSDK
+</div>
+
+だ。
+
+</VisualCard>
+
+</FadeIn>
+
+<FadeIn delay={400}>
+
+Code Review Agentは、その最小にして最も分かりやすい実例である。  
+LLM時代に価値を持つのは、  
+速く書ける人でも、詳しい人でもない。
+
+</FadeIn>
+
+<FadeIn delay={600}>
+
+<HighlightBox color="#22c55e">
+
+<strong style={{ fontSize: '1.2em' }}>判断を言語化できる人</strong>だ。
+
+</HighlightBox>
+
+</FadeIn>
+
+<FadeIn delay={800}>
+
+<CalloutBox type="info" title="最後に" icon="🚀">
+
+Copilot SDKは、その力を拡張するための  
+現時点でもっとも現実的な道具と言える。
+
+</CalloutBox>
+
+</FadeIn>
+
+<style jsx global>{`
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+`}</style>
