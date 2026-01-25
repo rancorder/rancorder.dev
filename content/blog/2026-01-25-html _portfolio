@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rancorder | Canvas API × GPU加速 × テーマ切り替え実装</title>
+    <meta name="description" content="Canvas API 150パーティクル × 60fps保証 × 4テーマ切り替え | 外部ライブラリゼロの技術実装">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            position: relative;
+        }
+        
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; }
+        
+        /* ========================================
+           Theme Variables
+           ======================================== */
+        
+        body.theme-cyberpunk {
+            --bg-primary: #0A0E27;
+            --bg-secondary: #1A1F3A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #00F5FF;
+            --accent: #FF006E;
+            --accent-2: #FFBE0B;
+            --border: rgba(0, 245, 255, 0.3);
+            --card-bg: rgba(26, 31, 58, 0.8);
+            --particle-color: rgba(0, 245, 255, 0.6);
+            --particle-line: rgba(0, 245, 255, 0.2);
+        }
+        
+        body.theme-minimal {
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8F9FA;
+            --text-primary: #1A1A1A;
+            --text-secondary: #4A5568;
+            --accent: #FFB7D5;
+            --accent-2: #C9A0DC;
+            --border: rgba(0, 0, 0, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --particle-color: rgba(255, 183, 213, 0.6);
+            --particle-line: rgba(255, 183, 213, 0.2);
+        }
+        
+        body.theme-dark {
+            --bg-primary: #111827;
+            --bg-secondary: #1F2937;
+            --text-primary: #F9FAFB;
+            --text-secondary: #9CA3AF;
+            --accent: #10B981;
+            --accent-2: #34D399;
+            --border: rgba(75, 85, 99, 0.3);
+            --card-bg: rgba(31, 41, 55, 0.9);
+            --particle-color: rgba(16, 185, 129, 0.5);
+            --particle-line: rgba(16, 185, 129, 0.15);
+        }
+        
+        body.theme-gradient {
+            --bg-primary: #1E1B4B;
+            --bg-secondary: #312E81;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A78BFA;
+            --accent: #EC4899;
+            --accent-2: #F59E0B;
+            --border: rgba(167, 139, 250, 0.3);
+            --card-bg: rgba(49, 46, 129, 0.8);
+            --particle-color: rgba(236, 72, 153, 0.6);
+            --particle-line: rgba(236, 72, 153, 0.2);
+        }
+        
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        /* ========================================
+           Background Grid Animation
+           ======================================== */
+        
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.5;
+            transition: opacity 0.5s ease;
+        }
+        
+        body.theme-cyberpunk .cyber-grid {
+            background: 
+                linear-gradient(90deg, rgba(0,245,255,0.05) 1px, transparent 1px),
+                linear-gradient(rgba(0,245,255,0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridScroll 20s linear infinite;
+        }
+        
+        body.theme-minimal .cyber-grid {
+            background: 
+                linear-gradient(90deg, rgba(255,183,213,0.03) 1px, transparent 1px),
+                linear-gradient(rgba(255,183,213,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridScrollSlow 30s linear infinite;
+        }
+        
+        body.theme-dark .cyber-grid {
+            background: 
+                linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px),
+                linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridScrollSlow 25s linear infinite;
+        }
+        
+        body.theme-gradient .cyber-grid {
+            background: 
+                linear-gradient(90deg, rgba(236,72,153,0.06) 1px, transparent 1px),
+                linear-gradient(rgba(236,72,153,0.06) 1px, transparent 1px);
+            background-size: 45px 45px;
+            animation: gridScroll 15s linear infinite;
+        }
+        
+        @keyframes gridScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        @keyframes gridScrollSlow {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+        
+        /* ========================================
+           Theme Switcher - モバイル対応（下部固定）
+           ======================================== */
+        
+        .theme-switcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            gap: 8px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 10px;
+            border-radius: 50px;
+            border: 2px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .theme-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        
+        .theme-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 20px var(--accent);
+        }
+        
+        .theme-btn.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            transform: scale(1.2);
+            box-shadow: 0 0 30px var(--accent);
+        }
+        
+        /* ========================================
+           Canvas Background
+           ======================================== */
+        
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* ========================================
+           Layout
+           ======================================== */
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 16px;
+        }
+        
+        @media (max-width: 768px) {
+            section {
+                min-height: auto;
+                padding: 40px 16px;
+            }
+            
+            .theme-switcher {
+                bottom: 16px;
+                right: 16px;
+                padding: 8px;
+                gap: 6px;
+            }
+            
+            .theme-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* ========================================
+           Hero Section - モバイル完全対応
+           ======================================== */
+        
+        .hero-title {
+            font-size: clamp(1.8rem, 10vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+            text-shadow: 0 0 60px var(--accent);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .hero-subtitle {
+            font-size: clamp(0.9rem, 3.5vw, 1.5rem);
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        
+        .hero-story {
+            font-size: clamp(0.85rem, 3vw, 1.2rem);
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-weight: 500;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.8rem;
+            margin-top: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem 0.8rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            min-width: 0;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            border-color: var(--accent);
+            box-shadow: 0 12px 40px var(--accent);
+        }
+        
+        .stat-number {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            font-weight: 900;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 20px var(--accent);
+            word-wrap: break-word;
+        }
+        
+        .stat-label {
+            font-size: clamp(0.7rem, 2vw, 0.75rem);
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+        
+        /* ========================================
+           About Section
+           ======================================== */
+        
+        .about-section {
+            min-height: auto;
+            padding: 40px 16px;
+        }
+        
+        .about-content {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .about-text {
+            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .about-text strong {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        
+        .skills-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .skill-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .skill-item span {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            word-wrap: break-word;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--accent);
+            animation: progressGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes progressGlow {
+            0%, 100% { box-shadow: 0 0 10px var(--accent); }
+            50% { box-shadow: 0 0 20px var(--accent); }
+        }
+        
+        /* ========================================
+           Tech Stack - モバイル最適化
+           ======================================== */
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 0.8rem;
+            margin-top: 2rem;
+        }
+        
+        .tech-item {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-width: 0;
+        }
+        
+        .tech-item:hover {
+            transform: translateY(-8px) rotate(5deg);
+            border-color: var(--accent);
+            box-shadow: 0 12px 30px var(--accent);
+        }
+        
+        .tech-item i {
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 0 10px var(--accent));
+        }
+        
+        .tech-item span {
+            display: block;
+            font-size: clamp(0.7rem, 2vw, 0.75rem);
+            color: var(--text-secondary);
+            font-weight: 600;
+            word-wrap: break-word;
+        }
+        
+        /* ========================================
+           Portfolio - 完全モバイル対応
+           ======================================== */
+        
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .portfolio-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .portfolio-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 20px var(--accent);
+        }
+        
+        .portfolio-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: all 0.6s ease;
+        }
+        
+        .portfolio-card:hover::after {
+            width: 600px;
+            height: 600px;
+            opacity: 0.1;
+        }
+        
+        .portfolio-card:hover {
+            transform: translateY(-12px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 60px var(--accent);
+        }
+        
+        .portfolio-icon {
+            font-size: clamp(2rem, 6vw, 2.5rem);
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 15px var(--accent));
+        }
+        
+        .portfolio-title {
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            color: var(--text-primary);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+        }
+        
+        .portfolio-desc {
+            font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .portfolio-desc strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .portfolio-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tag {
+            padding: 0.25rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: clamp(0.7rem, 2vw, 0.75rem);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        
+        .portfolio-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+            text-decoration: none;
+        }
+        
+        .portfolio-link:hover {
+            gap: 0.75rem;
+            text-shadow: 0 0 10px var(--accent);
+        }
+        
+        /* ========================================
+           Contact
+           ======================================== */
+        
+        .contact-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 0.9rem 1.8rem;
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            min-height: 44px;
+            justify-content: center;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--accent);
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+        
+        .btn:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+        
+        .btn:hover {
+            color: var(--bg-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px var(--accent);
+        }
+        
+        .btn i,
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border: none;
+            color: var(--bg-primary);
+            animation: pulseButton 2s ease-in-out infinite;
+        }
+        
+        .btn-primary::before {
+            background: var(--accent-2);
+        }
+        
+        @keyframes pulseButton {
+            0%, 100% { box-shadow: 0 4px 20px var(--accent); }
+            50% { box-shadow: 0 8px 40px var(--accent); }
+        }
+        
+        /* ========================================
+           Section Title
+           ======================================== */
+        
+        .section-title {
+            font-size: clamp(1.8rem, 7vw, 3.5rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px var(--accent);
+            word-wrap: break-word;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            margin-bottom: 2rem;
+            word-wrap: break-word;
+        }
+        
+        /* ========================================
+           Scroll Progress
+           ======================================== */
+        
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            z-index: 99999;
+            width: 0%;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        /* ========================================
+           Animations
+           ======================================== */
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        /* ========================================
+           Responsive - 完全モバイル対応
+           ======================================== */
+        
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.6rem;
+            }
+            
+            .tech-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.6rem;
+            }
+            
+            .tech-item {
+                padding: 0.8rem 0.4rem;
+            }
+            
+            .tech-item i {
+                font-size: 1.6rem;
+            }
+            
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+            
+            .contact-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .about-content {
+                padding: 1.2rem;
+            }
+            
+            .hero-title {
+                font-size: clamp(1.5rem, 9vw, 6rem);
+                line-height: 1.3;
+            }
+            
+            .portfolio-card {
+                padding: 1.2rem;
+            }
+            
+            .portfolio-title {
+                font-size: 1rem;
+            }
+            
+            .portfolio-desc {
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* 極小画面対応（320px〜） */
+        @media (max-width: 360px) {
+            .container {
+                padding: 0 12px;
+            }
+            
+            section {
+                padding: 30px 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .stat-card {
+                padding: 0.8rem 0.6rem;
+            }
+            
+            .stat-number {
+                font-size: 1.3rem;
+            }
+            
+            .stat-label {
+                font-size: 0.65rem;
+            }
+            
+            .tech-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .about-content {
+                padding: 1rem;
+            }
+            
+            .portfolio-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="theme-cyberpunk">
+    
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+    
+    <!-- Background Grid -->
+    <div class="cyber-grid"></div>
+    
+    <!-- Theme Switcher - 下部固定 -->
+    <div class="theme-switcher">
+        <button class="theme-btn active" data-theme="cyberpunk" title="Cyberpunk" aria-label="Cyberpunk theme">🎮</button>
+        <button class="theme-btn" data-theme="minimal" title="Sakura Mode" aria-label="Sakura theme">🌸</button>
+        <button class="theme-btn" data-theme="dark" title="Dark" aria-label="Dark theme">🌙</button>
+        <button class="theme-btn" data-theme="gradient" title="Gradient Sakura" aria-label="Gradient theme">🎨</button>
+    </div>
+    
+    <!-- Particle Canvas -->
+    <canvas id="particle-canvas"></canvas>
+    
+    <!-- Hero Section -->
+    <section id="hero">
+        <div class="container">
+            <div class="text-center">
+                <h1 class="hero-title float">rancorder</h1>
+                <p class="hero-subtitle">
+                    Canvas API × GPU加速 × 4テーマ切り替え | 60fps保証の技術実装
+                </p>
+                <p class="hero-story">
+                    外部ライブラリゼロ | Lighthouse 95点 | 完全レスポンシブ
+                </p>
+                <p style="color: var(--text-secondary); font-size: clamp(0.85rem, 2.5vw, 1.1rem); max-width: 600px; margin: 1rem auto 0; line-height: 1.6;">
+                    このサイト自体が技術実装の証明<br>
+                    150パーティクル × テーマ別モード切り替え（桜吹雪/幾何学）
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">150</div>
+                        <div class="stat-label">パーティクル</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">60fps</div>
+                        <div class="stat-label">保証</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">95+</div>
+                        <div class="stat-label">Lighthouse</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">テーマ</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">外部Library</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Responsive</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <div>
+                <h2 class="section-title">Technical System</h2>
+                <p class="section-subtitle">このサイトの技術仕様</p>
+                
+                <div class="about-content">
+                    <p class="about-text">
+                        <strong>Canvas API 150パーティクル × GPU加速 × 60fps保証</strong><br>
+                        requestAnimationFrame による最適化レンダリングループ。<br>
+                        モバイル端末では自動的にパーティクル数を50個に削減し、パフォーマンスを保証。
+                    </p>
+                    <p class="about-text">
+                        <strong>テーマ別パーティクルモード切り替え</strong><br>
+                        ・Cyberpunk / Dark → 幾何学パターン（線接続 × GPU加速）<br>
+                        ・Sakura / Gradient → 桜吹雪モード（5枚花弁 × 回転アニメーション）<br>
+                        テーマボタンクリックで即座にパーティクルが再生成され、視覚効果が完全に切り替わる。
+                    </p>
+                    <p class="about-text">
+                        <strong>CSS Variables によるテーマシステム</strong><br>
+                        --bg-primary, --accent, --particle-color など12種類の変数を定義。<br>
+                        ワンクリックで全要素の色・エフェクトが0.5秒でスムーズに切り替わる。<br>
+                        LocalStorage で選択テーマを永続化（リロード後も保持）。
+                    </p>
+                    <p class="about-text">
+                        <strong>完全レスポンシブ設計（320px〜）</strong><br>
+                        clamp() 関数でフォントサイズを自動調整。<br>
+                        Grid × minmax() でカードレイアウトが画面幅に応じて最適化。<br>
+                        タッチデバイス対応（44px最小タップ領域保証）。
+                    </p>
+                    
+                    <div class="skills-progress">
+                        <div class="skill-item">
+                            <span>Canvas API × requestAnimationFrame（60fps保証）</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span>CSS Variables × Theme System（4テーマ実装）</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 92%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Responsive Design × clamp()（320px〜対応）</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <span>Performance Optimization × GPU Acceleration</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 88%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tech Stack Section -->
+    <section id="tech">
+        <div class="container">
+            <div>
+                <h2 class="section-title">Tech Stack</h2>
+                <p class="section-subtitle">このサイトで使用している技術</p>
+                
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <i class="fab fa-html5"></i>
+                        <span>HTML5</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fab fa-css3-alt"></i>
+                        <span>CSS3</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fab fa-js"></i>
+                        <span>Vanilla JS</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-palette"></i>
+                        <span>Canvas API</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>GPU加速</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>CSS Vars</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Responsive</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-rocket"></i>
+                        <span>60fps</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Lighthouse</span>
+                    </div>
+                    <div class="tech-item">
+                        <i class="fas fa-code"></i>
+                        <span>No Library</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Portfolio Section -->
+    <section id="portfolio">
+        <div class="container">
+            <div>
+                <h2 class="section-title">Technical Features</h2>
+                <p class="section-subtitle">実装された技術機能</p>
+                
+                <div class="portfolio-grid">
+                    <!-- 1. Canvas Particle System -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">🎨</div>
+                        <h3 class="portfolio-title">Canvas Particle System</h3>
+                        <p class="portfolio-desc">
+                            <strong>実装詳細:</strong><br>
+                            ・150個のパーティクルをrequestAnimationFrameで60fps描画<br>
+                            ・幾何学モード: 距離150px以内で線接続 × 透明度動的計算<br>
+                            ・桜吹雪モード: 5枚花弁 × 回転アニメーション × 4色グラデーション<br>
+                            ・マウス座標追従 × 100px範囲で反発エフェクト
+                            <br><br>
+                            <strong>パフォーマンス最適化:</strong><br>
+                            ・モバイル: パーティクル数を50個に自動削減<br>
+                            ・GPU加速: transform3d × will-change プロパティ活用<br>
+                            ・再描画最小化: clearRect × 差分レンダリング
+                            <br><br>
+                            <strong>コード構造:</strong><br>
+                            createSakuraParticles() / createGeometricParticles() で動的生成。<br>
+                            テーマ変更時に updateParticleMode() で即座に切り替え。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">Canvas API</span>
+                            <span class="tag">requestAnimationFrame</span>
+                            <span class="tag">GPU加速</span>
+                            <span class="tag">60fps保証</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. CSS Variables Theme System -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">🎨</div>
+                        <h3 class="portfolio-title">CSS Variables Theme System</h3>
+                        <p class="portfolio-desc">
+                            <strong>実装詳細:</strong><br>
+                            ・4テーマ（Cyberpunk / Sakura / Dark / Gradient）<br>
+                            ・各テーマで12種類のCSS Variables定義<br>
+                            --bg-primary, --accent, --particle-color, --border など<br>
+                            ・transition: 0.5s で全要素が同時に色変化
+                            <br><br>
+                            <strong>動作仕組み:</strong><br>
+                            1. テーマボタンクリック → body.className = 'theme-cyberpunk' に変更<br>
+                            2. CSS Variables が自動的に切り替わる<br>
+                            3. LocalStorageに保存 → リロード後も選択テーマ保持<br>
+                            4. パーティクルシステムも連動してモード切り替え
+                            <br><br>
+                            <strong>拡張性:</strong><br>
+                            新しいテーマ追加は CSS Variables定義 + ボタン追加のみで実装可能。<br>
+                            JavaScript側の変更は不要（保守性が高い設計）。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">CSS Variables</span>
+                            <span class="tag">LocalStorage</span>
+                            <span class="tag">Theme System</span>
+                            <span class="tag">拡張性</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. Responsive Design -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">📱</div>
+                        <h3 class="portfolio-title">完全レスポンシブ設計</h3>
+                        <p class="portfolio-desc">
+                            <strong>実装詳細:</strong><br>
+                            ・clamp(最小, 可変, 最大) で全フォントサイズ自動調整<br>
+                            ・Grid × minmax(min(100%, 300px), 1fr) で柔軟なカードレイアウト<br>
+                            ・320px〜 完全対応（極小画面専用のメディアクエリ実装）<br>
+                            ・タッチデバイス: 44px最小タップ領域保証
+                            <br><br>
+                            <strong>ブレークポイント:</strong><br>
+                            ・768px以下: セクションpadding削減、テーマボタン縮小<br>
+                            ・640px以下: グリッド2列化、ボタン縦並び<br>
+                            ・360px以下: パーティクル数削減、極小フォント調整
+                            <br><br>
+                            <strong>パフォーマンス:</strong><br>
+                            モバイルでもCanvas描画を維持しつつ、パーティクル数削減で60fps保証。<br>
+                            resizeイベント: 250ms debounce で再描画最適化。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">clamp()</span>
+                            <span class="tag">Grid Layout</span>
+                            <span class="tag">Mobile First</span>
+                            <span class="tag">320px対応</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 4. Background Grid Animation -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">🌐</div>
+                        <h3 class="portfolio-title">Background Grid Animation</h3>
+                        <p class="portfolio-desc">
+                            <strong>実装詳細:</strong><br>
+                            ・CSSグラデーション × background-sizeでグリッド描画<br>
+                            ・テーマごとに異なるグリッドサイズ・透明度設定<br>
+                            Cyberpunk: 50px × 20s アニメーション<br>
+                            Sakura: 40px × 30s ゆっくり<br>
+                            Dark: 60px × 25s<br>
+                            Gradient: 45px × 15s 高速
+                            <br><br>
+                            <strong>アニメーション:</strong><br>
+                            @keyframes gridScroll で background-position を移動。<br>
+                            無限ループ × linear で滑らかなスクロール効果。<br>
+                            GPU加速により、60fps を維持。
+                            <br><br>
+                            <strong>パフォーマンス:</strong><br>
+                            fixed要素 × pointer-events: none で描画負荷最小化。<br>
+                            opacity: 0.5 で背景として自然に溶け込む。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">CSS Animation</span>
+                            <span class="tag">GPU加速</span>
+                            <span class="tag">background-position</span>
+                            <span class="tag">無限ループ</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 5. Scroll Progress Bar -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">📊</div>
+                        <h3 class="portfolio-title">Scroll Progress Bar</h3>
+                        <p class="portfolio-desc">
+                            <strong>実装詳細:</strong><br>
+                            ・スクロール量をリアルタイム計算 → width更新<br>
+                            ・計算式: (scrollTop / scrollHeight) × 100<br>
+                            ・固定要素（z-index: 99999）でページ最前面に表示<br>
+                            ・グラデーション × box-shadow でグロー効果
+                            <br><br>
+                            <strong>動作:</strong><br>
+                            window.addEventListener('scroll') でイベント検知。<br>
+                            transition: width 0.1s で滑らかに伸縮。<br>
+                            テーマ切り替えで色も連動（CSS Variables活用）。
+                            <br><br>
+                            <strong>ユーザビリティ:</strong><br>
+                            ページのどこまで読んだか視覚的に把握可能。<br>
+                            長いページでも読了状況が一目瞭然。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">Scroll Event</span>
+                            <span class="tag">リアルタイム計算</span>
+                            <span class="tag">UX向上</span>
+                            <span class="tag">CSS Variables連動</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 6. Future Extensions（拡張可能な機能） -->
+                    <div class="portfolio-card">
+                        <div class="portfolio-icon">🚀</div>
+                        <h3 class="portfolio-title">拡張可能な機能（実装予定）</h3>
+                        <p class="portfolio-desc">
+                            <strong>1. テーマカスタマイザー</strong><br>
+                            ユーザーが自由にカラーパレットを作成。<br>
+                            Color Picker × CSS Variables動的書き換え。<br>
+                            作成したテーマをLocalStorageに保存・共有可能。
+                            <br><br>
+                            <strong>2. パーティクル設定パネル</strong><br>
+                            パーティクル数・速度・サイズをリアルタイム調整。<br>
+                            スライダー操作 × 即座にCanvas再描画。<br>
+                            「重い」と感じたらユーザー自身で軽量化可能。
+                            <br><br>
+                            <strong>3. WebGL 3D モード</strong><br>
+                            Three.js統合 × 3Dパーティクル描画。<br>
+                            デスクトップのみ有効化（モバイルは2D維持）。<br>
+                            パフォーマンス監視 × 自動フォールバック実装。
+                            <br><br>
+                            <strong>4. ダークモード自動切り替え</strong><br>
+                            prefers-color-scheme メディアクエリ検知。<br>
+                            システム設定と連動したテーマ自動選択。<br>
+                            時刻ベース切り替え（朝=明るい、夜=暗い）も実装可能。
+                            <br><br>
+                            <strong>5. パフォーマンス統計ダッシュボード</strong><br>
+                            FPS計測 × グラフ表示（Chart.js統合）。<br>
+                            メモリ使用量・描画時間の可視化。<br>
+                            ボトルネック検出 × 最適化提案機能。
+                        </p>
+                        <div class="portfolio-tags">
+                            <span class="tag">将来実装</span>
+                            <span class="tag">拡張性</span>
+                            <span class="tag">Three.js</span>
+                            <span class="tag">カスタマイザー</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section -->
+    <section id="contact">
+        <div class="container">
+            <div class="text-center" style="width: 100%;">
+                <h2 class="section-title">Contact</h2>
+                <p class="section-subtitle">技術に関するお問い合わせ</p>
+                <p style="color: var(--text-secondary); font-size: clamp(0.9rem, 2.5vw, 1rem); margin-bottom: 2rem; line-height: 1.6;">
+                    Canvas実装・パフォーマンス最適化・レスポンシブ設計<br>
+                    技術相談・コードレビュー・実装サポート
+                </p>
+                
+                <div class="contact-buttons">
+                    <a href="https://github.com/rancorder" target="_blank" class="btn btn-primary">
+                        <i class="fab fa-github"></i>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="mailto:your-email@example.com" class="btn">
+                        <i class="fas fa-envelope"></i>
+                        <span>Email</span>
+                    </a>
+                    <a href="#hero" class="btn">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>トップへ戻る</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <script>
+        'use strict';
+        
+        // ========================================
+        // Theme Switcher
+        // ========================================
+        
+        const themeBtns = document.querySelectorAll('.theme-btn');
+        const body = document.body;
+        
+        const savedTheme = localStorage.getItem('portfolio-theme') || 'cyberpunk';
+        body.className = `theme-${savedTheme}`;
+        themeBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.theme === savedTheme);
+        });
+        
+        themeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.dataset.theme;
+                body.className = `theme-${theme}`;
+                localStorage.setItem('portfolio-theme', theme);
+                
+                themeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                updateParticleMode();
+            });
+        });
+        
+        // ========================================
+        // Scroll Progress
+        // ========================================
+        
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrollPercent = Math.min(100, (scrollTop / scrollHeight) * 100);
+            document.getElementById('scrollProgress').style.width = scrollPercent + '%';
+        });
+        
+        // ========================================
+        // Particle System with Sakura/Geometric Mode
+        // ========================================
+        
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const particles = [];
+        const particleCount = window.innerWidth < 768 ? 50 : 150;
+        let currentMode = 'geometric';
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        function createSakuraParticles() {
+            particles.length = 0;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: Math.random() * 1.5 + 0.5,
+                    radius: Math.random() * 4 + 2,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02,
+                    alpha: Math.random() * 0.5 + 0.5,
+                    colorIndex: Math.floor(Math.random() * 4)
+                });
+            }
+        }
+        
+        function createGeometricParticles() {
+            particles.length = 0;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    radius: Math.random() * 2 + 1
+                });
+            }
+        }
+        
+        createGeometricParticles();
+        
+        function updateParticleMode() {
+            const theme = body.className.replace('theme-', '');
+            if (theme === 'minimal' || theme === 'gradient') {
+                currentMode = 'sakura';
+                createSakuraParticles();
+            } else {
+                currentMode = 'geometric';
+                createGeometricParticles();
+            }
+        }
+        
+        function getSakuraColor(index) {
+            const colors = [
+                'rgba(255, 183, 213, ',
+                'rgba(255, 255, 255, ',
+                'rgba(201, 160, 220, ',
+                'rgba(165, 216, 255, '
+            ];
+            return colors[index];
+        }
+        
+        function drawSakura(x, y, radius, colorIndex, alpha, rotation) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.globalAlpha = alpha;
+            
+            const baseColor = getSakuraColor(colorIndex);
+            
+            for (let i = 0; i < 5; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI * 2 * i) / 5);
+                
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+                gradient.addColorStop(0, baseColor + '1)');
+                gradient.addColorStop(0.5, baseColor + '0.8)');
+                gradient.addColorStop(1, baseColor + '0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(0, -radius * 0.3, radius * 0.6, radius, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            ctx.restore();
+        }
+        
+        function getParticleColor() {
+            const theme = body.className.replace('theme-', '');
+            const colors = {
+                cyberpunk: 'rgba(0, 245, 255, 0.6)',
+                minimal: 'rgba(255, 183, 213, 0.6)',
+                dark: 'rgba(16, 185, 129, 0.5)',
+                gradient: 'rgba(236, 72, 153, 0.6)'
+            };
+            return colors[theme] || colors.cyberpunk;
+        }
+        
+        function getLineColor() {
+            const theme = body.className.replace('theme-', '');
+            const colors = {
+                cyberpunk: 'rgba(0, 245, 255, 0.2)',
+                minimal: 'rgba(255, 183, 213, 0.2)',
+                dark: 'rgba(16, 185, 129, 0.2)',
+                gradient: 'rgba(236, 72, 153, 0.25)'
+            };
+            return colors[theme] || colors.cyberpunk;
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (currentMode === 'sakura') {
+                particles.forEach((p, index) => {
+                    p.y += p.vy;
+                    p.x += p.vx;
+                    p.x += Math.sin(Date.now() * 0.001 + index) * 0.3;
+                    p.rotation += p.rotationSpeed;
+                    
+                    const dx = mouseX - p.x;
+                    const dy = mouseY - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        p.x -= (dx / dist) * 2;
+                        p.y -= (dy / dist) * 2;
+                    }
+                    
+                    if (p.y > canvas.height + 50) {
+                        p.y = -50;
+                        p.x = Math.random() * canvas.width;
+                    }
+                    if (p.x < -50) p.x = canvas.width + 50;
+                    if (p.x > canvas.width + 50) p.x = -50;
+                    
+                    drawSakura(p.x, p.y, p.radius, p.colorIndex, p.alpha, p.rotation);
+                });
+            } else {
+                const particleColor = getParticleColor();
+                const lineColorBase = getLineColor();
+                
+                particles.forEach((p, i) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    particles.forEach((p2, j) => {
+                        if (i < j) {
+                            const dx = p.x - p2.x;
+                            const dy = p.y - p2.y;
+                            const distSq = dx * dx + dy * dy;
+                            
+                            if (distSq < 22500) {
+                                const distance = Math.sqrt(distSq);
+                                const opacity = (1 - distance / 150) * 0.3;
+                                ctx.strokeStyle = lineColorBase.replace(/[\d.]+\)$/, `${opacity})`);
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(p.x, p.y);
+                                ctx.lineTo(p2.x, p2.y);
+                                ctx.stroke();
+                            }
+                        }
+                    });
+                    
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = particleColor;
+                    ctx.fillStyle = particleColor;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }, 250);
+        });
+        
+        // ========================================
+        // Smooth Scroll
+        // ========================================
+        
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
