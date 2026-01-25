@@ -35,7 +35,6 @@ function parseFrontMatter(html: string): Record<string, string> {
         let [, key, value] = match;
         value = value.trim();
         
-        // タグの配列形式を検出してパース
         if (key.trim() === 'tags' && value.startsWith('[') && value.endsWith(']')) {
           try {
             const parsed = JSON.parse(value);
@@ -148,28 +147,34 @@ export function getRelatedPosts(currentPost: BlogPost, limit: number = 3): BlogP
   return scored.slice(0, limit).map(item => item.post);
 }
 
-// 追加: すべてのタグを取得
-export function getAllTags(): string[] {
+// 修正: タグをカウント付きで返す
+export function getAllTags(): { tag: string; count: number; }[] {
   const allPosts = getAllPosts();
-  const tagsSet = new Set<string>();
+  const tagCounts = new Map<string, number>();
   
   allPosts.forEach(post => {
-    post.tags.forEach(tag => tagsSet.add(tag));
+    post.tags.forEach(tag => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    });
   });
   
-  return Array.from(tagsSet).sort();
+  return Array.from(tagCounts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
-// 追加: すべてのカテゴリを取得
-export function getAllCategories(): string[] {
+// 修正: カテゴリをカウント付きで返す
+export function getAllCategories(): { category: string; count: number; }[] {
   const allPosts = getAllPosts();
-  const categoriesSet = new Set<string>();
+  const categoryCounts = new Map<string, number>();
   
   allPosts.forEach(post => {
     if (post.category) {
-      categoriesSet.add(post.category);
+      categoryCounts.set(post.category, (categoryCounts.get(post.category) || 0) + 1);
     }
   });
   
-  return Array.from(categoriesSet).sort();
+  return Array.from(categoryCounts.entries())
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
 }
