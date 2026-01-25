@@ -1,170 +1,131 @@
-<!--
-title: webサイトのベストプラクティス設計
-date: 2026-01-25
-category: PoC→Production
-excerpt: シンプルさを追求した結果、スケールと安定性がついてきた。データベース・サーバー・CMSを捨てた設計判断の全て。
-readingTime: 9 min read
-tags: [Architecture, 静的サイト, 意思決定設計, Next.js]
--->
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>データベース不要で月100万PVを支える、判断を減らす静的ブログ設計</title>
-  <meta name="description" content="シンプルさを追求した結果、スケールと安定性がついてきた。データベース・サーバー・CMSを捨てた設計判断の全て。" />
-  <!-- OGP -->
-  <meta property="og:title" content="データベース不要で月100万PVを支える、判断を減らす静的ブログ設計" />
-  <meta property="og:description" content="シンプルさを追求した結果、スケールと安定性がついてきた。データベース・サーバー・CMSを捨てた設計判断の全て。" />
-  <meta property="og:type" content="article" />
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="データベース不要で月100万PVを支える、判断を減らす静的ブログ設計" />
-  <meta name="twitter:description" content="シンプルさを追求した結果、スケールと安定性がついてきた。データベース・サーバー・CMSを捨てた設計判断の全て。" />
-</head>
-<body>
-  <article aria-label="記事本文">
-    <header>
-      <h1 id="title">🚀 データベース不要で月100万PVを支える、判断を減らす静的ブログ設計</h1>
-    </header>
+---
+title: "データベース不要で月100万PVを支える、判断を減らす静的ブログ設計"
+date: "2026-01-25"
+category: "PoC→Production"
+excerpt: "シンプルさを追求した結果、スケールと安定性がついてきた。データベース・サーバー・CMSを捨てた設計判断の全て。"
+readingTime: "9 min read"
+tags: ["Architecture", "静的サイト", "意思決定設計", "Next.js"]
+---
 
-    <fade-in delay="0">
-      <p>ブログを作るなら、WordPressかHeadless CMS。データはデータベースで管理し、サーバーを立てる。</p>
-      <p>それで困らないケースも、確かに多い。</p>
-      <p><strong>ただ、私はその前提をすべて捨てた。</strong></p>
-    </fade-in>
+# 🚀 データベース不要で月100万PVを支える、判断を減らす静的ブログ設計
 
-    <fade-in delay="200">
-      <callout-box type="critical" title="シンプルの追求">
-        <ul>
-          <li>❌ データベースは使わない</li>
-          <li>❌ サーバーも持たない</li>
-          <li>❌ CMSすら導入しない</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+ブログを作るなら、WordPressかHeadless CMS。データはデータベースで管理し、サーバーを立てる。
 
-    <fade-in delay="400">
-      <p>それでもこのサイトは、<strong>月100万PV規模まで同一コストで運用できている。</strong></p>
-    </fade-in>
+それで困らないケースも、確かに多い。
 
-    <fade-in delay="600">
-      <callout-box type="info" title="この記事の焦点">
-        <p>本稿は「どう作ったか」よりも、<strong>なぜその設計判断を選んだか</strong>に焦点を当てる。</p>
-        <p>技術選定における「判断の減らし方」こそが、長期運用の鍵だと考えている。</p>
-      </callout-box>
-    </fade-in>
+**ただ、私はその前提をすべて捨てた。**
 
-    <hr />
+<Callout type="error">
+❌ **シンプルの追求**
 
-    <fade-in delay="800">
-      <h2 id="problem">🔍 なぜそれが起きるか（構造）</h2>
-      <p>ブログ運用で本当に重いのは、表示速度でも機能不足でもない。</p>
-      <p><strong>判断が必要になる依存が増えること</strong>だ。</p>
-    </fade-in>
+- データベースは使わない
+- サーバーも持たない
+- CMSすら導入しない
+</Callout>
 
-    <fade-in delay="1000">
-      <h3 id="problem-dependencies">依存が生む判断の連鎖</h3>
-      <ul>
-        <li>⚠️ データベース障害時にどう復旧するか考える</li>
-        <li>💾 バックアップやマイグレーション戦略に悩む</li>
-        <li>📈 トラフィック増加時のスケール設計を議論する</li>
-        <li>🔐 セキュリティパッチの適用タイミングを判断する</li>
-        <li>💸 コスト最適化のための構成変更を検討する</li>
-      </ul>
-    </fade-in>
+それでもこのサイトは、**月100万PV規模まで同一コストで運用できている。**
 
-    <fade-in delay="1200">
-      <callout-box type="warning" title="本質的な問題">
-        <p>これらはすべて、<strong>「書く」という行為と無関係</strong>だ。</p>
-        <p>記事を書くために始めたブログが、インフラ運用のために時間を奪われる。</p>
-      </callout-box>
-    </fade-in>
+<Callout type="info">
+💡 **この記事の焦点**
 
-    <hr />
+本稿は「どう作ったか」よりも、**なぜその設計判断を選んだか**に焦点を当てる。
 
-    <fade-in delay="1400">
-      <h2 id="solution">⚙️ 解決の方針（設計原則3つ）</h2>
-    </fade-in>
+技術選定における「判断の減らし方」こそが、長期運用の鍵だと考えている。
+</Callout>
 
-    <fade-in delay="1600">
-      <h3 id="principle-1">原則1: 依存を減らし、判断点を消す</h3>
-      <p>データベース・CMS・サーバーという依存を減らすことで、運用中に発生する「どうする？」を最小化する。</p>
-      <p>依存が少ないほど、壊れる箇所も減り、判断も減る。</p>
-    </fade-in>
+---
 
-    <fade-in delay="1800">
-      <callout-box type="success" title="具体的な削減例">
-        <ul>
-          <li><strong>DB削除 →</strong> マイグレーション・バックアップ・レプリケーションの判断が消える</li>
-          <li><strong>サーバー削除 →</strong> 障害対応・スケーリング・メンテナンスの判断が消える</li>
-          <li><strong>CMS削除 →</strong> プラグイン管理・権限設計・セキュリティ対策の判断が消える</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+## なぜそれが起きるか（構造） {#problem}
 
-    <fade-in delay="2000">
-      <h3 id="principle-2">原則2: 壊れ方を先に決める</h3>
-      <p>製造業で学んだのは、「失敗しない設計」ではなく<strong>「失敗しても迷わない設計」</strong>だった。</p>
-    </fade-in>
+ブログ運用で本当に重いのは、表示速度でも機能不足でもない。
 
-    <fade-in delay="2200">
-      <callout-box type="info" title="設計時の問いかけ">
-        <ul>
-          <li>ビルドが失敗したら？ → 前回の成功版がそのまま稼働</li>
-          <li>ホスティングが障害したら？ → 別プロバイダに即移行可能</li>
-          <li>記事データが消えたら？ → Gitの履歴から完全復旧</li>
-        </ul>
-        <p>これらの答えが即座に出る設計にしておく。</p>
-      </callout-box>
-    </fade-in>
+**判断が必要になる依存が増えること**だ。
 
-    <fade-in delay="2400">
-      <h3 id="principle-3">原則3: 書く以外の摩擦をゼロにする</h3>
-      <p>記事を書く以外の作業が増えた瞬間、ブログは止まる。</p>
-      <p>エディタを開いて、HTMLを書いて、Gitにコミットする。それだけ。</p>
-    </fade-in>
+### 依存が生む判断の連鎖 {#problem-dependencies}
 
-    <hr />
+- ⚠️ データベース障害時にどう復旧するか考える
+- 💾 バックアップやマイグレーション戦略に悩む
+- 📈 トラフィック増加時のスケール設計を議論する
+- 🔐 セキュリティパッチの適用タイミングを判断する
+- 💸 コスト最適化のための構成変更を検討する
 
-    <fade-in delay="2600">
-      <h2 id="implementation">🛠️ 実装 / 運用の具体</h2>
-    </fade-in>
+<Callout type="warning">
+⚠️ **本質的な問題**
 
-    <fade-in delay="2800">
-      <h3 id="file-based-cms">📁 ファイルベースCMS</h3>
-      <p>記事はHTMLファイルとして管理する。Gitがそのまま「CMS」になる。</p>
-    </fade-in>
+これらはすべて、**「書く」という行為と無関係**だ。
 
-    <fade-in delay="3000">
-      <pre><code class="language-bash">
+記事を書くために始めたブログが、インフラ運用のために時間を奪われる。
+</Callout>
+
+---
+
+## 解決の方針（設計原則3つ） {#solution}
+
+### 原則1: 依存を減らし、判断点を消す {#principle-1}
+
+データベース・CMS・サーバーという依存を減らすことで、運用中に発生する「どうする？」を最小化する。
+
+依存が少ないほど、壊れる箇所も減り、判断も減る。
+
+<Callout type="success">
+✅ **具体的な削減例**
+
+- **DB削除 →** マイグレーション・バックアップ・レプリケーションの判断が消える
+- **サーバー削除 →** 障害対応・スケーリング・メンテナンスの判断が消える
+- **CMS削除 →** プラグイン管理・権限設計・セキュリティ対策の判断が消える
+</Callout>
+
+### 原則2: 壊れ方を先に決める {#principle-2}
+
+製造業で学んだのは、「失敗しない設計」ではなく**「失敗しても迷わない設計」**だった。
+
+<Callout type="info">
+💡 **設計時の問いかけ**
+
+- ビルドが失敗したら？ → 前回の成功版がそのまま稼働
+- ホスティングが障害したら？ → 別プロバイダに即移行可能
+- 記事データが消えたら？ → Gitの履歴から完全復旧
+
+これらの答えが即座に出る設計にしておく。
+</Callout>
+
+### 原則3: 書く以外の摩擦をゼロにする {#principle-3}
+
+記事を書く以外の作業が増えた瞬間、ブログは止まる。
+
+エディタを開いて、HTMLを書いて、Gitにコミットする。それだけ。
+
+---
+
+## 実装 / 運用の具体 {#implementation}
+
+### 📁 ファイルベースCMS {#file-based-cms}
+
+記事はHTMLファイルとして管理する。Gitがそのまま「CMS」になる。
+
+```bash
 # 記事の追加
 git add content/blog/2026-01-25-new-article.html
 git commit -m "Add new article"
 git push
 
 # 自動でビルド → デプロイ
-      </code></pre>
-    </fade-in>
+```
 
-    <fade-in delay="3200">
-      <callout-box type="success" title="ファイルベースの利点">
-        <ul>
-          <li>✅ データベース不要 - ファイルシステムが唯一の真実</li>
-          <li>✅ 履歴＝バックアップ - Gitがすべての履歴を保持</li>
-          <li>✅ ホスティング移行が容易 - HTMLファイルをコピーするだけ</li>
-          <li>✅ オフライン編集可能 - ネット環境不要で執筆できる</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+<Callout type="success">
+✅ **ファイルベースの利点**
 
-    <fade-in delay="3400">
-      <h3 id="static-generation">⚡ 完全静的生成（SSG）</h3>
-      <p>Next.jsで静的生成し、CDN配信のみ。サーバーサイドの処理は一切ない。</p>
-    </fade-in>
+- **データベース不要** - ファイルシステムが唯一の真実
+- **履歴＝バックアップ** - Gitがすべての履歴を保持
+- **ホスティング移行が容易** - HTMLファイルをコピーするだけ
+- **オフライン編集可能** - ネット環境不要で執筆できる
+</Callout>
 
-    <fade-in delay="3600">
-      <pre><code class="language-typescript">
+### ⚡ 完全静的生成（SSG） {#static-generation}
+
+Next.jsで静的生成し、CDN配信のみ。サーバーサイドの処理は一切ない。
+
+```typescript
 // pages/blog/[slug].tsx
 export async function getStaticProps({ params }) {
   const content = await fs.readFile(
@@ -185,23 +146,21 @@ export async function getStaticPaths() {
   
   return { paths, fallback: false };
 }
-      </code></pre>
-    </fade-in>
+```
 
-    <fade-in delay="3800">
-      <callout-box type="info" title="静的生成の効果">
-        <p>ビルド時に全ページを生成するため、トラフィック増加がコスト増加に直結しない。</p>
-        <p>100PVでも100万PVでも、CDNの配信コストはほぼ同じ。</p>
-      </callout-box>
-    </fade-in>
+<Callout type="info">
+💡 **静的生成の効果**
 
-    <fade-in delay="4000">
-      <h3 id="deployment">🚀 デプロイフロー</h3>
-      <p>GitHub Actionsで自動化。プッシュから公開まで約3分。</p>
-    </fade-in>
+ビルド時に全ページを生成するため、トラフィック増加がコスト増加に直結しない。
 
-    <fade-in delay="4200">
-      <pre><code class="language-yaml">
+100PVでも100万PVでも、CDNの配信コストはほぼ同じ。
+</Callout>
+
+### 🚀 デプロイフロー {#deployment}
+
+GitHub Actionsで自動化。プッシュから公開まで約3分。
+
+```yaml
 # .github/workflows/deploy.yml
 name: Build and Deploy
 
@@ -223,250 +182,209 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: my-blog
           directory: out
-      </code></pre>
-    </fade-in>
+```
 
-    <hr />
+---
 
-    <fade-in delay="4400">
-      <h2 id="comparison">📊 他システムとの比較</h2>
-    </fade-in>
+## 他システムとの比較 {#comparison}
 
-    <fade-in delay="4600">
-      <div class="table-wrap" role="region" aria-label="CMSシステム比較表" tabindex="0">
-        <table>
-          <thead>
-            <tr>
-              <th>項目</th>
-              <th>WordPress + DB</th>
-              <th>Headless CMS</th>
-              <th>本システム（静的）</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>データベース</strong></td>
-              <td>❌ 必須（MySQL等）</td>
-              <td>❌ 必須（CMS内蔵）</td>
-              <td>✅ 不要</td>
-            </tr>
-            <tr>
-              <td><strong>サーバー</strong></td>
-              <td>❌ 必須（PHP実行環境）</td>
-              <td>⚠️ CMS側で管理</td>
-              <td>✅ 不要（静的配信のみ）</td>
-            </tr>
-            <tr>
-              <td><strong>月額コスト</strong></td>
-              <td>💸 $20〜100+</td>
-              <td>💸 $15〜500+</td>
-              <td>🎉 $0〜5（CDNのみ）</td>
-            </tr>
-            <tr>
-              <td><strong>障害点</strong></td>
-              <td>⚠️ DB / PHP / プラグイン</td>
-              <td>⚠️ CMS API / ネットワーク</td>
-              <td>✅ ビルド時のみ</td>
-            </tr>
-            <tr>
-              <td><strong>スケーリング</strong></td>
-              <td>❌ 複雑（DB負荷対策）</td>
-              <td>⚠️ プラン変更が必要</td>
-              <td>✅ CDNが自動対応</td>
-            </tr>
-            <tr>
-              <td><strong>バックアップ</strong></td>
-              <td>❌ 別途設定が必要</td>
-              <td>⚠️ CMS依存</td>
-              <td>✅ Git履歴が完全版</td>
-            </tr>
-            <tr>
-              <td><strong>移行の容易さ</strong></td>
-              <td>❌ エクスポート/変換必要</td>
-              <td>⚠️ API依存度高い</td>
-              <td>✅ ファイルコピーのみ</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </fade-in>
+| 項目 | WordPress + DB | Headless CMS | 本システム（静的） |
+|------|----------------|--------------|-------------------|
+| **データベース** | ❌ 必須（MySQL等） | ❌ 必須（CMS内蔵） | ✅ 不要 |
+| **サーバー** | ❌ 必須（PHP実行環境） | ⚠️ CMS側で管理 | ✅ 不要（静的配信のみ） |
+| **月額コスト** | 💸 $20〜100+ | 💸 $15〜500+ | 🎉 $0〜5（CDNのみ） |
+| **障害点** | ⚠️ DB / PHP / プラグイン | ⚠️ CMS API / ネットワーク | ✅ ビルド時のみ |
+| **スケーリング** | ❌ 複雑（DB負荷対策） | ⚠️ プラン変更が必要 | ✅ CDNが自動対応 |
+| **バックアップ** | ❌ 別途設定が必要 | ⚠️ CMS依存 | ✅ Git履歴が完全版 |
+| **移行の容易さ** | ❌ エクスポート/変換必要 | ⚠️ API依存度高い | ✅ ファイルコピーのみ |
 
-    <fade-in delay="4800">
-      <callout-box type="success" title="コスト比較の実例">
-        <p><strong>100万PV/月の場合</strong></p>
-        <ul>
-          <li>WordPress（VPS） - 約$50〜150/月</li>
-          <li>Headless CMS - 約$100〜500/月</li>
-          <li>本システム（Cloudflare Pages） - <strong>$0/月</strong></li>
-        </ul>
-        <p>年間コスト差額: <strong>最大$6,000の削減</strong></p>
-      </callout-box>
-    </fade-in>
+<Callout type="success">
+✅ **コスト比較の実例**
 
-    <hr />
+**100万PV/月の場合**
 
-    <fade-in delay="5000">
-      <h2 id="limitations">⚠️ 制約と向き不向き</h2>
-    </fade-in>
+- WordPress（VPS） - 約$50〜150/月
+- Headless CMS - 約$100〜500/月
+- 本システム（Cloudflare Pages） - **$0/月**
 
-    <fade-in delay="5200">
-      <h3 id="not-suitable">このシステムが向かないケース</h3>
-    </fade-in>
+年間コスト差額: **最大$6,000の削減**
+</Callout>
 
-    <fade-in delay="5400">
-      <callout-box type="warning" title="避けるべき用途">
-        <ul>
-          <li>❌ リアルタイムコメント機能が必須</li>
-          <li>❌ ユーザー投稿型のコンテンツ</li>
-          <li>❌ 頻繁な動的コンテンツ更新（分単位）</li>
-          <li>❌ 複雑な権限管理が必要</li>
-          <li>❌ 非エンジニアが単独で運用</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+---
 
-    <fade-in delay="5600">
-      <h3 id="suitable">このシステムが最適なケース</h3>
-    </fade-in>
+## 制約と向き不向き {#limitations}
 
-    <fade-in delay="5800">
-      <callout-box type="success" title="推奨する用途">
-        <ul>
-          <li>✅ 技術ブログ・ドキュメントサイト</li>
-          <li>✅ ポートフォリオ・企業サイト</li>
-          <li>✅ 月1〜10記事程度の更新頻度</li>
-          <li>✅ エンジニアが主な運用者</li>
-          <li>✅ 長期運用・低コスト重視</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+### このシステムが向かないケース {#not-suitable}
 
-    <hr />
+<Callout type="warning">
+⚠️ **避けるべき用途**
 
-    <fade-in delay="6000">
-      <h2 id="decision-framework">🎯 判断を減らす設計フレームワーク</h2>
-      <p>この設計を他のシステムにも応用するための、判断削減フレームワーク。</p>
-    </fade-in>
+- ❌ リアルタイムコメント機能が必須
+- ❌ ユーザー投稿型のコンテンツ
+- ❌ 頻繁な動的コンテンツ更新（分単位）
+- ❌ 複雑な権限管理が必要
+- ❌ 非エンジニアが単独で運用
+</Callout>
 
-    <fade-in delay="6200">
-      <h3 id="framework-questions">設計時の3つの問い</h3>
-    </fade-in>
+### このシステムが最適なケース {#suitable}
 
-    <fade-in delay="6400">
-      <callout-box type="info" title="1. それは本質的な依存か？">
-        <p>「なければ目的が達成できない」依存だけを残す。</p>
-        <p><strong>例:</strong> ブログの目的は「記事を公開すること」。データベースは本質的依存ではない。</p>
-      </callout-box>
-    </fade-in>
+<Callout type="success">
+✅ **推奨する用途**
 
-    <fade-in delay="6600">
-      <callout-box type="info" title="2. 障害時の復旧手順は明確か？">
-        <p>「たぶん大丈夫」ではなく、「こうすれば確実に直る」が言えるか。</p>
-        <p><strong>例:</strong> ビルドエラー → 前回のコミットに戻す（1コマンドで復旧）</p>
-      </callout-box>
-    </fade-in>
+- 技術ブログ・ドキュメントサイト
+- ポートフォリオ・企業サイト
+- 月1〜10記事程度の更新頻度
+- エンジニアが主な運用者
+- 長期運用・低コスト重視
+</Callout>
 
-    <fade-in delay="6800">
-      <callout-box type="info" title="3. 判断を先送りにしていないか？">
-        <p>「とりあえず」で導入した技術は、後で必ず判断コストを生む。</p>
-        <p><strong>例:</strong> 「とりあえずCMS」→ 後で移行コストが発生</p>
-      </callout-box>
-    </fade-in>
+---
 
-    <hr />
+## 判断を減らす設計フレームワーク {#decision-framework}
 
-    <fade-in delay="7000">
-      <h2 id="real-world-impact">📈 実運用での効果（数値）</h2>
-    </fade-in>
+この設計を他のシステムにも応用するための、判断削減フレームワーク。
 
-    <fade-in delay="7200">
-      <div class="table-wrap" role="region" aria-label="運用効果の数値" tabindex="0">
-        <table>
-          <thead>
-            <tr>
-              <th>指標</th>
-              <th>導入前（WordPress）</th>
-              <th>導入後（静的）</th>
-              <th>改善率</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>月額コスト</strong></td>
-              <td>$80</td>
-              <td>$0</td>
-              <td>✅ 100%削減</td>
-            </tr>
-            <tr>
-              <td><strong>TTFB（初回表示）</strong></td>
-              <td>1.8秒</td>
-              <td>0.3秒</td>
-              <td>✅ 83%改善</td>
-            </tr>
-            <tr>
-              <td><strong>障害発生回数/年</strong></td>
-              <td>12回</td>
-              <td>0回</td>
-              <td>✅ 100%削減</td>
-            </tr>
-            <tr>
-              <td><strong>運用工数/月</strong></td>
-              <td>8時間</td>
-              <td>0.5時間</td>
-              <td>✅ 94%削減</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </fade-in>
+### 設計時の3つの問い {#framework-questions}
 
-    <fade-in delay="7400">
-      <callout-box type="success" title="最も大きな変化">
-        <p>「インフラが気になって記事が書けない」状態から、<strong>「書くことだけに集中できる」</strong>状態へ。</p>
-        <p>記事公開頻度は導入前の <strong>2.5倍</strong> に増加した。</p>
-      </callout-box>
-    </fade-in>
+<Tabs>
+  <Tab label="問い1: 本質的依存か？">
 
-    <hr />
+**「なければ目的が達成できない」依存だけを残す。**
 
-    <fade-in delay="7600">
-      <h2 id="summary">💡 まとめ</h2>
-      <p>このブログシステムは、派手な技術の集合体ではない。</p>
-      <p><strong>判断・依存・迷いを減らした結果として、スケールと安定性がついてきただけだ。</strong></p>
-    </fade-in>
+**例:** ブログの目的は「記事を公開すること」。データベースは本質的依存ではない。
 
-    <fade-in delay="7800">
-      <callout-box type="success" title="設計の本質">
-        <ul>
-          <li>✅ 依存を減らせば、判断も減る</li>
-          <li>✅ 壊れ方を決めれば、迷わない</li>
-          <li>✅ 摩擦をなくせば、続けられる</li>
-        </ul>
-      </callout-box>
-    </fade-in>
+```typescript
+// 本質的依存の例
+const essentialDependencies = [
+  'Next.js', // ビルドツール
+  'Git',     // バージョン管理
+  'CDN'      // 配信インフラ
+];
 
-    <fade-in delay="8000">
-      <h3 id="next-steps">次のステップ</h3>
-      <p>この記事を読んで、自分のプロジェクトに応用したいと思った方へ。</p>
-    </fade-in>
+// 非本質的依存（削除可能）
+const nonEssential = [
+  'Database',  // ファイルで代替可能
+  'CMS',       // Gitで代替可能
+  'Server'     // 静的配信で代替可能
+];
+```
+  </Tab>
 
-    <fade-in delay="8200">
-      <callout-box type="info" title="実践のヒント">
-        <ol>
-          <li><strong>小さく始める</strong> - まず1つの依存を減らしてみる</li>
-          <li><strong>失敗を設計する</strong> - 「壊れたらどうする？」を先に決める</li>
-          <li><strong>判断を計測する</strong> - 「今月、何回判断したか？」を記録する</li>
-        </ol>
-      </callout-box>
-    </fade-in>
+  <Tab label="問い2: 復旧手順は明確か？">
 
-    <fade-in delay="8400">
-      <callout-box type="success" title="最後に">
-        <p>技術選定で迷ったときは、<strong>「それは判断を減らすか？」</strong>と自分に問い直してみてほしい。</p>
-        <p>その問いが、長期運用を支える設計へと導いてくれる。</p>
-      </callout-box>
-    </fade-in>
+**「たぶん大丈夫」ではなく、「こうすれば確実に直る」が言えるか。**
 
-  </article>
-</body>
-</html>
+**例:** ビルドエラー → 前回のコミットに戻す（1コマンドで復旧）
+
+```bash
+# 障害発生時の復旧手順
+git revert HEAD
+git push
+
+# 前回の成功版が自動で再デプロイされる
+# 所要時間: 約3分
+```
+  </Tab>
+
+  <Tab label="問い3: 判断を先送りしていないか？">
+
+**「とりあえず」で導入した技術は、後で必ず判断コストを生む。**
+
+**例:** 「とりあえずCMS」→ 後で移行コストが発生
+
+| 先送り判断 | 後で発生する問題 |
+|-----------|----------------|
+| とりあえずWordPress | データ移行が困難 |
+| とりあえずHeadless CMS | API依存で縛られる |
+| とりあえずDB導入 | マイグレーション地獄 |
+  </Tab>
+</Tabs>
+
+---
+
+## 実運用での効果（数値） {#real-world-impact}
+
+| 指標 | 導入前（WordPress） | 導入後（静的） | 改善率 |
+|------|-------------------|---------------|--------|
+| **月額コスト** | $80 | $0 | ✅ 100%削減 |
+| **TTFB（初回表示）** | 1.8秒 | 0.3秒 | ✅ 83%改善 |
+| **障害発生回数/年** | 12回 | 0回 | ✅ 100%削減 |
+| **運用工数/月** | 8時間 | 0.5時間 | ✅ 94%削減 |
+
+<Callout type="success">
+✅ **最も大きな変化**
+
+「インフラが気になって記事が書けない」状態から、**「書くことだけに集中できる」**状態へ。
+
+記事公開頻度は導入前の **2.5倍** に増加した。
+</Callout>
+
+---
+
+## まとめ {#summary}
+
+このブログシステムは、派手な技術の集合体ではない。
+
+**判断・依存・迷いを減らした結果として、スケールと安定性がついてきただけだ。**
+
+<Callout type="success">
+✅ **設計の本質**
+
+- 依存を減らせば、判断も減る
+- 壊れ方を決めれば、迷わない
+- 摩擦をなくせば、続けられる
+</Callout>
+
+## 次のステップ {#next-steps}
+
+この記事を読んで、自分のプロジェクトに応用したいと思った方へ。
+
+<Steps>
+
+### Step 1: 小さく始める {#step-1}
+
+まず1つの依存を減らしてみる。
+
+```bash
+# 例: CMSをやめて、Markdownファイルで記事管理
+mkdir content/blog
+echo "# My First Post" > content/blog/first-post.md
+```
+
+### Step 2: 失敗を設計する {#step-2}
+
+「壊れたらどうする？」を先に決める。
+
+```yaml
+# 復旧手順をドキュメント化
+## ビルドエラー時
+1. git revert HEAD
+2. git push
+3. 自動で前回版がデプロイされる
+
+## ホスティング障害時
+1. Cloudflare Pages → Vercelに切り替え
+2. 所要時間: 約10分
+```
+
+### Step 3: 判断を計測する {#step-3}
+
+「今月、何回判断したか？」を記録する。
+
+| 日付 | 判断内容 | 所要時間 |
+|------|---------|---------|
+| 1/10 | DB障害対応 | 3時間 |
+| 1/15 | プラグイン更新 | 1時間 |
+| 1/20 | スケール対策 | 5時間 |
+
+→ **月9時間が「書く以外」に消えている**ことが可視化される
+
+</Steps>
+
+<Callout type="success">
+✅ **最後に**
+
+技術選定で迷ったときは、**「それは判断を減らすか？」**と自分に問い直してみてほしい。
+
+その問いが、長期運用を支える設計へと導いてくれる。
+</Callout>
