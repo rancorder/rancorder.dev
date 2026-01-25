@@ -1,3 +1,11 @@
+<!--
+title: Canvas API × 4テーマ切り替え実装 | 外部ライブラリゼロの技術実装
+date: 2026-01-25
+category: Frontend / Performance
+excerpt: 150パーティクル × 60fps保証 × GPU加速。Vanilla JSのみでテーマ別エフェクト切り替えを実装。
+readingTime: 12 min read
+tags: ["Canvas API", "Performance", "Vanilla JS", "Responsive Design", "GPU加速", "60fps"]
+-->
 <!DOCTYPE html>
 <html lang="ja" class="scroll-smooth">
 <head>
