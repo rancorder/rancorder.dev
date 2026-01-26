@@ -252,7 +252,7 @@ tags: ["AI", "デバッグ", "比較分析", "開発手法"]
       border-radius: 12px;
       padding: 2rem;
       margin: 2rem 0;
-      overflow: hidden;
+      overflow: visible; /* テーブルスクロールのため変更 */
       animation: scaleIn 0.8s ease-out;
       transition: all 0.3s ease;
       box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
@@ -273,6 +273,7 @@ tags: ["AI", "デバッグ", "比較分析", "開発手法"]
       background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.15), transparent);
       animation: scan 4s linear infinite;
       pointer-events: none;
+      z-index: 0; /* テーブルより下に */
     }
     
     @keyframes scan {
@@ -328,11 +329,44 @@ tags: ["AI", "デバッグ", "比較分析", "開発手法"]
       color: #22c55e;
     }
     
+    /* 比較テーブルラッパー */
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin: 2rem 0;
+      border-radius: 12px;
+      position: relative;
+      z-index: 1; /* スキャンエフェクトより上に */
+      /* スクロールバーのスタイル */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(124, 58, 237, 0.5) rgba(15, 23, 42, 0.3);
+    }
+    
+    .table-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+    
+    .table-wrapper::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+      border-radius: 4px;
+    }
+    
+    .table-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(124, 58, 237, 0.5);
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    
+    .table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: rgba(124, 58, 237, 0.8);
+    }
+    
     /* 比較テーブル */
     .comparison-table {
       width: 100%;
+      min-width: 600px; /* モバイルでの最小幅を確保 */
       border-collapse: collapse;
-      margin: 2rem 0;
       background: rgba(15, 23, 42, 0.9);
       border-radius: 12px;
       overflow: hidden;
@@ -573,11 +607,24 @@ tags: ["AI", "デバッグ", "比較分析", "開発手法"]
       
       .comparison-table {
         font-size: 0.9rem;
+        min-width: 650px; /* モバイルで横スクロールを確実に */
       }
       
       .comparison-table th,
       .comparison-table td {
         padding: 0.75rem;
+        white-space: nowrap; /* テキストの折り返しを防ぐ */
+      }
+      
+      /* モバイルでのスクロールヒント */
+      .table-wrapper::after {
+        content: '← スワイプして全体を表示 →';
+        display: block;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+        opacity: 0.7;
       }
     }
   </style>
@@ -692,42 +739,44 @@ URLは正しいがECONNREFUSED
   </p>
 
   <div class="scan-box">
-    <table class="comparison-table">
-      <thead>
-        <tr>
-          <th>AI</th>
-          <th>返答の特徴</th>
-          <th>問題の扱い方</th>
-          <th>相性（観測駆動思想）</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>ChatGPT</strong></td>
-          <td>文章が綺麗・網羅的</td>
-          <td>"全部説明＋全部直す"</td>
-          <td>△（推測混ざる）</td>
-        </tr>
-        <tr>
-          <td><strong>Gemini</strong></td>
-          <td>事実系・一般論</td>
-          <td>チェックリスト型</td>
-          <td>△（浅く広い）</td>
-        </tr>
-        <tr>
-          <td><strong>Claude</strong></td>
-          <td>GitHub丸読み・長文</td>
-          <td>推測多め・暴走しやすい</td>
-          <td>▲（バラツキ大）</td>
-        </tr>
-        <tr>
-          <td><strong>Copilot</strong></td>
-          <td>観測→仮定→検証</td>
-          <td>最小差分・切り分け</td>
-          <td>◎（思想と一致）</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrapper">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>AI</th>
+            <th>返答の特徴</th>
+            <th>問題の扱い方</th>
+            <th>相性（観測駆動思想）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ChatGPT</strong></td>
+            <td>文章が綺麗・網羅的</td>
+            <td>"全部説明＋全部直す"</td>
+            <td>△（推測混ざる）</td>
+          </tr>
+          <tr>
+            <td><strong>Gemini</strong></td>
+            <td>事実系・一般論</td>
+            <td>チェックリスト型</td>
+            <td>△（浅く広い）</td>
+          </tr>
+          <tr>
+            <td><strong>Claude</strong></td>
+            <td>GitHub丸読み・長文</td>
+            <td>推測多め・暴走しやすい</td>
+            <td>▲（バラツキ大）</td>
+          </tr>
+          <tr>
+            <td><strong>Copilot</strong></td>
+            <td>観測→仮定→検証</td>
+            <td>最小差分・切り分け</td>
+            <td>◎（思想と一致）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <h3>それぞれのAIの性格</h3>
