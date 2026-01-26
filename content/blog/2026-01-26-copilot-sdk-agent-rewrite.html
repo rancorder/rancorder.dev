@@ -1,0 +1,1067 @@
+<!--
+title: GitHub Copilot SDKは何を変えたのか ─ Code Review Agentから読み解く判断設計の思想
+date: 2026-01-25
+category: 技術解説
+excerpt: GitHub Copilot SDKは補完ツールの延長ではない。Code Review Agentを例に、SDKの使い方と『判断を外部化する』という設計思想を5000字で掘り下げる。
+readingTime: 20 min read
+tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判断の外部化"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GitHub Copilot SDKは何を変えたのか ─ Code Review Agentから読み解く判断設計の思想</title>
+  <style>
+    /* ---------------------------------------------------------
+       DESIGN TOKENS
+    --------------------------------------------------------- */
+    :root {
+      --primary-gradient: linear-gradient(90deg, #7c3aed, #22c55e);
+      --accent-color: #7c3aed;
+      --accent-soft: rgba(124, 58, 237, 0.4);
+      --success-color: #22c55e;
+      --info-color: #3b82f6;
+      --warning-color: #fbbf24;
+      --critical-color: #ef4444;
+      --bg-dark: #020617;
+      --bg-deep: #020617;
+      --card-bg: rgba(15, 23, 42, 0.9);
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-rgba: rgba(148, 163, 184, 0.4);
+      --glow-soft: 0 0 40px rgba(56, 189, 248, 0.35);
+    }
+
+    /* ---------------------------------------------------------
+       GLOBAL
+    --------------------------------------------------------- */
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ---------------------------------------------------------
+       BACKGROUND CANVAS + LAYERS
+    --------------------------------------------------------- */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -3;
+      display: block;
+      background: radial-gradient(circle at top, #020617 0%, #020617 40%, #000 100%);
+    }
+
+    .bg-gradient-layer {
+      position: fixed;
+      inset: -10%;
+      z-index: -2;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(124, 58, 237, 0.22) 0%, transparent 60%),
+        radial-gradient(circle at 20% 80%, rgba(34, 197, 94, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 85% 75%, rgba(244, 114, 182, 0.18) 0%, transparent 60%);
+      mix-blend-mode: screen;
+      opacity: 0.9;
+      animation: bgDrift 40s ease-in-out infinite alternate;
+    }
+
+    .scanline-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(15, 23, 42, 0.4) 1px,
+        transparent 1px
+      );
+      background-size: 100% 2px;
+      opacity: 0.35;
+      mix-blend-mode: soft-light;
+      animation: scanlineMove 12s linear infinite;
+    }
+
+    @keyframes bgDrift {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1.02);
+      }
+      50% {
+        transform: translate3d(-10px, 8px, 0) scale(1.05);
+      }
+      100% {
+        transform: translate3d(12px, -10px, 0) scale(1.03);
+      }
+    }
+
+    @keyframes scanlineMove {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(2px); }
+    }
+
+    /* ---------------------------------------------------------
+       ARTICLE LAYOUT
+    --------------------------------------------------------- */
+    .page-shell {
+      position: relative;
+      z-index: 0;
+    }
+
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem 6rem;
+      position: relative;
+    }
+
+    article::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 50%;
+      width: min(900px, 100vw - 3rem);
+      height: 100%;
+      transform: translateX(-50%);
+      border-left: 1px solid rgba(148, 163, 184, 0.18);
+      border-right: 1px solid rgba(148, 163, 184, 0.18);
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ---------------------------------------------------------
+       TYPOGRAPHY
+    --------------------------------------------------------- */
+    h1 {
+      font-size: clamp(2.4rem, 3vw, 3rem);
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0 0 1rem;
+      text-align: center;
+      letter-spacing: 0.02em;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin-top: 4.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.5);
+      position: relative;
+    }
+
+    h2::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -1px;
+      width: 120px;
+      height: 2px;
+      background: var(--primary-gradient);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
+    }
+
+    p {
+      margin-bottom: 1.5rem;
+      color: var(--text-main);
+      font-size: 0.98rem;
+    }
+
+    strong {
+      color: #f9fafb;
+      font-weight: 700;
+    }
+
+    .icon-deco {
+      font-size: 1.4em;
+      vertical-align: middle;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));
+    }
+
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    a:hover {
+      border-bottom-color: #60a5fa;
+      color: #93c5fd;
+    }
+
+    /* ---------------------------------------------------------
+       HERO BLOCK
+    --------------------------------------------------------- */
+    .hero-block {
+      position: relative;
+      padding: 2.5rem 2rem 2.8rem;
+      margin-bottom: 3.5rem;
+      border-radius: 24px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.22), transparent 60%),
+                  rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+    }
+
+    .hero-orbit {
+      position: absolute;
+      inset: -40%;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      transform: rotate(8deg);
+      opacity: 0.6;
+    }
+
+    .hero-orbit::before,
+    .hero-orbit::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: radial-gradient(circle, #22c55e, transparent 70%);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.9);
+    }
+
+    .hero-orbit::before {
+      top: 12%;
+      left: 18%;
+    }
+
+    .hero-orbit::after {
+      bottom: 10%;
+      right: 16%;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .hero-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    /* ---------------------------------------------------------
+       COMPONENTS
+    --------------------------------------------------------- */
+    .visual-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(34, 197, 94, 0.16));
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      border-radius: 18px;
+      padding: 2rem 2.2rem;
+      margin: 3rem 0;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+    }
+
+    .visual-card::before {
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: -20%;
+      width: 40%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(248, 250, 252, 0.22), transparent 70%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .callout {
+      margin: 2.5rem 0;
+      padding: 1.6rem 2rem;
+      border-radius: 0 14px 14px 0;
+      border-left: 5px solid transparent;
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.9);
+    }
+
+    .callout-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .callout.info { border-left-color: var(--info-color); background: rgba(37, 99, 235, 0.12); }
+    .callout.success { border-left-color: var(--success-color); background: rgba(22, 163, 74, 0.12); }
+    .callout.warning { border-left-color: var(--warning-color); background: rgba(202, 138, 4, 0.12); }
+    .callout.critical { border-left-color: var(--critical-color); background: rgba(185, 28, 28, 0.14); }
+
+    .code-wrapper {
+      background: #020617;
+      border-radius: 14px;
+      padding: 1.6rem 1.8rem;
+      margin: 2.4rem 0;
+      border: 1px solid rgba(30, 64, 175, 0.8);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-wrapper::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 60%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 0.35rem;
+    }
+
+    .code-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #ef4444;
+    }
+
+    .code-dot:nth-child(2) { background: #fbbf24; }
+    .code-dot:nth-child(3) { background: #22c55e; }
+
+    pre {
+      margin: 0;
+      font-family: "Fira Code", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+      color: #e5e9f0;
+      line-height: 1.7;
+      overflow-x: auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .checklist-item {
+      background: rgba(15, 23, 42, 0.96);
+      border-left: 4px solid var(--accent-color);
+      padding: 1.2rem 1.6rem 1.2rem 2rem;
+      margin: 1.2rem 0;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .checklist-item::before {
+      content: "✓";
+      position: absolute;
+      left: 0.7rem;
+      top: 1.1rem;
+      font-size: 0.9rem;
+      color: var(--success-color);
+      font-weight: 800;
+    }
+
+    .checklist-item:hover {
+      transform: translateX(4px);
+      border-left-color: #22c55e;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.9);
+    }
+
+    .footer-enhanced {
+      margin-top: 5rem;
+      padding: 3rem 2rem;
+      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 60%),
+                  radial-gradient(circle at bottom, rgba(124, 58, 237, 0.18), transparent 60%),
+                  rgba(15, 23, 42, 0.96);
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .footer-enhanced::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -40%;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(248, 250, 252, 0.18), transparent);
+      animation: footerShimmer 4.5s linear infinite;
+      opacity: 0.7;
+    }
+
+    @keyframes footerShimmer {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(260%); }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.8rem;
+      margin-bottom: 1.8rem;
+      font-size: 0.9rem;
+    }
+
+    /* ---------------------------------------------------------
+       SCROLL FADE-IN
+    --------------------------------------------------------- */
+    .fade-section {
+      opacity: 0;
+      transform: translateY(24px);
+      transition:
+        opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
+        transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+      will-change: opacity, transform;
+    }
+
+    .fade-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-section[data-delay="small"] {
+      transition-delay: 0.12s;
+    }
+
+    .fade-section[data-delay="medium"] {
+      transition-delay: 0.22s;
+    }
+
+    .fade-section[data-delay="large"] {
+      transition-delay: 0.32s;
+    }
+
+    /* ---------------------------------------------------------
+       RESPONSIVE
+    --------------------------------------------------------- */
+    @media (max-width: 768px) {
+      article {
+        padding: 4rem 1.25rem 4.5rem;
+      }
+      .hero-block {
+        padding: 2rem 1.5rem 2.2rem;
+      }
+      h2 {
+        font-size: 1.5rem;
+      }
+      .visual-card {
+        padding: 1.6rem 1.5rem;
+      }
+      .code-wrapper {
+        padding: 1.3rem 1.2rem;
+      }
+      .footer-enhanced {
+        padding: 2.4rem 1.6rem;
+      }
+    }
+    
+    /* ---------------------------------------------------------
+       TOC（目次）自動生成スタイル
+    --------------------------------------------------------- */
+    #article-toc {
+      position: fixed;
+      right: 2rem;
+      top: 100px;
+      width: 250px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.9);
+      z-index: 1000;
+    }
+    
+    #article-toc h2 {
+      font-size: 1.1rem;
+      margin: 0 0 1rem 0;
+      color: #7c3aed;
+      border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+      padding-bottom: 0.5rem;
+    }
+    
+    #article-toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #article-toc li {
+      margin: 0.5rem 0;
+    }
+    
+    #article-toc a {
+      color: rgba(226, 232, 240, 0.7);
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    
+    #article-toc a:hover {
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    
+    #article-toc a.active {
+      color: #7c3aed;
+      background: rgba(124, 58, 237, 0.2);
+      border-left: 3px solid #7c3aed;
+      padding-left: calc(0.5rem - 3px);
+    }
+    
+    #article-toc .level-2 { padding-left: 0; }
+    #article-toc .level-3 { padding-left: 1rem; }
+    #article-toc .level-4 { padding-left: 2rem; }
+    
+    @media (max-width: 1400px) {
+      #article-toc { display: none; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="bg-gradient-layer"></div>
+<div class="scanline-overlay"></div>
+
+<div class="page-shell">
+  <article id="main-article">
+    <!-- TOCコンテナ（自動生成される） -->
+    <nav id="article-toc"></nav>
+    
+    <header class="fade-section" data-delay="small">
+      <div class="hero-block">
+        <div class="hero-orbit"></div>
+        <h1><span class="icon-deco">🚀</span> GitHub Copilot SDKは何を変えたのか</h1>
+        <p class="hero-subtitle">─ Code Review Agentから読み解く判断設計の思想</p>
+        <p>
+          GitHub Copilot SDKと聞いて、多くの人は「Copilotを拡張するための開発キット」だと理解する。<br>
+          その理解は間違ってはいないが、核心には触れていない。
+        </p>
+        <p>
+          このSDKが本当に持ち込んだ変化は、<strong>AIに何を書かせるか</strong>ではなく、<strong>AIにどんな判断をさせるか</strong>を設計対象に引き上げた点にある。
+        </p>
+        <div class="hero-meta">
+          <span>📅 2026-01-25</span>
+          <span>📚 技術解説</span>
+          <span>⏱ 20 min read</span>
+          <span>🧠 GitHub Copilot SDK / Agent / Code Review</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="fade-section" data-delay="medium">
+      <div class="visual-card">
+        <p>
+          ここで扱う <strong>GitHub Copilot SDK</strong> は、コード補完の延長線ではなく、人間が暗黙に行ってきた判断を
+          <strong>「構造」として外に出す</strong>ための道具だ。
+        </p>
+        <p>
+          その思想が、もっとも分かりやすい形で表れているのが <strong>Code Review Agent</strong> という実装である。
+        </p>
+      </div>
+    </section>
+
+    <section class="fade-section">
+      <h2><span class="icon-deco">🔍</span> コードレビューは作業ではなく判断である</h2>
+      <p>
+        コードレビューは、しばしば「チェック作業」として扱われる。<br>
+        Lintに通っているか、書き方が汚くないか、既存ルールに違反していないか。<br>
+        しかし実際の現場で価値を生んでいるレビューは、そこでは止まらない。
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ 本質的なレビュー観点</div>
+        <ul>
+          <li>この変更は半年後に理解できるか</li>
+          <li>運用フェーズで破綻しないか</li>
+          <li>この書き方はチームの判断基準と整合しているか</li>
+        </ul>
+      </div>
+
+      <p>
+        これらはすべて、明文化されていない<strong>判断</strong>だ。<br>
+        人は経験や勘、過去の事故の記憶を使って、無意識にそれを行っている。
+      </p>
+
+      <div class="visual-card">
+        <p>
+          GitHub Copilot SDKは、この暗黙知を「AIに任せるため」ではなく
+          <strong>言語化し、再利用可能にするため</strong>に存在する。
+        </p>
+      </div>
+    </section>
+
+    <section class="fade-section" data-delay="small">
+      <h2><span class="icon-deco">⚡</span> Copilot SDKが壊した前提</h2>
+      <p>
+        従来のAI活用では、プロンプトがすべてだった。どう聞くか、どう誘導するか、どう曖昧さを減らすか。<br>
+        だがこのやり方には限界がある。
+      </p>
+      <p>
+        なぜなら、判断の前提が固定されないからだ。同じ質問をしても、文脈が少し変われば答えは揺れる。これはAIの問題ではなく、
+        <strong>設計が存在しない</strong>ことが原因だ。
+      </p>
+
+      <div class="callout success">
+        <div class="callout-title">✅ Agentという考え方</div>
+        <p>
+          Copilot SDKは、ここに<strong>Agent</strong>という考え方を持ち込む。<br>
+          Agentとは「役割を持った判断主体」であり、その役割・前提・観点をセットで定義できる存在だ。
+        </p>
+      </div>
+
+      <p>
+        Code Review Agentは、この思想を体現する。レビューの観点を明示し、判断基準を構造化し、チームの暗黙知を外に出す。
+      </p>
+    </section>
+
+    <section class="fade-section">
+      <h2><span class="icon-deco">💻</span> Code Review Agentの実装</h2>
+      <p>
+        実際のCode Review Agentの実装を見てみよう。ポイントは「判断基準を明示的に定義する」ことにある。
+      </p>
+
+      <div class="code-wrapper">
+        <div class="code-header">
+          <div class="code-dots">
+            <span class="code-dot"></span>
+            <span class="code-dot"></span>
+            <span class="code-dot"></span>
+          </div>
+          <span>code-review-agent.ts</span>
+        </div>
+<pre>
+const reviewAgent = {
+  name: "CodeReviewAgent",
+  role: "コードレビュー担当",
+  
+  reviewCriteria: [
+    {
+      category: "可読性",
+      checkPoints: [
+        "変数名が意図を表現しているか",
+        "コメントが将来の自分に伝わるか",
+        "関数が単一責任原則を守っているか"
+      ]
+    },
+    {
+      category: "保守性",
+      checkPoints: [
+        "半年後にこのコードを理解できるか",
+        "変更の影響範囲が明確か",
+        "テストで挙動を保証できるか"
+      ]
+    },
+    {
+      category: "チーム基準",
+      checkPoints: [
+        "既存コードベースのパターンと一致しているか",
+        "過去のインシデントから学んだ教訓が反映されているか",
+        "アーキテクチャ方針と矛盾していないか"
+      ]
+    }
+  ],
+  
+  execute: async (code, context) => {
+    const reviews = [];
+    
+    for (const criterion of reviewAgent.reviewCriteria) {
+      const result = await analyzeCriterion(code, criterion, context);
+      reviews.push(result);
+    }
+    
+    return {
+      summary: generateSummary(reviews),
+      details: reviews,
+      suggestions: generateSuggestions(reviews)
+    };
+  }
+};
+</pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ 実装のポイント</div>
+        <ul>
+          <li><strong>reviewCriteria</strong>: 判断基準を明示的に定義</li>
+          <li><strong>checkPoints</strong>: 具体的な確認項目をリスト化</li>
+          <li><strong>context</strong>: チームの過去の知見を注入可能</li>
+        </ul>
+      </div>
+
+      <p>
+        このAgentの強みは、<strong>判断の再現性</strong>にある。同じコードを何度レビューしても、同じ基準で、同じ観点から判断が下される。
+      </p>
+    </section>
+
+    <section class="fade-section" data-delay="small">
+      <h2><span class="icon-deco">🧩</span> 判断を外部化する設計思想</h2>
+      <p>
+        Code Review Agentが示す本質は、<strong>「判断を外に出す」</strong>という設計思想だ。
+      </p>
+      <p>
+        従来のアプローチでは、判断は人の頭の中にあった。経験豊富なエンジニアが「なんとなく」気づき、「感覚的に」指摘する。
+        それでは、その判断を他の人が再利用できない。
+      </p>
+
+      <div class="visual-card">
+        <p><strong>判断を外部化する</strong>とは：</p>
+        <ul>
+          <li>判断基準を明文化する</li>
+          <li>判断のロジックを構造化する</li>
+          <li>判断の結果を検証可能にする</li>
+        </ul>
+      </div>
+
+      <p>
+        これにより、チーム全体で判断基準を共有し、改善し、進化させることができる。個人の暗黙知が、チームの明示知に変わる。
+      </p>
+    </section>
+
+    <section class="fade-section">
+      <h2><span class="icon-deco">🌟</span> 他の活用シーン</h2>
+      <p>
+        Code Review Agent以外にも、判断を外部化する場面は多くある。
+      </p>
+
+      <div class="checklist-item">
+        <strong>Architecture Decision Agent</strong><br>
+        技術選定の判断基準を明示化し、過去の失敗から学ぶ
+      </div>
+
+      <div class="checklist-item">
+        <strong>Incident Response Agent</strong><br>
+        障害対応の判断フローを構造化し、再現性を高める
+      </div>
+
+      <div class="checklist-item">
+        <strong>Refactoring Agent</strong><br>
+        リファクタリングの優先順位を判断し、影響範囲を可視化
+      </div>
+
+      <div class="checklist-item">
+        <strong>Security Review Agent</strong><br>
+        セキュリティ観点を明文化し、見落としを防ぐ
+      </div>
+
+      <div class="callout success">
+        <div class="callout-title">✅ 共通点</div>
+        <p>すべてに共通するのは、<strong>「暗黙の判断を明示化する」</strong>という設計思想だ。</p>
+      </div>
+    </section>
+
+    <section class="fade-section" data-delay="medium">
+      <h2><span class="icon-deco">🎯</span> 実践する際のポイント</h2>
+      <p>
+        GitHub Copilot SDKを使って判断を外部化する際、以下のポイントを押さえる。
+      </p>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ 1. 完璧を目指さない</div>
+        <p>最初から完全な判断基準を作ろうとしない。まずは核となる3-5個の観点から始め、運用しながら改善していく。</p>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ 2. チームの文脈を埋め込む</div>
+        <p>一般的な基準ではなく、チーム固有の「過去の失敗」「暗黙のルール」を明文化する。それがAgentの真の価値になる。</p>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ 3. 判断の根拠を記録する</div>
+        <p>なぜその判断基準を採用したのか、背景を残す。将来の改善時に、意図を理解できるようにする。</p>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ 4. 定期的に見直す</div>
+        <p>判断基準は固定ではない。チームの成長、技術の変化に合わせて、Agentも進化させる。</p>
+      </div>
+    </section>
+
+    <section class="fade-section">
+      <h2><span class="icon-deco">💡</span> 結論：判断を設計する時代</h2>
+      <p>
+        GitHub Copilot SDKは、AIツールではない。それは<strong>判断を外部化し、検証可能にする設計ツール</strong>である。
+      </p>
+
+      <div class="visual-card">
+        <p>
+          Code Review Agentは、その思想を最もシンプルに体現した実装だ。レビュー観点を明示し、判断の前提を固定し、チームの基準を構造化する。
+        </p>
+      </div>
+
+      <p>
+        これからのソフトウェア開発は、コードを書くだけでなく、<strong>判断を設計する</strong>能力が問われる時代になる。
+      </p>
+
+      <div class="callout critical">
+        <div class="callout-title">🔥 最後に</div>
+        <p>
+          「このコードは正しいか？」と問う前に、<br>
+          <strong>「何を基準に正しいと判断するのか？」</strong>を設計せよ。<br>
+          それがCopilot SDKが持ち込んだ、本質的な変化である。
+        </p>
+      </div>
+    </section>
+
+    <footer class="footer-enhanced fade-section" data-delay="small">
+      <div class="footer-links">
+        <span>🔗 <strong>GitHub:</strong> <a href="https://github.com/rancorder/rancorder.dev">repository</a></span>
+        <span>🌐 <strong>Blog:</strong> <a href="https://rancorder.vercel.app">site</a></span>
+      </div>
+      <p>💬 判断設計の話が合いそうなら、静かに連絡してください。</p>
+    </footer>
+  </article>
+</div>
+
+<script>
+  // ============================
+  // Canvas Particle System
+  // ============================
+  (function () {
+    const canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let particles = [];
+    const PARTICLE_COUNT = Math.min(140, Math.floor((width * height) / 12000));
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    function createParticles() {
+      particles = [];
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          z: Math.random() * 1.2 + 0.4,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          radius: Math.random() * 1.8 + 0.6,
+          hue: 180 + Math.random() * 120,
+          alpha: 0.25 + Math.random() * 0.5
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (const p of particles) {
+        p.x += p.vx * p.z;
+        p.y += p.vy * p.z;
+
+        if (p.x < -50) p.x = width + 50;
+        if (p.x > width + 50) p.x = -50;
+        if (p.y < -50) p.y = height + 50;
+        if (p.y > height + 50) p.y = -50;
+
+        const grad = ctx.createRadialGradient(
+          p.x, p.y, 0,
+          p.x, p.y, p.radius * 6
+        );
+        grad.addColorStop(0, `hsla(${p.hue}, 90%, 70%, ${p.alpha})`);
+        grad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * p.z, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    createParticles();
+    draw();
+  })();
+
+  // ============================
+  // Scroll Fade-in
+  // ============================
+  (function () {
+    const sections = document.querySelectorAll('.fade-section');
+    if (!('IntersectionObserver' in window) || sections.length === 0) {
+      sections.forEach(s => s.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px -10% 0px'
+      }
+    );
+
+    sections.forEach(section => observer.observe(section));
+  })();
+  
+  // ============================
+  // 6. TOC自動生成
+  // ============================
+  (function() {
+    'use strict';
+    
+    function initTOC() {
+      const article = document.getElementById('main-article');
+      const tocContainer = document.getElementById('article-toc');
+      
+      if (!article || !tocContainer) return;
+      
+      setTimeout(() => {
+        const headings = article.querySelectorAll('h2, h3');
+        if (headings.length === 0) return;
+        
+        const tocTitle = document.createElement('h2');
+        tocTitle.textContent = '目次';
+        
+        const tocList = document.createElement('ul');
+        let counter = 0;
+        
+        headings.forEach(heading => {
+          const level = parseInt(heading.tagName.substring(1));
+          const text = heading.textContent?.trim() || '';
+          
+          if (!text) return;
+          
+          let id = heading.id;
+          if (!id) {
+            id = `heading-${counter++}`;
+            heading.id = id;
+          }
+          
+          const li = document.createElement('li');
+          li.className = `level-${level}`;
+          
+          const a = document.createElement('a');
+          a.href = `#${id}`;
+          a.textContent = text;
+          a.dataset.target = id;
+          
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById(id)?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            });
+          });
+          
+          li.appendChild(a);
+          tocList.appendChild(li);
+        });
+        
+        tocContainer.appendChild(tocTitle);
+        tocContainer.appendChild(tocList);
+        
+        initActiveTracking(headings);
+      }, 100);
+    }
+    
+    function initActiveTracking(headings) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            const id = entry.target.id;
+            const link = document.querySelector(`#article-toc a[data-target="${id}"]`);
+            
+            if (entry.isIntersecting) {
+              document.querySelectorAll('#article-toc a').forEach(a => {
+                a.classList.remove('active');
+              });
+              link?.classList.add('active');
+            }
+          });
+        },
+        { rootMargin: '-100px 0px -66% 0px' }
+      );
+      
+      headings.forEach(h => observer.observe(h));
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTOC);
+    } else {
+      initTOC();
+    }
+  })();
+</script>
+</body>
+</html>
