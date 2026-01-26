@@ -47,7 +47,7 @@ export default async function BlogPost({
       
       {/* 記事本文 */}
       <div 
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: post.html }}
         style={{ width: '100%' }}
       />
       
