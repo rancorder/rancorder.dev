@@ -459,32 +459,33 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
     }
 
     /* ---------------------------------------------------------
-       SCROLL FADE-IN
+       SCROLL FADE-IN → CSS Animation Only（IntersectionObserver不要）
     --------------------------------------------------------- */
     .fade-section {
-      opacity: 0;
-      transform: translateY(24px);
-      transition:
-        opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
-        transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
-      will-change: opacity, transform;
+      animation: fadeInUp 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
     }
-
-    .fade-section.is-visible {
-      opacity: 1;
-      transform: translateY(0);
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .fade-section[data-delay="small"] {
-      transition-delay: 0.12s;
+      animation-delay: 0.15s;
     }
 
     .fade-section[data-delay="medium"] {
-      transition-delay: 0.22s;
+      animation-delay: 0.3s;
     }
 
     .fade-section[data-delay="large"] {
-      transition-delay: 0.32s;
+      animation-delay: 0.45s;
     }
 
     /* ---------------------------------------------------------
@@ -512,7 +513,7 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
     }
     
     /* ---------------------------------------------------------
-       TOC（目次）自動生成スタイル
+       TOC自動生成スタイル
     --------------------------------------------------------- */
     #article-toc {
       position: fixed;
@@ -528,6 +529,18 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
       border: 1px solid rgba(148, 163, 184, 0.3);
       box-shadow: 0 20px 50px rgba(15, 23, 42, 0.9);
       z-index: 1000;
+      animation: fadeInRight 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.5s both;
+    }
+    
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
     
     #article-toc h2 {
@@ -572,7 +585,6 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
     
     #article-toc .level-2 { padding-left: 0; }
     #article-toc .level-3 { padding-left: 1rem; }
-    #article-toc .level-4 { padding-left: 2rem; }
     
     @media (max-width: 1400px) {
       #article-toc { display: none; }
@@ -586,7 +598,7 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
 
 <div class="page-shell">
   <article id="main-article">
-    <!-- TOCコンテナ（自動生成される） -->
+    <!-- TOCコンテナ（自動生成） -->
     <nav id="article-toc"></nav>
     
     <header class="fade-section" data-delay="small">
@@ -947,148 +959,76 @@ const reviewAgent = {
   })();
 
   // ============================
-  // Scroll Fade-in（修正版：初回表示を確実に）
+  // Scroll Fade-in（削除：CSS Animationのみで動作）
   // ============================
-  (function () {
-    const sections = document.querySelectorAll('.fade-section');
-    if (!('IntersectionObserver' in window) || sections.length === 0) {
-      sections.forEach(s => s.classList.add('is-visible'));
-      return;
-    }
-
-    // 初回表示時、画面内にある要素は即座に表示
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        threshold: 0.01, // 0.15 → 0.01 に変更（より早く発動）
-        rootMargin: '0px 0px 0px 0px' // マージンをゼロに
-      }
-    );
-
-    sections.forEach(section => {
-      // 既に画面内にある要素は即座に表示
-      const rect = section.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
-        section.classList.add('is-visible');
-      } else {
-        observer.observe(section);
-      }
-    });
-  })();
+  // IntersectionObserverは使用しない
+  // CSS Animation（@keyframes fadeInUp）で自動的にフェードイン
   
   // ============================
-  // 6. TOC自動生成（修正版：確実に初期化）
+  // TOC自動生成（超シンプル版）
   // ============================
   (function() {
-    'use strict';
-    
+    // DOMが完全に読み込まれてから実行
     function initTOC() {
       const article = document.getElementById('main-article');
       const tocContainer = document.getElementById('article-toc');
       
-      if (!article || !tocContainer) {
-        console.warn('TOC: article or tocContainer not found');
-        return;
-      }
+      if (!article || !tocContainer) return;
       
-      // 少し待ってから実行（DOMが確実に準備されるまで）
-      setTimeout(() => {
-        const headings = article.querySelectorAll('h2, h3');
-        if (headings.length === 0) {
-          console.warn('TOC: No headings found');
-          return;
+      const headings = article.querySelectorAll('h2, h3');
+      if (headings.length === 0) return;
+      
+      // TOCタイトル
+      const title = document.createElement('h2');
+      title.textContent = '目次';
+      tocContainer.appendChild(title);
+      
+      // TOCリスト
+      const list = document.createElement('ul');
+      
+      headings.forEach((heading, index) => {
+        // IDがなければ付与
+        if (!heading.id) {
+          heading.id = `section-${index}`;
         }
         
-        const tocTitle = document.createElement('h2');
-        tocTitle.textContent = '目次';
+        const level = heading.tagName === 'H2' ? 2 : 3;
+        const text = heading.textContent.trim();
         
-        const tocList = document.createElement('ul');
-        let counter = 0;
+        const li = document.createElement('li');
+        li.className = `level-${level}`;
         
-        headings.forEach(heading => {
-          const level = parseInt(heading.tagName.substring(1));
-          const text = heading.textContent?.trim() || '';
-          
-          if (!text) return;
-          
-          let id = heading.id;
-          if (!id) {
-            id = `heading-${counter++}`;
-            heading.id = id;
-          }
-          
-          const li = document.createElement('li');
-          li.className = `level-${level}`;
-          
-          const a = document.createElement('a');
-          a.href = `#${id}`;
-          a.textContent = text;
-          a.dataset.target = id;
-          
-          a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const target = document.getElementById(id);
-            if (target) {
-              target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              });
-            }
-          });
-          
-          li.appendChild(a);
-          tocList.appendChild(li);
-        });
+        const a = document.createElement('a');
+        a.href = `#${heading.id}`;
+        a.textContent = text;
         
-        tocContainer.appendChild(tocTitle);
-        tocContainer.appendChild(tocList);
+        // クリックでスムーススクロール
+        a.onclick = function(e) {
+          e.preventDefault();
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
         
-        initActiveTracking(headings);
-      }, 200); // 100ms → 200ms に増加
-    }
-    
-    function initActiveTracking(headings) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            const id = entry.target.id;
-            const link = document.querySelector(`#article-toc a[data-target="${id}"]`);
-            
-            if (entry.isIntersecting) {
-              document.querySelectorAll('#article-toc a').forEach(a => {
-                a.classList.remove('active');
-              });
-              if (link) {
-                link.classList.add('active');
-              }
-            }
-          });
-        },
-        { rootMargin: '-100px 0px -66% 0px' }
-      );
+        li.appendChild(a);
+        list.appendChild(li);
+      });
       
-      headings.forEach(h => observer.observe(h));
+      tocContainer.appendChild(list);
     }
     
-    // 複数のタイミングで初期化を試みる
+    // 複数のタイミングで試行
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initTOC);
+    } else if (document.readyState === 'interactive') {
+      setTimeout(initTOC, 100);
     } else {
       initTOC();
     }
     
-    // 念のため、window.onloadでも実行
+    // 最終手段
     window.addEventListener('load', function() {
-      // すでにTOCが生成されていなければ実行
-      if (document.getElementById('article-toc').children.length === 0) {
-        initTOC();
+      const toc = document.getElementById('article-toc');
+      if (toc && toc.children.length === 0) {
+        setTimeout(initTOC, 200);
       }
     });
   })();
