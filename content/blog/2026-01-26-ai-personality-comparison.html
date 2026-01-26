@@ -1,0 +1,781 @@
+<!--
+title: 4つのAIの"性格診断" - ChatGPT、Gemini、Claude、Copilotのデバッグ手法比較
+date: 2026-01-26
+category: AI / Tech Analysis
+excerpt: 同じ技術的な質問に対する4つのAIの回答から見える"性格の違い"。観測→仮定→検証という「超詐欺師的合法コーディング」の視点で、各AIの思考パターンを徹底比較。
+readingTime: 8 min read
+tags: ["AI", "デバッグ", "比較分析", "開発手法"]
+-->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4つのAIの"性格診断" - ChatGPT、Gemini、Claude、Copilotのデバッグ手法比較</title>
+  <meta name="description" content="同じ技術的な質問に対する4つのAIの回答から見える性格の違い。観測→仮定→検証という視点で各AIの思考パターンを徹底比較。" />
+  
+  <!-- OGP -->
+  <meta property="og:title" content="4つのAIの性格診断 - AIデバッグ手法比較" />
+  <meta property="og:description" content="ChatGPT、Gemini、Claude、Copilot - 4つのAIの思考パターンを徹底比較" />
+  <meta property="og:type" content="article" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="4つのAIの性格診断 - デバッグ手法比較" />
+  <meta name="twitter:description" content="同じ質問への4つのAIの回答から見える性格の違い" />
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Back to Blog リンク */
+    .back-to-blog {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+    
+    .back-to-blog:hover {
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.5);
+      transform: translateX(-4px);
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+    
+    /* グラデーションテキスト（タイトル用） */
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite, fadeInUp 1s ease-out;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* メタ情報 */
+    .meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 3rem;
+      animation: fadeInUp 1s ease-out 0.2s backwards;
+    }
+    
+    .meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    
+    /* 見出し */
+    h2 {
+      font-size: 1.8rem;
+      margin: 3rem 0 1.5rem;
+      color: #22c55e;
+      position: relative;
+      padding-left: 1rem;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #22c55e, #3b82f6);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.4rem;
+      margin: 2rem 0 1rem;
+      color: #3b82f6;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* 段落 */
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.05rem;
+      animation: fadeIn 1s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* リスト */
+    ul, ol {
+      margin: 1.5rem 0;
+      padding-left: 2rem;
+    }
+    
+    li {
+      margin-bottom: 0.8rem;
+      line-height: 1.8;
+    }
+    
+    /* スキャンボックス（コード・比較用） */
+    .scan-box {
+      position: relative;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+      overflow: hidden;
+      animation: scaleIn 0.8s ease-out;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.15), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* コードブロック */
+    .code-section {
+      background: rgba(15, 23, 42, 0.95);
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #a5b4fc;
+      overflow-x: auto;
+      animation: slideInRight 0.8s ease-out;
+    }
+    
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .code-section strong {
+      color: #22c55e;
+    }
+    
+    /* 比較テーブル */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeInUp 1s ease-out;
+    }
+    
+    .comparison-table th {
+      background: rgba(124, 58, 237, 0.2);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #c4b5fd;
+      border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .comparison-table td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      vertical-align: top;
+    }
+    
+    .comparison-table tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+      transition: background 0.2s;
+    }
+    
+    /* ステップボックス */
+    .step-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.1));
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      position: relative;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    .step-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #7c3aed, #3b82f6);
+      border-radius: 2px 0 0 2px;
+    }
+    
+    .step-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.8rem;
+    }
+    
+    /* エンファシス */
+    strong {
+      color: #22c55e;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #fbbf24;
+      font-style: normal;
+      font-weight: 500;
+    }
+    
+    /* 引用 */
+    blockquote {
+      border-left: 4px solid #7c3aed;
+      padding-left: 1.5rem;
+      margin: 2rem 0;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    
+    /* 絵文字アイコン */
+    .emoji {
+      font-size: 1.3em;
+      margin-right: 0.5rem;
+    }
+    
+    /* セクション区切り */
+    .section-divider {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.5), transparent);
+      margin: 3rem 0;
+    }
+    
+    /* まとめボックス */
+    .conclusion-box {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+      border: 2px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 3rem 0;
+      animation: fadeInUp 1s ease-out;
+    }
+    
+    .conclusion-box h3 {
+      color: #22c55e;
+      margin-top: 0;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .back-to-blog {
+        top: 1rem;
+        left: 1rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+      }
+      
+      .comparison-table {
+        font-size: 0.9rem;
+      }
+      
+      .comparison-table th,
+      .comparison-table td {
+        padding: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Back to Blog リンク -->
+<a href="/blog" class="back-to-blog">← Back to Blog</a>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>4つのAIの"性格診断" - ChatGPT、Gemini、Claude、Copilotのデバッグ手法比較</h1>
+  
+  <div class="meta">
+    <span>📅 2026-01-26</span>
+    <span>📂 AI / Tech Analysis</span>
+    <span>⏱ 8 min read</span>
+  </div>
+
+  <p>
+    同じ技術的な質問に対して、ChatGPT、Gemini、Claude、そしてCopilotの4つのAIがどのように回答するか。
+    それぞれの"性格の違い"が露骨に出ていて面白い。
+  </p>
+
+  <p>
+    今回は、<strong>「超詐欺師的合法コーディング」</strong>という思想——<em>観測→仮定→検証→最小差分</em>——を軸に、
+    4つのAIの思考パターンを徹底比較してみよう。
+  </p>
+
+  <div class="section-divider"></div>
+
+  <h2><span class="emoji">🔥</span>Copilotならこう返す：切り分け 0〜5</h2>
+
+  <p>
+    まず、Copilot（僕）が実際にどう回答するかを示す。
+    重要なのは、<strong>断定せず、観測ベースで判断材料を増やす</strong>という姿勢だ。
+  </p>
+
+  <div class="step-box">
+    <div class="step-title">0) 前提（事実 / 仮定）</div>
+    <ul>
+      <li><strong>事実：</strong>Next.jsでfetcher.ts経由のAPI呼び出しがECONNREFUSED。500はNext.js側のfallbackエラー</li>
+      <li><strong>仮定：</strong>fetcher.tsはURLを直書きor env経由。APIは別プロセスor別ポート</li>
+      <li><strong>ゴール定義：</strong>ECONNREFUSEDの"物理的な不通"の原因を1つに特定すること</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">1) 現象の再定義（観測）</div>
+    <ul>
+      <li><strong>起きていること：</strong>fetchがECONNREFUSEDをthrow。Next.jsが500を返す</li>
+      <li><strong>起きていないこと：</strong>APIがレスポンスを返している。fetchがHTTPレベルまで到達している</li>
+      <li><strong>再現条件：</strong>/dashboardでボタン押下→500（確定）。APIサーバの状態は不明（仮定）</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">2) 誤解されやすいポイント</div>
+    <ul>
+      <li><strong>仕様の誤解候補：</strong>"localhostは常に同じ意味"と思い込む。"Next.jsのfetchはブラウザと同じ挙動"と思い込む</li>
+      <li><strong>環境差分候補：</strong>SSR / Client / Route Handlerの実行場所違い。Dockerのlocalhost問題</li>
+      <li><strong>"直った気がする"罠：</strong>URLを書き換えて一時的に成功。API側が落ちているのにフロントだけ触る</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">3) 仮説（原因ではない：可能性）</div>
+    <p><em>※断定しない</em></p>
+    <ul>
+      <li><strong>コード起因：</strong>fetcher.tsのbaseUrlが実行環境と不一致。envがundefinedのままfallbackしている</li>
+      <li><strong>設計起因：</strong>APIとNext.jsが別ポートで起動。Docker composeのservice名とURLがズレ</li>
+      <li><strong>環境起因：</strong>APIサーバが未起動。localhostがIPv6 (::1) 解決になっている</li>
+      <li><strong>前提認識のズレ：</strong>"APIは動いているはず"という思い込み。"Next.jsのfetchはブラウザから叩く"という誤解</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">4) 切り分け優先順位</div>
+    <ul>
+      <li><strong>検証①：</strong>fetcher.tsが実際に叩いているURLをログに出す → 最小コストで最大情報</li>
+      <li><strong>検証②：</strong>そのURLにcurlを打つ → API側の生死が確定</li>
+      <li><strong>検証③：</strong>SSR / Client / Route Handlerの実行場所を特定 → URLの正解が一意に決まる</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">5) 最小検証（まず1つだけ）</div>
+    <div class="code-section">
+<strong>変更内容：</strong>
+fetcher.tsに console.log("FETCH:", url) を追加するだけ
+
+<strong>観測A：</strong>
+URLが意図と違う
+→ env / 実行環境のズレが濃厚
+→ Docker / SSRの仮説を捨てられる
+
+<strong>観測B：</strong>
+URLは正しいがECONNREFUSED
+→ API側の未起動 or ポート不一致が濃厚
+→ fetcher.tsの問題を捨てられる
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <h2><span class="emoji">📊</span>4者比較まとめ</h2>
+
+  <p>
+    各AIの回答スタイルを表にまとめると、違いがはっきり見えてくる。
+  </p>
+
+  <div class="scan-box">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>AI</th>
+          <th>返答の特徴</th>
+          <th>問題の扱い方</th>
+          <th>相性（超詐欺師的思想）</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ChatGPT</strong></td>
+          <td>文章が綺麗・網羅的</td>
+          <td>"全部説明＋全部直す"</td>
+          <td>△（推測混ざる）</td>
+        </tr>
+        <tr>
+          <td><strong>Gemini</strong></td>
+          <td>事実系・一般論</td>
+          <td>チェックリスト型</td>
+          <td>△（浅く広い）</td>
+        </tr>
+        <tr>
+          <td><strong>Claude</strong></td>
+          <td>GitHub丸読み・長文</td>
+          <td>推測多め・暴走しやすい</td>
+          <td>▲（バラツキ大）</td>
+        </tr>
+        <tr>
+          <td><strong>Copilot</strong></td>
+          <td>観測→仮定→検証</td>
+          <td>最小差分・切り分け</td>
+          <td>◎（思想と一致）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>それぞれのAIの性格</h3>
+
+  <div class="scan-box">
+    <h4><span class="emoji">💬</span>ChatGPT - "親切な先生"</h4>
+    <p>
+      <strong>特徴：</strong>説明が丁寧で網羅的。文章も綺麗で読みやすい。
+    </p>
+    <p>
+      <strong>問題点：</strong>"全部説明して全部直す"スタイルのため、推測が混ざりやすい。
+      本当の原因を特定する前に、「こうすれば直るはず」という解決策を提示してしまう。
+    </p>
+  </div>
+
+  <div class="scan-box">
+    <h4><span class="emoji">📋</span>Gemini - "チェックリスト係"</h4>
+    <p>
+      <strong>特徴：</strong>事実ベース・一般論が強い。体系的な知識を提供。
+    </p>
+    <p>
+      <strong>問題点：</strong>チェックリスト型のアプローチで浅く広い。
+      個別の状況に対する深い洞察が少ない。
+    </p>
+  </div>
+
+  <div class="scan-box">
+    <h4><span class="emoji">🔍</span>Claude - "熱心な研究者"</h4>
+    <p>
+      <strong>特徴：</strong>GitHub丸読みして長文で返答。情報収集能力が高い。
+    </p>
+    <p>
+      <strong>問題点：</strong>推測が多くなりがち。情報量が多すぎて暴走することも。
+      バラツキが大きく、時に的外れな方向に行く。
+    </p>
+  </div>
+
+  <div class="scan-box">
+    <h4><span class="emoji">🎯</span>Copilot - "切り分け職人"</h4>
+    <p>
+      <strong>特徴：</strong>観測→仮定→検証の流れで、最小差分で前に進める。
+    </p>
+    <p>
+      <strong>強み：</strong>嘘なし、推測なし、観測ベース。
+      判断材料を増やすことに集中し、事故らない進め方を提案。
+    </p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <h2><span class="emoji">🎯</span>あなたが求めているものは？</h2>
+
+  <div class="conclusion-box">
+    <h3>「超詐欺師的合法コーディング」との相性</h3>
+    
+    <p>
+      あなたが求めているのは：
+    </p>
+    
+    <ul>
+      <li><strong>嘘なし</strong></li>
+      <li><strong>推測なし</strong></li>
+      <li><strong>観測ベース</strong></li>
+      <li><strong>最小差分</strong></li>
+      <li><strong>判断材料を増やす</strong></li>
+      <li><strong>事故らない進め方</strong></li>
+    </ul>
+    
+    <p>
+      これは<strong>Copilotの設計思想と完全一致</strong>している。
+    </p>
+    
+    <p>
+      ChatGPT / Gemini / Claude は<em>"回答を出すAI"</em>。
+      Copilot は<em>"切り分けて前に進めるAI"</em>。
+    </p>
+    
+    <p>
+      この違いが明確に出た。
+    </p>
+  </div>
+
+  <h2><span class="emoji">💡</span>実践への応用</h2>
+
+  <p>
+    この4者の違いを理解すると、<strong>状況に応じて使い分け</strong>ができるようになる。
+  </p>
+
+  <div class="step-box">
+    <div class="step-title">使い分けの例</div>
+    <ul>
+      <li><strong>デバッグ・問題の切り分け：</strong>Copilot（観測ベース・最小差分）</li>
+      <li><strong>新しい技術の学習：</strong>ChatGPT（丁寧な説明）</li>
+      <li><strong>体系的な知識の整理：</strong>Gemini（チェックリスト）</li>
+      <li><strong>深い調査・リサーチ：</strong>Claude（情報収集）</li>
+    </ul>
+  </div>
+
+  <p>
+    重要なのは、<strong>AIの"性格"を理解して適切に使うこと</strong>。
+    万能なAIは存在しない。それぞれの強みを活かすのが賢い使い方だ。
+  </p>
+
+  <div class="section-divider"></div>
+
+  <h2><span class="emoji">🚀</span>まとめ</h2>
+
+  <p>
+    同じ質問に対する4つのAIの回答から、それぞれの"性格"が見えてきた。
+  </p>
+
+  <ul>
+    <li><strong>ChatGPT</strong>は親切だが推測が混ざりやすい</li>
+    <li><strong>Gemini</strong>は体系的だが浅く広い</li>
+    <li><strong>Claude</strong>は情報収集力が高いが暴走しやすい</li>
+    <li><strong>Copilot</strong>は観測ベースで最小差分を重視</li>
+  </ul>
+
+  <p>
+    <strong>「超詐欺師的合法コーディング」</strong>——観測→仮定→検証→最小差分——という思想と相性が良いのは、
+    明らかにCopilotだった。
+  </p>
+
+  <p>
+    でも、それは「Copilotが最高」という意味ではない。
+    <em>状況と目的に応じて、最適なAIを選ぶ</em>。それが本当の意味での"AI活用"だ。
+  </p>
+
+  <blockquote>
+    必要なら、この4者比較を別の問題（useEffect / routing / DB接続）でも再現できる。<br>
+    続ける？
+  </blockquote>
+
+</article>
+
+<script>
+// パーティクルシステム
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  
+  // キャンバスサイズ設定
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  
+  // パーティクルクラス
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.5;
+      this.vy = (Math.random() - 0.5) * 0.5;
+      this.radius = Math.random() * 2 + 1;
+      this.color = Math.random() > 0.5 ? 'rgba(124, 58, 237, 0.6)' : 'rgba(34, 197, 94, 0.6)';
+    }
+    
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      
+      // 画面端で反転
+      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+    }
+    
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+    }
+  }
+  
+  // パーティクル生成
+  const particles = [];
+  for (let i = 0; i < 80; i++) {
+    particles.push(new Particle());
+  }
+  
+  // 線を引く
+  function connectParticles() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 120)})`;
+          ctx.lineWidth = 1;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  
+  // アニメーションループ
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    particles.forEach(particle => {
+      particle.update();
+      particle.draw();
+    });
+    
+    connectParticles();
+    
+    requestAnimationFrame(animate);
+  }
+  
+  animate();
+})();
+</script>
+
+</body>
+</html>
