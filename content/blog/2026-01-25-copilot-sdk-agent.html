@@ -510,6 +510,73 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
         padding: 2.4rem 1.6rem;
       }
     }
+    
+    /* ---------------------------------------------------------
+       TOC（目次）自動生成スタイル
+    --------------------------------------------------------- */
+    #article-toc {
+      position: fixed;
+      right: 2rem;
+      top: 100px;
+      width: 250px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.9);
+      z-index: 1000;
+    }
+    
+    #article-toc h2 {
+      font-size: 1.1rem;
+      margin: 0 0 1rem 0;
+      color: #7c3aed;
+      border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+      padding-bottom: 0.5rem;
+    }
+    
+    #article-toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #article-toc li {
+      margin: 0.5rem 0;
+    }
+    
+    #article-toc a {
+      color: rgba(226, 232, 240, 0.7);
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    
+    #article-toc a:hover {
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    
+    #article-toc a.active {
+      color: #7c3aed;
+      background: rgba(124, 58, 237, 0.2);
+      border-left: 3px solid #7c3aed;
+      padding-left: calc(0.5rem - 3px);
+    }
+    
+    #article-toc .level-2 { padding-left: 0; }
+    #article-toc .level-3 { padding-left: 1rem; }
+    #article-toc .level-4 { padding-left: 2rem; }
+    
+    @media (max-width: 1400px) {
+      #article-toc { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -518,7 +585,10 @@ tags: ["GitHub Copilot SDK", "Agent", "Code Review", "LLM", "設計思想", "判
 <div class="scanline-overlay"></div>
 
 <div class="page-shell">
-  <article>
+  <article id="main-article">
+    <!-- TOCコンテナ（自動生成される） -->
+    <nav id="article-toc"></nav>
+    
     <header class="fade-section" data-delay="small">
       <div class="hero-block">
         <div class="hero-orbit"></div>
@@ -902,6 +972,95 @@ const reviewAgent = {
     );
 
     sections.forEach(section => observer.observe(section));
+  })();
+  
+  // ============================
+  // 6. TOC自動生成
+  // ============================
+  (function() {
+    'use strict';
+    
+    function initTOC() {
+      const article = document.getElementById('main-article');
+      const tocContainer = document.getElementById('article-toc');
+      
+      if (!article || !tocContainer) return;
+      
+      setTimeout(() => {
+        const headings = article.querySelectorAll('h2, h3');
+        if (headings.length === 0) return;
+        
+        const tocTitle = document.createElement('h2');
+        tocTitle.textContent = '目次';
+        
+        const tocList = document.createElement('ul');
+        let counter = 0;
+        
+        headings.forEach(heading => {
+          const level = parseInt(heading.tagName.substring(1));
+          const text = heading.textContent?.trim() || '';
+          
+          if (!text) return;
+          
+          let id = heading.id;
+          if (!id) {
+            id = `heading-${counter++}`;
+            heading.id = id;
+          }
+          
+          const li = document.createElement('li');
+          li.className = `level-${level}`;
+          
+          const a = document.createElement('a');
+          a.href = `#${id}`;
+          a.textContent = text;
+          a.dataset.target = id;
+          
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById(id)?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            });
+          });
+          
+          li.appendChild(a);
+          tocList.appendChild(li);
+        });
+        
+        tocContainer.appendChild(tocTitle);
+        tocContainer.appendChild(tocList);
+        
+        initActiveTracking(headings);
+      }, 100);
+    }
+    
+    function initActiveTracking(headings) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            const id = entry.target.id;
+            const link = document.querySelector(`#article-toc a[data-target="${id}"]`);
+            
+            if (entry.isIntersecting) {
+              document.querySelectorAll('#article-toc a').forEach(a => {
+                a.classList.remove('active');
+              });
+              link?.classList.add('active');
+            }
+          });
+        },
+        { rootMargin: '-100px 0px -66% 0px' }
+      );
+      
+      headings.forEach(h => observer.observe(h));
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTOC);
+    } else {
+      initTOC();
+    }
   })();
 </script>
 </body>
