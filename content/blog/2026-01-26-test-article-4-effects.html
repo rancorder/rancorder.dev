@@ -1,0 +1,506 @@
+<!--
+title: テスト記事4 - 動くエフェクト満載版
+date: 2026-01-26
+category: テスト
+excerpt: パーティクル、グラデーション、スライドイン、バウンス、パルスなど、派手なエフェクトをふんだんに使ったテスト記事です。
+tags: ["エフェクト", "アニメーション", "パーティクル", "ビジュアル"]
+readingTime: 7 min read
+-->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テスト記事4 - 動くエフェクト満載版</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      overflow-x: hidden;
+    }
+    
+    /* パーティクル背景 */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ヒーローセクション */
+    .hero {
+      text-align: center;
+      padding: 4rem 0;
+      position: relative;
+    }
+    
+    .hero h1 {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6, #ec4899);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 5s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .hero p {
+      font-size: 1.2rem;
+      color: #888;
+      animation: fadeInUp 1s ease-out 0.5s both;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* グロー効果のある見出し */
+    h2 {
+      font-size: 2.5rem;
+      margin: 3rem 0 1.5rem;
+      color: #7c3aed;
+      text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.02); }
+    }
+    
+    h3 {
+      font-size: 1.8rem;
+      margin: 2rem 0 1rem;
+      color: #22c55e;
+      position: relative;
+      padding-left: 2rem;
+    }
+    
+    h3::before {
+      content: '▶';
+      position: absolute;
+      left: 0;
+      color: #22c55e;
+      animation: bounce 1s ease infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(10px); }
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.1));
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 2rem 0;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* グラデーションカード */
+    .gradient-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin: 2rem 0;
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+      animation: floatUp 3s ease-in-out infinite;
+    }
+    
+    @keyframes floatUp {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    /* ネオン効果のボタン */
+    .neon-button {
+      display: inline-block;
+      padding: 1rem 2rem;
+      margin: 1rem 0;
+      background: transparent;
+      border: 2px solid #7c3aed;
+      border-radius: 50px;
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+    }
+    
+    .neon-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.5), transparent);
+      transition: left 0.5s;
+    }
+    
+    .neon-button:hover::before {
+      left: 100%;
+    }
+    
+    .neon-button:hover {
+      background: #7c3aed;
+      color: #fff;
+      box-shadow: 0 0 40px rgba(124, 58, 237, 0.8);
+      transform: translateY(-2px);
+    }
+    
+    /* 回転する装飾 */
+    .rotating-icon {
+      display: inline-block;
+      font-size: 3rem;
+      animation: rotate 4s linear infinite;
+      filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.8));
+    }
+    
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 波打つテキスト */
+    .wave-text {
+      display: inline-block;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    
+    .wave-text span {
+      display: inline-block;
+      animation: wave 1.5s ease-in-out infinite;
+    }
+    
+    .wave-text span:nth-child(1) { animation-delay: 0s; }
+    .wave-text span:nth-child(2) { animation-delay: 0.1s; }
+    .wave-text span:nth-child(3) { animation-delay: 0.2s; }
+    .wave-text span:nth-child(4) { animation-delay: 0.3s; }
+    .wave-text span:nth-child(5) { animation-delay: 0.4s; }
+    
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    /* 虹色のセパレーター */
+    .rainbow-separator {
+      height: 4px;
+      background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+      background-size: 200% 100%;
+      margin: 3rem 0;
+      animation: rainbowScroll 3s linear infinite;
+    }
+    
+    @keyframes rainbowScroll {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    
+    /* パルス効果のバッジ */
+    .pulse-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #22c55e;
+      color: #000;
+      border-radius: 20px;
+      font-weight: 700;
+      animation: pulseBadge 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulseBadge {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0);
+      }
+    }
+    
+    /* スキャンライン効果 */
+    .scan-box {
+      position: relative;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+      overflow: hidden;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+      animation: scan 3s linear infinite;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+
+  <!-- ヒーローセクション -->
+  <div class="hero">
+    <h1>🎨 エフェクト満載</h1>
+    <p>派手なアニメーションとビジュアルエフェクトのショーケース</p>
+  </div>
+
+  <!-- 虹色セパレーター -->
+  <div class="rainbow-separator"></div>
+
+  <!-- セクション1: グラデーションと動き -->
+  <h2>✨ グラデーション & アニメーション</h2>
+  
+  <div class="gradient-card">
+    <h3>フローティングカード</h3>
+    <p>
+      このカードは上下に浮遊しています。
+      美しいグラデーションと影効果で立体感を演出。
+    </p>
+    <span class="pulse-badge">NEW</span>
+  </div>
+
+  <div class="slide-box">
+    <h3>スライドインボックス</h3>
+    <p>
+      左からスライドインするボックスです。
+      読み込み時に自動的にアニメーションします。
+    </p>
+  </div>
+
+  <!-- 虹色セパレーター -->
+  <div class="rainbow-separator"></div>
+
+  <!-- セクション2: インタラクティブ要素 -->
+  <h2>🎯 インタラクティブ要素</h2>
+  
+  <div style="text-align: center; margin: 3rem 0;">
+    <a href="#" class="neon-button">ネオンボタン（ホバーしてみて）</a>
+  </div>
+
+  <div style="text-align: center; margin: 3rem 0;">
+    <span class="rotating-icon">⚙️</span>
+    <p style="margin-top: 1rem;">回転するアイコン</p>
+  </div>
+
+  <!-- 虹色セパレーター -->
+  <div class="rainbow-separator"></div>
+
+  <!-- セクション3: テキストエフェクト -->
+  <h2>📝 テキストエフェクト</h2>
+  
+  <div style="text-align: center; margin: 3rem 0;">
+    <div class="wave-text">
+      <span>W</span>
+      <span>A</span>
+      <span>V</span>
+      <span>E</span>
+      <span>!</span>
+    </div>
+    <p style="margin-top: 1rem;">波打つテキスト</p>
+  </div>
+
+  <div class="scan-box">
+    <h3>スキャンライン効果</h3>
+    <p>
+      SF映画のようなスキャンライン効果。
+      ライトが上から下へ流れます。
+    </p>
+  </div>
+
+  <!-- 虹色セパレーター -->
+  <div class="rainbow-separator"></div>
+
+  <!-- セクション4: 確認項目 -->
+  <h2>✅ 確認すべきエフェクト</h2>
+  
+  <ul style="list-style: none; padding: 0;">
+    <li style="margin: 1rem 0;">✅ パーティクルが背景で動いている</li>
+    <li style="margin: 1rem 0;">✅ タイトルのグラデーションが変化する</li>
+    <li style="margin: 1rem 0;">✅ h2見出しがパルスする</li>
+    <li style="margin: 1rem 0;">✅ h3見出しの矢印がバウンスする</li>
+    <li style="margin: 1rem 0;">✅ グラデーションカードが浮遊する</li>
+    <li style="margin: 1rem 0;">✅ ネオンボタンがホバーで光る</li>
+    <li style="margin: 1rem 0;">✅ アイコンが回転する</li>
+    <li style="margin: 1rem 0;">✅ WAVEテキストが波打つ</li>
+    <li style="margin: 1rem 0;">✅ 虹色セパレーターが流れる</li>
+    <li style="margin: 1rem 0;">✅ スキャンラインが動く</li>
+    <li style="margin: 1rem 0;">✅ NEWバッジがパルスする</li>
+  </ul>
+
+  <div style="text-align: center; margin: 4rem 0;">
+    <h2>🎉 完璧！</h2>
+    <p style="font-size: 1.2rem; margin-top: 1rem;">
+      すべてのエフェクトが動いていれば成功です！
+    </p>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  // ===================================
+  // パーティクルシステム
+  // ===================================
+  
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+  
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 3 + 1;
+      this.speedX = Math.random() * 2 - 1;
+      this.speedY = Math.random() * 2 - 1;
+      this.color = this.randomColor();
+    }
+    
+    randomColor() {
+      const colors = [
+        'rgba(124, 58, 237, 0.5)',
+        'rgba(34, 197, 94, 0.5)',
+        'rgba(59, 130, 246, 0.5)',
+        'rgba(236, 72, 153, 0.5)'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      
+      if (this.x > canvas.width || this.x < 0) {
+        this.speedX *= -1;
+      }
+      
+      if (this.y > canvas.height || this.y < 0) {
+        this.speedY *= -1;
+      }
+    }
+    
+    draw() {
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  const particles = [];
+  for (let i = 0; i < 100; i++) {
+    particles.push(new Particle());
+  }
+  
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    particles.forEach(particle => {
+      particle.update();
+      particle.draw();
+    });
+    
+    // パーティクル同士を線で繋ぐ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 150) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${1 - distance / 150})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(animate);
+  }
+  
+  animate();
+  
+})();
+</script>
+
+</body>
+</html>
