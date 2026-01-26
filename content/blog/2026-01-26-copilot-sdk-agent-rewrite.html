@@ -947,7 +947,7 @@ const reviewAgent = {
   })();
 
   // ============================
-  // Scroll Fade-in
+  // Scroll Fade-in（修正版：初回表示を確実に）
   // ============================
   (function () {
     const sections = document.querySelectorAll('.fade-section');
@@ -956,6 +956,7 @@ const reviewAgent = {
       return;
     }
 
+    // 初回表示時、画面内にある要素は即座に表示
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
@@ -966,16 +967,24 @@ const reviewAgent = {
         });
       },
       {
-        threshold: 0.15,
-        rootMargin: '0px 0px -10% 0px'
+        threshold: 0.01, // 0.15 → 0.01 に変更（より早く発動）
+        rootMargin: '0px 0px 0px 0px' // マージンをゼロに
       }
     );
 
-    sections.forEach(section => observer.observe(section));
+    sections.forEach(section => {
+      // 既に画面内にある要素は即座に表示
+      const rect = section.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        section.classList.add('is-visible');
+      } else {
+        observer.observe(section);
+      }
+    });
   })();
   
   // ============================
-  // 6. TOC自動生成
+  // 6. TOC自動生成（修正版：確実に初期化）
   // ============================
   (function() {
     'use strict';
@@ -984,11 +993,18 @@ const reviewAgent = {
       const article = document.getElementById('main-article');
       const tocContainer = document.getElementById('article-toc');
       
-      if (!article || !tocContainer) return;
+      if (!article || !tocContainer) {
+        console.warn('TOC: article or tocContainer not found');
+        return;
+      }
       
+      // 少し待ってから実行（DOMが確実に準備されるまで）
       setTimeout(() => {
         const headings = article.querySelectorAll('h2, h3');
-        if (headings.length === 0) return;
+        if (headings.length === 0) {
+          console.warn('TOC: No headings found');
+          return;
+        }
         
         const tocTitle = document.createElement('h2');
         tocTitle.textContent = '目次';
@@ -1018,10 +1034,13 @@ const reviewAgent = {
           
           a.addEventListener('click', (e) => {
             e.preventDefault();
-            document.getElementById(id)?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
+            const target = document.getElementById(id);
+            if (target) {
+              target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }
           });
           
           li.appendChild(a);
@@ -1032,7 +1051,7 @@ const reviewAgent = {
         tocContainer.appendChild(tocList);
         
         initActiveTracking(headings);
-      }, 100);
+      }, 200); // 100ms → 200ms に増加
     }
     
     function initActiveTracking(headings) {
@@ -1046,7 +1065,9 @@ const reviewAgent = {
               document.querySelectorAll('#article-toc a').forEach(a => {
                 a.classList.remove('active');
               });
-              link?.classList.add('active');
+              if (link) {
+                link.classList.add('active');
+              }
             }
           });
         },
@@ -1056,11 +1077,20 @@ const reviewAgent = {
       headings.forEach(h => observer.observe(h));
     }
     
+    // 複数のタイミングで初期化を試みる
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initTOC);
     } else {
       initTOC();
     }
+    
+    // 念のため、window.onloadでも実行
+    window.addEventListener('load', function() {
+      // すでにTOCが生成されていなければ実行
+      if (document.getElementById('article-toc').children.length === 0) {
+        initTOC();
+      }
+    });
   })();
 </script>
 </body>
