@@ -1,17 +1,24 @@
-// app/blog/[slug]/page.tsx
 'use client';
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
-export default function BlogPost() {
+// ===================================
+// グローバル型定義を拡張
+// ===================================
+declare global {
+  interface Window {
+    reinitBlogArticle?: () => void;
+  }
+}
+
+export default function BlogPost(props: any) {
   const params = useParams();
   
+  // ページ遷移時に記事を再初期化
   useEffect(() => {
-    // ページ遷移時に記事を再初期化
     console.log('📄 Blog post mounted, reinitializing...');
     
-    // 少し待ってから実行（DOMが確実に準備されるまで）
     const timer = setTimeout(() => {
       // グローバル関数を呼び出し
       if (typeof window.reinitBlogArticle === 'function') {
@@ -25,12 +32,16 @@ export default function BlogPost() {
     return () => {
       clearTimeout(timer);
     };
-  }, [params.slug]); // slugが変わるたびに再実行
+  }, [params.slug]);
   
-  // 既存のコード（dangerouslySetInnerHTMLなど）
+  // ====================================
+  // 既存のコード（ここから下は既存を維持）
+  // ====================================
+  
+  // 例：既存のreturn文
   return (
     <div>
-      {/* 記事HTML */}
+      {/* 既存のJSX */}
     </div>
   );
 }
