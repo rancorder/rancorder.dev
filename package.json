@@ -7,7 +7,11 @@
     "prebuild": "node scripts/fetch-external-articles.js",
     "build": "node scripts/fetch-external-articles.js && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "qa": "node scripts/frontmatter-qa.js content/blog/",
+    "qa:file": "node scripts/frontmatter-qa.js",
+    "preview": "node scripts/blog-preview-server.js content/blog/",
+    "preview:port": "node scripts/blog-preview-server.js content/blog/ --port"
   },
   "dependencies": {
     "next": "^14.2.35",
