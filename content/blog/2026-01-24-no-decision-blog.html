@@ -323,6 +323,57 @@ tags: ["Architecture", "静的サイト", "意思決定設計", "Next.js"]
     }
   </style>
 </head>
+  <!-- ===================================
+       Back to Blog リンク
+       =================================== -->
+  <style>
+    .back-to-blog {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .back-to-blog:hover {
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.5);
+      transform: translateX(-4px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.2);
+    }
+    
+    .back-to-blog::before {
+      content: '←';
+      font-size: 1.2rem;
+    }
+    
+    @media (max-width: 768px) {
+      .back-to-blog {
+        position: static;
+        display: inline-flex;
+        margin: 1rem 1rem 0 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="/blog" class="back-to-blog" aria-label="ブログ一覧に戻る">
+    Back to Blog
+  </a>
+  
 <body>
 <article aria-label="記事本文">
 
