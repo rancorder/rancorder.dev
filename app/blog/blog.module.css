@@ -1,4 +1,4 @@
-/* app/blog/blog.module.css - モバイル完全対応版 */
+/* app/blog/blog.module.css - モバイル完全対応版 + ハンバーガーメニュー */
 
 .blogPage {
   min-height: 100vh;
@@ -25,6 +25,7 @@
   text-align: center;
   padding: clamp(2rem, 8vw, 4rem) 0 clamp(2rem, 6vw, 3rem);
   width: 100%;
+  position: relative;
 }
 
 .backLink {
@@ -287,6 +288,176 @@
   background: rgba(16, 185, 129, 0.3);
   border-color: #10b981;
   color: #fff;
+}
+
+/* ============================================
+   Mobile Menu - ハンバーガーメニュー
+   ============================================ */
+.mobileMenuButton {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  .mobileMenuButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* PC用フィルタを非表示 */
+  .desktopFilters {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) {
+  /* モバイルメニューを非表示 */
+  .mobileMenuButton,
+  .menuOverlay,
+  .mobileMenuPanel {
+    display: none !important;
+  }
+}
+
+.mobileMenuButton:hover {
+  background: rgba(96, 165, 250, 0.3);
+  border-color: #60a5fa;
+}
+
+.mobileMenuButton:active {
+  transform: scale(0.95);
+}
+
+.hamburgerIcon {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 24px;
+}
+
+.hamburgerIcon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #93c5fd;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* オーバーレイ */
+.menuOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1001;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* メニューパネル */
+.mobileMenuPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 85%;
+  max-width: 400px;
+  height: 100%;
+  background: var(--bg);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1002;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.menuHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.menuTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.menuCloseButton {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  border-radius: 6px;
+  padding: 0;
+}
+
+.menuCloseButton:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.menuCloseButton:active {
+  transform: scale(0.95);
+}
+
+.menuContent {
+  padding: 1.5rem;
+}
+
+/* メニュー内のセクションの間隔調整 */
+.mobileMenuPanel .tagsSection,
+.mobileMenuPanel .categoriesSection {
+  margin-bottom: 2rem;
+}
+
+.mobileMenuPanel .tagsSection:last-child,
+.mobileMenuPanel .categoriesSection:last-child {
+  margin-bottom: 0;
 }
 
 /* ============================================
@@ -571,9 +742,10 @@
   .categoryButton,
   .filterTag,
   .resetButton,
-  .emptyButton {
+  .emptyButton,
+  .mobileMenuButton,
+  .menuCloseButton {
     min-height: 44px;
-    min-width: 44px;
   }
 }
 
@@ -618,4 +790,14 @@
 [data-theme='light'] .categoryButton:hover {
   background: rgba(124, 58, 237, 0.05);
   border-color: var(--accent);
+}
+
+[data-theme='light'] .mobileMenuPanel {
+  background: var(--bg);
+  border-left-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-theme='light'] .menuHeader {
+  background: var(--bg);
+  border-bottom-color: rgba(15, 23, 42, 0.1);
 }
