@@ -125,6 +125,61 @@ export default function BlogPageClient({
 
   const hasActiveFilters = searchQuery || selectedTag || selectedCategory;
 
+  // Tags/Categories セクションのレンダリング（再利用）
+  const renderFilters = (inMobileMenu = false) => (
+    <>
+      {/* タグクラウド */}
+      {allTags.length > 0 && (
+        <section className={styles.tagsSection}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.titleIcon}>🏷️</span>
+            Popular Tags
+          </h2>
+          <div className={styles.tagCloud}>
+            {allTags.slice(0, 20).map(({ tag, count }) => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setSelectedTag(selectedTag === tag ? null : tag);
+                  if (inMobileMenu) setIsMobileMenuOpen(false);
+                }}
+                className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
+              >
+                {tag} <span className={styles.tagCount}>({count})</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* カテゴリフィルタ */}
+      {allCategories.length > 0 && (
+        <section className={styles.categoriesSection}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.titleIcon}>📁</span>
+            Categories
+          </h2>
+          <div className={styles.categoryList}>
+            {allCategories.map(category => (
+              <button
+                key={category}
+                onClick={() => {
+                  setSelectedCategory(selectedCategory === category ? null : category);
+                  if (inMobileMenu) setIsMobileMenuOpen(false);
+                }}
+                className={`${styles.categoryButton} ${
+                  selectedCategory === category ? styles.categoryActive : ''
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+
   return (
     <div className={styles.blogPage}>
       <div className={styles.container}>
@@ -211,53 +266,125 @@ export default function BlogPageClient({
           )}
         </div>
 
-        {/* PC：従来通り表示 */}
-        <div className={styles.desktopFilters}>
-          {/* タグクラウド */}
-          {allTags.length > 0 && (
-            <section className={styles.tagsSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.titleIcon}>🏷️</span>
-                Popular Tags
-              </h2>
-              <div className={styles.tagCloud}>
-                {allTags.slice(0, 20).map(({ tag, count }) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                    className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
-                  >
-                    {tag} <span className={styles.tagCount}>({count})</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+        {/* タブレット以下：上部表示 */}
+        <div className={styles.tabletFilters}>
+          {renderFilters()}
+        </div>
 
-          {/* カテゴリフィルタ */}
-          {allCategories.length > 0 && (
-            <section className={styles.categoriesSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.titleIcon}>📁</span>
-                Categories
-              </h2>
-              <div className={styles.categoryList}>
-                {allCategories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() =>
-                      setSelectedCategory(selectedCategory === category ? null : category)
-                    }
-                    className={`${styles.categoryButton} ${
-                      selectedCategory === category ? styles.categoryActive : ''
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
+        {/* PC：2カラムレイアウト（≥1024px） */}
+        <div className={styles.desktopLayout}>
+          {/* メインコンテンツ */}
+          <div className={styles.mainContent}>
+            {/* Featured Articles（内部記事） */}
+            <section className={styles.section}>
+              <div className={styles.articleHeader}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.titleIcon}>📝</span>
+                  {hasActiveFilters ? 'Search Results' : 'Featured Articles'}
+                </h2>
+                <span className={styles.resultCount}>
+                  {filteredPosts.length} {filteredPosts.length === 1 ? 'article' : 'articles'}
+                </span>
               </div>
+
+              {filteredPosts.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyIcon}>🔍</p>
+                  <p className={styles.emptyText}>No articles found matching your filters.</p>
+                  <button onClick={resetFilters} className={styles.emptyButton}>
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.grid}>
+                  {filteredPosts.map(post => (
+                    <Link key={post.slug} href={`/blog/${post.slug}`} className={styles.featuredCard}>
+                      <div className={styles.cardMeta}>
+                        <span className={styles.category}>{post.category}</span>
+                        <span className={styles.date}>{formatDateSafe(post.date) || ''}</span>
+                      </div>
+                      <h3 className={styles.cardTitle}>{post.title}</h3>
+                      <p className={styles.cardExcerpt}>{post.excerpt}</p>
+
+                      {/* タグ表示 */}
+                      {post.tags.length > 0 && (
+                        <div className={styles.cardTags}>
+                          {post.tags.slice(0, 3).map(tag => (
+                            <span key={tag} className={styles.cardTag}>
+                              {tag}
+                            </span>
+                          ))}
+                          {post.tags.length > 3 && (
+                            <span className={styles.cardTag}>+{post.tags.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className={styles.cardFooter}>
+                        <span className={styles.readTime}>{post.readingTime}</span>
+                        <span className={styles.arrow}>→</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </section>
-          )}
+
+            {/* External Articles（Qiita/Zenn/note/...） */}
+            {externalArticles.length > 0 && (
+              <section className={styles.section}>
+                <div className={styles.externalHeader}>
+                  <h2 className={styles.sectionTitle}>External Articles</h2>
+                  <p className={styles.externalSubtitle}>Recent articles published on external platforms</p>
+                </div>
+
+                <div className={styles.externalGrid}>
+                  {externalArticles.map((article, idx) => {
+                    const href = getExternalHref(article);
+                    if (!href) return null;
+
+                    const sourceLabel = normalizeSourceLabel(article.source);
+                    const dateLabel = formatDateSafe(article.date);
+
+                    return (
+                      <a
+                        key={getExternalKey(article, idx)}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className={styles.externalCard}
+                      >
+                        <div className={styles.externalCardHeader}>
+                          <span
+                            className={`${styles.platformBadge} ${
+                              styles[toPlatformClass(article.source)] || ''
+                            }`}
+                          >
+                            {sourceLabel}
+                          </span>
+
+                          {dateLabel && <span className={styles.externalDate}>{dateLabel}</span>}
+                        </div>
+
+                        <h3 className={styles.externalTitle}>{article.title || '(Untitled)'}</h3>
+
+                        {article.excerpt && <p className={styles.externalExcerpt}>{article.excerpt}</p>}
+
+                        <div className={styles.externalFooter}>
+                          <span className={styles.externalLink}>Read on {sourceLabel} →</span>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* サイドバー（PC のみ表示） */}
+          <aside className={styles.sidebar}>
+            {renderFilters()}
+          </aside>
         </div>
 
         {/* モバイルメニュー */}
@@ -283,163 +410,10 @@ export default function BlogPageClient({
               </div>
 
               <div className={styles.menuContent}>
-                {/* タグ */}
-                {allTags.length > 0 && (
-                  <section className={styles.tagsSection}>
-                    <h2 className={styles.sectionTitle}>
-                      <span className={styles.titleIcon}>🏷️</span>
-                      Popular Tags
-                    </h2>
-                    <div className={styles.tagCloud}>
-                      {allTags.slice(0, 20).map(({ tag, count }) => (
-                        <button
-                          key={tag}
-                          onClick={() => {
-                            setSelectedTag(selectedTag === tag ? null : tag);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
-                        >
-                          {tag} <span className={styles.tagCount}>({count})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* カテゴリ */}
-                {allCategories.length > 0 && (
-                  <section className={styles.categoriesSection}>
-                    <h2 className={styles.sectionTitle}>
-                      <span className={styles.titleIcon}>📁</span>
-                      Categories
-                    </h2>
-                    <div className={styles.categoryList}>
-                      {allCategories.map(category => (
-                        <button
-                          key={category}
-                          onClick={() => {
-                            setSelectedCategory(selectedCategory === category ? null : category);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`${styles.categoryButton} ${
-                            selectedCategory === category ? styles.categoryActive : ''
-                          }`}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                {renderFilters(true)}
               </div>
             </div>
           </>
-        )}
-
-        {/* Featured Articles（内部記事） */}
-        <section className={styles.section}>
-          <div className={styles.articleHeader}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.titleIcon}>📝</span>
-              {hasActiveFilters ? 'Search Results' : 'Featured Articles'}
-            </h2>
-            <span className={styles.resultCount}>
-              {filteredPosts.length} {filteredPosts.length === 1 ? 'article' : 'articles'}
-            </span>
-          </div>
-
-          {filteredPosts.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p className={styles.emptyIcon}>🔍</p>
-              <p className={styles.emptyText}>No articles found matching your filters.</p>
-              <button onClick={resetFilters} className={styles.emptyButton}>
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <div className={styles.grid}>
-              {filteredPosts.map(post => (
-                <Link key={post.slug} href={`/blog/${post.slug}`} className={styles.featuredCard}>
-                  <div className={styles.cardMeta}>
-                    <span className={styles.category}>{post.category}</span>
-                    <span className={styles.date}>{formatDateSafe(post.date) || ''}</span>
-                  </div>
-                  <h3 className={styles.cardTitle}>{post.title}</h3>
-                  <p className={styles.cardExcerpt}>{post.excerpt}</p>
-
-                  {/* タグ表示 */}
-                  {post.tags.length > 0 && (
-                    <div className={styles.cardTags}>
-                      {post.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className={styles.cardTag}>
-                          {tag}
-                        </span>
-                      ))}
-                      {post.tags.length > 3 && (
-                        <span className={styles.cardTag}>+{post.tags.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className={styles.cardFooter}>
-                    <span className={styles.readTime}>{post.readingTime}</span>
-                    <span className={styles.arrow}>→</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* External Articles（Qiita/Zenn/note/...） */}
-        {externalArticles.length > 0 && (
-          <section className={styles.section}>
-            <div className={styles.externalHeader}>
-              <h2 className={styles.sectionTitle}>External Articles</h2>
-              <p className={styles.externalSubtitle}>Recent articles published on external platforms</p>
-            </div>
-
-            <div className={styles.externalGrid}>
-              {externalArticles.map((article, idx) => {
-                const href = getExternalHref(article);
-                if (!href) return null;
-
-                const sourceLabel = normalizeSourceLabel(article.source);
-                const dateLabel = formatDateSafe(article.date);
-
-                return (
-                  <a
-                    key={getExternalKey(article, idx)}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className={styles.externalCard}
-                  >
-                    <div className={styles.externalCardHeader}>
-                      <span
-                        className={`${styles.platformBadge} ${
-                          styles[toPlatformClass(article.source)] || ''
-                        }`}
-                      >
-                        {sourceLabel}
-                      </span>
-
-                      {dateLabel && <span className={styles.externalDate}>{dateLabel}</span>}
-                    </div>
-
-                    <h3 className={styles.externalTitle}>{article.title || '(Untitled)'}</h3>
-
-                    {article.excerpt && <p className={styles.externalExcerpt}>{article.excerpt}</p>}
-
-                    <div className={styles.externalFooter}>
-                      <span className={styles.externalLink}>Read on {sourceLabel} →</span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </section>
         )}
       </div>
     </div>
