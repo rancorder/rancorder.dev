@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './blog.module.css';
 
@@ -70,6 +70,19 @@ export default function BlogPageClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // モバイルメニュー開閉時のスクロールロック
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   // フィルタリングロジック
   const filteredPosts = useMemo(() => {
@@ -120,6 +133,20 @@ export default function BlogPageClient({
           <Link href="/" className={styles.backLink}>
             ← Back to Home
           </Link>
+
+          {/* ハンバーガーボタン（モバイルのみ表示） */}
+          <button
+            className={styles.mobileMenuButton}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
+          >
+            <span className={styles.hamburgerIcon}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </button>
+
           <h1 className={styles.title}>Technical Blog</h1>
           <p className={styles.subtitle}>
             Deep dives into enterprise PM, decision design, and production-grade systems
@@ -184,50 +211,130 @@ export default function BlogPageClient({
           )}
         </div>
 
-        {/* タグクラウド */}
-        {allTags.length > 0 && (
-          <section className={styles.tagsSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.titleIcon}>🏷️</span>
-              Popular Tags
-            </h2>
-            <div className={styles.tagCloud}>
-              {allTags.slice(0, 20).map(({ tag, count }) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                  className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
-                >
-                  {tag} <span className={styles.tagCount}>({count})</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* PC：従来通り表示 */}
+        <div className={styles.desktopFilters}>
+          {/* タグクラウド */}
+          {allTags.length > 0 && (
+            <section className={styles.tagsSection}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.titleIcon}>🏷️</span>
+                Popular Tags
+              </h2>
+              <div className={styles.tagCloud}>
+                {allTags.slice(0, 20).map(({ tag, count }) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
+                  >
+                    {tag} <span className={styles.tagCount}>({count})</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
-        {/* カテゴリフィルタ */}
-        {allCategories.length > 0 && (
-          <section className={styles.categoriesSection}>
-            <h2 className={styles.sectionTitle}>
-              <span className={styles.titleIcon}>📁</span>
-              Categories
-            </h2>
-            <div className={styles.categoryList}>
-              {allCategories.map(category => (
+          {/* カテゴリフィルタ */}
+          {allCategories.length > 0 && (
+            <section className={styles.categoriesSection}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.titleIcon}>📁</span>
+                Categories
+              </h2>
+              <div className={styles.categoryList}>
+                {allCategories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() =>
+                      setSelectedCategory(selectedCategory === category ? null : category)
+                    }
+                    className={`${styles.categoryButton} ${
+                      selectedCategory === category ? styles.categoryActive : ''
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* モバイルメニュー */}
+        {isMobileMenuOpen && (
+          <>
+            {/* オーバーレイ */}
+            <div
+              className={styles.menuOverlay}
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+
+            {/* メニューパネル */}
+            <div className={styles.mobileMenuPanel}>
+              <div className={styles.menuHeader}>
+                <h2 className={styles.menuTitle}>Filters</h2>
                 <button
-                  key={category}
-                  onClick={() =>
-                    setSelectedCategory(selectedCategory === category ? null : category)
-                  }
-                  className={`${styles.categoryButton} ${
-                    selectedCategory === category ? styles.categoryActive : ''
-                  }`}
+                  className={styles.menuCloseButton}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close menu"
                 >
-                  {category}
+                  ✕
                 </button>
-              ))}
+              </div>
+
+              <div className={styles.menuContent}>
+                {/* タグ */}
+                {allTags.length > 0 && (
+                  <section className={styles.tagsSection}>
+                    <h2 className={styles.sectionTitle}>
+                      <span className={styles.titleIcon}>🏷️</span>
+                      Popular Tags
+                    </h2>
+                    <div className={styles.tagCloud}>
+                      {allTags.slice(0, 20).map(({ tag, count }) => (
+                        <button
+                          key={tag}
+                          onClick={() => {
+                            setSelectedTag(selectedTag === tag ? null : tag);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
+                        >
+                          {tag} <span className={styles.tagCount}>({count})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* カテゴリ */}
+                {allCategories.length > 0 && (
+                  <section className={styles.categoriesSection}>
+                    <h2 className={styles.sectionTitle}>
+                      <span className={styles.titleIcon}>📁</span>
+                      Categories
+                    </h2>
+                    <div className={styles.categoryList}>
+                      {allCategories.map(category => (
+                        <button
+                          key={category}
+                          onClick={() => {
+                            setSelectedCategory(selectedCategory === category ? null : category);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`${styles.categoryButton} ${
+                            selectedCategory === category ? styles.categoryActive : ''
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
             </div>
-          </section>
+          </>
         )}
 
         {/* Featured Articles（内部記事） */}
