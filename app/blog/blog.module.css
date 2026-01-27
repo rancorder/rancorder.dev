@@ -1,4 +1,4 @@
-/* app/blog/blog.module.css - モバイル完全対応版 + ハンバーガーメニュー */
+/* app/blog/blog.module.css - モバイル完全対応版 + ハンバーガーメニュー + サイドバーレイアウト */
 
 .blogPage {
   min-height: 100vh;
@@ -291,6 +291,96 @@
 }
 
 /* ============================================
+   Layout - レスポンシブ対応
+   ============================================ */
+
+/* タブレット以下：上部表示 */
+.tabletFilters {
+  display: block;
+  margin-bottom: clamp(2rem, 6vw, 3rem);
+}
+
+/* PC：サイドバーレイアウト */
+.desktopLayout {
+  display: block;
+  width: 100%;
+}
+
+.mainContent {
+  width: 100%;
+}
+
+.sidebar {
+  display: none;
+}
+
+/* 1024px以上：2カラムレイアウト */
+@media (min-width: 1024px) {
+  /* タブレット用フィルタを非表示 */
+  .tabletFilters {
+    display: none;
+  }
+
+  /* 2カラムグリッド */
+  .desktopLayout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .mainContent {
+    min-width: 0; /* grid overflowを防ぐ */
+  }
+
+  /* サイドバー */
+  .sidebar {
+    display: block;
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+
+  /* サイドバー内のセクション間隔を調整 */
+  .sidebar .tagsSection,
+  .sidebar .categoriesSection {
+    margin-bottom: 2.5rem;
+  }
+
+  .sidebar .tagsSection:last-child,
+  .sidebar .categoriesSection:last-child {
+    margin-bottom: 0;
+  }
+
+  /* サイドバーのスクロールバーをカスタマイズ */
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(96, 165, 250, 0.3);
+    border-radius: 3px;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(96, 165, 250, 0.5);
+  }
+}
+
+/* 640px以下：ハンバーガーメニュー */
+@media (max-width: 640px) {
+  .tabletFilters {
+    display: none;
+  }
+}
+
+/* ============================================
    Mobile Menu - ハンバーガーメニュー
    ============================================ */
 .mobileMenuButton {
@@ -314,11 +404,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* PC用フィルタを非表示 */
-  .desktopFilters {
-    display: none;
   }
 }
 
@@ -800,4 +885,9 @@
 [data-theme='light'] .menuHeader {
   background: var(--bg);
   border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-theme='light'] .sidebar {
+  border-left: 1px solid rgba(15, 23, 42, 0.1);
+  padding-left: 2rem;
 }
