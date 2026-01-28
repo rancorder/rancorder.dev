@@ -97,16 +97,18 @@
   overflow-wrap: break-word;
 }
 
-/* CTA Buttons */
+/* CTA Buttons - モバイルファースト */
 .ctaButtons {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   margin-top: clamp(2rem, 5vw, 3rem);
+  width: 100%;
 }
 
 @media (min-width: 640px) {
   .ctaButtons {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -119,9 +121,9 @@
 
 .primaryButton,
 .secondaryButton {
-  padding: 1.25rem 2rem;
+  padding: 1.25rem 1.5rem;
   border-radius: 12px;
-  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  font-size: clamp(0.875rem, 2vw, 1rem);
   font-weight: 600;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -132,6 +134,8 @@
   min-height: 80px;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .primaryButton {
@@ -159,13 +163,15 @@
 }
 
 .buttonLabel {
-  font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+  font-size: clamp(1rem, 2.5vw, 1.125rem);
   font-weight: 700;
   margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  text-align: center;
 }
 
 .buttonSublabel {
-  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  font-size: clamp(0.6875rem, 1.5vw, 0.8125rem);
   font-weight: 500;
   opacity: 0.9;
   text-transform: uppercase;
@@ -176,12 +182,17 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  grid-column: 1 / -1;
+}
+
+@media (min-width: 640px) {
+  .secondaryButton {
+    grid-column: span 2;
+  }
 }
 
 @media (min-width: 768px) {
   .secondaryButton {
-    grid-column: auto;
+    grid-column: span 1;
   }
 }
 
