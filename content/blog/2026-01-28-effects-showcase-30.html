@@ -11,45 +11,88 @@ readingTime: 15 min read
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>30種のビジュアルエフェクト完全ガイド</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <title>30種のビジュアルエフェクト完全ガイド</title>
   <style>
-    /* 1. パーティクルシステム(背景) */
-    #particle-canvas {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      z-index: 9999 !important;
-      pointer-events: none !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
+    /* ベースレイアウト */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    /* 2. グラデーションレイヤー(背景) */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #e0e0e0;
+      background: #020617;
+      min-height: 100vh;
+    }
+
+    article {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 6rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .back-to-blog {
+      position: fixed;
+      top: 1.5rem;
+      left: 1.5rem;
+      z-index: 10001;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      border-radius: 999px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-to-blog:hover {
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.7);
+      transform: translateX(-4px);
+    }
+
+    /* 1. パーティクルシステム（背景） */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* 2. グラデーションレイヤー（背景） */
     .blog-post-content::before {
       content: "";
       position: fixed;
       inset: 0;
-      background: radial-gradient(
-        circle at 20% 30%,
-        rgba(124, 58, 237, 0.15) 0%,
-        transparent 50%
-      );
+      background:
+        radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 80% 70%, rgba(34, 197, 94, 0.18) 0%, transparent 55%);
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
     }
 
-    /* 3. スキャンライン(全画面背景) */
+    /* 3. スキャンライン（全画面背景） */
     .scanline-overlay {
       position: fixed;
       inset: 0;
       background-image: linear-gradient(
         to bottom,
-        rgba(15, 23, 42, 0.4) 1px,
+        rgba(15, 23, 42, 0.5) 1px,
         transparent 1px
       );
       background-size: 100% 2px;
@@ -66,12 +109,12 @@ readingTime: 15 min read
 
     .blog-post-content {
       position: relative;
-      z-index: 10000;
+      z-index: 1;
     }
 
-    /* 4. グラデーションテキスト */
+    /* 4. グラデーションテキスト（h1） */
     .blog-post-content h1 {
-      font-size: 4rem;
+      font-size: clamp(2.6rem, 4vw, 3.5rem);
       margin-bottom: 1rem;
       text-align: center;
       background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6, #ec4899);
@@ -87,9 +130,9 @@ readingTime: 15 min read
       50% { background-position: 100% 50%; }
     }
 
-    /* 5. パルスエフェクト(見出し) */
+    /* 5. パルスエフェクト（h2） */
     .blog-post-content h2 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       margin: 3rem 0 1.5rem;
       color: #7c3aed;
       text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
@@ -104,7 +147,7 @@ readingTime: 15 min read
     /* 6. 波打つテキスト */
     .wave-text {
       display: inline-block;
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       font-weight: 700;
       color: #22c55e;
     }
@@ -124,13 +167,13 @@ readingTime: 15 min read
 
     @keyframes wave {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
+      50% { transform: translateY(-18px); }
     }
 
     /* 7. グリッチエフェクト */
     .glitch {
       position: relative;
-      font-size: 2.5rem;
+      font-size: 2.4rem;
       font-weight: 700;
       color: #fff;
       text-shadow:
@@ -174,7 +217,7 @@ readingTime: 15 min read
       white-space: nowrap;
       animation: typing 3.5s steps(40) infinite, blink 0.75s step-end infinite;
       font-family: "Courier New", monospace;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
     }
 
     @keyframes typing {
@@ -323,7 +366,7 @@ readingTime: 15 min read
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
     }
 
@@ -445,15 +488,17 @@ readingTime: 15 min read
     /* スクロールアニメーション共通 */
     .animate-on-scroll {
       opacity: 0;
+      transform: translateY(20px);
     }
 
     .animate-on-scroll.active {
       opacity: 1;
+      transform: translateY(0);
     }
 
     /* 20. フェードイン */
     .fade-in-trigger.active {
-      animation: fadeIn 1.5s ease-out forwards;
+      animation: fadeIn 1.2s ease-out forwards;
     }
 
     @keyframes fadeIn {
@@ -516,7 +561,7 @@ readingTime: 15 min read
       }
     }
 
-    /* 24. スライドイン(右から) */
+    /* 24. スライドイン（右から） */
     .slide-right-trigger.active {
       animation: slideRight 0.8s ease-out forwards;
     }
@@ -564,7 +609,7 @@ readingTime: 15 min read
       }
     }
 
-    /* 27. ジェリー(ゼリー) エフェクト */
+    /* 27. ジェリーエフェクト */
     .jelly-trigger.active {
       animation: jelly 0.8s ease-in-out forwards;
     }
@@ -606,7 +651,7 @@ readingTime: 15 min read
       20%, 40%, 60%, 80% { transform: translateX(10px); }
     }
 
-    /* 29. ブリージング(呼吸) */
+    /* 29. ブリージング */
     .breathing {
       animation: breathing 3s ease-in-out infinite;
     }
@@ -635,10 +680,10 @@ readingTime: 15 min read
       50% { opacity: 0.8; }
     }
 
-    /* 共通スタイル */
+    /* 共通コンポーネント */
     .effect-demo {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.35);
       border-radius: 12px;
       padding: 2rem;
       margin: 1.5rem 0;
@@ -651,14 +696,16 @@ readingTime: 15 min read
     }
 
     .effect-title {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #94a3b8;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     .blog-post-content p {
-      margin: 1rem 0;
+      margin: 0.6rem 0;
       color: #cbd5e1;
       line-height: 1.8;
     }
@@ -670,342 +717,342 @@ readingTime: 15 min read
     }
 
     .intro p {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       max-width: 700px;
       margin: 1rem auto;
     }
 
     .section-divider {
-      margin: 4rem 0;
+      margin: 4rem 0 2rem;
       text-align: center;
-      font-size: 3rem;
+      font-size: 2.4rem;
+    }
+
+    @media (max-width: 640px) {
+      article {
+        padding: 4rem 1rem 5rem;
+      }
+      .blog-post-content h2 {
+        font-size: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- パーティクル背景 -->
+  <a href="/blog" class="back-to-blog">← Back to Blog</a>
+
+  <!-- 背景エフェクト -->
   <canvas id="particle-canvas"></canvas>
-  <!-- スキャンライン -->
   <div class="scanline-overlay"></div>
 
-  <div class="blog-post-content">
-    <!-- ヒーローセクション -->
-    <div class="intro">
-      <h1>30種のエフェクト完全ガイド</h1>
-      <p>
-        Web開発で使える30種類のビジュアルエフェクトを、実際に動作する形でまとめました。<br />
-        背景エフェクト、テキストアニメーション、コンテナエフェクト、インタラクティブ要素など、<br />
-        あらゆる場面で活用できる技術を網羅しています。
-      </p>
-    </div>
-
-    <div class="rainbow-separator"></div>
-
-    <!-- 背景エフェクト(1-3) -->
-    <h2>背景エフェクト</h2>
-
-    <div class="effect-demo">
-      <div class="effect-title">1. パーティクルシステム</div>
-      <p>画面を動き回る粒子が、距離に応じて線で結ばれます。技術記事やイノベーション系コンテンツに最適。</p>
-      <p style="color: #7c3aed;">背景で常時動作中</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">2. グラデーションレイヤー</div>
-      <p>柔らかいグラデーションが背景に広がります。デザイン記事やUI/UX系コンテンツに適しています。</p>
-      <p style="color: #7c3aed;">実装済み</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">3. スキャンライン</div>
-      <p>SF映画のようなスキャンライン効果。セキュリティやシステム設計の記事に未来感を演出します。</p>
-      <p style="color: #7c3aed;">全画面で動作中</p>
-    </div>
-
-    <div class="section-divider">✦</div>
-
-    <!-- テキストエフェクト(4-8) -->
-    <h2>テキストエフェクト</h2>
-
-    <div class="effect-demo">
-      <div class="effect-title">4. グラデーションテキスト</div>
-      <h1 style="font-size: 2.5rem;">グラデーション</h1>
-      <p>インパクトのあるタイトルに最適。色が流れるように変化します。</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">5. パルスエフェクト</div>
-      <h2 style="font-size: 2rem;">重要な見出し</h2>
-      <p>見出しが脈動するように拡大縮小。重要なセクションの強調に。</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">6. 波打つテキスト</div>
-      <div class="wave-text">
-        <span>W</span>
-        <span>A</span>
-        <span>V</span>
-        <span>E</span>
-        <span>!</span>
-        <span>!</span>
-        <span>!</span>
+  <article>
+    <div class="blog-post-content">
+      <!-- ヒーロー -->
+      <div class="intro">
+        <h1>30種のエフェクト完全ガイド</h1>
+        <p>
+          Web開発で使える30種類のビジュアルエフェクトを、実際に動作する形でまとめました。<br />
+          背景エフェクト、テキストアニメーション、コンテナエフェクト、インタラクティブ要素など、あらゆる場面で活用できる技術を網羅しています。
+        </p>
       </div>
-      <p>楽しくポップな雰囲気を演出。チュートリアルや初心者向け記事に。</p>
-    </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">7. グリッチエフェクト</div>
-      <div class="glitch">GLITCH</div>
-      <p>デジタル感満載のグリッチ効果。サイバーパンクやテック系記事に。</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">8. タイピングエフェクト</div>
-      <div class="typing">コードを書いているような演出...</div>
-      <p>プログラミング記事やターミナル操作の解説に最適。</p>
-    </div>
-
-    <div class="section-divider">✦</div>
-
-    <!-- コンテナエフェクト(9-14) -->
-    <h2>コンテナエフェクト</h2>
-
-    <div class="effect-demo">
-      <div class="effect-title">9. スライドインボックス</div>
-      <div class="slide-box">
-        <p>左からスライドして登場。段階的な情報提示に効果的です。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">10. フローティングカード</div>
-      <div class="gradient-card">
-        <p>浮遊感のあるカード。サービス紹介やプロダクト説明に。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">11. スキャンボックス</div>
-      <div class="scan-box">
-        <p>スキャンラインが上から下へ流れます。ログ分析やデータ解析の記事に。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">12. 虹色セパレーター</div>
       <div class="rainbow-separator"></div>
-      <p>セクション区切りにポップな雰囲気を添えます。色が流れます。</p>
-    </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">13. ホバーグロー</div>
-      <div class="hover-glow">
-        <p>マウスを乗せると光って浮き上がります。カードや画像の強調に。</p>
+      <!-- 背景エフェクト 1–3 -->
+      <h2>背景エフェクト</h2>
+
+      <div class="effect-demo">
+        <div class="effect-title">1. パーティクルシステム</div>
+        <p>画面を動き回る粒子が、距離に応じて線で結ばれます。技術記事やイノベーション系コンテンツに最適。</p>
+        <p style="color:#7c3aed;">背景で常時動作中</p>
       </div>
-    </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">14. 3D フリップカード</div>
-      <div class="flip-card">
-        <div class="flip-card-inner">
-          <div class="flip-card-front">
-            <p>表面（ホバーして回転）</p>
-          </div>
-          <div class="flip-card-back">
-            <p>裏面が表示されます</p>
-          </div>
+      <div class="effect-demo">
+        <div class="effect-title">2. グラデーションレイヤー</div>
+        <p>柔らかいグラデーションが背景に広がります。デザイン記事や UI/UX 系コンテンツに適しています。</p>
+        <p style="color:#7c3aed;">実装済み</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">3. スキャンライン</div>
+        <p>SF 映画のようなスキャンライン効果。セキュリティやシステム設計の記事に未来感を演出します。</p>
+        <p style="color:#7c3aed;">全画面で動作中</p>
+      </div>
+
+      <div class="section-divider">TEXT</div>
+
+      <!-- テキストエフェクト 4–8 -->
+      <h2>テキストエフェクト</h2>
+
+      <div class="effect-demo">
+        <div class="effect-title">4. グラデーションテキスト</div>
+        <h1 style="font-size:2.2rem;">グラデーション</h1>
+        <p>インパクトのあるタイトルに最適。色が流れるように変化します。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">5. パルスエフェクト</div>
+        <h2 style="font-size:1.8rem;">重要な見出し</h2>
+        <p>見出しが脈動するように拡大縮小。重要なセクションの強調に。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">6. 波打つテキスト</div>
+        <div class="wave-text">
+          <span>W</span><span>A</span><span>V</span><span>E</span><span>!</span><span>!</span><span>!</span>
+        </div>
+        <p>楽しくポップな雰囲気を演出。チュートリアルや初心者向け記事に。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">7. グリッチエフェクト</div>
+        <div class="glitch">GLITCH</div>
+        <p>デジタル感満載のグリッチ効果。サイバーパンクやテック系記事に。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">8. タイピングエフェクト</div>
+        <div class="typing">コードを書いているような演出...</div>
+        <p>プログラミング記事やターミナル操作の解説に最適。</p>
+      </div>
+
+      <div class="section-divider">CONTAINER</div>
+
+      <!-- コンテナエフェクト 9–14 -->
+      <h2>コンテナエフェクト</h2>
+
+      <div class="effect-demo">
+        <div class="effect-title">9. スライドインボックス</div>
+        <div class="slide-box">
+          <p>左からスライドして登場。段階的な情報提示に効果的です。</p>
         </div>
       </div>
-      <p>インタラクティブな情報表示に最適。</p>
-    </div>
 
-    <div class="section-divider">✦</div>
+      <div class="effect-demo">
+        <div class="effect-title">10. フローティングカード</div>
+        <div class="gradient-card">
+          <p>浮遊感のあるカード。サービス紹介やプロダクト説明に。</p>
+        </div>
+      </div>
 
-    <!-- インタラクティブエフェクト(15-19) -->
-    <h2>インタラクティブエフェクト</h2>
+      <div class="effect-demo">
+        <div class="effect-title">11. スキャンボックス</div>
+        <div class="scan-box">
+          <p>スキャンラインが上から下へ流れます。ログ分析やデータ解析の記事に。</p>
+        </div>
+      </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">15. ネオンボタン</div>
-      <a href="#" class="neon-button">ホバーしてみて</a>
-      <p>CTA、ダウンロード、リンク強調に最適。ホバーで光ります。</p>
-    </div>
+      <div class="effect-demo">
+        <div class="effect-title">12. 虹色セパレーター</div>
+        <div class="rainbow-separator"></div>
+        <p>セクション区切りにポップな雰囲気を添えます。色が流れます。</p>
+      </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">16. パルスバッジ</div>
-      <span class="pulse-badge">NEW</span>
-      <span class="pulse-badge">HOT</span>
-      <span class="pulse-badge">限定</span>
-      <p>注目を集めるバッジ。新機能やキャンペーンの告知に。</p>
-    </div>
+      <div class="effect-demo">
+        <div class="effect-title">13. ホバーグロー</div>
+        <div class="hover-glow">
+          <p>マウスを乗せると光って浮き上がります。カードや画像の強調に。</p>
+        </div>
+      </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">17. スピンローダー</div>
-      <div class="spin-loader"></div>
-      <p>ローディング表示。処理中であることを視覚的に伝えます。</p>
-    </div>
+      <div class="effect-demo">
+        <div class="effect-title">14. 3D フリップカード</div>
+        <div class="flip-card">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <p>表面（ホバーして回転）</p>
+            </div>
+            <div class="flip-card-back">
+              <p>裏面が表示されます</p>
+            </div>
+          </div>
+        </div>
+        <p>インタラクティブな情報表示に最適。</p>
+      </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">18. 回転アイコン</div>
-      <span class="rotating-icon">⚙</span>
-      <p>設定やプロセスを表現。継続的な動作を示します。</p>
-    </div>
+      <div class="section-divider">INTERACTIVE</div>
 
-    <div class="effect-demo">
-      <div class="effect-title">19. ハートビート</div>
-      <span class="heartbeat" style="font-size: 3rem;">❤</span>
-      <p>お気に入りやいいね機能の表現に。鼓動のように動きます。</p>
-    </div>
+      <!-- インタラクティブエフェクト 15–19 -->
+      <h2>インタラクティブエフェクト</h2>
 
-    <div class="section-divider">✦</div>
+      <div class="effect-demo">
+        <div class="effect-title">15. ネオンボタン</div>
+        <a href="#" class="neon-button">ホバーしてみて</a>
+        <p>CTA、ダウンロード、リンク強調に最適。ホバーで光ります。</p>
+      </div>
 
-    <!-- 登場アニメーション(20-27) -->
-    <h2>登場アニメーション（スクロールで発火）</h2>
+      <div class="effect-demo">
+        <div class="effect-title">16. パルスバッジ</div>
+        <span class="pulse-badge">NEW</span>
+        <span class="pulse-badge">HOT</span>
+        <span class="pulse-badge">限定</span>
+        <p>注目を集めるバッジ。新機能やキャンペーンの告知に。</p>
+      </div>
 
-    <div class="effect-demo">
-      <div class="effect-title">20. フェードイン</div>
-      <div class="animate-on-scroll fade-in-trigger">
-        <p>最もシンプルな登場エフェクト。どんなコンテンツにも使えます。</p>
+      <div class="effect-demo">
+        <div class="effect-title">17. スピンローダー</div>
+        <div class="spin-loader"></div>
+        <p>ローディング表示。処理中であることを視覚的に伝えます。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">18. 回転アイコン</div>
+        <span class="rotating-icon">⟳</span>
+        <p>設定やプロセスを表現。継続的な動作を示します。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">19. ハートビート</div>
+        <span class="heartbeat" style="font-size:3rem;">♥</span>
+        <p>お気に入りやいいね機能の表現に。鼓動のように動きます。</p>
+      </div>
+
+      <div class="section-divider">ON SCROLL</div>
+
+      <!-- 登場アニメーション 20–27（スクロール発火） -->
+      <h2>登場アニメーション（スクロールで発火）</h2>
+
+      <div class="effect-demo">
+        <div class="effect-title">20. フェードイン</div>
+        <div class="animate-on-scroll fade-in-trigger">
+          <p>最もシンプルな登場エフェクト。どんなコンテンツにも使えます。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">21. スケールイン</div>
+        <div class="animate-on-scroll scale-in-trigger">
+          <p>小さい状態から拡大して登場。インパクトを与えます。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">22. バウンスイン</div>
+        <div class="animate-on-scroll bounce-in-trigger">
+          <p>弾むように登場。楽しい雰囲気を演出します。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">23. スライドアップ</div>
+        <div class="animate-on-scroll slide-up-trigger">
+          <p>下から上へスライド。自然な流れで情報を提示します。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">24. スライドイン（右から）</div>
+        <div class="animate-on-scroll slide-right-trigger">
+          <p>右から左へスライド。順序立てた説明に適しています。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">25. ズームアウト</div>
+        <div class="animate-on-scroll zoom-out-trigger">
+          <p>拡大状態から縮小して登場。ドラマチックな演出に。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">26. ロールイン</div>
+        <div class="animate-on-scroll roll-in-trigger">
+          <p>回転しながら登場。ユニークな動きで注目を集めます。</p>
+        </div>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">27. ジェリー（ゼリー）エフェクト</div>
+        <div class="animate-on-scroll jelly-trigger">
+          <p>ゼリーのように揺れながら登場。柔らかい印象を与えます。</p>
+        </div>
+      </div>
+
+      <div class="section-divider">LOOP</div>
+
+      <!-- 継続アニメーション 28–30 -->
+      <h2>継続アニメーション</h2>
+
+      <div class="effect-demo">
+        <div class="effect-title">28. シェイクエフェクト</div>
+        <div class="shake" style="display:inline-block;font-size:2rem;">
+          注意！
+        </div>
+        <p>注意喚起や通知の表現に。小刻みに揺れ続けます。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">29. ブリージング（呼吸）エフェクト</div>
+        <div class="breathing" style="display:inline-block;font-size:3rem;color:#3b82f6;">
+          ●
+        </div>
+        <p>ゆっくりと拡大縮小を繰り返します。待機状態の表現に。</p>
+      </div>
+
+      <div class="effect-demo">
+        <div class="effect-title">30. マトリックス風テキスト</div>
+        <div class="matrix-text" style="font-size:1.4rem;">
+          01001000 01100101 01101100 01101100 01101111
+        </div>
+        <p>ハッカー風の演出。セキュリティやコーディング記事に。</p>
+      </div>
+
+      <div class="rainbow-separator"></div>
+
+      <!-- まとめ -->
+      <div style="text-align:center;margin:4rem 0;padding:3rem;background:rgba(15,23,42,0.8);border-radius:20px;">
+        <h2 style="font-size:2.3rem;margin-bottom:1.5rem;">30種類すべて完成！</h2>
+        <p style="font-size:1.1rem;max-width:600px;margin:0 auto;line-height:1.8;">
+          これらのエフェクトを記事の内容や雰囲気に合わせて組み合わせることで、読者を引き込む魅力的なコンテンツを作成できます。
+        </p>
+        <div style="margin-top:2rem;">
+          <span class="pulse-badge">保存推奨</span>
+          <span class="pulse-badge">ブックマーク</span>
+          <span class="pulse-badge">シェア歓迎</span>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin:3rem 0;padding:2rem;">
+        <p style="font-size:1rem;color:#94a3b8;">
+          これらのエフェクトを活用して、魅力的なブログ記事を作成しましょう！
+        </p>
+        <p style="margin-top:1rem;font-size:0.85rem;color:#64748b;">
+          Version 3.0 (Next.js Compatible) | Last Updated: 2026-01-28
+        </p>
       </div>
     </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">21. スケールイン</div>
-      <div class="animate-on-scroll scale-in-trigger">
-        <p>小さい状態から拡大して登場。インパクトを与えます。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">22. バウンスイン</div>
-      <div class="animate-on-scroll bounce-in-trigger">
-        <p>弾むように登場。楽しい雰囲気を演出します。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">23. スライドアップ</div>
-      <div class="animate-on-scroll slide-up-trigger">
-        <p>下から上へスライド。自然な流れで情報を提示します。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">24. スライドイン（右から）</div>
-      <div class="animate-on-scroll slide-right-trigger">
-        <p>右から左へスライド。順序立てた説明に適しています。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">25. ズームアウト</div>
-      <div class="animate-on-scroll zoom-out-trigger">
-        <p>拡大状態から縮小して登場。ドラマチックな演出に。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">26. ロールイン</div>
-      <div class="animate-on-scroll roll-in-trigger">
-        <p>回転しながら登場。ユニークな動きで注目を集めます。</p>
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">27. ジェリー（ゼリー）エフェクト</div>
-      <div class="animate-on-scroll jelly-trigger">
-        <p>ゼリーのように揺れながら登場。柔らかい印象を与えます。</p>
-      </div>
-    </div>
-
-    <div class="section-divider">✦</div>
-
-    <!-- 継続アニメーション(28-30) -->
-    <h2>継続アニメーション</h2>
-
-    <div class="effect-demo">
-      <div class="effect-title">28. シェイクエフェクト</div>
-      <div class="shake" style="display: inline-block; font-size: 2rem;">
-        注意喚起や通知の表現に。小刻みに揺れ続けます。
-      </div>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">29. ブリージング（呼吸）エフェクト</div>
-      <div class="breathing" style="display: inline-block; font-size: 3rem; color:#3b82f6;">
-        ●
-      </div>
-      <p>ゆっくりと拡大縮小を繰り返します。待機状態の表現に。</p>
-    </div>
-
-    <div class="effect-demo">
-      <div class="effect-title">30. マトリックス風テキスト</div>
-      <div class="matrix-text" style="font-size: 1.5rem;">
-        01001000 01100101 01101100 01101100 01101111
-      </div>
-      <p>ハッカー風の演出。セキュリティやコーディング記事に。</p>
-    </div>
-
-    <div class="rainbow-separator"></div>
-
-    <!-- まとめ -->
-    <div style="text-align: center; margin: 4rem 0; padding: 3rem; background: rgba(15, 23, 42, 0.8); border-radius: 20px;">
-      <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">30種類すべて完成！</h2>
-      <p style="font-size: 1.2rem; max-width: 600px; margin: 0 auto; line-height: 1.8;">
-        これらのエフェクトを記事の内容や雰囲気に合わせて組み合わせることで、<br />
-        読者を引き込む魅力的なコンテンツを作成できます。
-      </p>
-      <div style="margin-top: 2rem;">
-        <span class="pulse-badge">保存推奨</span>
-        <span class="pulse-badge">ブックマーク</span>
-        <span class="pulse-badge">シェア歓迎</span>
-      </div>
-    </div>
-
-    <div style="text-align: center; margin: 3rem 0; padding: 2rem;">
-      <p style="font-size: 1.1rem; color: #94a3b8;">
-        これらのエフェクトを活用して、魅力的なブログ記事を作成しましょう！
-      </p>
-      <p style="margin-top: 1rem; font-size: 0.9rem; color: #64748b;">
-        Version 3.0 (Next.js Compatible) | Last Updated: 2026-01-28
-      </p>
-    </div>
-  </div>
+  </article>
 
   <script>
-    // パーティクルシステム初期化（Next.js対応版）
-    function initParticleSystem() {
-      console.log("Particle system initialization started");
+    // パーティクル＋スクロールアニメーション初期化
+    function initParticleSystemAndScroll() {
+      console.log("[effects] initParticleSystemAndScroll start");
 
-      // 既存アニメーションをキャンセル
+      // 既存アニメーションのキャンセル
       if (window.particleAnimationId) {
         cancelAnimationFrame(window.particleAnimationId);
-        console.log("Previous animation cancelled");
       }
 
       const canvas = document.getElementById("particle-canvas");
       if (!canvas) {
-        console.warn("Canvas not found, retrying in 100ms...");
-        setTimeout(initParticleSystem, 100);
+        console.warn("[effects] canvas not found, retrying...");
+        setTimeout(initParticleSystemAndScroll, 100);
         return;
       }
 
-      console.log("Canvas found");
-
       const ctx = canvas.getContext("2d");
       if (!ctx) {
-        console.error("Could not get 2D context");
+        console.error("[effects] 2D context not available");
         return;
       }
 
       function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        console.log(`Canvas resized: ${canvas.width}x${canvas.height}`);
       }
 
       resizeCanvas();
 
-      // リサイズイベントのクリーンアップ
       if (window.particleResizeHandler) {
         window.removeEventListener("resize", window.particleResizeHandler);
       }
@@ -1014,14 +1061,19 @@ readingTime: 15 min read
 
       class Particle {
         constructor() {
+          this.reset(true);
+        }
+        reset(initial) {
           this.x = Math.random() * canvas.width;
           this.y = Math.random() * canvas.height;
-          this.size = Math.random() * 3 + 1;
-          this.speedX = Math.random() * 2 - 1;
-          this.speedY = Math.random() * 2 - 1;
+          this.size = Math.random() * 1.8 + 0.6; // 小さめ
+          this.speedX = (Math.random() - 0.5) * 1.2;
+          this.speedY = (Math.random() - 0.5) * 1.2;
           this.color = this.randomColor();
+          if (!initial) {
+            // 画面外から入ってくる感じにしてもよいが、今回はシンプルに
+          }
         }
-
         randomColor() {
           const colors = [
             "rgba(124, 58, 237, 0.9)",
@@ -1031,7 +1083,6 @@ readingTime: 15 min read
           ];
           return colors[Math.floor(Math.random() * colors.length)];
         }
-
         update() {
           this.x += this.speedX;
           this.y += this.speedY;
@@ -1043,7 +1094,6 @@ readingTime: 15 min read
             this.speedY *= -1;
           }
         }
-
         draw() {
           ctx.fillStyle = this.color;
           ctx.beginPath();
@@ -1053,23 +1103,23 @@ readingTime: 15 min read
       }
 
       const particles = [];
-      const particleCount = 80;
+      const particleCount = 90;
 
       for (let i = 0; i < particleCount; i++) {
         particles.push(new Particle());
       }
 
-      console.log(`Created ${particleCount} particles`);
-
       function connectParticles() {
+        const maxDistance = 150;
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
             const dy = particles[i].y - particles[j].y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < 150) {
-              ctx.strokeStyle = `rgba(124, 58, 237, ${0.8 * (1 - distance / 150)})`;
-              ctx.lineWidth = 1;
+            if (distance < maxDistance) {
+              const alpha = 0.8 * (1 - distance / maxDistance);
+              ctx.strokeStyle = `rgba(148, 163, 184, ${alpha})`;
+              ctx.lineWidth = 0.7;
               ctx.beginPath();
               ctx.moveTo(particles[i].x, particles[i].y);
               ctx.lineTo(particles[j].x, particles[j].y);
@@ -1081,93 +1131,57 @@ readingTime: 15 min read
 
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach((particle) => {
-          particle.update();
-          particle.draw();
+        particles.forEach((p) => {
+          p.update();
+          p.draw();
         });
         connectParticles();
         window.particleAnimationId = requestAnimationFrame(animate);
       }
 
       animate();
-      console.log("Particle animation started");
 
       // スクロールアニメーション
       const animateElements = document.querySelectorAll(".animate-on-scroll");
-      console.log(`Found ${animateElements.length} scroll animation elements`);
-
-      if (animateElements.length > 0 && typeof IntersectionObserver !== "undefined") {
-        const observerOptions = {
-          root: null,
-          rootMargin: "0px",
-          threshold: 0.2
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("active");
-            } else {
-              entry.target.classList.remove("active");
-            }
-          });
-        }, observerOptions);
+      if (animateElements.length > 0 && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("active");
+              } else {
+                entry.target.classList.remove("active");
+              }
+            });
+          },
+          { root: null, rootMargin: "0px", threshold: 0.2 }
+        );
 
         animateElements.forEach((el) => observer.observe(el));
-        console.log("Scroll animations initialized");
       }
     }
 
-    // 初期化トリガー（複数パターンで安全に）
-    function triggerInitParticles() {
-      // SPA遷移でも確実に呼べるようにラップ
-      initParticleSystem();
-    }
-
+    // DOM 状態に応じて初期化
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOMContentLoaded fired");
-        triggerInitParticles();
+        initParticleSystemAndScroll();
       });
     } else {
-      console.log("DOM already loaded, initializing immediately");
-      setTimeout(triggerInitParticles, 0);
+      initParticleSystemAndScroll();
     }
 
+    // 画像など読み込み後に再調整したい場合
     window.addEventListener("load", () => {
-      console.log("Window load fired");
-      setTimeout(triggerInitParticles, 100);
+      setTimeout(initParticleSystemAndScroll, 50);
     });
 
-    // ページ可視化時（IntersectionObserver）
-    if (typeof IntersectionObserver !== "undefined") {
-      setTimeout(() => {
-        const mainContent = document.querySelector(".blog-post-content");
-        if (!mainContent) return;
-
-        const pageObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              console.log("Page became visible");
-              setTimeout(triggerInitParticles, 50);
-            }
-          });
-        }, { threshold: 0.1 });
-
-        pageObserver.observe(mainContent);
-        console.log("Page visibility observer attached");
-      }, 100);
-    }
-
-    // Next.js ルーティング用カスタムイベント
+    // Next.js 側で custom event を飛ばす構造にしているならここも対応可能
     document.addEventListener("particleInit", () => {
-      console.log("Custom event: particleInit");
-      triggerInitParticles();
+      initParticleSystemAndScroll();
     });
 
-    // グローバル関数として公開（外部からも叩ける）
-    window.initParticles = triggerInitParticles;
-    console.log("Global function window.initParticles() available");
+    // グローバル関数としても公開（ParticleInitializer から叩けるように）
+    window.initParticles = initParticleSystemAndScroll;
   </script>
 </body>
 </html>
