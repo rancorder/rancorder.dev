@@ -1145,15 +1145,22 @@ readingTime: 15 min read
 </article>
 
 <script>
-(function() {
-  'use strict';
-  
-  // ===================================
-  // パーティクルシステム
-  // ===================================
-  
+// ===================================
+// パーティクルシステム - 即座に実行
+// ===================================
+
+// 既存のアニメーションフレームをキャンセル（重複防止）
+if (window.particleAnimationId) {
+  cancelAnimationFrame(window.particleAnimationId);
+}
+
+function initParticles() {
   const canvas = document.getElementById('particle-canvas');
-  if (!canvas) return;
+  if (!canvas) {
+    // canvasが存在しない場合は少し待ってから再試行
+    setTimeout(initParticles, 100);
+    return;
+  }
   
   const ctx = canvas.getContext('2d');
   
@@ -1242,14 +1249,26 @@ readingTime: 15 min read
     
     connectParticles();
     
-    requestAnimationFrame(animate);
+    window.particleAnimationId = requestAnimationFrame(animate);
   }
   
   animate();
-  
-  // ===================================
-  // スクロールアニメーション (Intersection Observer)
-  // ===================================
+}
+
+// 即座に実行
+initParticles();
+
+// ===================================
+// スクロールアニメーション (Intersection Observer)
+// ===================================
+
+function initScrollAnimations() {
+  const animateElements = document.querySelectorAll('.animate-on-scroll');
+  if (animateElements.length === 0) {
+    // 要素が存在しない場合は少し待ってから再試行
+    setTimeout(initScrollAnimations, 100);
+    return;
+  }
   
   const observerOptions = {
     root: null,
@@ -1268,11 +1287,11 @@ readingTime: 15 min read
     });
   }, observerOptions);
   
-  // .animate-on-scroll クラスを持つすべての要素を監視
-  const animateElements = document.querySelectorAll('.animate-on-scroll');
   animateElements.forEach(el => observer.observe(el));
-  
-})();
+}
+
+// 即座に実行
+initScrollAnimations();
 </script>
 
 </body>
