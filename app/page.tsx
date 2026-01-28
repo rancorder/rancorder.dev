@@ -59,15 +59,23 @@ export default function HomePage() {
               <p className={styles.subtitleJa}>
                 複雑なビジネス判断のための本番運用システムとフレームワークを構築
               </p>
+              <p className={styles.subtitleNote}>
+                Choose your language below to view portfolio | 言語を選択してポートフォリオをご覧ください
+              </p>
             </div>
 
             {/* CTA Buttons */}
             <div className={styles.ctaButtons}>
+              <Link href="/portfolio/en" className={styles.primaryButton}>
+                <span className={styles.buttonLabel}>Portfolio</span>
+                <span className={styles.buttonSublabel}>English</span>
+              </Link>
               <Link href="/portfolio/ja" className={styles.primaryButton}>
-                ポートフォリオを見る
+                <span className={styles.buttonLabel}>ポートフォリオ</span>
+                <span className={styles.buttonSublabel}>日本語</span>
               </Link>
               <Link href="/blog" className={styles.secondaryButton}>
-                ブログを読む
+                Blog / ブログ
               </Link>
             </div>
           </div>
@@ -115,7 +123,7 @@ export default function HomePage() {
         <footer className={styles.footer}>
           <div className={styles.contactLinks}>
             <a 
-              href="https://linkedin.com/in/hideki-masube-6b0a713a0/" 
+              href="https://linkedin.com/in/yourprofile" 
               target="_blank" 
               rel="noopener noreferrer"
               className={styles.socialLink}
@@ -123,7 +131,7 @@ export default function HomePage() {
               LinkedIn
             </a>
             <a 
-              href="https://github.com/rancorder" 
+              href="https://github.com/yourprofile" 
               target="_blank" 
               rel="noopener noreferrer"
               className={styles.socialLink}
@@ -131,7 +139,7 @@ export default function HomePage() {
               GitHub
             </a>
             <a 
-              href="mailto:xzengbu@gmail.com"
+              href="mailto:your.email@example.com"
               className={styles.socialLink}
             >
               Contact
