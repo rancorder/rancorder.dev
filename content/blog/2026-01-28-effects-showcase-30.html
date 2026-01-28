@@ -1055,34 +1055,47 @@ readingTime: 15 min read
 
 <script>
 // ===================================
-// パーティクルシステム初期化（Next.js対応）
+// パーティクルシステム初期化（Next.js完全対応版）
 // ===================================
 
-(function() {
+function initParticleSystem() {
   console.log('🚀 Particle system initialization started');
   
   // 既存のアニメーションをキャンセル
   if (window.particleAnimationId) {
     cancelAnimationFrame(window.particleAnimationId);
+    console.log('🛑 Previous animation cancelled');
   }
 
   const canvas = document.getElementById('particle-canvas');
   if (!canvas) {
-    console.warn('⚠️ Canvas not found');
+    console.warn('⚠️ Canvas not found, retrying in 100ms...');
+    setTimeout(initParticleSystem, 100);
     return;
   }
   
   console.log('✅ Canvas found');
   
   const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    console.error('❌ Could not get 2D context');
+    return;
+  }
   
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    console.log(`📐 Canvas resized: ${canvas.width}x${canvas.height}`);
   }
   
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  
+  // リサイズイベントのクリーンアップ対応
+  if (window.particleResizeHandler) {
+    window.removeEventListener('resize', window.particleResizeHandler);
+  }
+  window.particleResizeHandler = resizeCanvas;
+  window.addEventListener('resize', window.particleResizeHandler);
   
   class Particle {
     constructor() {
@@ -1196,5 +1209,59 @@ readingTime: 15 min read
     animateElements.forEach(el => observer.observe(el));
     console.log('✅ Scroll animations initialized');
   }
-})();
+}
+
+// ===================================
+// 初期化トリガー（複数のイベントで確実に実行）
+// ===================================
+
+// 1. DOMContentLoaded（最初のロード）
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOMContentLoaded fired');
+    initParticleSystem();
+  });
+} else {
+  // すでにDOM読み込み済み
+  console.log('📄 DOM already loaded, initializing immediately');
+  setTimeout(initParticleSystem, 0);
+}
+
+// 2. window.onload（画像等の読み込み完了後）
+window.addEventListener('load', () => {
+  console.log('🌐 Window load fired');
+  setTimeout(initParticleSystem, 100);
+});
+
+// 3. Intersection Observer（ページが画面に表示された時）
+if (typeof IntersectionObserver !== 'undefined') {
+  const pageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        console.log('👀 Page became visible');
+        setTimeout(initParticleSystem, 50);
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  // 少し遅延してから監視開始
+  setTimeout(() => {
+    const mainContent = document.querySelector('.blog-post-content');
+    if (mainContent) {
+      pageObserver.observe(mainContent);
+      console.log('👀 Page visibility observer attached');
+    }
+  }, 100);
+}
+
+// 4. カスタムイベント（Next.jsルーティング対応）
+document.addEventListener('particleInit', () => {
+  console.log('🎯 Custom event: particleInit');
+  initParticleSystem();
+});
+
+// 5. グローバル関数として公開（手動トリガー用）
+window.initParticles = initParticleSystem;
+console.log('🔧 Global function window.initParticles() available');
+
 </script>
