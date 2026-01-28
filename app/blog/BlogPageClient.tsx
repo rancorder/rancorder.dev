@@ -84,7 +84,7 @@ export default function BlogPageClient({
     };
   }, [isMobileMenuOpen]);
 
-  // フィルタリングロジック
+  // フィルタリング
   const filteredPosts = useMemo(() => {
     let results = initialPosts;
 
@@ -122,9 +122,9 @@ export default function BlogPageClient({
 
   const hasActiveFilters = searchQuery || selectedTag || selectedCategory;
 
-  // ================================
+  // ============================================
   // ★ Markdown → HTML にアニメ自動付与
-  // ================================
+  // ============================================
   const applyAnimations = (html: string) => {
     return html
       .replace(/<h1/g, '<h1 class="animate-on-scroll fade-in-trigger"')
@@ -134,15 +134,15 @@ export default function BlogPageClient({
       .replace(/<li/g, '<li class="animate-on-scroll slide-right-trigger"')
       .replace(/<img/g, '<img class="animate-on-scroll zoom-out-trigger"')
       .replace(/<pre/g, '<pre class="animate-on-scroll roll-in-trigger"')
-      .replace(/<strong/g, '<strong class="animate-on-scroll jelly-trigger"');
+      .replace(/<strong/g, '<strong class="animate-on-scroll jelly-trigger"')
+      .replace(/<hr/g, '<hr class="animate-on-scroll rainbow-separator"');
   };
 
-  // ================================
-  // UI レンダリング
-  // ================================
+  // ============================================
+  // UI
+  // ============================================
   const renderFilters = (inMobileMenu = false) => (
     <>
-      {/* タグクラウド */}
       {allTags.length > 0 && (
         <section className={styles.tagsSection}>
           <h2 className={styles.sectionTitle}>
@@ -168,7 +168,6 @@ export default function BlogPageClient({
         </section>
       )}
 
-      {/* カテゴリ */}
       {allCategories.length > 0 && (
         <section className={styles.categoriesSection}>
           <h2 className={styles.sectionTitle}>
@@ -461,9 +460,7 @@ export default function BlogPageClient({
                   ✕
                 </button>
               </div>
-              <div className={styles.menuContent}>
-                {renderFilters(true)}
-              </div>
+              <div className={styles.menuContent}>{renderFilters(true)}</div>
             </div>
           </>
         )}
