@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPost, getAllPosts } from '@/lib/posts';
 import ParticleInitializer from './ParticleInitializer';
+import ParticleGlobalSetup from './ParticleGlobalSetup'; // ← ★ 追加
 import './blog-post.css';
 
 // ===================================
@@ -52,6 +53,9 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
 
   return (
     <div className="blog-page">
+      {/* ★ 追加：グローバル関数 initParticles を定義 */}
+      <ParticleGlobalSetup slug={params.slug} />
+
       {/* パーティクル初期化（クライアントコンポーネント） */}
       <ParticleInitializer slug={params.slug} />
 
@@ -101,11 +105,14 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
 
       {/* 記事コンテンツ */}
       <article className="blog-post-content">
-        <div 
+        <div
           className="blog-content-wrapper"
           dangerouslySetInnerHTML={{ __html: post.html }}
         />
       </article>
+
+      {/* ★ パーティクル描画用 canvas（記事下部に配置） */}
+      <canvas id="particle-canvas" width={400} height={300} />
 
       {/* フッター */}
       <footer className="blog-footer">
