@@ -11,7 +11,10 @@ export default function ParticleInitializer({ slug }: ParticleInitializerProps) 
     console.log('🧠 Particle initializer mounted, slug:', slug);
 
     const handleLoad = () => {
-      console.log('🧭 window.load fired, initParticles:', typeof window.initParticles);
+      console.log(
+        '🧭 window.load fired, initParticles:',
+        typeof window.initParticles
+      );
 
       const canvas = document.getElementById('particle-canvas');
       console.log('🔵 canvas at init timing (load):', canvas);
