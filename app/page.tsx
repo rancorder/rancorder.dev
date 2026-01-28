@@ -83,11 +83,11 @@ export default async function HomePage() {
 
             {/* CTA Buttons */}
             <div className={styles.ctaButtons}>
-              <Link href="/portfolio/en" className={styles.primaryButton}>
-                View Portfolio
+              <Link href="/portfolio/ja" className={styles.primaryButton}>
+                ポートフォリオを見る
               </Link>
               <Link href="/blog" className={styles.secondaryButton}>
-                Read Blog
+                ブログを読む
               </Link>
             </div>
           </div>
