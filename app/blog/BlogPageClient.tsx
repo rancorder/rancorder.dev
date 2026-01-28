@@ -35,7 +35,11 @@ function formatDateSafe(dateStr?: string) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function getExternalHref(a: ExternalArticle) {
@@ -74,11 +78,7 @@ export default function BlogPageClient({
 
   // モバイルメニュー開閉時のスクロールロック
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
@@ -88,35 +88,32 @@ export default function BlogPageClient({
   const filteredPosts = useMemo(() => {
     let results = initialPosts;
 
-    // 検索クエリでフィルタ
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       results = results.filter(
-        post =>
+        (post) =>
           post.title.toLowerCase().includes(query) ||
           post.excerpt.toLowerCase().includes(query) ||
-          post.tags.some(tag => tag.toLowerCase().includes(query))
+          post.tags.some((tag) => tag.toLowerCase().includes(query))
       );
     }
 
-    // タグでフィルタ
     if (selectedTag) {
-      results = results.filter(post =>
-        post.tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase())
+      results = results.filter((post) =>
+        post.tags.some((tag) => tag.toLowerCase() === selectedTag.toLowerCase())
       );
     }
 
-    // カテゴリでフィルタ
     if (selectedCategory) {
       results = results.filter(
-        post => post.category.toLowerCase() === selectedCategory.toLowerCase()
+        (post) =>
+          post.category.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
 
     return results;
   }, [initialPosts, searchQuery, selectedTag, selectedCategory]);
 
-  // フィルタをリセット
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedTag(null);
@@ -125,14 +122,31 @@ export default function BlogPageClient({
 
   const hasActiveFilters = searchQuery || selectedTag || selectedCategory;
 
-  // Tags/Categories セクションのレンダリング（再利用）
+  // ================================
+  // ★ Markdown → HTML にアニメ自動付与
+  // ================================
+  const applyAnimations = (html: string) => {
+    return html
+      .replace(/<h1/g, '<h1 class="animate-on-scroll fade-in-trigger"')
+      .replace(/<h2/g, '<h2 class="animate-on-scroll slide-up-trigger"')
+      .replace(/<h3/g, '<h3 class="animate-on-scroll fade-in-trigger"')
+      .replace(/<p/g, '<p class="animate-on-scroll fade-in-trigger"')
+      .replace(/<li/g, '<li class="animate-on-scroll slide-right-trigger"')
+      .replace(/<img/g, '<img class="animate-on-scroll zoom-out-trigger"')
+      .replace(/<pre/g, '<pre class="animate-on-scroll roll-in-trigger"')
+      .replace(/<strong/g, '<strong class="animate-on-scroll jelly-trigger"');
+  };
+
+  // ================================
+  // UI レンダリング
+  // ================================
   const renderFilters = (inMobileMenu = false) => (
     <>
       {/* タグクラウド */}
       {allTags.length > 0 && (
         <section className={styles.tagsSection}>
           <h2 className={styles.sectionTitle}>
-            <span className={styles.titleIcon}>🏷️</span>
+            <span className={styles.titleIcon}>#</span>
             Popular Tags
           </h2>
           <div className={styles.tagCloud}>
@@ -143,7 +157,9 @@ export default function BlogPageClient({
                   setSelectedTag(selectedTag === tag ? null : tag);
                   if (inMobileMenu) setIsMobileMenuOpen(false);
                 }}
-                className={`${styles.tagButton} ${selectedTag === tag ? styles.tagActive : ''}`}
+                className={`${styles.tagButton} ${
+                  selectedTag === tag ? styles.tagActive : ''
+                }`}
               >
                 {tag} <span className={styles.tagCount}>({count})</span>
               </button>
@@ -152,7 +168,7 @@ export default function BlogPageClient({
         </section>
       )}
 
-      {/* カテゴリフィルタ */}
+      {/* カテゴリ */}
       {allCategories.length > 0 && (
         <section className={styles.categoriesSection}>
           <h2 className={styles.sectionTitle}>
@@ -160,11 +176,13 @@ export default function BlogPageClient({
             Categories
           </h2>
           <div className={styles.categoryList}>
-            {allCategories.map(category => (
+            {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => {
-                  setSelectedCategory(selectedCategory === category ? null : category);
+                  setSelectedCategory(
+                    selectedCategory === category ? null : category
+                  );
                   if (inMobileMenu) setIsMobileMenuOpen(false);
                 }}
                 className={`${styles.categoryButton} ${
@@ -183,13 +201,11 @@ export default function BlogPageClient({
   return (
     <div className={styles.blogPage}>
       <div className={styles.container}>
-        {/* ヘッダー */}
         <header className={styles.header}>
           <Link href="/" className={styles.backLink}>
             ← Back to Home
           </Link>
 
-          {/* ハンバーガーボタン（モバイルのみ表示） */}
           <button
             className={styles.mobileMenuButton}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -204,14 +220,21 @@ export default function BlogPageClient({
 
           <h1 className={styles.title}>Technical Blog</h1>
           <p className={styles.subtitle}>
-            Deep dives into enterprise PM, decision design, and production-grade systems
+            Deep dives into enterprise PM, decision design, and production-grade
+            systems
           </p>
         </header>
 
-        {/* 検索バー */}
+        {/* 検索 */}
         <div className={styles.searchSection}>
           <div className={styles.searchBox}>
-            <svg className={styles.searchIcon} width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg
+              className={styles.searchIcon}
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+            >
               <path
                 d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35"
                 stroke="currentColor"
@@ -219,13 +242,15 @@ export default function BlogPageClient({
                 strokeLinecap="round"
               />
             </svg>
+
             <input
               type="text"
               placeholder="Search articles..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
+
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
@@ -237,28 +262,31 @@ export default function BlogPageClient({
             )}
           </div>
 
-          {/* フィルタ表示 */}
           {hasActiveFilters && (
             <div className={styles.activeFilters}>
               <span className={styles.filterLabel}>Active filters:</span>
+
               {searchQuery && (
                 <span className={styles.filterTag}>
                   Search: "{searchQuery}"
                   <button onClick={() => setSearchQuery('')}>✕</button>
                 </span>
               )}
+
               {selectedTag && (
                 <span className={styles.filterTag}>
                   Tag: {selectedTag}
                   <button onClick={() => setSelectedTag(null)}>✕</button>
                 </span>
               )}
+
               {selectedCategory && (
                 <span className={styles.filterTag}>
                   Category: {selectedCategory}
                   <button onClick={() => setSelectedCategory(null)}>✕</button>
                 </span>
               )}
+
               <button onClick={resetFilters} className={styles.resetButton}>
                 Reset all
               </button>
@@ -266,62 +294,78 @@ export default function BlogPageClient({
           )}
         </div>
 
-        {/* タブレット以下：上部表示 */}
-        <div className={styles.tabletFilters}>
-          {renderFilters()}
-        </div>
+        {/* タブレット */}
+        <div className={styles.tabletFilters}>{renderFilters()}</div>
 
-        {/* PC：2カラムレイアウト（≥1024px） */}
+        {/* PC 2カラム */}
         <div className={styles.desktopLayout}>
-          {/* メインコンテンツ */}
+          {/* メイン */}
           <div className={styles.mainContent}>
-            {/* Featured Articles（内部記事） */}
+            {/* Featured */}
             <section className={styles.section}>
               <div className={styles.articleHeader}>
                 <h2 className={styles.sectionTitle}>
-                  <span className={styles.titleIcon}>📝</span>
+                  <span className={styles.titleIcon}>★</span>
                   {hasActiveFilters ? 'Search Results' : 'Featured Articles'}
                 </h2>
                 <span className={styles.resultCount}>
-                  {filteredPosts.length} {filteredPosts.length === 1 ? 'article' : 'articles'}
+                  {filteredPosts.length}{' '}
+                  {filteredPosts.length === 1 ? 'article' : 'articles'}
                 </span>
               </div>
 
               {filteredPosts.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <p className={styles.emptyIcon}>🔍</p>
-                  <p className={styles.emptyText}>No articles found matching your filters.</p>
-                  <button onClick={resetFilters} className={styles.emptyButton}>
+                  <p className={styles.emptyIcon}>😢</p>
+                  <p className={styles.emptyText}>
+                    No articles found matching your filters.
+                  </p>
+                  <button
+                    onClick={resetFilters}
+                    className={styles.emptyButton}
+                  >
                     Clear filters
                   </button>
                 </div>
               ) : (
                 <div className={styles.grid}>
-                  {filteredPosts.map(post => (
-                    <Link key={post.slug} href={`/blog/${post.slug}`} className={styles.featuredCard}>
+                  {filteredPosts.map((post) => (
+                    <Link
+                      key={post.slug}
+                      href={`/blog/${post.slug}`}
+                      className={styles.featuredCard}
+                    >
                       <div className={styles.cardMeta}>
-                        <span className={styles.category}>{post.category}</span>
-                        <span className={styles.date}>{formatDateSafe(post.date) || ''}</span>
+                        <span className={styles.category}>
+                          {post.category}
+                        </span>
+                        <span className={styles.date}>
+                          {formatDateSafe(post.date) || ''}
+                        </span>
                       </div>
+
                       <h3 className={styles.cardTitle}>{post.title}</h3>
                       <p className={styles.cardExcerpt}>{post.excerpt}</p>
 
-                      {/* タグ表示 */}
                       {post.tags.length > 0 && (
                         <div className={styles.cardTags}>
-                          {post.tags.slice(0, 3).map(tag => (
+                          {post.tags.slice(0, 3).map((tag) => (
                             <span key={tag} className={styles.cardTag}>
                               {tag}
                             </span>
                           ))}
                           {post.tags.length > 3 && (
-                            <span className={styles.cardTag}>+{post.tags.length - 3}</span>
+                            <span className={styles.cardTag}>
+                              +{post.tags.length - 3}
+                            </span>
                           )}
                         </div>
                       )}
 
                       <div className={styles.cardFooter}>
-                        <span className={styles.readTime}>{post.readingTime}</span>
+                        <span className={styles.readTime}>
+                          {post.readingTime}
+                        </span>
                         <span className={styles.arrow}>→</span>
                       </div>
                     </Link>
@@ -330,12 +374,14 @@ export default function BlogPageClient({
               )}
             </section>
 
-            {/* External Articles（Qiita/Zenn/note/...） */}
+            {/* External Articles */}
             {externalArticles.length > 0 && (
               <section className={styles.section}>
                 <div className={styles.externalHeader}>
                   <h2 className={styles.sectionTitle}>External Articles</h2>
-                  <p className={styles.externalSubtitle}>Recent articles published on external platforms</p>
+                  <p className={styles.externalSubtitle}>
+                    Recent articles published on external platforms
+                  </p>
                 </div>
 
                 <div className={styles.externalGrid}>
@@ -357,21 +403,33 @@ export default function BlogPageClient({
                         <div className={styles.externalCardHeader}>
                           <span
                             className={`${styles.platformBadge} ${
-                              styles[toPlatformClass(article.source)] || ''
+                              styles[toPlatformClass(article.source)]
                             }`}
                           >
                             {sourceLabel}
                           </span>
 
-                          {dateLabel && <span className={styles.externalDate}>{dateLabel}</span>}
+                          {dateLabel && (
+                            <span className={styles.externalDate}>
+                              {dateLabel}
+                            </span>
+                          )}
                         </div>
 
-                        <h3 className={styles.externalTitle}>{article.title || '(Untitled)'}</h3>
+                        <h3 className={styles.externalTitle}>
+                          {article.title || '(Untitled)'}
+                        </h3>
 
-                        {article.excerpt && <p className={styles.externalExcerpt}>{article.excerpt}</p>}
+                        {article.excerpt && (
+                          <p className={styles.externalExcerpt}>
+                            {article.excerpt}
+                          </p>
+                        )}
 
                         <div className={styles.externalFooter}>
-                          <span className={styles.externalLink}>Read on {sourceLabel} →</span>
+                          <span className={styles.externalLink}>
+                            Read on {sourceLabel} →
+                          </span>
                         </div>
                       </a>
                     );
@@ -381,22 +439,17 @@ export default function BlogPageClient({
             )}
           </div>
 
-          {/* サイドバー（PC のみ表示） */}
-          <aside className={styles.sidebar}>
-            {renderFilters()}
-          </aside>
+          {/* サイドバー */}
+          <aside className={styles.sidebar}>{renderFilters()}</aside>
         </div>
 
         {/* モバイルメニュー */}
         {isMobileMenuOpen && (
           <>
-            {/* オーバーレイ */}
             <div
               className={styles.menuOverlay}
               onClick={() => setIsMobileMenuOpen(false)}
             />
-
-            {/* メニューパネル */}
             <div className={styles.mobileMenuPanel}>
               <div className={styles.menuHeader}>
                 <h2 className={styles.menuTitle}>Filters</h2>
@@ -408,7 +461,6 @@ export default function BlogPageClient({
                   ✕
                 </button>
               </div>
-
               <div className={styles.menuContent}>
                 {renderFilters(true)}
               </div>
