@@ -1144,154 +1144,198 @@ readingTime: 15 min read
 
 </article>
 
-<script>
+<script id="particle-init-script" data-init="particle-system">
 // ===================================
-// パーティクルシステム - 即座に実行
+// パーティクルシステム初期化関数（グローバル）
 // ===================================
 
-// 既存のアニメーションフレームをキャンセル（重複防止）
-if (window.particleAnimationId) {
-  cancelAnimationFrame(window.particleAnimationId);
-}
+window.initBlogEffects = function() {
+  console.log('🎨 Blog effects initialization started');
+  
+  // 既存のアニメーションフレームをキャンセル（重複防止）
+  if (window.particleAnimationId) {
+    cancelAnimationFrame(window.particleAnimationId);
+    console.log('✅ Cancelled existing particle animation');
+  }
 
-function initParticles() {
-  const canvas = document.getElementById('particle-canvas');
-  if (!canvas) {
-    // canvasが存在しない場合は少し待ってから再試行
-    setTimeout(initParticles, 100);
-    return;
-  }
-  
-  const ctx = canvas.getContext('2d');
-  
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  
-  class Particle {
-    constructor() {
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.size = Math.random() * 3 + 1;
-      this.speedX = Math.random() * 2 - 1;
-      this.speedY = Math.random() * 2 - 1;
-      this.color = this.randomColor();
+  function initParticles() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) {
+      console.warn('⚠️ Canvas not found, retrying in 100ms...');
+      setTimeout(initParticles, 100);
+      return;
     }
     
-    randomColor() {
-      const colors = [
-        'rgba(124, 58, 237, 0.9)',
-        'rgba(34, 197, 94, 0.9)',
-        'rgba(59, 130, 246, 0.9)',
-        'rgba(236, 72, 153, 0.9)'
-      ];
-      return colors[Math.floor(Math.random() * colors.length)];
+    console.log('✅ Canvas found, starting particle system');
+    
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      console.log(`📐 Canvas resized: ${canvas.width}x${canvas.height}`);
     }
     
-    update() {
-      this.x += this.speedX;
-      this.y += this.speedY;
-      
-      if (this.x > canvas.width || this.x < 0) {
-        this.speedX *= -1;
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.color = this.randomColor();
       }
       
-      if (this.y > canvas.height || this.y < 0) {
-        this.speedY *= -1;
+      randomColor() {
+        const colors = [
+          'rgba(124, 58, 237, 0.9)',
+          'rgba(34, 197, 94, 0.9)',
+          'rgba(59, 130, 246, 0.9)',
+          'rgba(236, 72, 153, 0.9)'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
       }
-    }
-    
-    draw() {
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  
-  const particles = [];
-  const particleCount = 80;
-  
-  for (let i = 0; i < particleCount; i++) {
-    particles.push(new Particle());
-  }
-  
-  function connectParticles() {
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
         
-        if (distance < 150) {
-          ctx.strokeStyle = `rgba(124, 58, 237, ${0.8 * (1 - distance / 150)})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.stroke();
+        if (this.x > canvas.width || this.x < 0) {
+          this.speedX *= -1;
+        }
+        
+        if (this.y > canvas.height || this.y < 0) {
+          this.speedY *= -1;
+        }
+      }
+      
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    const particles = [];
+    const particleCount = 80;
+    
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+    
+    console.log(`✅ Created ${particleCount} particles`);
+    
+    function connectParticles() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 150) {
+            ctx.strokeStyle = `rgba(124, 58, 237, ${0.8 * (1 - distance / 150)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
         }
       }
     }
+    
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      
+      connectParticles();
+      
+      window.particleAnimationId = requestAnimationFrame(animate);
+    }
+    
+    animate();
+    console.log('✅ Particle animation started');
   }
-  
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 即座に実行
+  initParticles();
+
+  // ===================================
+  // スクロールアニメーション (Intersection Observer)
+  // ===================================
+
+  function initScrollAnimations() {
+    const animateElements = document.querySelectorAll('.animate-on-scroll');
+    if (animateElements.length === 0) {
+      console.warn('⚠️ No scroll animation elements found, retrying in 100ms...');
+      setTimeout(initScrollAnimations, 100);
+      return;
+    }
     
-    particles.forEach(particle => {
-      particle.update();
-      particle.draw();
-    });
+    console.log(`✅ Found ${animateElements.length} scroll animation elements`);
     
-    connectParticles();
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    };
     
-    window.particleAnimationId = requestAnimationFrame(animate);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        } else {
+          entry.target.classList.remove('active');
+        }
+      });
+    }, observerOptions);
+    
+    animateElements.forEach(el => observer.observe(el));
+    console.log('✅ Scroll animations initialized');
   }
+
+  // 即座に実行
+  initScrollAnimations();
   
-  animate();
+  console.log('✅ Blog effects initialization completed');
+};
+
+// 複数の方法で初期化を試みる
+console.log('🚀 Attempting to initialize blog effects...');
+
+// 方法1: 即座に実行
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initBlogEffects);
+  console.log('📋 Waiting for DOMContentLoaded');
+} else {
+  // DOM already loaded
+  window.initBlogEffects();
+  console.log('📋 DOM already loaded, executing immediately');
 }
 
-// 即座に実行
-initParticles();
-
-// ===================================
-// スクロールアニメーション (Intersection Observer)
-// ===================================
-
-function initScrollAnimations() {
-  const animateElements = document.querySelectorAll('.animate-on-scroll');
-  if (animateElements.length === 0) {
-    // 要素が存在しない場合は少し待ってから再試行
-    setTimeout(initScrollAnimations, 100);
-    return;
+// 方法2: window.onloadでも試す（保険）
+window.addEventListener('load', function() {
+  if (!window.particleAnimationId) {
+    console.log('🔄 Retrying initialization on window.load');
+    window.initBlogEffects();
   }
-  
-  const observerOptions = {
-    root: null,
-    rootMargin: '0px',
-    threshold: 0.2
-  };
-  
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('active');
-      } else {
-        // スクロールで画面外に出たらリセット（何度でもアニメーション可能）
-        entry.target.classList.remove('active');
-      }
-    });
-  }, observerOptions);
-  
-  animateElements.forEach(el => observer.observe(el));
-}
+});
 
-// 即座に実行
-initScrollAnimations();
+// 方法3: setTimeoutでも試す（Next.js対策）
+setTimeout(function() {
+  if (!window.particleAnimationId) {
+    console.log('🔄 Retrying initialization after 500ms timeout');
+    window.initBlogEffects();
+  }
+}, 500);
 </script>
 
 </body>
