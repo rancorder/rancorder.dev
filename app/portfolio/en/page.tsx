@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useInView, useMotionValue } from 'framer-motion';
 
 // ============================================
 // Animation Variants
@@ -15,6 +15,92 @@ const stagger = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
 };
+
+// ============================================
+// Particle Background Component
+// ============================================
+function ParticleBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles: Array<{
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      opacity: number;
+    }> = [];
+
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 3 + 1,
+        speedX: (Math.random() - 0.5) * 0.5,
+        speedY: (Math.random() - 0.5) * 0.5,
+        opacity: Math.random() * 0.5 + 0.3,
+      });
+    }
+
+    function animate() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((particle) => {
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
+
+        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(167, 139, 250, ${particle.opacity})`;
+        ctx.fill();
+
+        // Draw connections
+        particles.forEach((particle2) => {
+          const dx = particle.x - particle2.x;
+          const dy = particle.y - particle2.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(167, 139, 250, ${0.15 * (1 - distance / 120)})`;
+            ctx.lineWidth = 1;
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(particle2.x, particle2.y);
+            ctx.stroke();
+          }
+        });
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return <canvas ref={canvasRef} className="particle-canvas" />;
+}
 
 // ============================================
 // CountUp Component
@@ -97,7 +183,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
           <a href="#contact" className="mobile-cta" onClick={onClose}>
             Contact
           </a>
-          <a href="/ja" className="mobile-lang" onClick={onClose}>
+          <a href="/portfolio/ja" className="mobile-lang" onClick={onClose}>
             JA
           </a>
         </nav>
@@ -114,11 +200,35 @@ export default function PageEn() {
   const { scrollYProgress } = useScroll();
   const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
+  
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [mouseX, mouseY]);
 
   return (
     <main>
+      {/* Particle Background */}
+      <ParticleBackground />
+
       {/* Dynamic Background */}
       <motion.div className="bg-gradient" style={{ y: bgY }} />
+      
+      {/* Mouse Follow Spotlight */}
+      <motion.div
+        className="mouse-spotlight"
+        style={{
+          x: useTransform(mouseX, (x) => x - 200),
+          y: useTransform(mouseY, (y) => y - 200),
+        }}
+      />
 
       {/* Scroll Progress Bar */}
       <motion.div
@@ -142,7 +252,7 @@ export default function PageEn() {
             <a href="#contact" className="pill">
               Contact
             </a>
-            <a href="/ja" className="lang-switch">
+            <a href="/portfolio/ja" className="lang-switch">
               JA
             </a>
           </nav>
@@ -172,49 +282,58 @@ export default function PageEn() {
               Technical PM for Enterprise Systems
             </motion.p>
 
-            <motion.h1 className="hero-title" variants={fadeUp}>
+            <motion.h1 className="hero-title glitch" variants={fadeUp} data-text="I turn ambiguous enterprise projects into production systems — by designing decisions before designing software.">
               I turn ambiguous enterprise projects into production systems — by designing decisions before designing software.
             </motion.h1>
 
-            <motion.p className="hero-subtitle" variants={fadeUp}>
+            <motion.p className="hero-subtitle neon-text" variants={fadeUp}>
               When you clarify <strong>who decides what</strong> upfront, projects stop stalling.
             </motion.p>
 
-            <motion.p className="hero-subtitle" variants={fadeUp}>
+            <motion.p className="hero-subtitle neon-text" variants={fadeUp}>
               No blame. No heroics. Structure over individuals.
             </motion.p>
 
             <motion.p className="lang-note" variants={fadeUp}>
               *This is the primary role definition. For Japanese-language roles, see the{' '}
-              <a href="/ja">Japanese version</a>.
+              <a href="/portfolio/ja">Japanese version</a>.
             </motion.p>
 
             <motion.div className="cta" variants={fadeUp}>
-              <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
+              <a className="btn primary pulse glow-btn" href="mailto:xzengbu@gmail.com">
                 Request Interview
               </a>
-              <a className="btn ghost" href="#projects">
+              <a className="btn ghost glow-btn-ghost" href="#projects">
                 View Key Projects →
               </a>
-              <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
+              <a className="btn ghost glow-btn-ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
                 GitHub
               </a>
             </motion.div>
 
             {/* Operational Highlights */}
             <motion.div className="operational-highlights" variants={fadeUp}>
-              <div className="op-header">Production Track Record</div>
+              <div className="op-header neon-text">Production Track Record</div>
               <div className="stats-operational">
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">11 Months</div>
+                <motion.div 
+                  className="stat-op glow-card" 
+                  whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                >
+                  <div className="stat-v neon-number">11 Months</div>
                   <div className="stat-l">24/7 Uptime — Continuous operation without manual babysitting</div>
                 </motion.div>
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">50+ Modules</div>
+                <motion.div 
+                  className="stat-op glow-card" 
+                  whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                >
+                  <div className="stat-v neon-number">50+ Modules</div>
                   <div className="stat-l">Automated — Zero manual intervention</div>
                 </motion.div>
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">Production-Grade</div>
+                <motion.div 
+                  className="stat-op glow-card" 
+                  whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                >
+                  <div className="stat-v neon-number">Production-Grade</div>
                   <div className="stat-l">Failure isolation, circuit breakers, predictable degradation</div>
                 </motion.div>
               </div>
@@ -222,15 +341,24 @@ export default function PageEn() {
 
             {/* Traditional Stats */}
             <motion.div className="stats" variants={fadeUp}>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <motion.div 
+                className="stat glow-card" 
+                whileHover={{ y: -8, scale: 1.05, rotateY: 5, transition: { duration: 0.2 } }}
+              >
                 <CountUp end={17} suffix=" Years" />
                 <div className="stat-l">Enterprise PM Experience</div>
               </motion.div>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <motion.div 
+                className="stat glow-card" 
+                whileHover={{ y: -8, scale: 1.05, rotateY: 5, transition: { duration: 0.2 } }}
+              >
                 <CountUp end={21} suffix=" SKUs" />
                 <div className="stat-l">Launched in Parallel</div>
               </motion.div>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <motion.div 
+                className="stat glow-card" 
+                whileHover={{ y: -8, scale: 1.05, rotateY: 5, transition: { duration: 0.2 } }}
+              >
                 <CountUp end={11} suffix=" Months" />
                 <div className="stat-l">Continuous Production Operation</div>
               </motion.div>
@@ -243,30 +371,42 @@ export default function PageEn() {
       <section id="role" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
+            <motion.h2 className="section-title glitch-title" variants={fadeUp} data-text="Why Decision Design Matters">
               Why Decision Design Matters
             </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
+            <motion.p className="section-sub neon-text" variants={fadeUp}>
               Technology doesn't fail. Decisions do. That's why I design decision structures before writing requirements.
             </motion.p>
 
             <motion.div className="not-optimize-grid" variants={stagger}>
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">Micromanagement via tools</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="mini-title neon-accent">Micromanagement via tools</div>
                 <p className="muted">
                   Tools don't run projects. Decisions do. I use Jira, Confluence, Notion, Slack — but I never let tools drive the process.
                 </p>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">Speed-obsessed delivery with no operational accountability</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="mini-title neon-accent">Speed-obsessed delivery with no operational accountability</div>
                 <p className="muted">
                   Delivery speed means nothing if it doesn't run in production. I own everything from requirement ambiguity to operational readiness.
                 </p>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">PoCs with no intention to go live</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.02 }}
+              >
+                <div className="mini-title neon-accent">PoCs with no intention to go live</div>
                 <p className="muted">
                   Every technical decision assumes production deployment. PoCs without operational design waste resources.
                 </p>
@@ -274,36 +414,45 @@ export default function PageEn() {
             </motion.div>
 
             <motion.div className="pm-clarification" variants={fadeUp}>
-              <h3 className="clarification-title">What I Actually Do as a PM</h3>
+              <h3 className="clarification-title neon-text">What I Actually Do as a PM</h3>
 
               <div className="clarification-grid">
-                <div className="clarification-item">
+                <motion.div 
+                  className="clarification-item"
+                  whileHover={{ x: 10 }}
+                >
                   <div className="clarification-icon">🚫</div>
                   <div className="clarification-content">
-                    <div className="clarification-heading">I'm not a tool optimizer</div>
+                    <div className="clarification-heading neon-accent">I'm not a tool optimizer</div>
                     <p className="clarification-text">I don't "manage Jira". I manage decisions.</p>
                   </div>
-                </div>
+                </motion.div>
 
-                <div className="clarification-item">
+                <motion.div 
+                  className="clarification-item"
+                  whileHover={{ x: 10 }}
+                >
                   <div className="clarification-icon">🔄</div>
                   <div className="clarification-content">
-                    <div className="clarification-heading">I translate ambiguity into system design</div>
+                    <div className="clarification-heading neon-accent">I translate ambiguity into system design</div>
                     <p className="clarification-text">
                       I break down unclear business demands into: system architecture, responsibility boundaries, escalation rules, operational constraints.
                     </p>
                   </div>
-                </div>
+                </motion.div>
 
-                <div className="clarification-item">
+                <motion.div 
+                  className="clarification-item"
+                  whileHover={{ x: 10 }}
+                >
                   <div className="clarification-icon">📐</div>
                   <div className="clarification-content">
-                    <div className="clarification-heading">I don't sell frameworks</div>
+                    <div className="clarification-heading neon-accent">I don't sell frameworks</div>
                     <p className="clarification-text">
                       Decision design isn't a consultant framework. It's context-specific judgment architecture.
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
@@ -314,30 +463,34 @@ export default function PageEn() {
       <section id="projects" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.05 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
+            <motion.h2 className="section-title glitch-title" variants={fadeUp} data-text="Key Projects">
               Key Projects
             </motion.h2>
-            <motion.p className="section-sub" variants={fadeUp}>
+            <motion.p className="section-sub neon-text" variants={fadeUp}>
               Production-first implementation
             </motion.p>
 
             <motion.div className="grid projects" variants={stagger}>
               {/* Project 1 */}
-              <motion.div className="card" variants={fadeUp}>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -12, scale: 1.03, rotateX: 2 }}
+              >
                 <div className="project-head">
                   <h3 className="project-title">Unified Scraping & Monitoring Platform</h3>
-                  <span className="badge">Production</span>
+                  <span className="badge neon-badge">Production</span>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Challenge</div>
+                  <div className="case-label neon-accent">Challenge</div>
                   <p className="case-text">
                     54 sites, inconsistent HTML, frequent layout changes
                   </p>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Actions Taken</div>
+                  <div className="case-label neon-accent">Actions Taken</div>
                   <ul className="list">
                     <li>Designed long-term operational structure</li>
                     <li>Isolated failure domains</li>
@@ -346,7 +499,7 @@ export default function PageEn() {
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Outcome</div>
+                  <div className="case-label neon-accent">Outcome</div>
                   <ul className="list">
                     <li>11 months continuous operation</li>
                     <li>100k+ monthly processed items</li>
@@ -354,30 +507,34 @@ export default function PageEn() {
                 </div>
 
                 <div className="tags">
-                  <span className="tag">Python</span>
-                  <span className="tag">FastAPI</span>
-                  <span className="tag">PostgreSQL</span>
-                  <span className="tag">Redis</span>
-                  <span className="tag">Linux</span>
+                  <span className="tag glow-tag">Python</span>
+                  <span className="tag glow-tag">FastAPI</span>
+                  <span className="tag glow-tag">PostgreSQL</span>
+                  <span className="tag glow-tag">Redis</span>
+                  <span className="tag glow-tag">Linux</span>
                 </div>
               </motion.div>
 
               {/* Project 2 */}
-              <motion.div className="card" variants={fadeUp}>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -12, scale: 1.03, rotateX: 2 }}
+              >
                 <div className="project-head">
                   <h3 className="project-title">SRE Demonstration System</h3>
-                  <span className="badge">Performance</span>
+                  <span className="badge neon-badge">Performance</span>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Challenge</div>
+                  <div className="case-label neon-accent">Challenge</div>
                   <p className="case-text">
                     Validate reliability before production
                   </p>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Actions Taken</div>
+                  <div className="case-label neon-accent">Actions Taken</div>
                   <ul className="list">
                     <li>Built 6-service architecture</li>
                     <li>Load testing, failure injection</li>
@@ -385,7 +542,7 @@ export default function PageEn() {
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Outcome</div>
+                  <div className="case-label neon-accent">Outcome</div>
                   <ul className="list">
                     <li>Avg latency 1.69ms (P95: 2.37ms)</li>
                     <li>0% error rate</li>
@@ -393,29 +550,33 @@ export default function PageEn() {
                 </div>
 
                 <div className="tags">
-                  <span className="tag">FastAPI</span>
-                  <span className="tag">Redis</span>
-                  <span className="tag">PostgreSQL</span>
-                  <span className="tag">Docker</span>
+                  <span className="tag glow-tag">FastAPI</span>
+                  <span className="tag glow-tag">Redis</span>
+                  <span className="tag glow-tag">PostgreSQL</span>
+                  <span className="tag glow-tag">Docker</span>
                 </div>
               </motion.div>
 
               {/* Project 3 */}
-              <motion.div className="card" variants={fadeUp}>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -12, scale: 1.03, rotateX: 2 }}
+              >
                 <div className="project-head">
                   <h3 className="project-title">Quality Improvement Project</h3>
-                  <span className="badge">Refactor</span>
+                  <span className="badge neon-badge">Refactor</span>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Challenge</div>
+                  <div className="case-label neon-accent">Challenge</div>
                   <p className="case-text">
                     1,400-line legacy code with no tests
                   </p>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Actions Taken</div>
+                  <div className="case-label neon-accent">Actions Taken</div>
                   <ul className="list">
                     <li>Added pytest suite</li>
                     <li>Introduced mypy strict</li>
@@ -423,7 +584,7 @@ export default function PageEn() {
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">Outcome</div>
+                  <div className="case-label neon-accent">Outcome</div>
                   <ul className="list">
                     <li>30 tests</li>
                     <li>26% coverage</li>
@@ -432,9 +593,9 @@ export default function PageEn() {
                 </div>
 
                 <div className="tags">
-                  <span className="tag">Python</span>
-                  <span className="tag">pytest</span>
-                  <span className="tag">mypy</span>
+                  <span className="tag glow-tag">Python</span>
+                  <span className="tag glow-tag">pytest</span>
+                  <span className="tag glow-tag">mypy</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -446,34 +607,50 @@ export default function PageEn() {
       <section id="skills" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
+            <motion.h2 className="section-title glitch-title" variants={fadeUp} data-text="Skill Set">
               Skill Set
             </motion.h2>
 
             <motion.div className="grid skills" variants={stagger}>
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">Decision Design</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.05 }}
+              >
+                <div className="mini-title neon-accent">Decision Design</div>
                 <p className="muted">
                   Clarify <strong>who decides what</strong> before development starts. Define responsibility boundaries, escalation rules, and fallback paths.
                 </p>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">Product Management</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.05 }}
+              >
+                <div className="mini-title neon-accent">Product Management</div>
                 <p className="muted">
                   Requirements definition, roadmap planning, stakeholder alignment, cross-team communication.
                 </p>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">System Architecture (Enterprise Context)</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.05 }}
+              >
+                <div className="mini-title neon-accent">System Architecture (Enterprise Context)</div>
                 <p className="muted">
                   System-wide design, API design, data consistency, failure isolation, operational constraints.
                 </p>
               </motion.div>
 
-              <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">Production Operations Design</div>
+              <motion.div 
+                className="card glow-card-hover" 
+                variants={fadeUp}
+                whileHover={{ y: -8, scale: 1.05 }}
+              >
+                <div className="mini-title neon-accent">Production Operations Design</div>
                 <p className="muted">
                   Monitoring, logging, retry control, circuit breakers, predictable degradation.
                 </p>
@@ -487,21 +664,21 @@ export default function PageEn() {
       <section id="contact" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
-            <motion.h2 className="section-title" variants={fadeUp}>
+            <motion.h2 className="section-title glitch-title" variants={fadeUp} data-text="Get in Touch">
               Get in Touch
             </motion.h2>
 
-            <motion.div className="contact-card" variants={fadeUp}>
+            <motion.div className="contact-card glow-card-hover" variants={fadeUp}>
               <div className="contact-left">
-                <p className="contact-text">
+                <p className="contact-text neon-text">
                   If you need a Technical PM who can turn complex enterprise initiatives into production-ready systems, feel free to reach out.
                 </p>
               </div>
               <div className="contact-right">
-                <a className="btn primary" href="mailto:xzengbu@gmail.com">
+                <a className="btn primary glow-btn" href="mailto:xzengbu@gmail.com">
                   Email Me
                 </a>
-                <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
+                <a className="btn ghost glow-btn-ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
                   GitHub
                 </a>
               </div>
@@ -550,6 +727,31 @@ export default function PageEn() {
           overflow-x: hidden;
           position: relative;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          perspective: 1000px;
+        }
+
+        /* ============================================ */
+        /* Particle Canvas */
+        /* ============================================ */
+        .particle-canvas {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* ============================================ */
+        /* Mouse Spotlight */
+        /* ============================================ */
+        .mouse-spotlight {
+          position: fixed;
+          width: 400px;
+          height: 400px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(167, 139, 250, 0.15), transparent 70%);
+          pointer-events: none;
+          z-index: 1;
+          filter: blur(40px);
         }
 
         /* ============================================ */
@@ -560,10 +762,11 @@ export default function PageEn() {
           top: 0;
           left: 0;
           right: 0;
-          height: 3px;
+          height: 4px;
           background: linear-gradient(90deg, var(--accent), var(--accent2));
           transform-origin: 0%;
           z-index: 9999;
+          box-shadow: 0 0 20px rgba(167, 139, 250, 0.8);
         }
 
         /* ============================================ */
@@ -572,10 +775,205 @@ export default function PageEn() {
         .bg-gradient {
           position: fixed;
           inset: 0;
-          background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(167, 139, 250, 0.15), transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 90%, rgba(34, 197, 94, 0.1), transparent 60%);
+          background: 
+            radial-gradient(ellipse 80% 50% at 50% -20%, rgba(167, 139, 250, 0.25), transparent 60%),
+            radial-gradient(ellipse 60% 40% at 80% 90%, rgba(34, 197, 94, 0.2), transparent 60%),
+            radial-gradient(ellipse 50% 50% at 20% 50%, rgba(34, 197, 94, 0.15), transparent 70%);
           pointer-events: none;
-          z-index: -1;
+          z-index: 0;
+          animation: pulse-bg 10s ease-in-out infinite;
+        }
+
+        @keyframes pulse-bg {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+
+        /* ============================================ */
+        /* Glitch Effect */
+        /* ============================================ */
+        .glitch {
+          position: relative;
+          animation: glitch 8s infinite;
+        }
+
+        .glitch::before,
+        .glitch::after {
+          content: attr(data-text);
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: inherit;
+          -webkit-background-clip: text;
+          background-clip: text;
+        }
+
+        .glitch::before {
+          animation: glitch-1 3s infinite;
+          clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+          transform: translateX(-3px);
+          text-shadow: 2px 0 #ff00de;
+        }
+
+        .glitch::after {
+          animation: glitch-2 2.5s infinite;
+          clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+          transform: translateX(3px);
+          text-shadow: -2px 0 #00fff9;
+        }
+
+        @keyframes glitch {
+          0%, 100% {
+            transform: translate(0);
+          }
+          20% {
+            transform: translate(-3px, 3px);
+          }
+          40% {
+            transform: translate(-3px, -3px);
+          }
+          60% {
+            transform: translate(3px, 3px);
+          }
+          80% {
+            transform: translate(3px, -3px);
+          }
+        }
+
+        @keyframes glitch-1 {
+          0%, 100% {
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translateX(0);
+          }
+          20% {
+            clip-path: polygon(0 15%, 100% 15%, 100% 65%, 0 65%);
+            transform: translateX(-8px);
+          }
+          40% {
+            clip-path: polygon(0 30%, 100% 30%, 100% 80%, 0 80%);
+            transform: translateX(8px);
+          }
+        }
+
+        @keyframes glitch-2 {
+          0%, 100% {
+            clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+            transform: translateX(0);
+          }
+          25% {
+            clip-path: polygon(0 20%, 100% 20%, 100% 60%, 0 60%);
+            transform: translateX(8px);
+          }
+          50% {
+            clip-path: polygon(0 40%, 100% 40%, 100% 85%, 0 85%);
+            transform: translateX(-8px);
+          }
+        }
+
+        /* ============================================ */
+        /* Neon Effects */
+        /* ============================================ */
+        .neon-text {
+          text-shadow: 
+            0 0 10px rgba(167, 139, 250, 0.8),
+            0 0 20px rgba(167, 139, 250, 0.6),
+            0 0 30px rgba(167, 139, 250, 0.4);
+        }
+
+        .neon-accent {
+          color: var(--accent);
+          text-shadow: 
+            0 0 10px rgba(167, 139, 250, 1),
+            0 0 20px rgba(167, 139, 250, 0.8),
+            0 0 30px rgba(167, 139, 250, 0.6);
+        }
+
+        .neon-number {
+          text-shadow: 
+            0 0 15px rgba(34, 197, 94, 1),
+            0 0 30px rgba(34, 197, 94, 0.8),
+            0 0 45px rgba(34, 197, 94, 0.6);
+        }
+
+        .neon-badge {
+          box-shadow: 
+            0 0 15px rgba(167, 139, 250, 0.8),
+            inset 0 0 15px rgba(167, 139, 250, 0.4);
+        }
+
+        /* ============================================ */
+        /* Glow Card Effects */
+        /* ============================================ */
+        .glow-card {
+          box-shadow: 
+            0 0 20px rgba(167, 139, 250, 0.2),
+            0 0 40px rgba(167, 139, 250, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .glow-card:hover {
+          box-shadow: 
+            0 0 30px rgba(167, 139, 250, 0.5),
+            0 0 60px rgba(167, 139, 250, 0.3),
+            0 0 90px rgba(167, 139, 250, 0.1);
+        }
+
+        .glow-card-hover {
+          transition: all 0.3s ease;
+        }
+
+        .glow-card-hover:hover {
+          box-shadow: 
+            0 0 30px rgba(167, 139, 250, 0.5),
+            0 0 60px rgba(167, 139, 250, 0.3),
+            0 20px 40px rgba(0, 0, 0, 0.5);
+          transform: translateY(-8px);
+        }
+
+        .glow-tag {
+          transition: all 0.2s;
+        }
+
+        .glow-tag:hover {
+          box-shadow: 
+            0 0 15px rgba(167, 139, 250, 0.6),
+            inset 0 0 15px rgba(167, 139, 250, 0.3);
+          transform: scale(1.1);
+        }
+
+        /* ============================================ */
+        /* Glow Button Effects */
+        /* ============================================ */
+        .glow-btn {
+          box-shadow: 
+            0 0 20px rgba(167, 139, 250, 0.5),
+            0 0 40px rgba(167, 139, 250, 0.3);
+          transition: all 0.3s;
+        }
+
+        .glow-btn:hover {
+          box-shadow: 
+            0 0 30px rgba(167, 139, 250, 0.8),
+            0 0 60px rgba(167, 139, 250, 0.6),
+            0 0 90px rgba(167, 139, 250, 0.4);
+          transform: translateY(-4px) scale(1.05);
+        }
+
+        .glow-btn-ghost {
+          transition: all 0.3s;
+        }
+
+        .glow-btn-ghost:hover {
+          box-shadow: 
+            0 0 20px rgba(167, 139, 250, 0.5),
+            0 0 40px rgba(167, 139, 250, 0.3);
+          background: rgba(167, 139, 250, 0.15);
         }
 
         /* ============================================ */
@@ -585,6 +983,8 @@ export default function PageEn() {
           max-width: 1200px;
           margin: 0 auto;
           padding: 0 20px;
+          position: relative;
+          z-index: 10;
         }
 
         @media (min-width: 768px) {
@@ -600,10 +1000,11 @@ export default function PageEn() {
           position: sticky;
           top: 0;
           z-index: 1000;
-          backdrop-filter: blur(12px);
-          background: rgba(10, 10, 15, 0.8);
+          backdrop-filter: blur(20px);
+          background: rgba(10, 10, 15, 0.9);
           border-bottom: 1px solid var(--border);
           padding: 16px 0;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
 
         .nav-inner {
@@ -618,6 +1019,16 @@ export default function PageEn() {
           color: var(--text);
           text-decoration: none;
           letter-spacing: -0.5px;
+          text-shadow: 
+            0 0 10px rgba(167, 139, 250, 0.8),
+            0 0 20px rgba(167, 139, 250, 0.6);
+          transition: all 0.3s;
+        }
+
+        .brand:hover {
+          text-shadow: 
+            0 0 15px rgba(167, 139, 250, 1),
+            0 0 30px rgba(167, 139, 250, 0.8);
         }
 
         .nav-links {
@@ -637,11 +1048,29 @@ export default function PageEn() {
           text-decoration: none;
           font-size: 14px;
           font-weight: 600;
-          transition: color 0.2s;
+          transition: all 0.3s;
+          position: relative;
+        }
+
+        .nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: var(--accent);
+          transition: width 0.3s;
+          box-shadow: 0 0 10px rgba(167, 139, 250, 0.8);
+        }
+
+        .nav-links a:hover::after {
+          width: 100%;
         }
 
         .nav-links a:hover {
           color: var(--text);
+          text-shadow: 0 0 10px rgba(167, 139, 250, 0.8);
         }
 
         .pill {
@@ -649,6 +1078,12 @@ export default function PageEn() {
           border-radius: 999px;
           background: var(--accent);
           color: #fff !important;
+          box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
+        }
+
+        .pill:hover {
+          box-shadow: 0 0 30px rgba(167, 139, 250, 0.8);
+          transform: translateY(-2px);
         }
 
         .lang-switch {
@@ -656,6 +1091,11 @@ export default function PageEn() {
           border: 1px solid var(--border);
           border-radius: 6px;
           font-size: 12px !important;
+          box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+        }
+
+        .lang-switch:hover {
+          box-shadow: 0 0 20px rgba(167, 139, 250, 0.6);
         }
 
         /* Hamburger Menu */
@@ -682,6 +1122,7 @@ export default function PageEn() {
           background: var(--text);
           transition: all 0.3s;
           border-radius: 2px;
+          box-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
         }
 
         .hamburger span.open:nth-child(1) {
@@ -700,11 +1141,12 @@ export default function PageEn() {
         .mobile-menu {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.95);
+          background: rgba(0, 0, 0, 0.98);
           z-index: 999;
           display: flex;
           align-items: center;
           justify-content: center;
+          backdrop-filter: blur(20px);
         }
 
         .mobile-menu-inner {
@@ -724,16 +1166,23 @@ export default function PageEn() {
           text-decoration: none;
           font-size: 24px;
           font-weight: 700;
-          transition: color 0.2s;
+          transition: all 0.3s;
           min-height: var(--touch-target);
           display: flex;
           align-items: center;
+          text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+
+        .mobile-nav-links a:hover {
+          text-shadow: 0 0 25px rgba(167, 139, 250, 1);
+          transform: scale(1.1);
         }
 
         .mobile-cta {
           padding: 12px 32px;
           background: var(--accent);
           border-radius: 999px;
+          box-shadow: 0 0 30px rgba(167, 139, 250, 0.8);
         }
 
         .mobile-lang {
@@ -741,6 +1190,7 @@ export default function PageEn() {
           border: 1px solid var(--border);
           border-radius: 8px;
           font-size: 18px !important;
+          box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
         }
 
         /* ============================================ */
@@ -751,6 +1201,7 @@ export default function PageEn() {
           min-height: 90vh;
           display: flex;
           align-items: center;
+          position: relative;
         }
 
         @media (min-width: 768px) {
@@ -766,6 +1217,17 @@ export default function PageEn() {
           text-transform: uppercase;
           letter-spacing: 1.5px;
           margin-bottom: 24px;
+          text-shadow: 0 0 15px rgba(167, 139, 250, 0.8);
+          animation: pulse-text 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-text {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
         }
 
         @media (min-width: 768px) {
@@ -785,6 +1247,15 @@ export default function PageEn() {
           background-clip: text;
         }
 
+        .glitch-title {
+          font-size: clamp(32px, 6vw, 48px);
+          font-weight: 900;
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
         .hero-subtitle {
           font-size: clamp(16px, 3vw, 20px);
           line-height: 1.7;
@@ -795,6 +1266,7 @@ export default function PageEn() {
         .hero-subtitle strong {
           color: var(--accent);
           font-weight: 700;
+          text-shadow: 0 0 10px rgba(167, 139, 250, 0.6);
         }
 
         .lang-note {
@@ -808,6 +1280,7 @@ export default function PageEn() {
         .lang-note a {
           color: var(--accent);
           text-decoration: underline;
+          text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
         }
 
         /* CTA Buttons */
@@ -839,8 +1312,6 @@ export default function PageEn() {
 
         .btn.primary:hover {
           background: #9370db;
-          transform: translateY(-2px);
-          box-shadow: 0 12px 24px rgba(167, 139, 250, 0.3);
         }
 
         .btn.ghost {
@@ -851,21 +1322,18 @@ export default function PageEn() {
 
         .btn.ghost:hover {
           border-color: var(--accent);
-          background: rgba(167, 139, 250, 0.1);
-          transform: translateY(-2px);
         }
 
         .pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation: pulse-btn 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        @keyframes pulse {
-          0%,
-          100% {
-            box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4);
+        @keyframes pulse-btn {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.7);
           }
           50% {
-            box-shadow: 0 0 0 20px rgba(167, 139, 250, 0);
+            box-shadow: 0 0 0 30px rgba(167, 139, 250, 0);
           }
         }
 
@@ -897,7 +1365,7 @@ export default function PageEn() {
 
         .stat-op {
           background: var(--card-bg);
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(20px);
           border: 1px solid var(--border);
           border-radius: 16px;
           padding: 24px;
@@ -906,7 +1374,7 @@ export default function PageEn() {
 
         .stat-op:hover {
           border-color: var(--accent2);
-          background: rgba(34, 197, 94, 0.05);
+          background: rgba(34, 197, 94, 0.08);
         }
 
         /* Traditional Stats */
@@ -926,15 +1394,16 @@ export default function PageEn() {
           text-align: center;
           padding: 32px 24px;
           background: var(--card-bg);
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(20px);
           border: 1px solid var(--border);
           border-radius: 16px;
           transition: all 0.3s;
+          transform-style: preserve-3d;
         }
 
         .stat:hover {
           border-color: var(--accent);
-          background: rgba(167, 139, 250, 0.05);
+          background: rgba(167, 139, 250, 0.08);
         }
 
         .stat-v {
@@ -955,6 +1424,7 @@ export default function PageEn() {
         /* ============================================ */
         .section {
           padding: 80px 0;
+          position: relative;
         }
 
         @media (min-width: 768px) {
@@ -967,10 +1437,6 @@ export default function PageEn() {
           font-size: clamp(32px, 6vw, 48px);
           font-weight: 900;
           margin-bottom: 16px;
-          background: linear-gradient(135deg, var(--accent), var(--accent2));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
         }
 
         .section-sub {
@@ -985,18 +1451,17 @@ export default function PageEn() {
         /* ============================================ */
         .card {
           background: var(--card-bg);
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(20px);
           border: 1px solid var(--border);
           border-radius: 16px;
           padding: 32px;
           transition: all 0.3s;
+          transform-style: preserve-3d;
         }
 
         .card:hover {
           border-color: var(--accent);
-          background: rgba(167, 139, 250, 0.03);
-          transform: translateY(-4px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+          background: rgba(167, 139, 250, 0.05);
         }
 
         .grid {
@@ -1059,6 +1524,7 @@ export default function PageEn() {
           display: flex;
           gap: 20px;
           align-items: flex-start;
+          transition: all 0.3s;
         }
 
         .clarification-icon {
@@ -1073,7 +1539,6 @@ export default function PageEn() {
         .clarification-heading {
           font-size: 16px;
           font-weight: 900;
-          color: var(--accent);
           margin-bottom: 12px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -1140,7 +1605,6 @@ export default function PageEn() {
         .case-label {
           font-size: 12px;
           font-weight: 900;
-          color: var(--accent);
           text-transform: uppercase;
           letter-spacing: 1px;
           margin-bottom: 12px;
@@ -1181,7 +1645,7 @@ export default function PageEn() {
         }
 
         .tag:hover {
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.1);
           border-color: var(--accent);
           color: var(--accent);
         }
@@ -1213,11 +1677,12 @@ export default function PageEn() {
           gap: 32px;
           align-items: center;
           justify-content: space-between;
-          background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(34, 197, 94, 0.1));
+          background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(34, 197, 94, 0.1));
           border: 1px solid var(--border);
           border-radius: 20px;
           padding: 48px;
           flex-direction: column;
+          backdrop-filter: blur(20px);
         }
 
         @media (min-width: 768px) {
