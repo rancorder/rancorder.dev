@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getPostBySlug, getAllPosts } from '@/lib/posts';
+import { getPost, getAllPosts } from '@/lib/posts';
 import ParticleInitializer from './ParticleInitializer';
 import './blog-post.css';
 
@@ -8,7 +8,7 @@ import './blog-post.css';
 // メタデータ生成（SEO対応）
 // ===================================
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlug(params.slug);
+  const post = getPost(params.slug);
 
   if (!post) {
     return {
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 // 静的パス生成（ビルド時に全記事ページを生成）
 // ===================================
 export async function generateStaticParams() {
-  const posts = await getAllPosts();
+  const posts = getAllPosts();
 
   return posts.map((post) => ({
     slug: post.slug,
@@ -43,8 +43,8 @@ export async function generateStaticParams() {
 // ===================================
 // サーバーコンポーネント（デフォルト）
 // ===================================
-export default async function BlogPost({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlug(params.slug);
+export default function BlogPost({ params }: { params: { slug: string } }) {
+  const post = getPost(params.slug);
 
   if (!post) {
     notFound();
@@ -103,7 +103,7 @@ export default async function BlogPost({ params }: { params: { slug: string } })
       <article className="blog-post-content">
         <div 
           className="blog-content-wrapper"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: post.html }}
         />
       </article>
 
