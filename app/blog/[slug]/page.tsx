@@ -1,133 +1,59 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPostBySlug, getAllPosts } from '@/lib/posts';
-import type { Post } from '@/lib/posts';
+import ParticleInitializer from './ParticleInitializer';
 
-export default function BlogPost() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
+// ===================================
+// メタデータ生成（SEO対応）
+// ===================================
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = await getPostBySlug(params.slug);
 
-  // ===================================
-  // ブログ記事の取得
-  // ===================================
-  useEffect(() => {
-    async function loadPost() {
-      try {
-        const postData = await getPostBySlug(slug);
-        if (!postData) {
-          notFound();
-        }
-        setPost(postData);
-      } catch (error) {
-        console.error('Failed to load post:', error);
-        notFound();
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadPost();
-  }, [slug]);
-
-  // ===================================
-  // パーティクルシステム初期化（Next.jsルーティング対応）
-  // ===================================
-  useEffect(() => {
-    console.log('🎯 Blog page mounted, slug:', slug);
-
-    // HTMLコンテンツが描画された後にパーティクルを初期化
-    const timer = setTimeout(() => {
-      // 方法1: カスタムイベントをトリガー
-      const event = new CustomEvent('particleInit');
-      document.dispatchEvent(event);
-      console.log('📡 Triggered particleInit event from blog page');
-
-      // 方法2: グローバル関数が存在する場合は直接呼び出し
-      if (typeof window !== 'undefined' && typeof (window as any).initParticles === 'function') {
-        (window as any).initParticles();
-        console.log('🔧 Called window.initParticles() directly');
-      } else {
-        console.warn('⚠️ window.initParticles() not found, waiting for script to load...');
-      }
-
-      // 方法3: DOM要素の存在を確認して強制初期化（フォールバック）
-      const canvas = document.getElementById('particle-canvas');
-      if (canvas) {
-        console.log('✅ Canvas element found in DOM');
-      } else {
-        console.warn('⚠️ Canvas element not found in DOM');
-      }
-    }, 300); // 300ms待機してDOMの描画を確実にする
-
-    // クリーンアップ
-    return () => {
-      clearTimeout(timer);
-      console.log('🧹 Blog page unmounted, slug:', slug);
-      
-      // パーティクルアニメーションをキャンセル
-      if (typeof window !== 'undefined' && (window as any).particleAnimationId) {
-        cancelAnimationFrame((window as any).particleAnimationId);
-        console.log('🛑 Particle animation cancelled');
-      }
+  if (!post) {
+    return {
+      title: 'Post Not Found',
     };
-  }, [slug]); // slugが変わるたびに実行
-
-  // ===================================
-  // ローディング表示
-  // ===================================
-  if (loading) {
-    return (
-      <div className="blog-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
-        <style jsx>{`
-          .blog-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: #0a0a0f;
-            color: #f8fafc;
-          }
-
-          .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(167, 139, 250, 0.2);
-            border-top-color: #a78bfa;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-          }
-
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-
-          .blog-loading p {
-            font-size: 16px;
-            color: #94a3b8;
-          }
-        `}</style>
-      </div>
-    );
   }
+
+  return {
+    title: post.title,
+    description: post.excerpt || post.title,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt || post.title,
+      type: 'article',
+      publishedTime: post.date,
+      tags: post.tags,
+    },
+  };
+}
+
+// ===================================
+// 静的パス生成（ビルド時に全記事ページを生成）
+// ===================================
+export async function generateStaticParams() {
+  const posts = await getAllPosts();
+
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
+
+// ===================================
+// サーバーコンポーネント（デフォルト）
+// ===================================
+export default async function BlogPost({ params }: { params: { slug: string } }) {
+  const post = await getPostBySlug(params.slug);
 
   if (!post) {
     notFound();
   }
 
-  // ===================================
-  // ブログ記事の表示
-  // ===================================
   return (
     <div className="blog-page">
+      {/* パーティクル初期化（クライアントコンポーネント） */}
+      <ParticleInitializer slug={params.slug} />
+
       {/* ナビゲーション */}
       <nav className="blog-nav">
         <div className="blog-nav-inner">
