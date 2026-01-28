@@ -26,13 +26,15 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
       }));
 
       function draw() {
-        ctx!.clearRect(0, 0, canvas.width, canvas.height); // ← ★ ctx! で型エラー回避
+        // ★ canvas! と ctx! を使って TS の null 警告を完全に潰す
+        ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+
         for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
 
-          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+          if (p.x < 0 || p.x > canvas!.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas!.height) p.vy *= -1;
 
           ctx!.beginPath();
           ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
