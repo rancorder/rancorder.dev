@@ -343,8 +343,12 @@ readingTime: 15 min read
     /* ===================================
        14. フェードイン
     =================================== */
-    .fade-in {
-      animation: fadeIn 1.5s ease-out;
+    .animate-on-scroll {
+      opacity: 0;
+    }
+    
+    .fade-in-trigger.active {
+      animation: fadeIn 1.5s ease-out forwards;
     }
     
     @keyframes fadeIn {
@@ -355,8 +359,8 @@ readingTime: 15 min read
     /* ===================================
        15. スケールイン
     =================================== */
-    .scale-in {
-      animation: scaleIn 0.8s ease-out;
+    .scale-in-trigger.active {
+      animation: scaleIn 0.8s ease-out forwards;
     }
     
     @keyframes scaleIn {
@@ -373,8 +377,8 @@ readingTime: 15 min read
     /* ===================================
        16. バウンスイン
     =================================== */
-    .bounce-in {
-      animation: bounceIn 1s ease-out;
+    .bounce-in-trigger.active {
+      animation: bounceIn 1s ease-out forwards;
     }
     
     @keyframes bounceIn {
@@ -390,6 +394,7 @@ readingTime: 15 min read
         transform: scale(0.9);
       }
       100% {
+        opacity: 1;
         transform: scale(1);
       }
     }
@@ -397,8 +402,8 @@ readingTime: 15 min read
     /* ===================================
        17. スライドアップ
     =================================== */
-    .slide-up {
-      animation: slideUp 0.8s ease-out;
+    .slide-up-trigger.active {
+      animation: slideUp 0.8s ease-out forwards;
     }
     
     @keyframes slideUp {
@@ -607,8 +612,8 @@ readingTime: 15 min read
     /* ===================================
        25. スライドイン（右から）
     =================================== */
-    .slide-right {
-      animation: slideRight 0.8s ease-out;
+    .slide-right-trigger.active {
+      animation: slideRight 0.8s ease-out forwards;
     }
     
     @keyframes slideRight {
@@ -625,8 +630,8 @@ readingTime: 15 min read
     /* ===================================
        26. ズームアウト
     =================================== */
-    .zoom-out {
-      animation: zoomOut 1s ease-out;
+    .zoom-out-trigger.active {
+      animation: zoomOut 1s ease-out forwards;
     }
     
     @keyframes zoomOut {
@@ -643,8 +648,8 @@ readingTime: 15 min read
     /* ===================================
        27. ロール（回転）イン
     =================================== */
-    .roll-in {
-      animation: rollIn 1s ease-out;
+    .roll-in-trigger.active {
+      animation: rollIn 1s ease-out forwards;
     }
     
     @keyframes rollIn {
@@ -681,12 +686,13 @@ readingTime: 15 min read
     /* ===================================
        29. ジェリー（ゼリー）エフェクト
     =================================== */
-    .jelly {
-      animation: jelly 0.8s ease-in-out;
+    .jelly-trigger.active {
+      animation: jelly 0.8s ease-in-out forwards;
     }
     
     @keyframes jelly {
-      0%, 100% {
+      0% {
+        opacity: 0;
         transform: scale(1, 1);
       }
       30% {
@@ -703,6 +709,10 @@ readingTime: 15 min read
       }
       75% {
         transform: scale(1.05, 0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1, 1);
       }
     }
     
@@ -980,56 +990,56 @@ readingTime: 15 min read
 
   <div class="effect-demo">
     <div class="effect-title">20. フェードイン</div>
-    <div class="fade-in">
+    <div class="animate-on-scroll fade-in-trigger">
       <p>最もシンプルな登場エフェクト。どんなコンテンツにも使えます。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">21. スケールイン</div>
-    <div class="scale-in">
+    <div class="animate-on-scroll scale-in-trigger">
       <p>小さい状態から拡大して登場。インパクトを与えます。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">22. バウンスイン</div>
-    <div class="bounce-in">
+    <div class="animate-on-scroll bounce-in-trigger">
       <p>弾むように登場。楽しい雰囲気を演出します。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">23. スライドアップ</div>
-    <div class="slide-up">
+    <div class="animate-on-scroll slide-up-trigger">
       <p>下から上へスライド。自然な流れで情報を提示します。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">24. スライドイン（右から）</div>
-    <div class="slide-right">
+    <div class="animate-on-scroll slide-right-trigger">
       <p>右から左へスライド。順序立てた説明に適しています。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">25. ズームアウト</div>
-    <div class="zoom-out">
+    <div class="animate-on-scroll zoom-out-trigger">
       <p>拡大状態から縮小して登場。ドラマチックな演出に。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">26. ロール（回転）イン</div>
-    <div class="roll-in">
+    <div class="animate-on-scroll roll-in-trigger">
       <p>回転しながら登場。ユニークな動きで注目を集めます。</p>
     </div>
   </div>
 
   <div class="effect-demo">
     <div class="effect-title">27. ジェリー（ゼリー）エフェクト</div>
-    <div class="jelly">
+    <div class="animate-on-scroll jelly-trigger">
       <p>ゼリーのように揺れながら登場。柔らかい印象を与えます。</p>
     </div>
   </div>
@@ -1226,6 +1236,33 @@ readingTime: 15 min read
   }
   
   animate();
+  
+  // ===================================
+  // スクロールアニメーション (Intersection Observer)
+  // ===================================
+  
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.2
+  };
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+        // 一度アニメーションしたら監視を解除（再度スクロールしても再生されないようにする場合）
+        // observer.unobserve(entry.target);
+      } else {
+        // スクロールで画面外に出たらリセット（何度でもアニメーション可能にする場合）
+        entry.target.classList.remove('active');
+      }
+    });
+  }, observerOptions);
+  
+  // .animate-on-scroll クラスを持つすべての要素を監視
+  const animateElements = document.querySelectorAll('.animate-on-scroll');
+  animateElements.forEach(el => observer.observe(el));
   
 })();
 </script>
