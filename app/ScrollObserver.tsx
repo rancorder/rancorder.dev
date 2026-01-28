@@ -21,7 +21,7 @@ export default function ScrollObserver() {
 
     const scan = () => {
       document
-        .querySelectorAll('.fade, .fade-up')
+        .querySelectorAll('.animate-on-scroll')
         .forEach((el) => observer.observe(el));
     };
 
