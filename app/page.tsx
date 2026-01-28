@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getAllPosts } from '@/lib/posts';
 import styles from './page.module.css';
 
 // ブログ記事の型定義
@@ -11,31 +12,10 @@ interface BlogPost {
   readingTime: string;
 }
 
-// ブログデータを取得する関数（実際のデータソースに合わせて調整）
-async function getRecentPosts(): Promise<BlogPost[]> {
-  // TODO: 実際のブログデータ取得処理に置き換える
-  // 例：ファイルシステムから取得、APIから取得、等
+// ブログデータを取得する関数
+function getRecentPosts(): BlogPost[] {
+  const allPosts = getAllPosts();
   
-  // 仮のデータ（実装時に置き換え）
-  const allPosts: BlogPost[] = [
-    {
-      slug: 'example-post-1',
-      title: 'Deep dives into enterprise PM',
-      excerpt: 'Exploring decision design frameworks and production-grade systems...',
-      date: '2026-01-15',
-      category: 'Product Management',
-      readingTime: '8 min read',
-    },
-    {
-      slug: 'example-post-2',
-      title: 'Decision design frameworks',
-      excerpt: 'Building frameworks that scale for complex business decisions...',
-      date: '2026-01-10',
-      category: 'Decision Design',
-      readingTime: '6 min read',
-    },
-  ];
-
   // 日付順にソートして最新2件を返す
   return allPosts
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -51,8 +31,8 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default async function HomePage() {
-  const recentPosts = await getRecentPosts();
+export default function HomePage() {
+  const recentPosts = getRecentPosts();
 
   return (
     <div className={styles.page}>
