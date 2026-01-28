@@ -10,39 +10,34 @@ export default function ParticleInitializer({ slug }: ParticleInitializerProps) 
   useEffect(() => {
     console.log('🧠 Particle initializer mounted, slug:', slug);
 
-    const handleLoad = () => {
-      console.log(
-        '🧭 window.load fired, initParticles:',
-        typeof window.initParticles
-      );
+    let retries = 0;
+    const maxRetries = 20;
+    const interval = 200;
 
+    const tryInit = () => {
       const canvas = document.getElementById('particle-canvas');
-      console.log('🔵 canvas at init timing (load):', canvas);
+      const fn = window.initParticles;
 
-      const event = new CustomEvent('particleInit');
-      document.dispatchEvent(event);
-      console.log('🎯 Triggered particleInit event');
+      console.log(`🔁 Retry ${retries}, canvas:`, canvas, 'initParticles:', typeof fn);
 
-      if (typeof window.initParticles === 'function') {
-        window.initParticles();
-        console.log('✅ Called window.initParticles() directly');
+      if (canvas && typeof fn === 'function') {
+        console.log('🎯 Triggering particleInit event');
+        document.dispatchEvent(new CustomEvent('particleInit'));
+
+        fn();
+        console.log('✅ Called window.initParticles()');
+      } else if (retries < maxRetries) {
+        retries++;
+        setTimeout(tryInit, interval);
       } else {
-        console.warn('⚠️ window.initParticles() not found');
-      }
-
-      if (canvas) {
-        console.log('✅ Canvas element found in DOM');
-      } else {
-        console.warn('⚠️ Canvas element not found in DOM');
+        console.warn('⏱ Particle init failed after retries');
       }
     };
 
-    window.addEventListener('load', handleLoad);
+    tryInit();
 
     return () => {
-      window.removeEventListener('load', handleLoad);
       console.log('💨 Particle initializer unmounted, slug:', slug);
-
       if (typeof window.particleAnimationId === 'number') {
         cancelAnimationFrame(window.particleAnimationId);
         console.log('🛑 Particle animation cancelled');
