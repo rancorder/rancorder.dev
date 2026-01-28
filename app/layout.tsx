@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
+import ScrollObserver from './ScrollObserver'; // ★ 追加
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,7 +17,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja" suppressHydrationWarning data-theme="dark">
       <head>
-        {/* テーマ固定（ちらつき防止） */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -27,6 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         {children}
+
+        {/* ★ これだけで全ページで fade / fade-up が発火 */}
+        <ScrollObserver />
+
         <Analytics />
         <SpeedInsights />
       </body>
