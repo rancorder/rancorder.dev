@@ -26,7 +26,7 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
       }));
 
       function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx!.clearRect(0, 0, canvas.width, canvas.height); // ← ★ ctx! で型エラー回避
         for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
@@ -34,10 +34,10 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
           if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
           if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-          ctx.fill();
+          ctx!.beginPath();
+          ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx!.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx!.fill();
         }
 
         window.particleAnimationId = requestAnimationFrame(draw);
