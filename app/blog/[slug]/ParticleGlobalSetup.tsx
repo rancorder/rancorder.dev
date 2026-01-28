@@ -26,33 +26,40 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
       }
 
       // ============================
-      // ★ Canvas サイズの正規化（最重要）
+      // Canvasサイズの正規化
       // ============================
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
 
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-
       ctx.scale(dpr, dpr);
 
       console.log('[Canvas] width:', canvas.width, 'height:', canvas.height);
       console.log('[Canvas] rect:', rect);
 
       // ============================
-      // ★ パーティクル生成
+      // 粒の生成（画面サイズに応じて調整）
       // ============================
-      const particles = Array.from({ length: 80 }, () => ({
+      const area = rect.width * rect.height;
+      const density = 0.00025; // 粒密度（調整可能）
+      const count = Math.floor(area * density);
+
+      const particles = Array.from({ length: count }, () => ({
         x: Math.random() * rect.width,
         y: Math.random() * rect.height,
         vx: (Math.random() - 0.5) * 1.2,
         vy: (Math.random() - 0.5) * 1.2,
-        radius: Math.random() * 1.8 + 0.6,
+        radius: Math.random() * 1.6 + 0.4,
       }));
 
+      // ============================
+      // 描画ループ
+      // ============================
       function draw() {
         ctx!.clearRect(0, 0, rect.width, rect.height);
 
+        // 粒の移動と描画
         for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
@@ -64,6 +71,23 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
           ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
           ctx!.fillStyle = 'rgba(255, 255, 255, 0.8)';
           ctx!.fill();
+        }
+
+        // 接続線の描画
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 80) {
+              ctx!.beginPath();
+              ctx!.moveTo(particles[i].x, particles[i].y);
+              ctx!.lineTo(particles[j].x, particles[j].y);
+              ctx!.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+              ctx!.stroke();
+            }
+          }
         }
 
         window.particleAnimationId = requestAnimationFrame(draw);
