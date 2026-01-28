@@ -1,0 +1,402 @@
+/* app/page.module.css - トップページ（バイリンガル対応） */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 3vw, 2rem);
+  box-sizing: border-box;
+}
+
+/* ============================================
+   Hero Section - バイリンガル表示
+   ============================================ */
+.hero {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(3rem, 10vw, 6rem) 0;
+  text-align: center;
+}
+
+.heroContent {
+  max-width: 800px;
+  width: 100%;
+}
+
+/* Title Group */
+.titleGroup {
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.titleEn {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #60a5fa, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.titleJa {
+  font-size: clamp(1.25rem, 3.5vw, 2rem);
+  font-weight: 600;
+  opacity: 0.7;
+  color: var(--text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0;
+}
+
+/* Subtitle Group */
+.subtitleGroup {
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.subtitleEn {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.7;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.subtitleJa {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  line-height: 1.8;
+  opacity: 0.7;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0;
+}
+
+/* CTA Buttons */
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: clamp(2rem, 5vw, 3rem);
+}
+
+.primaryButton,
+.secondaryButton {
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 160px;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #60a5fa, #10b981);
+  color: #fff;
+  border: none;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(96, 165, 250, 0.3);
+}
+
+.secondaryButton {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.secondaryButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #60a5fa;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Recent Articles Section
+   ============================================ */
+.recentSection {
+  padding: clamp(3rem, 8vw, 5rem) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.sectionTitleEn {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #60a5fa, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sectionTitleJa {
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* Articles Grid */
+.articlesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+@media (min-width: 768px) {
+  .articlesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Article Card */
+.articleCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: clamp(1.5rem, 3vw, 2rem);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.articleCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #60a5fa;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.articleMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: clamp(0.8125rem, 2vw, 0.875rem);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category {
+  padding: 0.375rem 0.75rem;
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: clamp(0.75rem, 2vw, 0.8125rem);
+}
+
+.date {
+  color: #94a3b8;
+  font-size: clamp(0.8125rem, 2vw, 0.875rem);
+}
+
+.articleTitle {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+  color: #f1f5f9;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.articleExcerpt {
+  font-size: clamp(0.9375rem, 2vw, 1rem);
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.articleFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #94a3b8;
+  font-size: clamp(0.8125rem, 2vw, 0.875rem);
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.readTime {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.arrow {
+  font-size: 1.25rem;
+  transition: transform 0.3s;
+}
+
+.articleCard:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* View All Link */
+.viewAllLink {
+  text-align: center;
+  margin-top: clamp(2rem, 4vw, 3rem);
+}
+
+.viewAllButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 8px;
+  color: #93c5fd;
+  font-size: clamp(0.9375rem, 2vw, 1rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+
+.viewAllButton:hover {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: #60a5fa;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.viewAllArrow {
+  font-size: 1.125rem;
+  transition: transform 0.3s;
+}
+
+.viewAllButton:hover .viewAllArrow {
+  transform: translateX(4px);
+}
+
+/* ============================================
+   Footer / Contact
+   ============================================ */
+.footer {
+  padding: clamp(3rem, 6vw, 4rem) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.contactLinks {
+  display: flex;
+  gap: clamp(1.5rem, 3vw, 2rem);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.socialLink {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  font-weight: 600;
+  transition: all 0.2s;
+  padding: 0.5rem 1rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.socialLink:hover {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   レスポンシブ対応
+   ============================================ */
+@media (max-width: 640px) {
+  .hero {
+    min-height: 70vh;
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+  }
+
+  .articlesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   ライトモード対応
+   ============================================ */
+[data-theme='light'] .page {
+  background: var(--bg);
+}
+
+[data-theme='light'] .articleCard {
+  background: rgba(15, 23, 42, 0.02);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-theme='light'] .articleCard:hover {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: rgba(124, 58, 237, 0.25);
+}
+
+[data-theme='light'] .secondaryButton {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: var(--text);
+}
+
+[data-theme='light'] .secondaryButton:hover {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: var(--accent);
+}
+
+[data-theme='light'] .viewAllButton {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: rgba(124, 58, 237, 0.2);
+  color: var(--accent);
+}
+
+[data-theme='light'] .viewAllButton:hover {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: var(--accent);
+}
