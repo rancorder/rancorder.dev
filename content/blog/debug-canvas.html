@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Canvas Debug Test</title>
+<style>
+body { margin: 0; background: #0a0a0a; color: white; font-family: monospace; }
+#debug-info { position: fixed; top: 10px; left: 10px; z-index: 9999; background: rgba(0,0,0,0.8); padding: 10px; }
+#particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; border: 2px solid red; }
+.content { position: relative; z-index: 10; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div id="debug-info">
+  <div>Canvas Width: <span id="w">-</span></div>
+  <div>Canvas Height: <span id="h">-</span></div>
+  <div>Z-Index: <span id="z">-</span></div>
+  <div>Display: <span id="d">-</span></div>
+  <div>Visibility: <span id="v">-</span></div>
+  <div>Opacity: <span id="o">-</span></div>
+</div>
+
+<canvas id="particle-canvas"></canvas>
+
+<div class="content">
+  <h1>Canvas Debug Test</h1>
+  <p>赤い枠線が見えますか？</p>
+  <p>粒子が見えますか？</p>
+</div>
+
+<script>
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+
+// サイズ設定
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// デバッグ情報表示
+const style = window.getComputedStyle(canvas);
+document.getElementById('w').textContent = canvas.width;
+document.getElementById('h').textContent = canvas.height;
+document.getElementById('z').textContent = style.zIndex;
+document.getElementById('d').textContent = style.display;
+document.getElementById('v').textContent = style.visibility;
+document.getElementById('o').textContent = style.opacity;
+
+// テスト描画
+ctx.fillStyle = 'rgba(255, 0, 0, 1)';
+ctx.fillRect(50, 50, 100, 100);
+
+ctx.fillStyle = 'rgba(0, 255, 0, 1)';
+ctx.fillRect(200, 50, 100, 100);
+
+ctx.fillStyle = 'rgba(0, 0, 255, 1)';
+ctx.fillRect(350, 50, 100, 100);
+
+// パーティクル
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = 5;
+    this.speedX = Math.random() * 2 - 1;
+    this.speedY = Math.random() * 2 - 1;
+    this.color = 'rgba(124, 58, 237, 1)';
+  }
+  
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    
+    if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+    if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+  }
+  
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+const particles = [];
+for (let i = 0; i < 20; i++) {
+  particles.push(new Particle());
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // テスト用の四角を毎フレーム描画
+  ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+  ctx.fillRect(10, 10, 30, 30);
+  
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  
+  requestAnimationFrame(animate);
+}
+
+animate();
+console.log('✅ Test animation started');
+</script>
+
+</body>
+</html>
