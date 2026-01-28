@@ -22,11 +22,13 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
         return;
       }
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
+      const ctxRaw = canvas.getContext('2d');
+      if (!ctxRaw) {
         console.warn('❌ canvas context not available');
         return;
       }
+      // ここから下は「絶対に null じゃない」コンテキストとして扱う
+      const ctx = ctxRaw;
 
       // ------------------------------------------------------------
       // ★ モバイル対策：レイアウト確定前は rect が 0 になる
@@ -34,7 +36,7 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
       const rect = canvas.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) {
         console.warn('⏳ rect is 0, retrying...');
-        setTimeout(() => window.initParticles?.(), 120); // ← TS安全
+        setTimeout(() => window.initParticles?.(), 120);
         return;
       }
 
@@ -51,7 +53,7 @@ export default function ParticleGlobalSetup({ slug }: { slug: string }) {
       canvas.height = rect.height * dpr;
 
       // Safari の transform バグ対策
-      ctx.resetTransform?.();
+      (ctx as any).resetTransform?.();
       ctx.scale(dpr, dpr);
 
       console.log('[Canvas] rect:', rect, 'dpr:', dpr);
