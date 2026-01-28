@@ -115,7 +115,7 @@ export default function HomePage() {
         <footer className={styles.footer}>
           <div className={styles.contactLinks}>
             <a 
-              href="https://linkedin.com/in/yourprofile" 
+              href="https://linkedin.com/in/hideki-masube-6b0a713a0/" 
               target="_blank" 
               rel="noopener noreferrer"
               className={styles.socialLink}
@@ -123,7 +123,7 @@ export default function HomePage() {
               LinkedIn
             </a>
             <a 
-              href="https://github.com/yourprofile" 
+              href="https://github.com/rancorder" 
               target="_blank" 
               rel="noopener noreferrer"
               className={styles.socialLink}
@@ -131,7 +131,7 @@ export default function HomePage() {
               GitHub
             </a>
             <a 
-              href="mailto:your.email@example.com"
+              href="mailto:xzengbu@gmail.com"
               className={styles.socialLink}
             >
               Contact
