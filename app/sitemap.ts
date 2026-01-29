@@ -6,7 +6,7 @@ import path from 'path';
 
 interface ExternalArticle {
   title: string;
-  link: string;
+  url: string;  // ← link から url に変更
   source: 'Qiita' | 'Zenn';
   date: string;
   excerpt: string;
@@ -99,7 +99,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // 外部記事
   const externalPages: MetadataRoute.Sitemap = externalArticles.map((article) => ({
-    url: article.link,
+    url: article.url,  // ← link から url に変更
     lastModified: new Date(article.date),
     changeFrequency: 'monthly' as const,
     priority: 0.6,
