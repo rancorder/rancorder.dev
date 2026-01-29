@@ -165,23 +165,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // 外部記事
-  const externalPages: MetadataRoute.Sitemap = externalArticles
-    .map((article) => {
-      const articleUrl = article.url || (article as any).link;
-      
-      if (!articleUrl) {
-        console.warn(`[Sitemap] Missing URL for article: ${article.title}`);
-        return null;
-      }
-      
-      return {
-        url: articleUrl,
-        lastModified: new Date(article.date),
-        changeFrequency: 'monthly' as const,
-        priority: 0.6,
-      };
-    })
-    .filter((page): page is NonNullable<typeof page> => page !== null);
+  // Google Search Console のルールにより、外部ドメインのURLはサイトマップから除外
+  // 外部記事は参考情報として残すが、サイトマップには含めない
+  const externalPages: MetadataRoute.Sitemap = [];
+  
+  console.log(`[Sitemap] External articles (${externalArticles.length}) are excluded from sitemap per Google's guidelines`);
 
   const allPages = [...staticPages, ...postPages, ...externalPages];
   
