@@ -1,0 +1,822 @@
+<!--
+title: 4つのAIに同じディレクトリ構造を読ませてみた：実験内容と総評（PM視点）
+date: 2026-01-29
+category: PM思考
+excerpt: Claude、GPT、Gemini、Copilotに同じディレクトリ構造を提示し、5つの分析タスクを依頼。各AIの「構造理解力」「推論の正確性」「実務的判断力」を徹底比較。AIは使い分けがすべてだ。
+tags: ["AI", "PM", "比較", "プロンプトエンジニアリング"]
+readingTime: 12 min read
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4つのAIに同じディレクトリ構造を読ませてみた：実験内容と総評（PM視点）</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* グラデーションテキスト（タイトル） */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite, subtleGlow 3s ease-in-out infinite;
+      line-height: 1.3;
+      filter: drop-shadow(0 0 20px rgba(124, 58, 237, 0.3));
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    @keyframes subtleGlow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(124, 58, 237, 0.3)); }
+      50% { filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.5)); }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      border-left: 4px solid #7c3aed;
+      padding-left: 1rem;
+      animation: headingGlow 4s ease-in-out infinite;
+      transition: all 0.3s ease;
+    }
+    
+    h2:hover {
+      text-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+      transform: translateX(5px);
+    }
+    
+    @keyframes headingGlow {
+      0%, 100% { text-shadow: 0 0 10px rgba(124, 58, 237, 0.2); }
+      50% { text-shadow: 0 0 15px rgba(124, 58, 237, 0.35); }
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      animation: fadeInUp 0.8s ease-out;
+      position: relative;
+    }
+    
+    h3::before {
+      content: '▸ ';
+      color: #7c3aed;
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out 0.3s forwards;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    
+    /* タイピング風エフェクト */
+    .typing-effect {
+      overflow: hidden;
+      border-right: 3px solid #7c3aed;
+      white-space: nowrap;
+      animation: 
+        typing 2s steps(30) 0.5s forwards,
+        blink 0.75s step-end infinite;
+      width: 0;
+    }
+    
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    
+    @keyframes blink {
+      50% { border-color: transparent; }
+    }
+    
+    h4 {
+      font-size: 1.25rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #cbd5e1;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    
+    h4:hover {
+      color: #e2e8f0;
+      text-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #a78bfa;
+      font-size: 0.9em;
+    }
+    
+    pre {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+      color: #94a3b8;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 2.5rem 0;
+    }
+    
+    ul, ol {
+      margin-bottom: 1.5rem;
+      padding-left: 2rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.5rem;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* スキャンボックス（分析結果の強調） */
+    .scan-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.15), transparent);
+      animation: scan 4s linear infinite;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    /* スライドインボックス（各AIの特徴） */
+    .ai-feature-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 4px;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    .ai-feature-box.claude {
+      border-color: #7c3aed;
+    }
+    
+    .ai-feature-box.gpt {
+      border-color: #22c55e;
+    }
+    
+    .ai-feature-box.gemini {
+      border-color: #3b82f6;
+    }
+    
+    .ai-feature-box.copilot {
+      border-color: #ec4899;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* バッジ */
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .badge.good {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .badge.bad {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .badge.warning {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+    
+    /* ディレクトリ構造表示 */
+    .directory-structure {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      overflow-x: auto;
+    }
+    
+    .directory-structure .indent {
+      color: #475569;
+    }
+    
+    .directory-structure .folder {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    
+    .directory-structure .file {
+      color: #22c55e;
+    }
+    
+    /* プロンプト例 */
+    .prompt-example {
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      font-family: 'Courier New', monospace;
+      color: #cbd5e1;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1rem;
+      }
+      
+      h1 {
+        font-size: 1.875rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* アニメーション無効化（アクセシビリティ） */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>4つのAIに同じディレクトリ構造を読ませてみた：実験内容と総評（PM視点）</h1>
+  
+  <p><strong>AIが急速に高度化する中で、「どのAIがどのようなタスクに向いているのか」を見極めることは、プロダクト開発における重要な意思決定ポイントになっている。</strong></p>
+  
+  <p>特に、<strong>構造理解・設計判断・コードベースの分析</strong>といった"エンジニアリング寄りの知的作業"は、AIによって得意不得意が大きく分かれる領域だ。</p>
+  
+  <hr>
+  
+  <h2 style="display: inline-block;">■ 実験内容</h2>
+  
+  <p>今回の実験では、<strong>Claude</strong>、<strong>GPT</strong>、<strong>Gemini</strong>、<strong>Copilot</strong>の4つのAIに対して、<strong>同じディレクトリ構造（Next.js App Router プロジェクト）を提示し、5つの分析タスクを依頼した。</strong></p>
+  
+  <div class="scan-box">
+    <h3>5つの分析タスク</h3>
+    <ol>
+      <li><strong>このディレクトリからプロジェクト構成を推測して説明して</strong></li>
+      <li><strong>次に必要な作業を3つ提案して</strong></li>
+      <li><strong>Next.js の構成として再構築して</strong></li>
+      <li><strong>足りないファイルを推測して</strong></li>
+      <li><strong>問題点を3つ挙げて</strong></li>
+    </ol>
+    <p style="margin-top: 1rem; margin-bottom: 0;">この5つは、AIの「構造理解力」「推論の正確性」「実務的判断力」を測るのに最適なセットだ。</p>
+  </div>
+  
+  <h3>提示したディレクトリ構造（約100ファイル規模）</h3>
+  
+  <div class="directory-structure">
+・app<br>
+&nbsp;&nbsp;api<br>
+&nbsp;&nbsp;&nbsp;&nbsp;blog/latest<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">route.ts</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;latest<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">route.ts</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;send-download-link<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">route.ts</span><br>
+&nbsp;&nbsp;<span class="folder">blog</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;[slug]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">BlogPageClient.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">blog-mobile.css</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">blog.module.css</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">page.tsx</span><br>
+&nbsp;&nbsp;<span class="folder">components</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;blog<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">BlogSection.module.css</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">BlogSection.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">BlogSectionJa.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">DownloadLinkForm.module.css</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">DownloadLinkForm.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">ThemeScript.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">ThemeToggle.module.css</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">ThemeToggle.tsx</span><br>
+&nbsp;&nbsp;portfolio<br>
+&nbsp;&nbsp;&nbsp;&nbsp;en<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">page.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ja<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">page.tsx</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">page.tsx</span><br>
+&nbsp;&nbsp;rss.xml<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">rss-route.ts</span><br>
+&nbsp;&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">ScrollObserver.tsx</span><br>
+&nbsp;&nbsp;<span class="file">global.d.ts</span><br>
+&nbsp;&nbsp;<span class="file">globals.css</span><br>
+&nbsp;&nbsp;<span class="file">layout.tsx</span><br>
+&nbsp;&nbsp;<span class="file">page.module.css</span><br>
+&nbsp;&nbsp;<span class="file">page.tsx</span><br>
+&nbsp;&nbsp;<span class="file">sitemap.ts</span><br>
+<span class="folder">content/blog</span><br>
+&nbsp;&nbsp;<span class="file">2024-01-20-web-automation.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-20-blogautomation-bestpractice.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-22-PoC-tips.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-24-no-decision-blog.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-26-ai-personality-comparison.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-26-test-article-4-effects.html</span><br>
+&nbsp;&nbsp;<span class="file">2026-01-28-effects-showcase-30.html</span><br>
+<span class="folder">data</span><br>
+&nbsp;&nbsp;<span class="file">articles.ts</span><br>
+&nbsp;&nbsp;<span class="file">projects.ts</span><br>
+&nbsp;&nbsp;<span class="file">skills.ts</span><br>
+<span class="folder">lib</span><br>
+&nbsp;&nbsp;<span class="file">blog-loader.ts</span><br>
+&nbsp;&nbsp;<span class="file">external-articles.ts</span><br>
+&nbsp;&nbsp;<span class="file">extractHeadings.ts</span><br>
+&nbsp;&nbsp;<span class="file">mdx.ts</span><br>
+&nbsp;&nbsp;<span class="file">posts.ts</span><br>
+<span class="folder">public</span><br>
+&nbsp;&nbsp;image<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">lightHouse_seo.png</span><br>
+&nbsp;&nbsp;js/effects<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">copilot-sdk-agent.js</span><br>
+&nbsp;&nbsp;<span class="file">google73ab826ed9fc2354.html</span><br>
+&nbsp;&nbsp;<span class="file">robots.txt</span><br>
+<span class="folder">scripts</span><br>
+&nbsp;&nbsp;<span class="file">blog-preview-server.js</span><br>
+&nbsp;&nbsp;<span class="file">fetch-external-articles.js</span><br>
+&nbsp;&nbsp;<span class="file">frontmatter-qa.js</span><br>
+&nbsp;&nbsp;<span class="file">new-post.js</span><br>
+<span class="folder">types</span><br>
+<span class="file">README.md</span><br>
+<span class="file">blog-base.css</span><br>
+<span class="file">blog-components.js</span><br>
+<span class="file">next-env.d.ts</span><br>
+<span class="file">next.config.js</span><br>
+<span class="file">package-lock.json</span><br>
+<span class="file">package.json</span><br>
+<span class="file">tsconfig.json</span>
+  </div>
+  
+  <hr>
+  
+  <h2>■ 実験結果の総評（PM視点）</h2>
+  
+  <p>結論から言うと、4つのAIは<strong>まったく違う方向性の回答</strong>を返してきた。</p>
+  
+  <p>これは「どれが優れているか」ではなく、<strong>"どのAIがどの役割に向いているか"</strong>を理解することが重要だ。</p>
+  
+  <h2>1. Claude：抽象化と評論が得意。だが事実認識は弱い</h2>
+  
+  <div class="ai-feature-box claude">
+    <p><strong>Claude</strong> は文章が非常に綺麗で、抽象化能力が高い。<br>
+    しかし今回のような「ディレクトリ構造を正確に読む」タスクでは、<strong>事実誤認が多かった</strong>。</p>
+    
+    <h4>● 良い点</h4>
+    <div>
+      <span class="badge good">✓ メタ視点が鋭い</span>
+      <span class="badge good">✓ 文章が読みやすい</span>
+      <span class="badge good">✓ 構造化された説明</span>
+    </div>
+    <ul>
+      <li>問いの設計そのものを批評するなど、メタ視点が鋭い</li>
+      <li>文章が読みやすく、構造化されている</li>
+      <li>「問いの目的が曖昧」といった指摘はPMとして価値がある</li>
+    </ul>
+    
+    <h4>● 弱い点</h4>
+    <div>
+      <span class="badge bad">✗ 事実誤認が多い</span>
+      <span class="badge bad">✗ 思想に寄りすぎ</span>
+      <span class="badge warning">△ Next.js理解が浅い</span>
+    </div>
+    <ul>
+      <li>実際に存在するファイルを「ない」と言う</li>
+      <li>ディレクトリの事実より"思想"に寄りすぎる</li>
+      <li>実務的なNext.js構造の理解は浅い</li>
+    </ul>
+    
+    <h4>● PM視点での評価</h4>
+    <p>Claude は <strong>"資料の評論家"</strong> としては優秀だが、<strong>"コードベースの分析者"としては不安定</strong>。</p>
+  </div>
+  
+  <h2>2. GPT：深い洞察と構造批評が得意。だが妄想が混ざる</h2>
+  
+  <div class="ai-feature-box gpt">
+    <p><strong>GPT</strong> は「人間のような洞察」を出すのが得意で、今回も「問いの設計」「資料の目的」など、非常に深い分析をしてきた。</p>
+    
+    <p>しかし、<strong>事実と推測が混ざりやすい</strong>という弱点がある。</p>
+    
+    <h4>● 良い点</h4>
+    <div>
+      <span class="badge good">✓ 洞察が深い</span>
+      <span class="badge good">✓ 自然な思考</span>
+      <span class="badge good">✓ 設計思想の整理</span>
+    </div>
+    <ul>
+      <li>思考の流れが自然で、洞察が深い</li>
+      <li>「資料の目的が曖昧」など、PM視点の指摘が鋭い</li>
+      <li>設計思想やアーキテクチャの抽象化が得意</li>
+    </ul>
+    
+    <h4>● 弱い点</h4>
+    <div>
+      <span class="badge bad">✗ 妄想が混ざる</span>
+      <span class="badge bad">✗ 思想に寄りすぎ</span>
+      <span class="badge warning">△ 実務判断に注意</span>
+    </div>
+    <ul>
+      <li>ディレクトリの事実より"思想"に寄りすぎる</li>
+      <li>実際に存在するファイルを無視して「足りない」と言う</li>
+      <li>妄想が混ざるため、実務判断には注意が必要</li>
+    </ul>
+    
+    <h4>● PM視点での評価</h4>
+    <p>GPT は <strong>"設計思想の整理"</strong> に向いているが、<strong>"事実ベースの構造分析"には向かない</strong>。</p>
+  </div>
+  
+  <h2>3. Gemini：事実認識が最も正確。実務的なNext.js理解も安定</h2>
+  
+  <div class="ai-feature-box gemini">
+    <p>今回の実験で最も安定していたのが <strong>Gemini</strong> だ。</p>
+    
+    <h4>● 良い点</h4>
+    <div>
+      <span class="badge good">✓ 事実認識が正確</span>
+      <span class="badge good">✓ Next.js理解が強い</span>
+      <span class="badge good">✓ 実務的な改善案</span>
+      <span class="badge good">✓ 妄想が少ない</span>
+    </div>
+    <ul>
+      <li>ディレクトリの事実を正確に読み取る</li>
+      <li>Next.js App Router の構造を正しく理解している</li>
+      <li>APIルートの問題点など、実務的な指摘が多い</li>
+      <li><strong>実務エンジニアとして最も信頼できる回答</strong>だった</li>
+    </ul>
+    
+    <h4>● 弱い点</h4>
+    <div>
+      <span class="badge warning">△ 文章は無難</span>
+      <span class="badge warning">△ 抽象的洞察は弱い</span>
+    </div>
+    <ul>
+      <li>文章は無難で深みはない</li>
+      <li>抽象的な洞察は弱い</li>
+    </ul>
+    
+    <h4>● PM視点での評価</h4>
+    <p>Gemini は <strong>"構造分析・実務判断" に最適</strong>。今回のタスクでは最も正確だった。</p>
+  </div>
+  
+  <h2>4. Copilot：コードベースの推論が最も強い</h2>
+  
+  <div class="ai-feature-box copilot">
+    <p><strong>Copilot</strong> は他のAIと違い、<strong>「コードを書くAI」ではなく「コードを読むAI」</strong>として最適化されている。</p>
+    
+    <h4>● 良い点</h4>
+    <div>
+      <span class="badge good">✓ 設計意図を読み取る</span>
+      <span class="badge good">✓ 実装レベルの改善案</span>
+      <span class="badge good">✓ コード推論が強い</span>
+      <span class="badge good">✓ 実務的な洞察</span>
+    </div>
+    <ul>
+      <li>ディレクトリ構造から Next.js の設計意図を読み取る能力が高い</li>
+      <li>実装レベルの改善案が具体的</li>
+      <li>「この構成ならこう動くはず」という推論が強い</li>
+      <li>エフェクト基盤や SPA遷移の問題など、コード寄りの洞察が深い</li>
+    </ul>
+    
+    <h4>● 弱い点</h4>
+    <div>
+      <span class="badge warning">△ 文章は実務寄り</span>
+      <span class="badge warning">△ 評論は弱い</span>
+      <span class="badge warning">△ ファイルアップロード課題</span>
+    </div>
+    <ul>
+      <li>文章は他AIより実務寄りで、抽象化は弱め</li>
+      <li>評論や思想整理は得意ではない</li>
+      <li>ファイルアップロード周りが弱い（今回の実験でも課題）</li>
+    </ul>
+    
+    <h4>● PM視点での評価</h4>
+    <p>Copilot は <strong>"実装判断・コード改善・構造推論" の最強AI</strong>。今回のタスクでも、最も「開発者として使える回答」を返してきた。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>■ 4AIの癖から導く「最適プロンプト」</h2>
+  
+  <p>ここからが本題だ。<br>
+  AIは「どのAIにどんなプロンプトを投げるか」で性能が大きく変わる。</p>
+  
+  <p>今回の実験から、各AIに最適化したプロンプトをまとめた。</p>
+  
+  <h3>1. Claude に最適なプロンプト</h3>
+  
+  <p>Claude は抽象化と文章化が得意。逆に、事実認識は弱い。</p>
+  
+  <div class="prompt-example">
+事実と推測を明確に分けてください。<br>
+抽象化と構造化を重視して、全体像を整理してください。<br>
+ディレクトリの事実に基づきつつ、メタ視点での改善点も述べてください。
+  </div>
+  
+  <p><strong>● Claude に向いている用途</strong></p>
+  <ul>
+    <li>コンセプト整理</li>
+    <li>問題の抽象化</li>
+    <li>文章化・要約</li>
+    <li>PM向けの資料作成</li>
+  </ul>
+  
+  <h3>2. GPT に最適なプロンプト</h3>
+  
+  <p>GPT は洞察が深いが、妄想が混ざる。<br>
+  そのため「制約」を与えると性能が跳ね上がる。</p>
+  
+  <div class="prompt-example">
+推測は必ず「仮説」と明記してください。<br>
+事実と仮説を分離してください。<br>
+ディレクトリに存在しない情報は推測しないでください。<br>
+構造的な問題点と、その背景にある理由を説明してください。
+  </div>
+  
+  <p><strong>● GPT に向いている用途</strong></p>
+  <ul>
+    <li>設計思想の整理</li>
+    <li>問題の背景分析</li>
+    <li>PM向けの深い洞察</li>
+    <li>プロダクト戦略の議論</li>
+  </ul>
+  
+  <h3>3. Gemini に最適なプロンプト</h3>
+  
+  <p>Gemini は事実認識が強く、実務的。<br>
+  そのため「具体的な改善案」を求めると最も力を発揮する。</p>
+  
+  <div class="prompt-example">
+ディレクトリの事実に基づいて、Next.js の実務的な改善案を提示してください。<br>
+構造上の問題点を3つ挙げ、理由と改善方法を説明してください。<br>
+APIルート、コンポーネント配置、スタイル設計の観点から分析してください。
+  </div>
+  
+  <p><strong>● Gemini に向いている用途</strong></p>
+  <ul>
+    <li>コードベースの構造分析</li>
+    <li>Next.js の改善案</li>
+    <li>実務的な判断</li>
+    <li>バグの原因推測</li>
+  </ul>
+  
+  <h3>4. Copilot に最適なプロンプト</h3>
+  
+  <p>Copilot はコード推論が最強。<br>
+  そのため「実装レベルの問い」を投げると爆発的に強い。</p>
+  
+  <div class="prompt-example">
+このディレクトリ構造を前提に、Next.js App Router で最適な構成を提案してください。<br>
+SPA遷移時にエフェクトが動かない原因を推測し、改善案をコードレベルで示してください。<br>
+この構造で発生しうるバグを3つ挙げ、修正方法を具体的に書いてください。
+  </div>
+  
+  <p><strong>● Copilot に向いている用途</strong></p>
+  <ul>
+    <li>実装判断</li>
+    <li>コード改善</li>
+    <li>バグ推測</li>
+    <li>アーキテクチャの最適化</li>
+    <li>Next.js / React の構造設計</li>
+  </ul>
+  
+  <hr>
+  
+  <h2>■ 最後に：AIは「使い分け」がすべて</h2>
+  
+  <div class="scan-box">
+    <p>今回の実験で明確になったのは、<br>
+    <strong>AIは"どれが最強か"ではなく、"どれをどう使うか"がすべて</strong>ということだ。</p>
+    
+    <ul style="margin-top: 1rem; margin-bottom: 0;">
+      <li><strong>Claude → 抽象化・文章化のプロ</strong></li>
+      <li><strong>GPT → 洞察と構造批評のプロ</strong></li>
+      <li><strong>Gemini → 事実認識と実務判断のプロ</strong></li>
+      <li><strong>Copilot → コード推論と実装判断のプロ</strong></li>
+    </ul>
+  </div>
+  
+  <p><strong>Next.js × 記事HTML × エフェクト基盤 × 自動化</strong>という複雑なプロダクトを扱うなら、この4つを適切に組み合わせることで、開発速度と品質は圧倒的に向上する。</p>
+
+</article>
+
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        radius: Math.random() * 1.5 + 0.5,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.5)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // 再初期化用（クライアント遷移対応）
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing AI comparison article effects...');
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
