@@ -6,10 +6,57 @@ import path from 'path';
 
 interface ExternalArticle {
   title: string;
-  url: string;  // ← link から url に変更
+  url: string;
   source: 'Qiita' | 'Zenn';
   date: string;
   excerpt: string;
+}
+
+interface BlogPost {
+  slug: string;
+  date: string;
+}
+
+/**
+ * content/blog ディレクトリから直接HTMLファイルを読み込む
+ */
+function getBlogPostsFromHtml(): BlogPost[] {
+  try {
+    const blogDir = path.join(process.cwd(), 'content', 'blog');
+    
+    if (!fs.existsSync(blogDir)) {
+      console.warn('[Sitemap] content/blog directory not found');
+      return [];
+    }
+
+    const files = fs.readdirSync(blogDir);
+    const htmlFiles = files.filter(file => file.endsWith('.html'));
+
+    console.log(`[Sitemap] Found ${htmlFiles.length} HTML files in content/blog`);
+
+    const posts: BlogPost[] = htmlFiles.map(filename => {
+      const filePath = path.join(blogDir, filename);
+      const stats = fs.statSync(filePath);
+      
+      // ファイル名から slug を抽出（拡張子を除く）
+      const slug = filename.replace('.html', '');
+      
+      // ファイルの更新日時を使用
+      const date = stats.mtime.toISOString();
+
+      console.log(`[Sitemap] Processing: ${slug} (${date})`);
+
+      return {
+        slug,
+        date,
+      };
+    });
+
+    return posts;
+  } catch (error) {
+    console.error('[Sitemap] Failed to load HTML blog posts:', error);
+    return [];
+  }
 }
 
 /**
@@ -54,14 +101,22 @@ function loadExternalArticles(): ExternalArticle[] {
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://rancorder.vercel.app';
   
-  // 内部ブログ記事
-  let posts: any[] = [];
+  // 内部ブログ記事（HTMLファイルから直接読み込み）
+  let posts: BlogPost[] = [];
   try {
-    posts = getAllPosts();
-    console.log(`[Sitemap] Found ${posts.length} internal posts`);
+    // まずMDX形式を試す
+    const mdxPosts = getAllPosts();
+    if (mdxPosts.length > 0) {
+      console.log(`[Sitemap] Found ${mdxPosts.length} MDX posts`);
+      posts = mdxPosts;
+    } else {
+      // MDXが無ければHTMLファイルを読み込む
+      console.log('[Sitemap] No MDX posts found, trying HTML files');
+      posts = getBlogPostsFromHtml();
+    }
   } catch (error) {
-    console.error('[Sitemap] Failed to get posts:', error);
-    posts = [];
+    console.error('[Sitemap] Failed to get MDX posts, trying HTML:', error);
+    posts = getBlogPostsFromHtml();
   }
 
   // 外部記事（直接読み込み）
@@ -98,12 +153,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // 外部記事
-  const externalPages: MetadataRoute.Sitemap = externalArticles.map((article) => ({
-    url: article.url,  // ← link から url に変更
-    lastModified: new Date(article.date),
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }));
+  const externalPages: MetadataRoute.Sitemap = externalArticles
+    .map((article) => {
+      const articleUrl = article.url || (article as any).link;
+      
+      if (!articleUrl) {
+        console.warn(`[Sitemap] Missing URL for article: ${article.title}`);
+        return null;
+      }
+      
+      return {
+        url: articleUrl,
+        lastModified: new Date(article.date),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      };
+    })
+    .filter((page): page is NonNullable<typeof page> => page !== null);
 
   const allPages = [...staticPages, ...postPages, ...externalPages];
   
