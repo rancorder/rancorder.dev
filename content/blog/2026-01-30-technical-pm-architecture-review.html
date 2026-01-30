@@ -64,6 +64,13 @@ tags: ["テクニカルPM", "アーキテクチャ", "レビュー", "プロジ�
       border-left: 4px solid #7c3aed;
       opacity: 0;
       animation: fadeInUp 0.8s ease-out forwards;
+      transition: all 0.3s ease;
+    }
+    
+    h2:hover {
+      border-left-color: #a78bfa;
+      transform: translateX(4px);
+      text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
     }
     
     h3 {
@@ -111,6 +118,16 @@ tags: ["テクニカルPM", "アーキテクチャ", "レビュー", "プロジ�
       border-radius: 0 8px 8px 0;
       opacity: 0;
       animation: slideInLeft 0.8s ease-out 0.4s forwards;
+      transition: all 0.4s ease;
+      cursor: default;
+    }
+    
+    .slide-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4),
+                  0 0 20px rgba(124, 58, 237, 0.3);
+      background: rgba(15, 23, 42, 0.8);
+      border-left-color: #a78bfa;
     }
     
     @keyframes slideInLeft {
@@ -147,6 +164,15 @@ tags: ["テクニカルPM", "アーキテクチャ", "レビュー", "プロジ�
     li {
       margin-bottom: 0.75rem;
       line-height: 1.7;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    
+    li:hover {
+      background: rgba(124, 58, 237, 0.1);
+      transform: translateX(4px);
+      padding-left: 1rem;
     }
     
     /* チェックマーク付きリスト */
@@ -178,6 +204,14 @@ tags: ["テクニカルPM", "アーキテクチャ", "レビュー", "プロジ�
       line-height: 1.9;
       margin-bottom: 3rem;
       color: #e2e8f0;
+      padding: 2rem;
+      border-radius: 8px;
+      transition: all 0.4s ease;
+    }
+    
+    .intro:hover {
+      background: rgba(124, 58, 237, 0.05);
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
     }
     
     /* パーティクルキャンバス */
