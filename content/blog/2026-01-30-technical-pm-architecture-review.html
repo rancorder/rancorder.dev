@@ -1,0 +1,604 @@
+<!--
+title: テクニカルPMが知っておくべき「アーキテクチャレビューの本質」── 技術に"どこまで"踏み込むべきか
+date: 2026-01-30
+category: PM思考
+excerpt: アーキテクチャレビューは技術力を見せる場ではなく、判断力を整える場だ。テクニカルPMがどこまで把握すべきか、どこからエンジニアに任せるべきか──その境界線を実務レベルで言語化する。
+readingTime: 12 min read
+tags: ["テクニカルPM", "アーキテクチャ", "レビュー", "プロジェクトマネジメント"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テクニカルPMが知っておくべき「アーキテクチャレビューの本質」</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* タイトル - グラデーションエフェクト */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.5rem);
+      margin-bottom: 1.5rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6, #22c55e);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+      padding-left: 1rem;
+      border-left: 4px solid #7c3aed;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+    
+    h3 {
+      font-size: 1.375rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out 0.2s forwards;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out 0.3s forwards;
+    }
+    
+    strong {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #a78bfa;
+      font-size: 0.9em;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 2rem 0;
+    }
+    
+    /* スライドインボックス - 重要なポイント */
+    .slide-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 0 8px 8px 0;
+      opacity: 0;
+      animation: slideInLeft 0.8s ease-out 0.4s forwards;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* リスト */
+    ul, ol {
+      margin-left: 2rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out 0.3s forwards;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    /* チェックマーク付きリスト */
+    .check-list {
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .check-list li::before {
+      content: "✔ ";
+      color: #22c55e;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    
+    .cross-list {
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .cross-list li::before {
+      content: "❌ ";
+      margin-right: 0.5rem;
+    }
+    
+    /* 導入セクション */
+    .intro {
+      font-size: 1.1rem;
+      line-height: 1.9;
+      margin-bottom: 3rem;
+      color: #e2e8f0;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* アニメーション無効化 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景エフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>テクニカルPMが知っておくべき「アーキテクチャレビューの本質」<br>── 技術に"どこまで"踏み込むべきか</h1>
+  
+  <div class="intro">
+    <h2>導入：アーキテクチャは PM の領域か？</h2>
+    
+    <p>テクニカルPMにアーキテクチャ理解が求められる理由は単純だ。<br>
+    <strong>品質・スケジュール・コスト──すべてがアーキテクチャに直結しているから。</strong></p>
+    
+    <div class="slide-box">
+      <p><strong>スケールしない構成は、後で性能問題として跳ね返る</strong></p>
+      <p><strong>運用を考えていない設計は、リリース後に人と金を食い潰す</strong></p>
+      <p><strong>過剰な構成は、初期コストと開発速度を奪う</strong></p>
+    </div>
+    
+    <p>しかし、ここに一つの罠がある。</p>
+    
+    <p><strong>PMが「設計を決める人」になってしまうことだ。</strong></p>
+    
+    <p>設計はエンジニアの仕事。<br>
+    PMの役割は、設計の是非を<strong>"判断できる状態"</strong>を作ること。</p>
+    
+    <div class="slide-box">
+      <p><strong>この記事の目的は明確だ。</strong></p>
+      <p>• PMはどこまで把握すべきか</p>
+      <p>• どこからエンジニアに任せるべきか</p>
+      <p>• その境界線を、実務レベルで言語化する。</p>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <h2>1. テクニカルPMが押さえるべき「アーキテクチャ理解の4レイヤー」</h2>
+  
+  <p>アーキテクチャ理解は、コードではなく<strong>構造</strong>から始まる。</p>
+  
+  <h3>① 機能構成（Functional Architecture）</h3>
+  
+  <ul>
+    <li>どの機能がどのコンポーネントで実現されているか</li>
+    <li>「この箱は何の責務を持つのか」を説明できるか</li>
+  </ul>
+  
+  <p><strong>責務が曖昧な構成は、必ず破綻する。</strong></p>
+  
+  <h3>② 非機能要件との整合性（NFR Alignment）</h3>
+  
+  <p>性能・可用性・拡張性・セキュリティ。<br>
+  これらは「後から足す」ものではない。</p>
+  
+  <div class="slide-box">
+    <p><strong>"この構成で、なぜ満たせると言えるのか"</strong></p>
+    <p>ここを説明できるかが PM の最低ライン。</p>
+  </div>
+  
+  <h3>③ データフローと依存関係（Flow & Dependency）</h3>
+  
+  <ul>
+    <li>どこからどこへデータが流れるのか</li>
+    <li>同期か非同期か</li>
+    <li>依存が集中している場所はどこか</li>
+  </ul>
+  
+  <p><strong>依存の偏りは、将来の技術負債の温床になる。</strong></p>
+  
+  <h3>④ 運用・保守フロー（Ops & Lifecycle）</h3>
+  
+  <ul>
+    <li>監視は何を見ているのか</li>
+    <li>リリースとロールバックはどう行うのか</li>
+    <li>障害時に誰が何を判断するのか</li>
+  </ul>
+  
+  <p><strong>運用が語れないアーキテクチャは、未完成だ。</strong></p>
+  
+  <hr>
+  
+  <h2>2. PMが到達すべき「理解のアウトプット」</h2>
+  
+  <p>理解しているかどうかは、<strong>アウトプット</strong>で測れる。</p>
+  
+  <div class="slide-box">
+    <p><strong>✔ 自分の手で簡易な構成図を描けるか</strong></p>
+    <p>四角と矢印で十分。<br>
+    それを使って、非エンジニアにも説明できるか。</p>
+  </div>
+  
+  <div class="slide-box">
+    <p><strong>✔ 「なぜこの構成なのか」を会話できるか</strong></p>
+    <p>技術用語の正確さより、<strong>理由の説明</strong>が重要だ。<br>
+    理由が語れない構成は、危険信号。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>3. アーキテクチャレビューの目的は"設計発表会"ではない</h2>
+  
+  <p>レビューの目的は<strong>3つだけ</strong>だ。</p>
+  
+  <h3>① ビジネス要件・制約を満たしているか</h3>
+  
+  <ul>
+    <li>想定スケール</li>
+    <li>SLA</li>
+    <li>規制</li>
+    <li>顧客要件</li>
+  </ul>
+  
+  <p><strong>「動くか」ではなく「成立するか」を見る。</strong></p>
+  
+  <h3>② 将来の変更を過度に阻害しないか</h3>
+  
+  <p>すべてを予測する必要はない。<br>
+  ただし、<strong>"変えにくい場所"</strong>は把握しておく。</p>
+  
+  <h3>③ チームのスキルと運用体制に合っているか</h3>
+  
+  <p><strong>理論上美しい構成でも、運用できなければ失敗だ。</strong></p>
+  
+  <hr>
+  
+  <h2>4. PMが"踏み込まない"領域</h2>
+  
+  <p>逆に、PMが踏み込むべきでない領域も明確にする。</p>
+  
+  <ul class="cross-list">
+    <li>クラス設計</li>
+    <li>SQLの細部</li>
+    <li>コードの最適化手法</li>
+    <li>インフラ設定の細部</li>
+    <li>ベストプラクティスの細かい是非</li>
+  </ul>
+  
+  <div class="slide-box">
+    <p>ここに口を出すと、<strong>責任の境界が崩れる。</strong><br>
+    PMは「判断のレイヤー」に集中すべきだ。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>5. レビュー前の準備：良いレビューは準備で8割決まる</h2>
+  
+  <h3>必要なインプット</h3>
+  
+  <ul>
+    <li>要件定義・ユースケース・非機能要件（1〜数枚に圧縮）</li>
+    <li>現状案のアーキテクチャ図</li>
+    <li>技術選定の理由メモ</li>
+    <li>想定トラフィック・データ量・外部連携先</li>
+  </ul>
+  
+  <p><strong>これらが曖昧なままレビューすると、議論は必ず迷走する。</strong></p>
+  
+  <h3>観点リストを事前に共有する</h3>
+  
+  <ul>
+    <li>性能</li>
+    <li>スケール</li>
+    <li>信頼性</li>
+    <li>セキュリティ</li>
+    <li>運用保守</li>
+    <li>コスト</li>
+  </ul>
+  
+  <p>さらに<strong>「今回特に重視する観点」に★を付ける。</strong><br>
+  これだけで議論の深さが変わる。</p>
+  
+  <hr>
+  
+  <h2>6. レビューの進め方：90分の黄金アジェンダ</h2>
+  
+  <div class="slide-box">
+    <p><strong>0〜10分：目的と前提の共有</strong><br>
+    ビジネスゴールと制約条件を確認。</p>
+    
+    <p><strong>10〜30分：エンジニアからの説明</strong><br>
+    PMは聞きながら論点を整理する。</p>
+    
+    <p><strong>30〜70分：観点リストに沿った質疑</strong><br>
+    「何が決まっていて、何が未確定か」を炙り出す。</p>
+    
+    <p><strong>70〜90分：決定事項とTODOの整理</strong><br>
+    オーナーを必ず決める。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>7. PMのファシリテーション：答えではなく"問い"を出す</h2>
+  
+  <p><strong>PMは答えを出す人ではない。<br>
+  問いを投げる人だ。</strong></p>
+  
+  <ul>
+    <li>「ピークトラフィックが○倍になったらどうなりますか」</li>
+    <li>「障害時、最初に見る指標は何ですか」</li>
+  </ul>
+  
+  <p>議論が詳細実装に潜り始めたら、即座に切る。</p>
+  
+  <div class="slide-box">
+    <p><strong>「ここは別途Tech MTGで詰めましょう。」</strong></p>
+    <p>これを言えるかどうかが、PMの腕だ。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>8. どこまで技術に踏み込むべきか</h2>
+  
+  <h3>PMが責任を持つべきレイヤー</h3>
+  
+  <ul class="check-list">
+    <li>トレードオフの理解</li>
+    <li>リスクの把握</li>
+    <li>ビジネス要件との整合性</li>
+    <li>致命的リスク（単一障害点・規制違反）の検知</li>
+  </ul>
+  
+  <h3>エンジニアに任せるべきレイヤー</h3>
+  
+  <ul class="cross-list">
+    <li>実装</li>
+    <li>最適化</li>
+    <li>フレームワーク選定の細部</li>
+    <li>インフラ設定の細部</li>
+  </ul>
+  
+  <p><strong>PMがここに踏み込むほど、プロジェクトは歪む。</strong></p>
+  
+  <hr>
+  
+  <h2>9. 良いレビューと悪いレビューの違い</h2>
+  
+  <h3>❌ 悪いレビュー</h3>
+  
+  <ul class="cross-list">
+    <li>「早く・安く」で押し切る</li>
+    <li>用語講座になってしまう</li>
+    <li>要件が曖昧なまま構成だけレビューする</li>
+  </ul>
+  
+  <h3>✔ 良いレビュー</h3>
+  
+  <ul class="check-list">
+    <li>事前資料は1〜2ページ</li>
+    <li>論点整理に集中</li>
+    <li>トレードオフを引き出す</li>
+    <li>決定事項が即ドキュメント化される</li>
+  </ul>
+  
+  <p><strong>派手さはないが、炎上もしない。</strong></p>
+  
+  <hr>
+  
+  <h2>10. 明日から使えるチェックリスト</h2>
+  
+  <ul class="check-list">
+    <li>非機能要件ごとに根拠が説明できるか</li>
+    <li>単一障害点と対策が明示されているか</li>
+    <li>運用・監視・障害対応が1枚で説明できるか</li>
+    <li>PMの責任範囲がチームで共有されているか</li>
+  </ul>
+  
+  <hr>
+  
+  <h2>結論：アーキテクチャレビューは"判断力"の場である</h2>
+  
+  <p>アーキテクチャレビューは、<strong>技術力を見せる場ではない。<br>
+  判断力を整える場だ。</strong></p>
+  
+  <div class="slide-box">
+    <p><strong>テクニカルPMがやるべきことは、</strong></p>
+    <p>設計を描くことではなく、</p>
+    <p><strong>設計が正しく判断される環境を作ること。</strong></p>
+  </div>
+  
+  <p>その環境が整ったとき、<br>
+  レビューは初めて、<strong>プロジェクトを前に進める武器になる。</strong></p>
+  
+</article>
+
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  let animationId;
+  
+  // パフォーマンスを考慮してパーティクル数を調整
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 2 + 0.5,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.5)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    animationId = requestAnimationFrame(draw);
+  }
+  
+  function cleanup() {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+    }
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // 再初期化用（Next.jsクライアント遷移対応）
+  window.reinitBlogArticle = function() {
+    cleanup();
+    resize();
+    createParticles();
+    draw();
+  };
+  
+  // ページ離脱時のクリーンアップ
+  window.addEventListener('beforeunload', cleanup);
+})();
+</script>
+
+</body>
+</html>
