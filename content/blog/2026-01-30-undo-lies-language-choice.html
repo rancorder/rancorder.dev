@@ -1,0 +1,611 @@
+<!--
+title: ファイラーを作って分かったこと── Undo は嘘をつく。だから言語を選び直す
+date: 2026-01-30
+category: 技術解説
+excerpt: Pythonでファイルエクスプローラを作った経験から見えた、Undoの設計の難しさと言語選択の本質。「動く」と「責任を持てる」は別物だと気づくまでの記録。
+readingTime: 8 min read
+tags: ["Python", "設計", "Undo", "Command Pattern", "Textual", "言語選択"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ファイラーを作って分かったこと── Undo は嘘をつく。だから言語を選び直す</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    
+    /* タイトル - グラデーションエフェクト */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #ec4899, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+      line-height: 1.3;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      border-left: 4px solid #7c3aed;
+      padding-left: 1rem;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      color: #c4b5fd;
+      font-size: 0.95em;
+    }
+    
+    pre {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 2.5rem 0;
+    }
+    
+    /* パーティクルシステム背景 */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid #ec4899;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .slide-box p {
+      margin-bottom: 0.75rem;
+    }
+    
+    .slide-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* スキャンボックス（技術的な内容用） */
+    .scan-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.2), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    .scan-box h3 {
+      margin-top: 0;
+      color: #a78bfa;
+      font-size: 1.25rem;
+    }
+    
+    .scan-box ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1rem;
+    }
+    
+    .scan-box li {
+      padding-left: 1.5rem;
+      position: relative;
+      margin-bottom: 0.5rem;
+      color: #cbd5e1;
+    }
+    
+    .scan-box li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #7c3aed;
+    }
+    
+    /* イントロ */
+    .intro {
+      font-size: 1.15rem;
+      color: #f1f5f9;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(124, 58, 237, 0.05);
+      border-radius: 8px;
+    }
+    
+    /* 言語比較リスト */
+    .language-list {
+      margin: 1.5rem 0;
+    }
+    
+    .language-item {
+      background: rgba(15, 23, 42, 0.5);
+      padding: 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border-left: 3px solid #3b82f6;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    
+    .language-item:hover {
+      transform: translateX(5px);
+      border-color: #7c3aed;
+    }
+    
+    .language-item h4 {
+      color: #60a5fa;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+    }
+    
+    .language-item p {
+      margin-bottom: 0;
+      font-size: 1rem;
+    }
+    
+    /* ネオンボタン（GitHubリンク用） */
+    .neon-button {
+      display: inline-block;
+      padding: 1rem 2rem;
+      margin-top: 1rem;
+      border: 2px solid #7c3aed;
+      border-radius: 8px;
+      background: transparent;
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+      transition: all 0.3s;
+    }
+    
+    .neon-button:hover {
+      background: #7c3aed;
+      color: white;
+      box-shadow: 0 0 40px rgba(124, 58, 237, 0.8);
+      transform: translateY(-2px);
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .intro {
+        font-size: 1.05rem;
+        padding: 1rem;
+      }
+    }
+    
+    /* アニメーション無効化 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>ファイラーを作って分かったこと<br>── Undo は嘘をつく。だから言語を選び直す</h1>
+  
+  <div class="intro">
+    <p>きっかけは単純だった。Windows のエクスプローラーは優秀だが、「考えながら操作する」には少し重い。ならば、自分の思考速度に合わせた TUI ファイルエクスプローラ を作ってみよう。そんな軽いノリで始めた。</p>
+    <p>Python と Textual を使い、移動・検索・コピー・ペースト・リネーム・削除・Undo・外部起動まで一通り実装した。動いた。それなりに快適だった。</p>
+    <p><strong>そして最後に、致命的な違和感だけが残った。</strong></p>
+  </div>
+
+  <hr>
+
+  <h2>Undo は「戻せるふり」をする</h2>
+  
+  <p>Undo は Command Pattern で実装した。<code>execute()</code> と <code>undo()</code> を対にし、スタックに積む。教科書的には正しい。</p>
+  
+  <div class="scan-box">
+    <h3>Command Pattern の実装</h3>
+    <pre><code>class Command:
+    def execute(self):
+        raise NotImplementedError
+
+    def undo(self):
+        raise NotImplementedError
+
+
+class RenameCommand(Command):
+    def __init__(self, old_path: Path, new_path: Path):
+        self.old_path = old_path
+        self.new_path = new_path
+
+    def execute(self):
+        self.old_path.rename(self.new_path)
+
+    def undo(self):
+        self.new_path.rename(self.old_path)
+
+
+class CopyCommand(Command):
+    def __init__(self, src: Path, dest: Path):
+        self.src = src
+        self.dest = dest
+
+    def execute(self):
+        if self.src.is_file():
+            shutil.copy2(str(self.src), str(self.dest))
+        else:
+            shutil.copytree(str(self.src), str(self.dest))
+
+    def undo(self):
+        if self.dest.is_file():
+            self.dest.unlink()
+        else:
+            shutil.rmtree(self.dest)</code></pre>
+  </div>
+  
+  <p>だが、実際に触ると分かる。</p>
+  
+  <div class="slide-box">
+    <p><strong>ファイルは外部からも変更される</strong></p>
+    <p><strong>同名ファイルはいつの間にか増える</strong></p>
+    <p><strong>削除は「ゴミ箱行き」だが Undo 不能</strong></p>
+    <p><strong>OS が勝手に状態を変える</strong></p>
+  </div>
+  
+  <p>つまり Undo はこうなる。</p>
+  
+  <p><strong>「戻れる時だけ戻れる。でも UI はそれを教えてくれない」</strong></p>
+  
+  <p>これは UX の問題ではない。設計上の嘘だ。</p>
+  
+  <p>Undo が壊れるのは、コードではなく <strong>"世界の状態"が変わるから</strong>だ。</p>
+
+  <hr>
+
+  <h2>Python は悪くない。ただ"黙認する"</h2>
+  
+  <p>今回の実装で Python が悪かったわけではない。むしろ良かった点は多い。</p>
+  
+  <div class="slide-box">
+    <p><strong>試作が異常に速い</strong></p>
+    <p><strong>OS API を雑に叩ける</strong></p>
+    <p><strong>書いている間に思想が固まる</strong></p>
+  </div>
+  
+  <p>ただし、ある段階から気づく。</p>
+  
+  <p>Python はこう言っている。</p>
+  
+  <p><strong>「それ、本当に考えた？まあ、動くなら止めないけど」</strong></p>
+  
+  <div class="scan-box">
+    <h3>Undo実装の実際</h3>
+    <pre><code>def action_undo(self):
+    if not self.command_stack:
+        self.update_status("⚠️ Undoできる操作がありません")
+        return
+
+    cmd = self.command_stack.pop()
+    try:
+        cmd.undo()
+        self.reset_tree()
+        self.update_status("↩️ 操作を元に戻しました")
+    except Exception as e:
+        self.update_status(f"⚠️ Undo失敗: {e}")</code></pre>
+  </div>
+  
+  <p>例外は握り潰せる。状態はぐちゃっと持てる。Undo も「たぶん大丈夫」で通る。</p>
+  
+  <p>Python は自由をくれる。ただし、<strong>責任を強制はしてくれない</strong>。</p>
+  
+  <p>思考実験には最適だが、責任を持つ設計には沈黙する。</p>
+
+  <hr>
+
+  <h2>作って初めて見えた"設計の層"</h2>
+  
+  <p>このファイラーは、実は3層でできている。</p>
+  
+  <div class="scan-box">
+    <h3>1. OS直叩き層</h3>
+    <ul>
+      <li>ファイル操作、クリップボード、フォーカス制御</li>
+      <li>ここは OS の気分に左右される</li>
+    </ul>
+    
+    <h3>2. UI / 状態管理層</h3>
+    <ul>
+      <li>モード遷移、履歴、入力状態</li>
+      <li>ここは Python と Textual が得意</li>
+    </ul>
+    
+    <h3>3. 事故制御層</h3>
+    <ul>
+      <li>失敗、部分成功、Undo 不能、競合</li>
+      <li>ここが最も重要で、最も軽視される</li>
+    </ul>
+  </div>
+  
+  <p>Undo が嘘をつくのは、この <strong>「事故制御層」を設計していない</strong>からだ。</p>
+
+  <hr>
+
+  <h2>では、次に選ぶべき言語は何か</h2>
+  
+  <p>今回の経験で分かったのは、言語選択は性能ではなく <strong>思想の選択</strong>だということ。</p>
+  
+  <div class="language-list">
+    <div class="language-item">
+      <h4>C#</h4>
+      <p>Windows を母国語として扱える。例外と型で「失敗理由」を持てる。今回のコードを最短で"格上げ"するならこれ。</p>
+    </div>
+    
+    <div class="language-item">
+      <h4>Rust</h4>
+      <p>Undo が嘘をつく余地をコンパイル時に潰してくる。書くのは重いが、事故の設計から逃げられない。これはツールではなく、思想の実装。</p>
+    </div>
+    
+    <div class="language-item">
+      <h4>TypeScript + Tauri/Electron</h4>
+      <p>UI/UX は別次元。ただし低レイヤは Rust/C++ に戻る。「使う人の認知を支配したい」なら最強。</p>
+    </div>
+    
+    <div class="language-item">
+      <h4>Go</h4>
+      <p>無骨で、並行性が素直。内製ツールとしては非常に強い。</p>
+    </div>
+  </div>
+  
+  <p>どの言語を選ぶかは、<strong>どの嘘を許容するかの選択</strong>でもある。</p>
+
+  <hr>
+
+  <h2>このプロジェクトの"役目"はもう終わった</h2>
+  
+  <p>この Python ファイラーを完成させるつもりはない。役目はもう果たした。</p>
+  
+  <div class="slide-box">
+    <p><strong>Undo は簡単ではない</strong></p>
+    <p><strong>ファイル操作は外界と競合する</strong></p>
+    <p><strong>「動く」と「責任を持てる」は別物</strong></p>
+  </div>
+  
+  <p>これらを <strong>体感できる形で可視化</strong>してくれた。</p>
+  
+  <p>次にやるなら、</p>
+  
+  <div class="slide-box">
+    <p>言語を変える</p>
+    <p>Undo を"戻せないことがある"前提で設計する</p>
+    <p>失敗を UI に出す</p>
+  </div>
+  
+  <p>そのどれか、あるいは全部だ。</p>
+
+  <hr>
+
+  <h2>おわりに</h2>
+  
+  <p>このファイラーは売り物ではない。だが、無駄でもない。</p>
+  
+  <p>作った結果、<strong>「どこからが嘘になるか」が分かった</strong>。</p>
+  
+  <p>それだけで十分に価値があった。</p>
+  
+  <p>技術は、完成品よりも <strong>"完成できない理由"を教えてくれる時</strong>の方が、ずっと誠実だ。</p>
+  
+  <hr>
+  
+  <h2>📦 ソースコード</h2>
+  
+  <p>この記事で言及したファイラーの完全なソースコードは GitHub で公開しています。</p>
+  
+  <a href="https://github.com/rancorder/file_explorer" class="neon-button" target="_blank" rel="noopener noreferrer">
+    View on GitHub →
+  </a>
+  
+</article>
+
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 1,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.35)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.1 * (1 - distance / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // 再初期化用（クライアント遷移対応）
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
