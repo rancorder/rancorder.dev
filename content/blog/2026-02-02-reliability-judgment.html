@@ -1,0 +1,701 @@
+<!--
+title: 「信頼性」は測れても、判断はできないことがある
+date: 2026-01-31
+category: PM思考 / 技術解説
+excerpt: システムは動いている。メトリクスも取れている。SLAも定義されている。それでも「この状態で本当に大丈夫か?」と聞かれると、言葉が止まる瞬間がある。信頼性は測れるようになった。だが、判断できるようになったとは限らない。
+readingTime: 8 min read
+tags: ["信頼性エンジニアリング", "SRE", "意思決定", "メトリクス"]
+-->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>「信頼性」は測れても、判断はできないことがある</title>
+  <meta name="description" content="システムは動いている。メトリクスも取れている。SLAも定義されている。それでも「この状態で本当に大丈夫か?」と聞かれると、言葉が止まる瞬間がある。" />
+  
+  <!-- OGP -->
+  <meta property="og:title" content="「信頼性」は測れても、判断はできないことがある" />
+  <meta property="og:description" content="信頼性は測れるようになった。だが、判断できるようになったとは限らない。" />
+  <meta property="og:type" content="article" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="「信頼性」は測れても、判断はできないことがある" />
+  <meta name="twitter:description" content="数値が揃っても、決められない理由" />
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* メインコンテナ */
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* アニメーション定義 */
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.85;
+        transform: scale(1.02);
+      }
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    @keyframes glowPulse {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(124, 58, 237, 0.6);
+      }
+    }
+    
+    /* タイトル */
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      margin-bottom: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #7c3aed, #ec4899, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+      line-height: 1.2;
+    }
+    
+    /* サブタイトル */
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      animation: fadeInUp 1s ease-out 0.2s both;
+    }
+    
+    /* セパレーター */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+      animation: fadeInUp 1s ease-out 0.4s both;
+    }
+    
+    /* 見出し */
+    h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      margin: 3rem 0 1.5rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+      animation: slideInLeft 0.8s ease-out both;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #7c3aed, #ec4899);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+      margin: 2.5rem 0 1rem;
+      color: #e2e8f0;
+      font-weight: 600;
+      animation: fadeInUp 0.8s ease-out both;
+    }
+    
+    /* 段落 */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      animation: fadeInUp 0.8s ease-out both;
+    }
+    
+    /* 強調 */
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #a78bfa;
+      font-style: normal;
+      font-weight: 500;
+    }
+    
+    /* リスト */
+    ul, ol {
+      margin: 1.5rem 0 1.5rem 2rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+      animation: slideInRight 0.6s ease-out both;
+    }
+    
+    li::marker {
+      color: #7c3aed;
+    }
+    
+    /* スキャンボックス - 重要なポイント強調 */
+    .scan-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2.5rem 0;
+      animation: fadeInUp 0.8s ease-out both;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.2), transparent);
+      animation: scan 4s linear infinite;
+    }
+    
+    .scan-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* ハイライトボックス */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(236, 72, 153, 0.1));
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem 2rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      animation: slideInLeft 0.8s ease-out both;
+    }
+    
+    .highlight-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* インライン強調 */
+    .key-term {
+      background: rgba(124, 58, 237, 0.2);
+      color: #c4b5fd;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 500;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      white-space: nowrap;
+    }
+    
+    /* コード */
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Courier New', monospace;
+      color: #c4b5fd;
+      font-size: 0.95em;
+    }
+    
+    /* リンク */
+    a {
+      color: #7c3aed;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    
+    a:hover {
+      color: #a78bfa;
+      border-bottom-color: #a78bfa;
+      background: rgba(124, 58, 237, 0.1);
+      padding: 0 0.3rem;
+    }
+    
+    /* GitHub リンクボタン */
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(236, 72, 153, 0.15));
+      border: 2px solid #7c3aed;
+      border-radius: 10px;
+      color: #c4b5fd;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.05rem;
+      transition: all 0.3s ease;
+      animation: glowPulse 3s ease-in-out infinite;
+      margin: 2rem 0;
+    }
+    
+    .github-link:hover {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(236, 72, 153, 0.25));
+      box-shadow: 0 0 30px rgba(124, 58, 237, 0.5);
+      transform: translateY(-2px);
+      border-bottom: 2px solid #7c3aed;
+      padding: 1rem 2rem;
+    }
+    
+    .github-link::before {
+      content: '→';
+      font-size: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .github-link:hover::before {
+      transform: translateX(5px);
+    }
+    
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .subtitle {
+        font-size: 1rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+        margin-top: 2.5rem;
+      }
+      
+      .scan-box,
+      .highlight-box {
+        padding: 1.25rem;
+      }
+    }
+    
+    /* アニメーション無効化 */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>「信頼性」は測れても、判断はできないことがある</h1>
+  
+  <p class="subtitle">
+    <strong>── 数値が揃っても、決められない理由</strong>
+  </p>
+  
+  <p>システムは動いている。<br>
+  メトリクスも取れている。<br>
+  SLAも定義されている。</p>
+  
+  <p>それでも、<br>
+  <strong>「この状態で本当に大丈夫か?」</strong><br>
+  と聞かれると、言葉が止まる瞬間がある。</p>
+  
+  <div class="scan-box">
+    <p><strong>信頼性は測れるようになった。</strong></p>
+    <p>だが、判断できるようになったとは限らない。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>稼働していても、安全とは限らない</h2>
+  
+  <p>このデモを作った理由は単純だ。</p>
+  
+  <ul>
+    <li><span class="key-term">動いているのに、不安</span></li>
+    <li><span class="key-term">数字はあるのに、決められない</span></li>
+  </ul>
+  
+  <p>この状態が、現場であまりにも多いからだ。</p>
+  
+  <div class="highlight-box">
+    <p>CPU使用率は正常。<br>
+    エラー率も許容範囲。<br>
+    レスポンスタイムも基準内。</p>
+  </div>
+  
+  <p>それでも残るのは、</p>
+  
+  <ul>
+    <li>今、止めるべきか</li>
+    <li>様子を見るべきか</li>
+    <li>誰にエスカレーションすべきか</li>
+  </ul>
+  
+  <p><em>"判断"</em>だけが残る。</p>
+  
+  <hr>
+  
+  <h2>数値は「答え」ではなく、材料にすぎない</h2>
+  
+  <p>信頼性エンジニアリングではよく言われる。</p>
+  
+  <ul>
+    <li>可用性を測れ</li>
+    <li>SLOを定義しろ</li>
+    <li>エラーバジェットを管理しろ</li>
+  </ul>
+  
+  <p>どれも正しい。<br>
+  ただし、前提が抜け落ちやすい。</p>
+  
+  <div class="scan-box">
+    <p><strong>その数値を見て<br>
+    誰が、何を、どう決めるのか。</strong></p>
+  </div>
+  
+  <p>数値が増えるほど、判断は軽くなるどころか、<br>
+  むしろ<strong>重くなる</strong>ことすらある。</p>
+  
+  <hr>
+  
+  <h2>このデモがやっていること</h2>
+  
+  <p><code>reliability-engineering-demo</code> は、<br>
+  信頼性を<em>"高める"</em>デモではない。</p>
+  
+  <p>やっているのは、ただ一つ。</p>
+  
+  <div class="highlight-box">
+    <p><strong>「信頼性を判断できない状態」を、あえて作る。</strong></p>
+  </div>
+  
+  <ul>
+    <li>正常に見える指標</li>
+    <li>しかし不安が消えない挙動</li>
+    <li>判断を先送りしたくなる構造</li>
+  </ul>
+  
+  <p>壊すためではなく、<br>
+  <strong>迷いを可視化する</strong>ためのデモだ。</p>
+  
+  <hr>
+  
+  <h2>なぜ、判断できなくなるのか</h2>
+  
+  <p>理由はシンプルだ。</p>
+  
+  <div class="scan-box">
+    <ul>
+      <li>メトリクスが「状態」を示していない</li>
+      <li>数値が「行動」に変換されていない</li>
+      <li>閾値が「責任」と結びついていない</li>
+    </ul>
+  </div>
+  
+  <p>結果として、<br>
+  正しい数値を見ながら、間違った沈黙が生まれる。</p>
+  
+  <hr>
+  
+  <h2>信頼性とは「安心」ではない</h2>
+  
+  <p>ここで一つ、言い切る。</p>
+  
+  <div class="highlight-box">
+    <p><strong>信頼性は、安心を保証しない。</strong></p>
+  </div>
+  
+  <p>信頼性が提供できるのは、</p>
+  
+  <ul>
+    <li>どういうときに</li>
+    <li>どこまでなら</li>
+    <li>どの判断が妥当か</li>
+  </ul>
+  
+  <p>を説明するための <span class="key-term">材料</span> だけだ。</p>
+  
+  <p>安心は、判断が終わったあとに<br>
+  結果として生まれるものでしかない。</p>
+  
+  <hr>
+  
+  <h2>このデモで分かること</h2>
+  
+  <p>このデモを触ると、次の違和感が残る。</p>
+  
+  <ul>
+    <li>動いているのに、判断できない</li>
+    <li>数値があるのに、決断できない</li>
+    <li>正しいはずなのに、説明できない</li>
+  </ul>
+  
+  <p>これは失敗ではない。<br>
+  むしろ<strong>成功</strong>だ。</p>
+  
+  <p>なぜなら、</p>
+  
+  <div class="scan-box">
+    <p><strong>「信頼性が足りない」のではなく</strong></p>
+    <p><strong>「判断設計が足りない」</strong></p>
+    <p>ことが分かるからだ。</p>
+  </div>
+  
+  <hr>
+  
+  <h2>逆に、このデモが保証しないこと</h2>
+  
+  <p>誤解されやすいので、明示しておく。</p>
+  
+  <ul>
+    <li>高可用性は保証しない</li>
+    <li>正しいSLO設計も保証しない</li>
+    <li>運用が楽になるとも言わない</li>
+  </ul>
+  
+  <p>このデモが提供するのは、<br>
+  <em>決められない理由を直視する視点</em>だけだ。</p>
+  
+  <hr>
+  
+  <h2>PoCや検証で、同じことが起きていないか</h2>
+  
+  <div class="highlight-box">
+    <ul>
+      <li>技術的には成功</li>
+      <li>数値も問題なし</li>
+      <li>でも、本番に進めない</li>
+    </ul>
+  </div>
+  
+  <p>もし心当たりがあるなら、<br>
+  それは技術不足ではない。</p>
+  
+  <div class="scan-box">
+    <p><strong>判断を引き受ける構造が<br>
+    設計されていないだけだ。</strong></p>
+  </div>
+  
+  <hr>
+  
+  <h2>まとめ</h2>
+  
+  <p>このデモは、信頼性を高めない。<br>
+  代わりに、</p>
+  
+  <div class="highlight-box">
+    <p><strong>信頼性について<br>
+    ちゃんと悩める状態</strong></p>
+    <p>を作る。</p>
+  </div>
+  
+  <p>それだけだ。</p>
+  
+  <p>でも、それが<strong>一番足りていない</strong>。</p>
+  
+  <hr>
+  
+  <a href="https://github.com/rancorder/reliability-engineering-demo" target="_blank" rel="noopener noreferrer" class="github-link">
+    GitHub リポジトリを見る
+  </a>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // パーティクル数を画面サイズに応じて調整（控えめ）
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+  
+  // キャンバスのリサイズ
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  // パーティクル生成
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 0.5,
+      });
+    }
+  }
+  
+  // 描画ループ
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル更新・描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端での反射
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル描画（紫系グラデーション）
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.5)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          const opacity = 0.15 * (1 - distance / 120);
+          ctx.strokeStyle = `rgba(124, 58, 237, ${opacity})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', function() {
+    resize();
+    createParticles();
+  });
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  // Next.js クライアント遷移対応の再初期化関数
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing reliability article effects...');
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
