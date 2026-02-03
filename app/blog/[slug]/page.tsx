@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getPost, getAllPosts } from '@/lib/posts';
+import { getPost, getAllPosts, getRelatedPosts } from '@/lib/posts';
 import ParticleInitializer from './ParticleInitializer';
-import ParticleGlobalSetup from './ParticleGlobalSetup'; // ← ★ 追加
+import ParticleGlobalSetup from './ParticleGlobalSetup';
 import './blog-post.css';
 
 // ===================================
@@ -51,9 +51,12 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
     notFound();
   }
 
+  // ★ 関連記事を取得（最大3件）
+  const relatedPosts = getRelatedPosts(post, 3);
+
   return (
     <div className="blog-page">
-      {/* ★ 追加：グローバル関数 initParticles を定義 */}
+      {/* グローバル関数 initParticles を定義 */}
       <ParticleGlobalSetup slug={params.slug} />
 
       {/* パーティクル初期化（クライアントコンポーネント） */}
@@ -111,7 +114,42 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
         />
       </article>
 
-      {/* ★ パーティクル描画用 canvas（記事下部に配置） */}
+      {/* ★ 関連記事セクション（新規追加） */}
+      {relatedPosts.length > 0 && (
+        <section className="related-posts-section">
+          <div className="related-posts-container">
+            <h2 className="related-posts-title">関連記事</h2>
+            <div className="related-posts-grid">
+              {relatedPosts.map((relatedPost) => (
+                <Link
+                  key={relatedPost.slug}
+                  href={`/blog/${relatedPost.slug}`}
+                  className="related-post-card"
+                >
+                  <div className="related-post-meta">
+                    <span className="related-post-category">{relatedPost.category}</span>
+                    <span className="related-post-date">
+                      {new Date(relatedPost.date).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <h3 className="related-post-title">{relatedPost.title}</h3>
+                  <p className="related-post-excerpt">{relatedPost.excerpt}</p>
+                  <div className="related-post-footer">
+                    <span className="related-post-read-time">{relatedPost.readingTime}</span>
+                    <span className="related-post-arrow">→</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* パーティクル描画用 canvas（記事下部に配置） */}
       <canvas id="particle-canvas" width={400} height={300} />
 
       {/* フッター */}
