@@ -1,0 +1,758 @@
+<!--
+title: ロックを入れても壊れる理由──同時実行されているのは"データ"ではなく"判断"だった
+date: 2026-02-06
+category: PM思考
+excerpt: 排他制御は完璧だった。WALモード有効。トランザクション保証。でも「同じ商品に2回通知」が起きた──壊れていたのはデータの整合性ではなく、判断のタイミングだった。
+readingTime: 9 min read
+tags: ["PM思考", "システム設計", "排他制御", "判断の境界"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ロックを入れても壊れる理由──同時実行されているのは"データ"ではなく"判断"だった</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    /* パーティクル用キャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+    }
+    
+    /* スキャンライン */
+    .scanline-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(15, 23, 42, 0.4) 1px,
+        transparent 1px
+      );
+      background-size: 100% 2px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* グラデーションタイトル */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      line-height: 1.3;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3.5rem;
+      margin-bottom: 1.25rem;
+      color: #f1f5f9;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #7c3aed, #3b82f6);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #a78bfa;
+      font-style: italic;
+    }
+    
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      color: #a78bfa;
+      font-size: 0.9375rem;
+    }
+    
+    pre {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+      color: #94a3b8;
+      font-size: 0.9375rem;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.15);
+      margin: 3rem 0;
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: rgba(15, 23, 42, 0.8);
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 4px;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    /* スキャンボックス */
+    .scan-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 1.75rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    .scan-box h3 {
+      margin-top: 0;
+      color: #7dd3fc;
+      font-size: 1.25rem;
+    }
+    
+    .scan-box p {
+      margin-bottom: 0.75rem;
+    }
+    
+    .scan-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* 引用風スタイル */
+    .quote-style {
+      border-left: 3px solid rgba(34, 197, 94, 0.6);
+      padding-left: 1.5rem;
+      margin: 2rem 0;
+      font-style: italic;
+      color: #94a3b8;
+    }
+    
+    /* タイムライン風 */
+    .timeline-item {
+      position: relative;
+      padding-left: 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 12px;
+      height: 12px;
+      background: #7c3aed;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
+    }
+    
+    .timeline-item::after {
+      content: '';
+      position: absolute;
+      left: 5.5px;
+      top: 1.25rem;
+      width: 1px;
+      height: calc(100% + 0.5rem);
+      background: rgba(124, 58, 237, 0.3);
+    }
+    
+    .timeline-item:last-child::after {
+      display: none;
+    }
+    
+    /* リスト */
+    ul, ol {
+      margin-left: 2rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li code {
+      font-size: 0.875rem;
+    }
+    
+    /* フェードイン */
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+        margin-top: 2.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+      
+      .slide-box, .scan-box {
+        padding: 1.25rem;
+      }
+      
+      .timeline-item {
+        padding-left: 2rem;
+      }
+    }
+    
+    /* アクセシビリティ */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクル -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- スキャンライン -->
+<div class="scanline-overlay"></div>
+
+<article>
+  <header class="fade-in">
+    <h1>ロックを入れても壊れる理由──同時実行されているのは"データ"ではなく"判断"だった</h1>
+    <p><strong>排他制御は完璧だった。WALモード有効。トランザクション保証。でも「同じ商品に2回通知」が起きた──壊れていたのはデータの整合性ではなく、判断のタイミングだった。</strong></p>
+  </header>
+
+  <hr>
+
+  <section>
+    <h2>① 導入：対策は完璧だった</h2>
+    
+    <div class="slide-box">
+      <p>排他制御を実装した。<br>
+      WALモードを有効にした。<br>
+      トランザクション境界を設定した。</p>
+      <p style="margin-top: 1rem; color: #fbbf24;">でも、<strong>「同じ商品に2回通知」</strong>が起きた。</p>
+    </div>
+
+    <p>データベースのロックは正常だった。<br>
+    競合状態の対策も入っている。<br>
+    リトライロジックも実装済み。</p>
+
+    <p>それなのに、同じ商品の通知が重複する。</p>
+
+    <pre><code># ログの証拠
+[INFO] [ハードオフ] 新商品検知: 1件が上位に挿入
+  新1位: CANON EOS Kiss X7 ダブルズームキット・34800円
+[INFO] ChatWork通知送信成功 (ルーム: 385402385)
+
+# 30秒後
+[INFO] [ハードオフ] 新商品検知: 1件が上位に挿入
+  新1位: CANON EOS Kiss X7 ダブルズームキット・34800円
+[INFO] ChatWork通知送信成功 (ルーム: 385402385)</code></pre>
+
+    <p><strong>同じ商品。同じルーム。2回。</strong></p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>② 何が起きていたか（事実だけ）</h2>
+
+    <div class="scan-box">
+      <h3>観測された事実</h3>
+      <p>• SQLiteのロック: <strong>正常動作</strong></p>
+      <p>• トランザクション: <strong>ACID保証</strong></p>
+      <p>• 通知履歴の書き込み: <strong>成功</strong></p>
+      <p>• 重複通知防止ロジック: <strong>実装済み</strong></p>
+      <p>• 結果: <strong>重複通知が発生</strong></p>
+    </div>
+
+    <p>実装を確認する。</p>
+
+    <pre><code># SQLiteNotificationHistory の実装
+def should_notify(self, product_key: str, cooldown_hours: int = 6) -> bool:
+    cutoff = datetime.now() - timedelta(hours=cooldown_hours)
+    try:
+        with self._get_connection() as conn:
+            result = conn.execute(
+                "SELECT notified_at FROM notifications "
+                "WHERE product_key = ? AND notified_at > ?",
+                (product_key, cutoff)
+            ).fetchone()
+            return result is None  # ← 履歴があればFalse
+    except Exception as e:
+        return False
+
+def add_notification(self, product_key: str, site_name: str) -> None:
+    try:
+        with self._get_connection() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO notifications "
+                "(product_key, site_name, notified_at) VALUES (?, ?, ?)",
+                (product_key, site_name, datetime.now())
+            )
+    except Exception as e:
+        pass</code></pre>
+
+    <p>コードは正しい。<br>
+    WALモードも有効。<br>
+    トランザクション管理も実装されている。</p>
+
+    <pre><code>conn.execute("PRAGMA journal_mode=WAL")
+conn.execute("PRAGMA synchronous=NORMAL")
+conn.execute("BEGIN")
+# ... 処理 ...
+conn.commit()</code></pre>
+
+    <p>技術的対策は完璧だった。</p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>③ 当時の判断（ここが肝）</h2>
+
+    <p>正直に書く。</p>
+
+    <div class="slide-box">
+      <p><strong>当時の私の認識：</strong></p>
+      <ul style="margin-left: 0; list-style-position: inside; margin-top: 1rem;">
+        <li>「ロックを取れば安全」</li>
+        <li>「トランザクションで保証される」</li>
+        <li>「データの整合性 = システムの正しさ」</li>
+      </ul>
+    </div>
+
+    <p style="margin-top: 2rem;">この判断は、<strong>当時は合理的だった</strong>。</p>
+
+    <p>データベースの教科書に書いてある。<br>
+    排他制御の実装パターンも標準的。<br>
+    ACID特性も満たしている。</p>
+
+    <p>問題ない。</p>
+
+    <p>実際、データの整合性は守られていた。<br>
+    通知履歴テーブルに不正なデータはない。<br>
+    トランザクション境界も正しい。</p>
+
+    <p><strong>データは壊れていなかった。</strong></p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>④ 壊れた瞬間</h2>
+
+    <p style="font-size: 1.125rem; color: #f1f5f9;">核心。</p>
+
+    <p style="margin-bottom: 2rem; color: #fbbf24;"><strong>データが守られても、判断は守られない。</strong></p>
+
+    <div class="scan-box">
+      <h3>タイムラインで見る</h3>
+      
+      <div class="timeline-item">
+        <p><strong>T=0秒</strong>: スクレイパーA実行開始</p>
+        <p style="font-size: 0.9375rem; color: #94a3b8; margin-top: 0.5rem;">
+          商品データ取得 → メモリに保持
+        </p>
+      </div>
+      
+      <div class="timeline-item">
+        <p><strong>T=5秒</strong>: スクレイパーB実行開始</p>
+        <p style="font-size: 0.9375rem; color: #94a3b8; margin-top: 0.5rem;">
+          商品データ取得 → メモリに保持（Aと同じデータ）
+        </p>
+      </div>
+      
+      <div class="timeline-item">
+        <p><strong>T=12秒</strong>: A が差分検知システムを呼ぶ</p>
+        <p style="font-size: 0.9375rem; color: #94a3b8; margin-top: 0.5rem;">
+          判断: 「新商品だ」→ 通知履歴に書き込み
+        </p>
+      </div>
+      
+      <div class="timeline-item">
+        <p><strong>T=14秒</strong>: B が差分検知システムを呼ぶ</p>
+        <p style="font-size: 0.9375rem; color: #fbbf24; margin-top: 0.5rem;">
+          判断: 「新商品だ」→ 通知履歴に書き込み（重複）
+        </p>
+      </div>
+    </div>
+
+    <p style="margin-top: 2rem;">問題はここ。</p>
+
+    <pre><code># 差分検知の処理フロー
+def detect_new_products(self, site_name, products, ...):
+    # 1. スナップショット読み込み（ロック取得）
+    snapshot_data = self._load_snapshot_file(snapshot_path)
+    
+    # 2. 判断：新商品かどうか
+    if current_first_key == remembered_first_key:
+        return []  # 変更なし
+    
+    # 3. 新商品リストを返す
+    new_products = products[:previous_first_position]
+    
+    # 4. スナップショット更新（ロック解放）
+    self._update_snapshot(...)
+    
+    # 5. 通知クールダウン適用
+    return self._apply_notification_cooldown(...)</code></pre>
+
+    <p>ロックが保護しているのは <code>_load_snapshot_file</code> と <code>_update_snapshot</code>。</p>
+
+    <p>でも、<strong>判断（2番）は保護されていない</strong>。</p>
+
+    <div class="quote-style">
+      <p>スクレイパーAが「新商品だ」と判断する。<br>
+      スクレイパーBも「新商品だ」と判断する。</p>
+      <p style="margin-top: 1rem;">両方とも正しい。<br>
+      でも、両方とも通知する必要はない。</p>
+    </div>
+
+    <p style="margin-top: 2rem;">データは正しく読まれた。<br>
+    データは正しく書かれた。<br>
+    トランザクションは成功した。</p>
+
+    <p>でも、<strong>判断のタイミングがズレた</strong>。</p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>⑤ 本質：ロックは何を守るのか</h2>
+
+    <p>答えはこれ。</p>
+
+    <div class="scan-box">
+      <h3>ロックが守るもの</h3>
+      <p>• <strong>データの読み書き</strong> → 守る</p>
+      <p>• <strong>トランザクション境界</strong> → 守る</p>
+      <p>• <strong>整合性制約</strong> → 守る</p>
+      <p style="margin-top: 1.5rem; color: #fbbf24; font-size: 1.125rem;">
+        • <strong>判断のタイミング</strong> → 守らない
+      </p>
+    </div>
+
+    <p style="margin-top: 2rem;">ロックは「いつ読むか」を制御できる。<br>
+    でも、「いつ判断するか」は制御できない。</p>
+
+    <pre><code># ロックの範囲
+with file_lock:
+    data = read_file()     # ← 保護される
+    write_file(data)       # ← 保護される
+
+# 判断の実行
+decision = analyze(data)   # ← 保護されない
+notify(decision)           # ← 保護されない</code></pre>
+
+    <p>判断は、ロックの外で実行される。</p>
+
+    <p>2つのプロセスが同じデータを読んだら、<br>
+    2つのプロセスが同じ判断を下す。</p>
+
+    <p><strong>これは正しい動作だ。</strong></p>
+
+    <p>でも、業務的には「1回だけ通知してほしい」。</p>
+
+    <div class="quote-style">
+      <p>データ整合性は保証された。<br>
+      でも、判断の一意性は保証されなかった。</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>⑥ 一般化（判断のタイミング問題）</h2>
+
+    <p>ここで初めて外に広げる。</p>
+
+    <div class="slide-box">
+      <p><strong>製造業・在庫管理でも同じ構造：</strong></p>
+      <ul style="margin-left: 0; list-style-position: inside; margin-top: 1rem;">
+        <li>在庫を確認した → 発注した → その間に在庫が変わった</li>
+        <li>承認判定をした → 実行した → その間に条件が変わった</li>
+        <li>検証をした → 保存した → その間に前提が変わった</li>
+      </ul>
+    </div>
+
+    <p style="margin-top: 2rem;">データベースのロックは、<br>
+    <strong>「読んでいる瞬間」と「書いている瞬間」</strong> を守る。</p>
+
+    <p>でも、<br>
+    <strong>「判断している時間」</strong> は守らない。</p>
+
+    <pre><code># よくある実装
+def process_order():
+    stock = get_stock()           # ← ロック1: 読み取り
+    if stock > 0:
+        time.sleep(5)             # ← 判断・処理に5秒
+        update_stock(stock - 1)   # ← ロック2: 書き込み
+
+# 問題
+# 2つのプロセスが同時に get_stock() すると、
+# 両方とも stock > 0 と判断する
+# → 在庫1個なのに2件の注文が通る</code></pre>
+
+    <p>これは排他制御の問題ではない。<br>
+    <strong>「判断をいつ実行するか」の設計</strong> の問題だ。</p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>⑦ 結論（解決策は出しすぎない）</h2>
+
+    <p>教えない。<br>
+    断定だけ。</p>
+
+    <div class="scan-box">
+      <p style="font-size: 1.125rem; line-height: 1.8;">
+        ロックはデータを守る。<br>
+        でも、判断を守らない。
+      </p>
+      <p style="margin-top: 1.5rem; font-size: 1.125rem; line-height: 1.8;">
+        「データの整合性」と「判断の正しさ」は、<br>
+        別の問題だ。
+      </p>
+    </div>
+
+    <p style="margin-top: 3rem; color: #94a3b8; font-style: italic;">
+      壊れていたのは、排他制御でもトランザクションでもなく、<br>
+      <strong style="color: #f1f5f9;">「いつ判断するか」を定義していない構造</strong> だった。
+    </p>
+  </section>
+
+  <hr>
+
+  <section>
+    <h2>前回の記事</h2>
+
+    <div class="slide-box" style="border-left-color: #3b82f6;">
+      <p style="font-size: 1.125rem; color: #f1f5f9; margin-bottom: 1rem;">
+        <strong>「正情報が嘘になった瞬間──異常なしのログが信用できない理由」</strong>
+      </p>
+      <p style="color: #94a3b8;">
+        エラーなし。ログ正常。プロセス完走。<br>
+        でも「結果が信用できない」。
+      </p>
+      <p style="margin-top: 1rem; color: #cbd5e1;">
+        壊れていたのはデータでも実装でもなく、<br>
+        「成功の定義が1bitだったこと」だった。
+      </p>
+    </div>
+  </section>
+
+</article>
+
+<script>
+(function() {
+  // パーティクルシステム（控えめ）
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // レスポンシブ対応のパーティクル数
+  const PARTICLE_COUNT = Math.min(50, Math.floor((width * height) / 20000));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 1.5 + 0.5,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.4)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // クライアント遷移対応の再初期化
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing article effects...');
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
