@@ -1,0 +1,29 @@
+/* LP用グローバルスタイル */
+:root {
+  --cream: #faf8f3;
+  --warm-gray: #4a4540;
+  --soft-green: #6b8e6f;
+  --sage: #8fa88e;
+  --deep-navy: #2d3e50;
+  --gold: #c9a66b;
+  --subtle-pink: #e8d5d0;
+}
+
+/* LPページの背景（bodyにlp-pageクラスが付いている場合のみ） */
+body.lp-page {
+  font-family: 'DM Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: var(--cream);
+  color: var(--warm-gray);
+}
+
+body.lp-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 30% 20%, rgba(107, 142, 111, 0.03) 0%, transparent 60%),
+    radial-gradient(circle at 70% 80%, rgba(201, 166, 107, 0.04) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: -1;
+}

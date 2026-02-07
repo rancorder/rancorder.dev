@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import styles from './page.module.css';
+import './lp-global.css';
 
 export const metadata: Metadata = {
   title: '書く前に、完成度を決めなくていい。出してから、直せばいい個人サイト。',
@@ -15,14 +17,14 @@ export default function LandingPage() {
         rel="stylesheet" 
       />
 
-      <div className="lp-container">
+      <div className={styles.lpContainer}>
         {/* ① ファーストビュー */}
-        <section className="hero">
-          <h1 className="hero-main">
+        <section className={styles.hero}>
+          <h1 className={styles.heroMain}>
             書く前に、完成度を決めなくていい。<br />
             出してから、直せばいい個人サイト。
           </h1>
-          <p className="hero-sub">
+          <p className={styles.heroSub}>
             ブログ・ポートフォリオを<br />
             <strong>「ちゃんと作ろう」</strong>として止まった人のための<br />
             壊れない初期状態。
@@ -30,9 +32,9 @@ export default function LandingPage() {
         </section>
 
         {/* ② 共感ブロック */}
-        <section className="empathy-section">
+        <section className={styles.empathySection}>
           <h2>こんなところで止まっていませんか？</h2>
-          <ul className="pain-points">
+          <ul className={styles.painPoints}>
             <li>最初の記事を書けない</li>
             <li>デザインを決めきれない</li>
             <li>WordPressを触って疲れた</li>
@@ -42,38 +44,38 @@ export default function LandingPage() {
         </section>
 
         {/* ③ 問題の正体 */}
-        <section className="problem-section">
+        <section className={styles.problemSection}>
           <h2>止まる理由は、意志の問題ではありません。</h2>
-          <div className="problem-content">
+          <div className={styles.problemContent}>
             <p>
               多くの個人サイトは、<br />
               最初に「正解の形」を決める前提で作られています。
             </p>
             <p>だから</p>
-            <ul className="problem-list">
+            <ul className={styles.problemList}>
               <li>書いてみて違うと詰む</li>
               <li>消したくなると怖い</li>
               <li>途中で全部作り直しになる</li>
             </ul>
-            <p className="problem-highlight">
+            <p className={styles.problemHighlight}>
               これが、続かない本当の理由です。
             </p>
           </div>
         </section>
 
         {/* ④ 提供価値 */}
-        <section className="value-section">
+        <section className={styles.valueSection}>
           <h2>これは「ブログサービス」ではありません。</h2>
-          <div className="value-statement">
+          <div className={styles.valueStatement}>
             書き始めても後悔しない<br />
             <strong>個人サイトの&quot;初期状態&quot;</strong>を渡します。
           </div>
         </section>
 
         {/* ⑤ 何が起きるか */}
-        <section className="outcome-section">
+        <section className={styles.outcomeSection}>
           <h2>これを使うと、こうなります。</h2>
-          <ul className="outcome-list">
+          <ul className={styles.outcomeList}>
             <li>とりあえず出せる</li>
             <li>書き直しても崩れない</li>
             <li>消しても戻せる</li>
@@ -83,564 +85,38 @@ export default function LandingPage() {
         </section>
 
         {/* ⑥ 向いていない人 */}
-        <section className="anti-filter-section">
+        <section className={styles.antiFilterSection}>
           <h2>向いていない人</h2>
-          <ul className="anti-list">
+          <ul className={styles.antiList}>
             <li>最初から完璧なサイトを作りたい</li>
             <li>1記事でバズりたい</li>
             <li>触るたびに設定をいじりたい</li>
             <li>プラグインを集めるのが好き</li>
           </ul>
-          <div className="anti-statement">
+          <div className={styles.antiStatement}>
             このサイトは<br />
             「迷いながら続ける人」向けです。
           </div>
         </section>
 
         {/* ⑦ 価格と行動 */}
-        <section className="cta-section">
+        <section className={styles.ctaSection}>
           <h2>はじめるだけの状態を用意します。</h2>
-          <div className="service-content">
+          <div className={styles.serviceContent}>
             <ul>
               <li>✓ 初期セットアップ済み個人サイト</li>
               <li>✓ 記事ゼロでもOK</li>
               <li>✓ すぐ公開できる状態</li>
             </ul>
           </div>
-          <a href="#contact" className="neon-button">
+          <a href="#contact" className={styles.neonButton}>
             <span>ちゃんと始めたい人だけ、どうぞ。</span>
           </a>
-          <p className="cta-note">
+          <p className={styles.ctaNote}>
             ※ お問い合わせはリンク先のフォームからお願いします
           </p>
         </section>
       </div>
-
-      <style jsx>{`
-        /* カラー変数 */
-        :global(:root) {
-          --cream: #faf8f3;
-          --warm-gray: #4a4540;
-          --soft-green: #6b8e6f;
-          --sage: #8fa88e;
-          --deep-navy: #2d3e50;
-          --gold: #c9a66b;
-          --subtle-pink: #e8d5d0;
-        }
-
-        /* グレインテクスチャ背景 */
-        :global(body)::before {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image: 
-            radial-gradient(circle at 30% 20%, rgba(107, 142, 111, 0.03) 0%, transparent 60%),
-            radial-gradient(circle at 70% 80%, rgba(201, 166, 107, 0.04) 0%, transparent 60%),
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-          pointer-events: none;
-          z-index: -1;
-        }
-
-        /* コンテナ */
-        .lp-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 clamp(1.5rem, 5vw, 4rem);
-        }
-
-        /* セクション共通 */
-        :global(section) {
-          padding: clamp(5rem, 12vh, 10rem) 0;
-          opacity: 0;
-          transform: translateY(20px);
-          animation: gentleFadeIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        :global(section:nth-child(odd)) {
-          animation-delay: 0.1s;
-        }
-
-        :global(section:nth-child(even)) {
-          animation-delay: 0.2s;
-        }
-
-        @keyframes gentleFadeIn {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        /* ① ファーストビュー */
-        .hero {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: clamp(8rem, 20vh, 16rem) 0;
-          position: relative;
-        }
-
-        .hero-main {
-          font-family: 'Crimson Pro', 'Yu Mincho', 'YuMincho', serif;
-          font-size: clamp(2.5rem, 7vw, 5rem);
-          font-weight: 600;
-          line-height: 1.25;
-          margin-bottom: clamp(3rem, 6vh, 5rem);
-          color: var(--deep-navy);
-          letter-spacing: -0.02em;
-          max-width: 900px;
-        }
-
-        .hero-sub {
-          font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-          color: var(--warm-gray);
-          line-height: 1.9;
-          max-width: 680px;
-          font-weight: 400;
-        }
-
-        .hero-sub strong {
-          color: var(--soft-green);
-          font-weight: 600;
-          border-bottom: 2px solid var(--sage);
-          padding-bottom: 2px;
-        }
-
-        /* ② 共感ブロック */
-        .empathy-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(3rem, 6vh, 5rem);
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          line-height: 1.3;
-        }
-
-        .pain-points {
-          list-style: none;
-          padding: 0;
-          display: grid;
-          gap: clamp(1.5rem, 3vh, 2.5rem);
-        }
-
-        .pain-points li {
-          background: rgba(255, 255, 255, 0.6);
-          backdrop-filter: blur(10px);
-          padding: clamp(1.8rem, 4vh, 2.5rem) clamp(2rem, 5vw, 3rem);
-          border-radius: 16px;
-          border-left: 3px solid var(--soft-green);
-          font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-          color: var(--warm-gray);
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .pain-points li::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 3px;
-          height: 100%;
-          background: linear-gradient(to bottom, var(--soft-green), var(--sage));
-          transform: scaleY(0);
-          transform-origin: top;
-          transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .pain-points li:hover {
-          transform: translateX(12px);
-          background: rgba(255, 255, 255, 0.8);
-          box-shadow: 
-            0 10px 40px rgba(107, 142, 111, 0.12),
-            0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .pain-points li:hover::before {
-          transform: scaleY(1);
-        }
-
-        /* ③ 問題の正体 */
-        .problem-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(2.5rem, 5vh, 4rem);
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          line-height: 1.3;
-          max-width: 800px;
-        }
-
-        .problem-content {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(232, 213, 208, 0.3));
-          backdrop-filter: blur(20px);
-          padding: clamp(3rem, 6vh, 5rem);
-          border-radius: 24px;
-          box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.08),
-            0 1px 3px rgba(0, 0, 0, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.6);
-        }
-
-        .problem-content p {
-          font-size: clamp(1.15rem, 2.5vw, 1.35rem);
-          color: var(--warm-gray);
-          margin-bottom: 1.8rem;
-          line-height: 1.8;
-        }
-
-        .problem-list {
-          list-style: none;
-          padding-left: 0;
-          margin: 2.5rem 0;
-        }
-
-        .problem-list li {
-          font-size: clamp(1.05rem, 2.2vw, 1.25rem);
-          color: var(--warm-gray);
-          padding-left: 2.5rem;
-          margin-bottom: 1.2rem;
-          position: relative;
-          line-height: 1.7;
-        }
-
-        .problem-list li::before {
-          content: '×';
-          position: absolute;
-          left: 0;
-          color: var(--gold);
-          font-size: 1.8rem;
-          font-weight: 600;
-          opacity: 0.7;
-        }
-
-        .problem-highlight {
-          font-size: clamp(1.25rem, 2.8vw, 1.6rem);
-          color: var(--deep-navy);
-          font-weight: 600;
-          margin-top: 2.5rem;
-          padding-top: 2rem;
-          border-top: 1px solid rgba(107, 142, 111, 0.2);
-        }
-
-        /* ④ 提供価値 */
-        .value-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(2.5rem, 5vh, 4rem);
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          line-height: 1.3;
-        }
-
-        .value-statement {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(1.6rem, 4vw, 2.5rem);
-          color: var(--deep-navy);
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(107, 142, 111, 0.1));
-          backdrop-filter: blur(30px);
-          padding: clamp(3.5rem, 7vh, 6rem) clamp(3rem, 6vw, 5rem);
-          border-radius: 24px;
-          border: 1px solid rgba(107, 142, 111, 0.2);
-          box-shadow: 
-            0 30px 80px rgba(107, 142, 111, 0.15),
-            0 2px 6px rgba(0, 0, 0, 0.05);
-          line-height: 1.5;
-          font-weight: 400;
-          letter-spacing: -0.01em;
-          max-width: 900px;
-          margin: 0 auto;
-        }
-
-        .value-statement strong {
-          color: var(--soft-green);
-          font-weight: 700;
-          position: relative;
-          display: inline-block;
-        }
-
-        .value-statement strong::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 8px;
-          background: linear-gradient(90deg, var(--sage), var(--soft-green));
-          opacity: 0.2;
-          border-radius: 4px;
-        }
-
-        /* ⑤ 何が起きるか */
-        .outcome-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(3rem, 6vh, 5rem);
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          line-height: 1.3;
-        }
-
-        .outcome-list {
-          list-style: none;
-          padding: 0;
-          display: grid;
-          gap: clamp(1.2rem, 2.5vh, 2rem);
-        }
-
-        .outcome-list li {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(15px);
-          padding: clamp(1.6rem, 3.5vh, 2.2rem) clamp(2.5rem, 5vw, 3.5rem) clamp(1.6rem, 3.5vh, 2.2rem) clamp(4.5rem, 8vw, 6rem);
-          border-radius: 16px;
-          border-left: 3px solid var(--sage);
-          font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-          color: var(--warm-gray);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .outcome-list li::before {
-          content: '✓';
-          position: absolute;
-          left: clamp(1.5rem, 3vw, 2rem);
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--soft-green);
-          font-size: clamp(1.6rem, 3vw, 2rem);
-          font-weight: 700;
-          z-index: 2;
-        }
-
-        .outcome-list li::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(120deg, transparent, rgba(107, 142, 111, 0.05), transparent);
-          transform: translateX(-100%);
-          transition: transform 0.6s ease;
-        }
-
-        .outcome-list li:hover {
-          transform: translateX(8px);
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: 
-            0 12px 40px rgba(107, 142, 111, 0.15),
-            0 2px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .outcome-list li:hover::after {
-          transform: translateX(100%);
-        }
-
-        /* ⑥ 向いていない人 */
-        .anti-filter-section {
-          background: linear-gradient(135deg, rgba(232, 213, 208, 0.4), rgba(201, 166, 107, 0.2));
-          backdrop-filter: blur(20px);
-          padding: clamp(4rem, 8vh, 6rem) clamp(3rem, 6vw, 5rem);
-          border-radius: 24px;
-          border: 1px solid rgba(201, 166, 107, 0.3);
-          box-shadow: 
-            0 20px 60px rgba(201, 166, 107, 0.12),
-            0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .anti-filter-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(2.5rem, 5vh, 4rem);
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          line-height: 1.3;
-        }
-
-        .anti-list {
-          list-style: none;
-          padding: 0;
-          margin-bottom: clamp(3rem, 5vh, 4rem);
-        }
-
-        .anti-list li {
-          padding: clamp(1.2rem, 2.5vh, 1.6rem) 0 clamp(1.2rem, 2.5vh, 1.6rem) 3rem;
-          margin-bottom: 0.8rem;
-          font-size: clamp(1.05rem, 2.3vw, 1.3rem);
-          color: var(--warm-gray);
-          position: relative;
-          line-height: 1.7;
-        }
-
-        .anti-list li::before {
-          content: '⚠';
-          position: absolute;
-          left: 0;
-          color: var(--gold);
-          font-size: 1.4rem;
-          opacity: 0.8;
-        }
-
-        .anti-statement {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(1.4rem, 3.5vw, 2rem);
-          color: var(--soft-green);
-          font-weight: 600;
-          margin-top: clamp(2rem, 4vh, 3rem);
-          padding: clamp(2rem, 4vh, 3rem);
-          background: rgba(255, 255, 255, 0.5);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          border: 1px solid rgba(107, 142, 111, 0.2);
-          line-height: 1.5;
-          letter-spacing: -0.01em;
-        }
-
-        /* ⑦ 価格と行動 */
-        .cta-section {
-          padding: clamp(8rem, 15vh, 12rem) 0;
-        }
-
-        .cta-section h2 {
-          font-family: 'Crimson Pro', 'Yu Mincho', serif;
-          font-size: clamp(2.2rem, 6vw, 4rem);
-          color: var(--deep-navy);
-          margin-bottom: clamp(3rem, 6vh, 5rem);
-          font-weight: 600;
-          letter-spacing: -0.02em;
-          line-height: 1.3;
-        }
-
-        .service-content {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(107, 142, 111, 0.08));
-          backdrop-filter: blur(25px);
-          padding: clamp(3rem, 6vh, 5rem);
-          border-radius: 24px;
-          margin-bottom: clamp(3rem, 6vh, 5rem);
-          box-shadow: 
-            0 25px 70px rgba(107, 142, 111, 0.15),
-            0 2px 6px rgba(0, 0, 0, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.6);
-        }
-
-        .service-content ul {
-          list-style: none;
-          padding: 0;
-          font-size: clamp(1.15rem, 2.6vw, 1.45rem);
-          color: var(--warm-gray);
-          max-width: 600px;
-          margin: 0 auto;
-        }
-
-        .service-content li {
-          padding: clamp(1.2rem, 2.5vh, 1.8rem) 0;
-          border-bottom: 1px solid rgba(107, 142, 111, 0.15);
-          line-height: 1.7;
-        }
-
-        .service-content li:last-child {
-          border-bottom: none;
-        }
-
-        /* 洗練されたCTAボタン */
-        .neon-button {
-          display: inline-block;
-          padding: clamp(1.3rem, 3vh, 1.8rem) clamp(3rem, 7vw, 5rem);
-          margin-top: clamp(2rem, 4vh, 3rem);
-          border: 2px solid var(--soft-green);
-          border-radius: 12px;
-          background: var(--soft-green);
-          color: var(--cream);
-          text-decoration: none;
-          font-size: clamp(1.15rem, 2.5vw, 1.4rem);
-          font-weight: 600;
-          box-shadow: 
-            0 15px 40px rgba(107, 142, 111, 0.25),
-            0 2px 8px rgba(107, 142, 111, 0.15);
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          position: relative;
-          overflow: hidden;
-          letter-spacing: 0.01em;
-        }
-
-        .neon-button::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
-          opacity: 0;
-          transition: opacity 0.4s ease;
-        }
-
-        .neon-button:hover {
-          transform: translateY(-3px);
-          box-shadow: 
-            0 20px 60px rgba(107, 142, 111, 0.35),
-            0 4px 12px rgba(107, 142, 111, 0.2);
-          border-color: var(--sage);
-          background: var(--sage);
-        }
-
-        .neon-button:hover::before {
-          opacity: 1;
-        }
-
-        .neon-button span {
-          position: relative;
-          z-index: 1;
-        }
-
-        .cta-note {
-          font-size: clamp(0.9rem, 2vw, 1.05rem);
-          color: rgba(74, 69, 64, 0.6);
-          margin-top: clamp(1.5rem, 3vh, 2rem);
-          line-height: 1.6;
-        }
-
-        /* レスポンシブ */
-        @media (max-width: 768px) {
-          .hero {
-            padding: clamp(6rem, 15vh, 10rem) 0;
-          }
-
-          .problem-content,
-          .service-content,
-          .anti-filter-section {
-            padding: clamp(2.5rem, 5vh, 3.5rem) clamp(1.8rem, 4vw, 2.5rem);
-          }
-
-          .pain-points li,
-          .outcome-list li {
-            padding: clamp(1.4rem, 3vh, 1.8rem) clamp(1.5rem, 4vw, 2rem) clamp(1.4rem, 3vh, 1.8rem) clamp(3.5rem, 7vw, 4.5rem);
-          }
-
-          .outcome-list li::before {
-            left: clamp(1.2rem, 3vw, 1.5rem);
-            font-size: clamp(1.4rem, 3vw, 1.7rem);
-          }
-
-          .neon-button {
-            width: 100%;
-            text-align: center;
-          }
-        }
-
-        /* アクセシビリティ */
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
     </>
   );
 }
