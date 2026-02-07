@@ -27,3 +27,26 @@ body.lp-page::before {
   pointer-events: none;
   z-index: -1;
 }
+
+/* セクション共通スタイル */
+section {
+  padding: clamp(5rem, 12vh, 10rem) 0;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: gentleFadeIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+section:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+section:nth-child(even) {
+  animation-delay: 0.2s;
+}
+
+@keyframes gentleFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
