@@ -127,3 +127,39 @@
 }
 
 /* ……（以下そのまま、末尾まで変更なし） */
+
+/* ===== Reveal Animation ===== */
+
+section {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
+}
+
+.isVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Heroだけ少し特別扱い */
+.hero {
+  opacity: 0;
+  transform: translateY(32px);
+}
+
+.hero.isVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  section,
+  .hero {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
