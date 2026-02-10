@@ -53,7 +53,7 @@ function MobileNav({ isOpen, onClose, showEnglish, toggleEnglish }: {
           <a href="#skills" onClick={onClose}>
             スキル
           </a>
-          <a href="/services/ja/page-simple.tsx" onClick={onClose}>
+          <a href="/services/ja" onClick={onClose}>
             サービス
           </a>
           <a href="/blog" onClick={onClose}>
