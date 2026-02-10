@@ -1,0 +1,494 @@
+<!--
+title: PoCがうまくいかない理由は、だいたい期待値の言語化に失敗している
+date: 2026-02-10
+category: PM思考
+excerpt: PoCで一番しんどい仕事は、技術検証でも調整でもない。それは「このPoCで、何を決めるのか」を言語化することだ。
+tags: ["PM", "PoC", "プロダクトマネジメント", "意思決定"]
+readingTime: 8 min read
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoCがうまくいかない理由は、だいたい期待値の言語化に失敗している</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #7c3aed 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+      padding-left: 1rem;
+      border-left: 4px solid #7c3aed;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #a78bfa;
+      font-style: normal;
+      font-weight: 500;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* 導入部分 */
+    .intro {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 8px;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .slide-box ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    
+    .slide-box li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    
+    .slide-box li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: #7c3aed;
+      font-weight: bold;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+    
+    /* セクション番号 */
+    .section-number {
+      display: inline-block;
+      width: 2rem;
+      height: 2rem;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      border-radius: 50%;
+      text-align: center;
+      line-height: 2rem;
+      font-weight: bold;
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    /* 結論ボックス */
+    .conclusion {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.1));
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      padding: 2rem;
+      margin: 3rem 0;
+      border-radius: 12px;
+      animation: fadeIn 1s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* アニメーション無効化 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>PoCがうまくいかない理由は、だいたい期待値の言語化に失敗している</h1>
+  
+  <p class="intro">PoCをやっていて、「手応えはあるのに、なぜか次に進まない」そんな感覚を持ったことはないだろうか。</p>
+  
+  <hr>
+  
+  <p>技術的には成立している。<br>
+  デモも動く。<br>
+  関係者の反応も悪くない。</p>
+  
+  <p>それなのに、</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>本番化の判断が先送りされる</li>
+      <li>追加検証が増える</li>
+      <li>いつの間にか熱量が下がる</li>
+    </ul>
+  </div>
+  
+  <p>PoC自体は失敗していないのに、プロジェクトとしては失速していく。</p>
+  
+  <p>この手の違和感に、何度も出会ってきた。</p>
+  
+  <h2>止める判断は、実はそこまで難しくない</h2>
+  
+  <p>PMの仕事として「止める判断」が評価されることがある。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>これは今やるべきではない</li>
+      <li>このPoCは一度止めよう</li>
+      <li>リスクが高すぎる</li>
+    </ul>
+  </div>
+  
+  <p>確かに、それが必要な場面はある。ただ、経験上こう思っている。</p>
+  
+  <p><strong>止める判断自体は、そこまで難しくない。</strong></p>
+  
+  <p>なぜなら止める判断は、<em>不確実性</em>、<em>曖昧さ</em>、<em>将来リスク</em>を理由にできるからだ。</p>
+  
+  <p>言い換えると、判断を未来に送る行為でもある。</p>
+  
+  <h2>本当にしんどいのは「期待値の言語化」</h2>
+  
+  <p>PoCで一番しんどい仕事は、技術検証でも、調整でもない。</p>
+  
+  <p>それは<strong>「このPoCで、何を決めるのか」を言語化すること</strong>だ。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>このPoCで分かることは何か</li>
+      <li>分からないまま残すことは何か</li>
+      <li>PoCが終わった時、誰が何を判断するのか</li>
+    </ul>
+  </div>
+  
+  <p>これを言葉にした瞬間、責任が一気にPMに乗る。</p>
+  
+  <p>曖昧なままなら逃げ道はある。「もう少し見ましょう」「次フェーズで考えましょう」</p>
+  
+  <p>だが、期待値を言語化すると、その逃げ道は塞がれる。</p>
+  
+  <p>だから、正直しんどい。</p>
+  
+  <h2>PoCの成功条件は「成果」ではない</h2>
+  
+  <p>PoCの成功条件として、よくこんな言葉が出てくる。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>精度が出ること</li>
+      <li>アラートが出ること</li>
+      <li>自動化できること</li>
+    </ul>
+  </div>
+  
+  <p>どれも間違いではない。ただ、それらは手段だ。</p>
+  
+  <p>本質的な成功条件は、これだと思っている。</p>
+  
+  <div class="conclusion">
+    <p style="font-size: 1.2rem; margin-bottom: 0;"><strong>PoCの結果をもとに、次の判断ができる状態を作れたか</strong></p>
+  </div>
+  
+  <p>本番化するのか。限定導入にするのか。やらないと決めるのか。</p>
+  
+  <p>この判断に必要な材料が揃ったかどうか。それがPoCの成否を分ける。</p>
+  
+  <h2>「分かること」と「分からないこと」を分ける</h2>
+  
+  <p>期待値の言語化で、PMが必ずやるべきことがある。</p>
+  
+  <p>それは<strong>PoCで分かることと、分からないことを分けること</strong>。</p>
+  
+  <h3>分かること</h3>
+  <div class="slide-box">
+    <ul>
+      <li>この条件なら使える</li>
+      <li>この業務はAIに任せられる</li>
+    </ul>
+  </div>
+  
+  <h3>分からないこと</h3>
+  <div class="slide-box">
+    <ul>
+      <li>24時間運用時の現場負荷</li>
+      <li>事故時の心理的影響</li>
+    </ul>
+  </div>
+  
+  <p>ここを曖昧にすると、PoCは成功しても評価が割れる。</p>
+  
+  <p>逆に言えば、分からないことを最初から「分からない」と言えているPoCは強い。</p>
+  
+  <h2>期待値を固定するのは、なぜ怖いのか</h2>
+  
+  <p>期待値を言語化するのが怖い理由は単純だ。</p>
+  
+  <p>それは<strong>約束になるから</strong>。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>このPoCではここまで</li>
+      <li>ここから先はやらない</li>
+      <li>判断はこの場で行う</li>
+    </ul>
+  </div>
+  
+  <p>PMがこれを言葉にした瞬間、曖昧さは消える。</p>
+  
+  <p>だから</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>止める方が楽</li>
+      <li>技術の話に逃げたくなる</li>
+      <li>「検討」を増やしたくなる</li>
+    </ul>
+  </div>
+  
+  <p>でも、その結果どうなるかは多くの人が経験しているはずだ。</p>
+  
+  <h2>曖昧なPoCは、だいたい次で詰む</h2>
+  
+  <p>期待値を固定しなかったPoCは、次のフェーズでだいたいこうなる。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>「それはPoCで見てない」</li>
+      <li>「そこまで決める想定ではなかった」</li>
+      <li>「追加で検証しましょう」</li>
+    </ul>
+  </div>
+  
+  <p>誰も嘘は言っていない。ただ、最初に言葉が足りなかっただけだ。</p>
+  
+  <h2>PMの仕事は、この違和感から目を逸らさないこと</h2>
+  
+  <p>PoCの現場では、空気的には「うまくいっている」ことが多い。</p>
+  
+  <p>だからこそ、PMが感じる違和感は言いづらい。</p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>これ、何を決めるPoCだっけ</li>
+      <li>終わった後、誰が判断するんだろう</li>
+      <li>分からないことが多すぎないか</li>
+    </ul>
+  </div>
+  
+  <p>この違和感を「まあいいか」で流すか、言語化して場に出すか。</p>
+  
+  <p><strong>PMの仕事は、たぶんこの一点に集約される。</strong></p>
+  
+  <h2>おわりに</h2>
+  
+  <p>期待値を固定するのは、正直しんどい。でも、それを避けたPoCは、静かに失速していく。</p>
+  
+  <p>PoCを前に進めるのは、派手な成果ではなく、重たい言葉を先に置くことなのかもしれない。</p>
+  
+  <div class="conclusion">
+    <p style="font-size: 1.1rem; margin-bottom: 0;">少なくとも、自分はそういうPMでありたいと思っている。</p>
+  </div>
+  
+</article>
+
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  const PARTICLE_COUNT = Math.min(50, Math.floor((width * height) / 20000)); // 控えめな数
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 1.5 + 0.5,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.3)'; // より控えめな透明度
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // 再初期化用（クライアント遷移対応）
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing article effects...');
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
