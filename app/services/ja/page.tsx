@@ -2,14 +2,6 @@
 
 import { motion } from 'framer-motion';
 
-/**
- * エラーが出る場合の簡易版サービスページ
- * ContactFormを使わず、直接メールリンクを表示
- * 
- * 使い方: ContactFormのインポートでエラーが出る場合、
- * このファイルを一時的に使って動作確認
- */
-
 const stagger = {
   hidden: { opacity: 0 },
   visible: {
@@ -27,7 +19,7 @@ const fadeUp = {
   },
 };
 
-export default function ServicesPageJaSimple() {
+export default function ServicesPageJa() {
   const services = [
     {
       id: 'poc-to-production',
@@ -116,7 +108,7 @@ export default function ServicesPageJaSimple() {
         }}
       />
 
-      {/* Navigation */}
+      {/* Navigation - モバイルファースト */}
       <header
         style={{
           position: 'sticky',
@@ -131,31 +123,79 @@ export default function ServicesPageJaSimple() {
           style={{
             maxWidth: '1200px',
             margin: '0 auto',
-            padding: '16px 24px',
+            padding: '12px 16px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
-          <a href="/portfolio/ja" style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.92)' }}>
+          <a 
+            href="/portfolio/ja" 
+            style={{ 
+              fontSize: '18px', 
+              fontWeight: 700, 
+              color: 'rgba(255, 255, 255, 0.92)',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             H・M
           </a>
-          <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-            <a href="/portfolio/ja#projects" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
+          <nav style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* モバイルでは表示 */}
+            <a 
+              href="/portfolio/ja#projects" 
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.68)',
+                fontSize: '14px',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 8px',
+              }}
+            >
               実績
             </a>
-            <a href="/blog" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
+            <a 
+              href="/blog" 
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.68)',
+                fontSize: '14px',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 8px',
+              }}
+            >
               ブログ
             </a>
-            <a href="/portfolio/ja" style={{ color: '#7c3aed', fontWeight: 600 }}>
+            <a 
+              href="/portfolio/ja" 
+              style={{ 
+                color: '#7c3aed', 
+                fontWeight: 600,
+                fontSize: '14px',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 8px',
+              }}
+            >
               トップページ
             </a>
           </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section style={{ padding: '80px 24px 60px', textAlign: 'center' }}>
+      {/* Hero Section - モバイルファースト */}
+      <section style={{ padding: '48px 16px 32px', textAlign: 'center' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <motion.div initial="hidden" animate="visible" variants={stagger}>
             <motion.p
@@ -163,10 +203,10 @@ export default function ServicesPageJaSimple() {
               style={{
                 color: '#7c3aed',
                 fontWeight: 700,
-                fontSize: '14px',
+                fontSize: '11px',
                 textTransform: 'uppercase',
-                letterSpacing: '1.5px',
-                marginBottom: '16px',
+                letterSpacing: '1.2px',
+                marginBottom: '12px',
               }}
             >
               IT × PM 領域で依頼できること
@@ -175,14 +215,15 @@ export default function ServicesPageJaSimple() {
             <motion.h1
               variants={fadeUp}
               style={{
-                fontSize: 'clamp(32px, 5vw, 56px)',
+                fontSize: 'clamp(24px, 6vw, 48px)',
                 fontWeight: 800,
-                lineHeight: 1.2,
-                marginBottom: '24px',
+                lineHeight: 1.3,
+                marginBottom: '16px',
                 background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.68))',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                padding: '0 8px',
               }}
             >
               サービス内容
@@ -191,11 +232,12 @@ export default function ServicesPageJaSimple() {
             <motion.p
               variants={fadeUp}
               style={{
-                fontSize: '18px',
+                fontSize: '14px',
                 lineHeight: 1.7,
                 color: 'rgba(255, 255, 255, 0.68)',
                 maxWidth: '700px',
                 margin: '0 auto',
+                padding: '0 8px',
               }}
             >
               エンタープライズPM、意思決定設計、本番運用。「動く」を「出せる」に変える支援をします。
@@ -204,8 +246,8 @@ export default function ServicesPageJaSimple() {
         </div>
       </section>
 
-      {/* Services Grid */}
-      <section style={{ padding: '40px 24px 80px' }}>
+      {/* Services Grid - 完全モバイルファースト */}
+      <section style={{ padding: '24px 16px 48px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <motion.div
             initial="hidden"
@@ -214,49 +256,82 @@ export default function ServicesPageJaSimple() {
             variants={stagger}
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '32px',
+              gridTemplateColumns: '1fr',
+              gap: '20px',
             }}
           >
             {services.map((service) => (
               <motion.div
                 key={service.id}
                 variants={fadeUp}
-                whileHover={{ y: -8, scale: 1.02 }}
                 style={{
                   background: 'rgba(255, 255, 255, 0.06)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '16px',
-                  padding: '32px',
+                  borderRadius: '12px',
+                  padding: '20px',
                   transition: 'all 0.3s ease',
                 }}
               >
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{service.icon}</div>
-                <h3 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px', color: 'rgba(255, 255, 255, 0.92)' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>{service.icon}</div>
+                <h3 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: 700, 
+                  marginBottom: '6px', 
+                  color: 'rgba(255, 255, 255, 0.92)',
+                  lineHeight: 1.4,
+                }}>
                   {service.title}
                 </h3>
-                <p style={{ fontSize: '14px', color: '#7c3aed', fontWeight: 600, marginBottom: '20px' }}>
+                <p style={{ 
+                  fontSize: '13px', 
+                  color: '#7c3aed', 
+                  fontWeight: 600, 
+                  marginBottom: '16px',
+                  lineHeight: 1.5,
+                }}>
                   {service.tagline}
                 </p>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.68)', marginBottom: '8px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    fontWeight: 600, 
+                    color: 'rgba(255, 255, 255, 0.68)', 
+                    marginBottom: '8px' 
+                  }}>
                     解決する課題：
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(255, 255, 255, 0.68)', fontSize: '14px', lineHeight: 1.8 }}>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: '18px', 
+                    color: 'rgba(255, 255, 255, 0.68)', 
+                    fontSize: '13px', 
+                    lineHeight: 1.7 
+                  }}>
                     {service.challenge.map((item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
                     ))}
                   </ul>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.68)', marginBottom: '8px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    fontWeight: 600, 
+                    color: 'rgba(255, 255, 255, 0.68)', 
+                    marginBottom: '8px' 
+                  }}>
                     成果物：
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(255, 255, 255, 0.68)', fontSize: '14px', lineHeight: 1.8 }}>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: '18px', 
+                    color: 'rgba(255, 255, 255, 0.68)', 
+                    fontSize: '13px', 
+                    lineHeight: 1.7 
+                  }}>
                     {service.deliverables.map((item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
                     ))}
                   </ul>
                 </div>
@@ -265,10 +340,12 @@ export default function ServicesPageJaSimple() {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    paddingTop: '16px',
+                    paddingTop: '12px',
                     borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     color: 'rgba(255, 255, 255, 0.55)',
+                    gap: '8px',
+                    flexWrap: 'wrap',
                   }}
                 >
                   <span>期間: {service.timeline}</span>
@@ -280,18 +357,20 @@ export default function ServicesPageJaSimple() {
         </div>
       </section>
 
-      {/* Contact Section - シンプル版（メールリンク直接） */}
-      <section id="contact" style={{ padding: '80px 24px', background: 'rgba(15, 23, 42, 0.3)' }}>
+      {/* Contact Section - モバイルファースト */}
+      <section id="contact" style={{ padding: '48px 16px', background: 'rgba(15, 23, 42, 0.3)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2
               variants={fadeUp}
               style={{
-                fontSize: 'clamp(28px, 4vw, 42px)',
+                fontSize: 'clamp(20px, 5vw, 36px)',
                 fontWeight: 800,
                 textAlign: 'center',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 color: 'rgba(255, 255, 255, 0.92)',
+                lineHeight: 1.4,
+                padding: '0 8px',
               }}
             >
               お問い合わせ
@@ -300,34 +379,43 @@ export default function ServicesPageJaSimple() {
               variants={fadeUp}
               style={{
                 textAlign: 'center',
-                fontSize: '16px',
+                fontSize: '14px',
                 color: 'rgba(255, 255, 255, 0.68)',
-                marginBottom: '40px',
+                marginBottom: '32px',
+                padding: '0 8px',
+                lineHeight: 1.7,
               }}
             >
               プロジェクトの状況をお聞かせください。まずは状況の整理からでもお話しできます。
             </motion.p>
 
-            {/* シンプルなメールボタン */}
-            <motion.div variants={fadeUp} style={{ textAlign: 'center' }}>
+            {/* メールボタン - モバイル対応 */}
+            <motion.div variants={fadeUp} style={{ textAlign: 'center', padding: '0 8px' }}>
               <a
                 href="mailto:xzengbu@gmail.com?subject=お問い合わせ&body=お名前：%0D%0A会社名：%0D%0A興味のあるサービス：%0D%0Aメッセージ：%0D%0A"
                 style={{
                   display: 'inline-block',
-                  padding: '16px 40px',
+                  padding: '14px 28px',
                   background: 'linear-gradient(135deg, #7c3aed, #22c55e)',
                   color: 'white',
-                  borderRadius: '12px',
-                  fontSize: '16px',
+                  borderRadius: '10px',
+                  fontSize: '15px',
                   fontWeight: 700,
                   textDecoration: 'none',
                   boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
                   transition: 'all 0.3s ease',
+                  minWidth: '44px',
+                  minHeight: '44px',
                 }}
               >
                 📧 メールで相談する
               </a>
-              <p style={{ marginTop: '20px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.55)' }}>
+              <p style={{ 
+                marginTop: '16px', 
+                fontSize: '13px', 
+                color: 'rgba(255, 255, 255, 0.55)',
+                wordBreak: 'break-all',
+              }}>
                 xzengbu@gmail.com
               </p>
             </motion.div>
@@ -335,15 +423,43 @@ export default function ServicesPageJaSimple() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-        <div style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: '14px' }}>
+      {/* Footer - モバイルファースト */}
+      <footer style={{ padding: '32px 16px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div style={{ 
+          color: 'rgba(255, 255, 255, 0.55)', 
+          fontSize: '13px',
+          lineHeight: 1.7,
+        }}>
           © {new Date().getFullYear()} H・M | <a href="/blog" style={{ color: '#7c3aed' }}>ブログ</a> |{' '}
           <a href="https://github.com/rancorder" target="_blank" rel="noreferrer" style={{ color: '#7c3aed' }}>
             GitHub
           </a>
         </div>
       </footer>
+
+      {/* タブレット・デスクトップ用のメディアクエリ */}
+      <style jsx global>{`
+        @media (min-width: 640px) {
+          /* タブレット以上で2カラム */
+          section:has(> div > div[style*="gridTemplateColumns"]) > div > div {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 24px !important;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          /* デスクトップで3カラム */
+          section:has(> div > div[style*="gridTemplateColumns"]) > div > div {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 32px !important;
+          }
+          
+          /* デスクトップでカードのpaddingを増やす */
+          section:has(> div > div[style*="gridTemplateColumns"]) > div > div > div {
+            padding: 28px !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
