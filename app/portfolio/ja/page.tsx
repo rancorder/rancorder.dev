@@ -1,83 +1,45 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { useState } from 'react';
 
 // ============================================
 // Animation Variants
 // ============================================
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-};
-
 const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 },
+  },
 };
 
-// ============================================
-// CountUp Component
-// ============================================
-interface CountUpProps {
-  end: number;
-  suffix?: string;
-  decimals?: number;
-}
-
-function CountUp({ end, suffix = '', decimals = 0 }: CountUpProps) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, amount: 0.5 });
-
-  useEffect(() => {
-    if (!isInView) return;
-    let start = 0;
-    const duration = 1500;
-    const increment = end / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(decimals > 0 ? parseFloat(start.toFixed(decimals)) : Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [isInView, end, decimals]);
-
-  return (
-    <div ref={ref} className="stat-v">
-      {decimals > 0 ? count.toFixed(decimals) : count}
-      {suffix}
-    </div>
-  );
-}
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
 
 // ============================================
 // Mobile Navigation Component
 // ============================================
-function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
+function MobileNav({ isOpen, onClose, showEnglish, toggleEnglish }: { 
+  isOpen: boolean; 
+  onClose: () => void;
+  showEnglish: boolean;
+  toggleEnglish: () => void;
+}) {
   if (!isOpen) return null;
 
   return (
     <motion.div
       className="mobile-menu"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
     >
       <div className="mobile-menu-inner">
@@ -91,15 +53,24 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
           <a href="#skills" onClick={onClose}>
             スキル
           </a>
+          <a href="/services/ja" onClick={onClose}>
+            サービス
+          </a>
           <a href="/blog" onClick={onClose}>
             ブログ
           </a>
           <a href="#contact" className="mobile-cta" onClick={onClose}>
             Contact
           </a>
-          <a href="/" className="mobile-lang" onClick={onClose}>
-            EN
-          </a>
+          <button
+            onClick={() => {
+              toggleEnglish();
+              onClose();
+            }}
+            className="mobile-lang"
+          >
+            {showEnglish ? '日本語のみ表示 🇯🇵' : '英語も表示 🌐'}
+          </button>
         </nav>
       </div>
     </motion.div>
@@ -111,14 +82,22 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
 // ============================================
 export default function PageJa() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showEnglish, setShowEnglish] = useState(false);
+  
   const { scrollYProgress } = useScroll();
   const yPosAnim = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
   const bgY = useTransform(yPosAnim, [0, 1], ['15%', '25%']);
 
   return (
     <main>
-      {/* 動的背景 */}
+      {/* Dynamic Background */}
       <motion.div className="bg-gradient" style={{ y: bgY }} />
+
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="scroll-progress"
+        style={{ scaleX: scrollYProgress }}
+      />
 
       {/* Top Nav */}
       <header className="nav">
@@ -132,20 +111,33 @@ export default function PageJa() {
             <a href="#role">役割定義</a>
             <a href="#projects">実績</a>
             <a href="#skills">スキル</a>
+            <a href="/services/ja">サービス</a>
             <a href="/blog">ブログ</a>
             <a href="#contact" className="pill">
               Contact
             </a>
-            <a href="/" className="lang-switch">
-              EN
-            </a>
+            <button 
+              onClick={() => setShowEnglish(!showEnglish)}
+              className="lang-switch"
+              style={{ 
+                cursor: 'pointer', 
+                border: 'none', 
+                background: 'transparent',
+                padding: '8px 12px',
+                fontSize: '14px',
+                color: showEnglish ? 'var(--accent)' : 'var(--muted)',
+                transition: 'color 0.2s ease',
+              }}
+            >
+              {showEnglish ? '日本語のみ 🇯🇵' : 'EN 🌐'}
+            </button>
           </nav>
 
           {/* Mobile Hamburger */}
           <button
             className="hamburger"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="メニューを開く"
+            aria-label="Open menu"
             aria-expanded={mobileMenuOpen}
           >
             <span className={mobileMenuOpen ? 'open' : ''}></span>
@@ -156,348 +148,475 @@ export default function PageJa() {
       </header>
 
       {/* Mobile Navigation */}
-      <MobileNav isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <MobileNav 
+        isOpen={mobileMenuOpen} 
+        onClose={() => setMobileMenuOpen(false)}
+        showEnglish={showEnglish}
+        toggleEnglish={() => setShowEnglish(!showEnglish)}
+      />
 
-      {/* Hero - 判断設計に寄せ切る */}
+      {/* Hero */}
       <section id="top" className="hero">
         <div className="container">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
             <motion.p className="kicker" variants={fadeUp}>
-              エンタープライズ領域の技術PM
+              Technical PM for Enterprise Systems
             </motion.p>
 
             <motion.h1 className="hero-title" variants={fadeUp}>
-              エンタープライズB2Bで、PoCで止まるプロジェクトを「意思決定の設計」から本番・運用まで前に進める技術PMです
+              意思決定を設計し、
+              <br />
+              エンタープライズシステムを本番に進める
+              
+              {showEnglish && (
+                <span style={{ 
+                  display: 'block', 
+                  fontSize: '0.5em', 
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  marginTop: '20px',
+                  fontWeight: 400,
+                  lineHeight: 1.4
+                }}>
+                  I design decisions and move enterprise systems to production
+                </span>
+              )}
             </motion.h1>
 
-            <motion.p className="hero-subtitle" variants={fadeUp}>
-              「誰が何を決めるか」を先に整えると、プロジェクトは止まりにくくなる。
+            <motion.p className="hero-desc" variants={fadeUp}>
+              技術的には完成しているのに、本番に進められない。
+              <br />
+              この停滞を解消するのが、私の役割です。
+              
+              {showEnglish && (
+                <span style={{ 
+                  display: 'block', 
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  marginTop: '16px',
+                  fontSize: '0.9em'
+                }}>
+                  Technically complete, but can't move to production.
+                  <br />
+                  Resolving this stagnation is my role.
+                </span>
+              )}
             </motion.p>
 
-            <motion.p className="hero-subtitle" variants={fadeUp}>
-              現場を責めない。個人を評価しない。構造だけを見る。
-            </motion.p>
-
-            <motion.p className="lang-note" variants={fadeUp}>
-              ※ 本ページは日本拠点・日本語でのコミュニケーションを想定した補足ページです。
-              <a href="/">英語ページ</a>がメインの職務定義となります。
-            </motion.p>
-
-            <motion.div className="cta" variants={fadeUp}>
-              <a className="btn primary pulse" href="mailto:xzengbu@gmail.com">
-                面談を依頼する
+            <motion.div className="hero-cta" variants={fadeUp}>
+              <a href="#contact" className="btn primary pulse">
+                プロジェクトについて相談する
+                {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.8 }}>Discuss Your Project</span>}
               </a>
-              <a className="btn ghost" href="#projects">
-                代表実績を見る →
+              <a href="#projects" className="btn ghost">
+                実績を見る
+                {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.8 }}>View Projects</span>}
               </a>
-              <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-            </motion.div>
-
-            {/* Operational Highlights - 前面独立表示 */}
-            <motion.div className="operational-highlights" variants={fadeUp}>
-              <div className="op-header">運用実績（本番稼働）</div>
-              <div className="stats-operational">
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">19日以上</div>
-                  <div className="stat-l">統合コントローラを継続運用（停止・張り付き運用を削減）</div>
-                </motion.div>
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">50+モジュール</div>
-                  <div className="stat-l">50+モジュールを自動制御（手動介入ゼロ）</div>
-                </motion.div>
-                <motion.div className="stat-op" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                  <div className="stat-v">本番運用</div>
-                  <div className="stat-l">障害の波及を防ぐ設計（隔離 / Circuit Breaker）</div>
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Traditional Stats */}
-            <motion.div className="stats" variants={fadeUp}>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                <CountUp end={17} suffix="年" />
-                <div className="stat-l">エンタープライズPM経験</div>
-              </motion.div>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                <CountUp end={21} suffix="品番" />
-                <div className="stat-l">同時立上げ（最大規模）</div>
-              </motion.div>
-              <motion.div className="stat" whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                <CountUp end={11} suffix="ヶ月" />
-                <div className="stat-l">24/7本番運用（連続稼働）</div>
-              </motion.div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Role Clarification - なぜ判断設計が必要か */}
+      {/* Role Definition */}
       <section id="role" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
-              なぜ「判断設計」が必要なのか
+              私の役割
+              {showEnglish && <span style={{ fontSize: '0.6em', color: 'var(--muted)', marginLeft: '16px', fontWeight: 400 }}>My Role</span>}
             </motion.h2>
+
             <motion.p className="section-sub" variants={fadeUp}>
-              技術だけでは、プロダクトは前に進まない
+              エンタープライズPM × 本番運用設計
+              {showEnglish && <span style={{ display: 'block', fontSize: '0.9em', color: 'var(--muted2)', marginTop: '8px' }}>Enterprise PM × Production Operations Design</span>}
             </motion.p>
 
-            <motion.div className="not-optimize-grid" variants={stagger}>
+            <motion.div className="grid" variants={stagger}>
               <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">進捗管理ツールのマイクロマネジメント</div>
+                <div className="mini-title">
+                  意思決定の構造設計
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Decision Architecture Design</div>}
+                </div>
                 <p className="muted">
-                  私がプロジェクトを管理する手段は、意思決定の明確化と責任設計です。ツールは認知負荷を下げる場合にのみ導入します。
+                  判断できない状態を、判断できる状態に変える設計。
+                  技術選定、優先順位、Go/No-Goの基準を、ステークホルダー全員が納得できる形で整理します。
+                  {showEnglish && (
+                    <span style={{ display: 'block', marginTop: '12px', fontSize: '0.95em', opacity: 0.7 }}>
+                      Transform indecision into clear decisions. Organize tech selection, priorities, and Go/No-Go criteria in a way all stakeholders can agree on.
+                    </span>
+                  )}
                 </p>
               </motion.div>
 
               <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">速度だけを追う、運用責任のないデリバリー</div>
+                <div className="mini-title">
+                  本番を前提にした実装
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Production-First Implementation</div>}
+                </div>
                 <p className="muted">
-                  私は要件の曖昧さから本番運用まで責任を持ちます。デリバリー速度は、本番で動かなければ意味がありません。
+                  PoCで終わらせず、本番に耐える設計を最初から組み込む。
+                  監視、ログ、障害対応、デグレ防止など、運用フェーズで起きる問題を事前に設計段階で潰します。
+                  {showEnglish && (
+                    <span style={{ display: 'block', marginTop: '12px', fontSize: '0.95em', opacity: 0.7 }}>
+                      Don't stop at PoC—build production-ready from the start. Design monitoring, logging, incident response, and regression prevention upfront.
+                    </span>
+                  )}
                 </p>
               </motion.div>
 
               <motion.div className="card" variants={fadeUp}>
-                <div className="mini-title">本番移行意図のないPoC</div>
+                <div className="mini-title">
+                  責任境界の明確化
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Clear Responsibility Boundaries</div>}
+                </div>
                 <p className="muted">
-                  すべての技術判断は本番運用を前提に行います。運用可能性設計のないPoCはリソースの無駄です。
+                  誰が、どこまで、どう対応するか。
+                  曖昧な責任設計は、本番リリース時の最大のボトルネックです。
+                  これを明確にすることで、チーム全体が安心して前に進めるようにします。
+                  {showEnglish && (
+                    <span style={{ display: 'block', marginTop: '12px', fontSize: '0.95em', opacity: 0.7 }}>
+                      Who, what scope, how to respond. Ambiguous responsibilities are the biggest bottleneck at production release. Clarify this so the whole team can move forward confidently.
+                    </span>
+                  )}
                 </p>
               </motion.div>
             </motion.div>
 
-            <motion.div className="pm-clarification" variants={fadeUp}>
-              <div className="pm-clarification-inner">
-                <div className="pm-icon">💡</div>
+            {/* Clarification Box */}
+            <motion.div className="clarification-box" variants={fadeUp}>
+              <div className="clarification-inner">
+                <div className="clarification-icon">💡</div>
                 <div>
-                  <div className="pm-clarification-title">私のPMアプローチ</div>
-                  <p className="pm-clarification-text">
-                    私の軸は「進捗の管理」ではなく「判断が前に進む構造の設計」です。何を決めるべきか／誰が決めるか／決めない場合の既定値を先に定義し、技術的に完成した後に止まるプロジェクトを止めにくくします。
+                  <div className="clarification-title">
+                    補足：「判断の設計」とは
+                    {showEnglish && <span style={{ fontSize: '0.8em', color: 'var(--muted2)', marginLeft: '12px', fontWeight: 400 }}>What is "Decision Design"?</span>}
+                  </div>
+                  <p className="clarification-text">
+                    多くのプロジェクトは、技術的には可能でも、
+                    「誰がGOを出すのか」「どの基準で判断するのか」が曖昧なまま進み、最後に止まります。
+                    私がやるのは、この判断構造そのものを設計すること。
+                    技術的な実装よりも先に、意思決定のフローを整えます。
+                    {showEnglish && (
+                      <span style={{ display: 'block', marginTop: '12px', fontSize: '0.95em', opacity: 0.7 }}>
+                        Many projects are technically feasible but stall because "who gives the GO" and "what criteria to use" remain unclear. What I do is design this decision structure itself. Before technical implementation, I organize the decision-making flow.
+                      </span>
+                    )}
                   </p>
                 </div>
-              </div>
-            </motion.div>
-
-            <motion.div className="japan-context" variants={fadeUp}>
-              <div className="japan-context-inner">
-                <div className="japan-context-title">🇯🇵 日本企業との仕事で大切にしていること</div>
-                <p className="japan-context-text">
-                  製造業17年の経験から、「失敗が許されない制約」「0.01mmの精度要求」「複数部門の調整」といった、日本のエンタープライズ特有の難しさを理解しています。
-                  <br /><br />
-                  技術だけでなく、現場の空気・組織の力学・暗黙の合意形成プロセスまで見通して意思決定できることが、私の強みです。
-                </p>
               </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Projects - 代表3件（Problem/Action/Result型） */}
+      {/* Projects */}
       <section id="projects" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.05 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
-              代表実績
+              主な実績
+              {showEnglish && <span style={{ fontSize: '0.6em', color: 'var(--muted)', marginLeft: '16px', fontWeight: 400 }}>Key Projects</span>}
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
-              課題 → 判断 → 結果
+              本番前提の実装
+              {showEnglish && <span style={{ display: 'block', fontSize: '0.9em', color: 'var(--muted2)', marginTop: '8px' }}>Production-First Implementation</span>}
             </motion.p>
 
-            <motion.div className="grid" variants={stagger}>
-              {/* Case 1: Manufacturing B2B */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8 }}
-                transition={{ duration: 0.3 }}
-              >
+            <motion.div className="grid projects" variants={stagger}>
+              {/* Project 1 */}
+              <motion.div className="card project-card" variants={fadeUp}>
                 <div className="project-head">
-                  <h3 className="project-title">医療機器メーカー向け新製品立上げPM（21品番同時管理）</h3>
-                  <span className="badge">enterprise</span>
+                  <h3 className="project-title">
+                    統合スクレイピング・監視基盤
+                    {showEnglish && <div style={{ fontSize: '0.75em', color: 'var(--muted2)', marginTop: '8px', fontWeight: 400 }}>Unified Scraping & Monitoring Platform</div>}
+                  </h3>
+                  <span className="badge">Production</span>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">課題</div>
+                  <div className="case-label">
+                    課題
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Challenge</span>}
+                  </div>
                   <p className="case-text">
-                    21品番の同時立上げが、5社のステークホルダー間の要件対立により停滞。仕様変更が納期とコストを圧迫。
+                    54サイト、不統一なHTML、頻繁なレイアウト変更
+                    {showEnglish && (
+                      <span style={{ display: 'block', marginTop: '8px', opacity: 0.7 }}>
+                        54 sites, inconsistent HTML, frequent layout changes
+                      </span>
+                    )}
                   </p>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">判断</div>
-                  <p className="case-text">
-                    品質基準を3段階（必須/推奨/理想）に分け、変更影響を局所化。ステークホルダー調整を単一窓口化し、承認速度を3倍化。
-                  </p>
-                </div>
-
-                <div className="case-block">
-                  <div className="case-label">結果</div>
+                  <div className="case-label">
+                    実施内容
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Actions Taken</span>}
+                  </div>
                   <ul className="list">
-                    <li>納期遵守率100%を17ヶ月維持（遅延ゼロ）</li>
-                    <li>仕様変更件数を30%削減</li>
-                    <li>17年キャリアで最大規模のプロジェクト</li>
+                    <li>長期運用を前提とした構造設計（壊れ方を先に決める）</li>
+                    <li>障害検知・自動復旧・異常判定の3層監視設計</li>
+                    <li>段階的スケーリング戦略（1サイト→5→43の段階実装）</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Designed long-term operational structure (decide how it breaks first)</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>3-tier monitoring: fault detection, auto-recovery, anomaly determination</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Phased scaling strategy (1 site → 5 → 43)</li>
+                      </>
+                    )}
                   </ul>
                 </div>
 
-                <div className="tags">
-                  <span className="tag">要件定義</span>
-                  <span className="tag">ステークホルダー調整</span>
-                  <span className="tag">リスク管理</span>
-                </div>
-              </motion.article>
-
-              {/* Case 2: Automation Platform */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="project-head">
-                  <h3 className="project-title">54サイト統合スクレイピング基盤（24/7運用11ヶ月）</h3>
-                  <span className="badge">product</span>
-                </div>
-
                 <div className="case-block">
-                  <div className="case-label">課題</div>
-                  <p className="case-text">
-                    54のECサイト手動監視が年間1,000時間以上を消費。過去のPoC実装は運用複雑性により本番化に失敗。
-                  </p>
-                </div>
-
-                <div className="case-block">
-                  <div className="case-label">判断</div>
-                  <p className="case-text">
-                    初日から障害隔離を前提に設計。SQLite WALで復旧速度を優先。品質基準を「見逃し許容・誤検知最小」と定義。
-                  </p>
-                </div>
-
-                <div className="case-block">
-                  <div className="case-label">結果</div>
+                  <div className="case-label">
+                    成果
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Results</span>}
+                  </div>
                   <ul className="list">
-                    <li>稼働率99.8%で11ヶ月連続運用</li>
-                    <li>年間1,000時間以上の工数削減（月72万円相当）</li>
-                    <li>54サイト統合 / 月10万件+処理</li>
+                    <li>6ヶ月連続で障害ゼロ（自動復旧率99.8%）</li>
+                    <li>レイアウト変更対応時間を3日→30分に短縮</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>6 consecutive months of zero incidents (99.8% auto-recovery rate)</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Layout change response time reduced from 3 days → 30 minutes</li>
+                      </>
+                    )}
                   </ul>
-                </div>
-
-                <div className="project-links">
-                  <a
-                    href="https://github.com/rancorder/master_controller"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="project-link"
-                  >
-                    GitHub →
-                  </a>
                 </div>
 
                 <div className="tags">
                   <span className="tag">Python</span>
-                  <span className="tag">SQLite(WAL)</span>
-                  <span className="tag">24/7運用</span>
+                  <span className="tag">Playwright</span>
+                  <span className="tag">Node.js</span>
+                  <span className="tag">Docker</span>
+                  <span className="tag">Redis</span>
                 </div>
-              </motion.article>
+              </motion.div>
 
-              {/* Case 3: Multi-stakeholder */}
-              <motion.article
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -8 }}
-                transition={{ duration: 0.3 }}
-              >
+              {/* Project 2 */}
+              <motion.div className="card project-card" variants={fadeUp}>
                 <div className="project-head">
-                  <h3 className="project-title">家電メーカー向けプロダクト仕様策定PM</h3>
-                  <span className="badge">enterprise</span>
+                  <h3 className="project-title">
+                    製造業DX：新卒採用システム刷新PM
+                    {showEnglish && <div style={{ fontSize: '0.75em', color: 'var(--muted2)', marginTop: '8px', fontWeight: 400 }}>Manufacturing DX: Graduate Recruitment System Renewal PM</div>}
+                  </h3>
+                  <span className="badge">Enterprise</span>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">課題</div>
+                  <div className="case-label">
+                    課題
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Challenge</span>}
+                  </div>
                   <p className="case-text">
-                    家電製品の仕様が部門間の優先順位対立でデッドロック。曖昧な要件が高コストな設計変更とスケジュール遅延を発生。
+                    10年前のASP依存、選考プロセスが複雑化、データ連携が手作業
+                    {showEnglish && (
+                      <span style={{ display: 'block', marginTop: '8px', opacity: 0.7 }}>
+                        10-year-old ASP dependency, complex selection process, manual data integration
+                      </span>
+                    )}
                   </p>
                 </div>
 
                 <div className="case-block">
-                  <div className="case-label">判断</div>
-                  <p className="case-text">
-                    要件を「今決めるべき」と「後回しでよい」に分類し、無駄な議論を削減。変更影響を3段階評価（軽微/中程度/重大）し、受け入れ基準を明確化。
-                  </p>
-                </div>
-
-                <div className="case-block">
-                  <div className="case-label">結果</div>
+                  <div className="case-label">
+                    実施内容
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Actions Taken</span>}
+                  </div>
                   <ul className="list">
-                    <li>仕様変更による遅延0件を14ヶ月維持</li>
-                    <li>設計変更コスト60%削減</li>
-                    <li>ステークホルダー満足度85%以上を継続達成</li>
+                    <li>業務フローの可視化（As-Is → To-Be マッピング）</li>
+                    <li>SaaS選定・カスタマイズ不要の要件整理</li>
+                    <li>段階的移行計画（旧システム並行稼働3ヶ月）</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Visualized business flow (As-Is → To-Be mapping)</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>SaaS selection, no-customization requirement clarification</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Phased migration plan (3-month parallel operation with old system)</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="case-block">
+                  <div className="case-label">
+                    成果
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Results</span>}
+                  </div>
+                  <ul className="list">
+                    <li>選考プロセスの工数を40%削減</li>
+                    <li>データ連携自動化により、手作業をゼロ化</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Reduced selection process workload by 40%</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Eliminated manual work through data integration automation</li>
+                      </>
+                    )}
                   </ul>
                 </div>
 
                 <div className="tags">
-                  <span className="tag">仕様策定</span>
-                  <span className="tag">合意形成</span>
-                  <span className="tag">変更管理</span>
+                  <span className="tag">SaaS選定</span>
+                  <span className="tag">業務フロー設計</span>
+                  <span className="tag">段階的移行</span>
+                  {showEnglish && (
+                    <>
+                      <span className="tag" style={{ opacity: 0.7 }}>SaaS Selection</span>
+                      <span className="tag" style={{ opacity: 0.7 }}>Workflow Design</span>
+                      <span className="tag" style={{ opacity: 0.7 }}>Phased Migration</span>
+                    </>
+                  )}
                 </div>
-              </motion.article>
+              </motion.div>
+
+              {/* Project 3 */}
+              <motion.div className="card project-card" variants={fadeUp}>
+                <div className="project-head">
+                  <h3 className="project-title">
+                    品質改善：pytest後付け導入
+                    {showEnglish && <div style={{ fontSize: '0.75em', color: 'var(--muted2)', marginTop: '8px', fontWeight: 400 }}>Quality Improvement: Retrofitting pytest</div>}
+                  </h3>
+                  <span className="badge">Technical</span>
+                </div>
+
+                <div className="case-block">
+                  <div className="case-label">
+                    課題
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Challenge</span>}
+                  </div>
+                  <p className="case-text">
+                    テストがない約1,400行のコード、変更が怖い、リグレッションリスク
+                    {showEnglish && (
+                      <span style={{ display: 'block', marginTop: '8px', opacity: 0.7 }}>
+                        ~1,400 lines of code without tests, afraid to change, regression risk
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="case-block">
+                  <div className="case-label">
+                    実施内容
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Actions Taken</span>}
+                  </div>
+                  <ul className="list">
+                    <li>最小コスト・最大効果のテスト設計</li>
+                    <li>段階的に品質定義を「動く」から「安全に変更できる」に引き上げ</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Minimum-cost, maximum-impact test design</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Incrementally elevated quality definition from "works" to "safely changeable"</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="case-block">
+                  <div className="case-label">
+                    成果
+                    {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em', opacity: 0.7 }}>Results</span>}
+                  </div>
+                  <ul className="list">
+                    <li>30件のテスト実装 / カバレッジ26%</li>
+                    <li>型安全性の向上（mypy strict mode適用）</li>
+                    <li>リグレッションバグ検出時間を数日→数分に短縮</li>
+                    {showEnglish && (
+                      <>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>30 tests implemented / 26% coverage</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Improved type safety (mypy strict mode applied)</li>
+                        <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Regression bug detection time reduced from days → minutes</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="tags">
+                  <span className="tag">Python</span>
+                  <span className="tag">pytest</span>
+                  <span className="tag">mypy</span>
+                  <span className="tag">coverage</span>
+                </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Skills - 役割ベース */}
+      {/* Skills */}
       <section id="skills" className="section">
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
-              スキル
+              スキルセット
+              {showEnglish && <span style={{ fontSize: '0.6em', color: 'var(--muted)', marginLeft: '16px', fontWeight: 400 }}>Skills</span>}
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
-              ツールリストではなく、役割ベースの能力
+              技術×PM×本番運用の交差点
+              {showEnglish && <span style={{ display: 'block', fontSize: '0.9em', color: 'var(--muted2)', marginTop: '8px' }}>At the intersection of Tech × PM × Production Operations</span>}
             </motion.p>
 
-            <motion.div className="grid skills" variants={stagger}>
-              {/* Project & Decision Design */}
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="mini-title">プロジェクト・意思決定設計</div>
+            <motion.div className="grid" variants={stagger}>
+              <motion.div className="card" variants={fadeUp}>
+                <div className="mini-title">
+                  プロジェクトマネジメント（実務ベース）
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Project Management (Practice-Based)</div>}
+                </div>
                 <ul className="list">
-                  <li>曖昧な要件の明確化</li>
-                  <li>意思決定権限・責任の設計</li>
-                  <li>部門横断のステークホルダー調整</li>
-                  <li>トレードオフ設計（速度×品質×コスト）</li>
+                  <li>意思決定構造の設計（Go/No-Go判断基準の明確化）</li>
+                  <li>責任設計・エスカレーションパスの整理</li>
+                  <li>リスク管理（発生確率×影響度の定量化）</li>
+                  <li>ステークホルダー調整（技術者・ビジネス・経営の通訳）</li>
+                  {showEnglish && (
+                    <>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Decision architecture design (clarifying Go/No-Go criteria)</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Responsibility design, escalation path organization</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Risk management (quantifying probability × impact)</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Stakeholder coordination (translator for engineers, business, management)</li>
+                    </>
+                  )}
                 </ul>
               </motion.div>
 
-              {/* Operational & Technical Context */}
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="mini-title">運用・技術文脈の理解</div>
+              <motion.div className="card" variants={fadeUp}>
+                <div className="mini-title">
+                  システムアーキテクチャ（エンタープライズ文脈）
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>System Architecture (Enterprise Context)</div>}
+                </div>
                 <ul className="list">
-                  <li>長期稼働する自動化システム（11ヶ月+連続運用）</li>
-                  <li>監視・障害隔離・サーキットブレーカー</li>
-                  <li>本番前提の設計レビュー</li>
-                  <li>製造業精度（0.01mm）× Tech速度（24/7）の両立</li>
+                  <li>システム全体設計、API設計、データ整合性</li>
+                  <li>障害分離、運用制約を前提にした設計判断</li>
+                  <li>技術選定（既存資産との兼ね合い、学習コスト、保守性）</li>
+                  {showEnglish && (
+                    <>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>System-wide design, API design, data consistency</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Failure isolation, design decisions based on operational constraints</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Technology selection (existing assets, learning cost, maintainability)</li>
+                    </>
+                  )}
                 </ul>
               </motion.div>
 
-              {/* Tools */}
-              <motion.div
-                className="card"
-                variants={fadeUp}
-                whileHover={{ y: -6 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="mini-title">ツール</div>
+              <motion.div className="card" variants={fadeUp}>
+                <div className="mini-title">
+                  本番運用設計
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Production Operations Design</div>}
+                </div>
+                <ul className="list">
+                  <li>監視・ロギング・リトライ制御・サーキットブレーカー</li>
+                  <li>予測可能な縮退設計（壊れ方のコントロール）</li>
+                  <li>インシデント対応フロー・手順書作成</li>
+                  {showEnglish && (
+                    <>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Monitoring, logging, retry control, circuit breakers</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Predictable degradation design (controlling how it breaks)</li>
+                      <li style={{ opacity: 0.7, fontSize: '0.95em' }}>Incident response flow, procedure documentation</li>
+                    </>
+                  )}
+                </ul>
+              </motion.div>
+
+              <motion.div className="card" variants={fadeUp}>
+                <div className="mini-title">
+                  ツール
+                  {showEnglish && <div style={{ fontSize: '0.85em', color: 'var(--muted2)', marginTop: '4px', textTransform: 'none' }}>Tools</div>}
+                </div>
                 <ul className="list">
                   <li>Python, FastAPI, React, TypeScript, Next.js</li>
                   <li>Docker, Linux, PostgreSQL, Redis, SQLite</li>
@@ -506,47 +625,25 @@ export default function PageJa() {
                 </ul>
               </motion.div>
             </motion.div>
-
-            {/* ツール問題の先回り */}
-            <motion.div className="tool-approach" variants={fadeUp}>
-              <div className="tool-approach-inner">
-                <div className="tool-approach-icon">🛠️</div>
-                <div>
-                  <div className="tool-approach-title">プロジェクト管理ツールについて</div>
-                  <p className="tool-approach-text">
-                    なお、進捗管理や課題管理については、ツール運用そのものよりも「判断と合意が前に進む構造」を優先して設計してきました。
-                    結果として、Excel / チケット管理 / 独自運用など、プロジェクト特性に応じた手法を選択しています。
-                    必要に応じて、Jira / Azure DevOps などの運用にも短期間で適応できます。
-                  </p>
-                </div>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* 日本向け注釈 */}
-      <section className="section japan-note-section">
-        <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
-            <motion.div className="japan-note-card" variants={fadeUp}>
-              <p className="japan-note-text">
-                ※ 日本企業・日本拠点のプロジェクトにおいても、意思決定構造・責任設計の考え方は同様に適用しています。
-              </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Contact - 日本語CTA */}
+      {/* Contact */}
       <section id="contact" className="section">
         <div className="container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={stagger}>
             <motion.h2 className="section-title" variants={fadeUp}>
               技術的には完成しているが、本番に移せないプロジェクトがあれば
+              {showEnglish && (
+                <span style={{ display: 'block', fontSize: '0.5em', color: 'var(--muted)', marginTop: '16px', fontWeight: 400 }}>
+                  If you have a project that's technically complete but can't move to production
+                </span>
+              )}
             </motion.h2>
             <motion.p className="section-sub" variants={fadeUp}>
               まずは状況の整理からでも、お話しできます
+              {showEnglish && <span style={{ display: 'block', fontSize: '0.9em', color: 'var(--muted2)', marginTop: '8px' }}>We can start with just organizing the situation</span>}
             </motion.p>
 
             <motion.div className="contact-card" variants={fadeUp}>
@@ -556,6 +653,13 @@ export default function PageJa() {
                   プロジェクトの状況（ざっくりでOK）を添えてもらえると、話が早いです。
                   <br />
                   製造業PM × 技術PMの両面から、最適な進め方を提案します。
+                  {showEnglish && (
+                    <span style={{ display: 'block', marginTop: '12px', opacity: 0.7 }}>
+                      Tell me about your project situation (rough overview is fine) and we can discuss faster.
+                      <br />
+                      I'll propose the best approach from both Manufacturing PM × Technical PM perspectives.
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="contact-right">
@@ -564,6 +668,7 @@ export default function PageJa() {
                 </a>
                 <a className="btn ghost" href="https://github.com/rancorder" target="_blank" rel="noreferrer">
                   GitHubを見る
+                  {showEnglish && <span style={{ marginLeft: '8px', fontSize: '0.9em' }}>View GitHub</span>}
                 </a>
               </div>
             </motion.div>
@@ -578,7 +683,7 @@ export default function PageJa() {
       </footer>
 
       {/* ============================================ */}
-      {/* Global Styles - Mobile First Approach */}
+      {/* Global Styles - 既存スタイルを全て維持 */}
       {/* ============================================ */}
       <style jsx global>{`
         :root {
@@ -593,7 +698,6 @@ export default function PageJa() {
           --accent2: #22c55e;
           --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
           
-          /* Touch target minimum */
           --touch-target: 44px;
         }
 
@@ -623,9 +727,6 @@ export default function PageJa() {
           text-decoration: none;
         }
 
-        /* ============================================ */
-        /* Background Gradient */
-        /* ============================================ */
         .bg-gradient {
           position: fixed;
           inset: 0;
@@ -645,9 +746,17 @@ export default function PageJa() {
           }
         }
 
-        /* ============================================ */
-        /* Container - Mobile First */
-        /* ============================================ */
+        .scroll-progress {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--accent), var(--accent2));
+          transform-origin: 0%;
+          z-index: 999;
+        }
+
         .container {
           width: 100%;
           max-width: 1100px;
@@ -671,9 +780,6 @@ export default function PageJa() {
           color: var(--muted);
         }
 
-        /* ============================================ */
-        /* Navigation - Mobile First */
-        /* ============================================ */
         .nav {
           position: sticky;
           top: 0;
@@ -708,7 +814,6 @@ export default function PageJa() {
           color: var(--accent);
         }
 
-        /* Desktop Navigation - Hidden on Mobile */
         .nav-links {
           display: none;
         }
@@ -724,7 +829,8 @@ export default function PageJa() {
             font-size: 14px;
           }
 
-          .nav-links a {
+          .nav-links a,
+          .nav-links button {
             transition: color 0.2s ease;
             white-space: nowrap;
             padding: 8px 12px;
@@ -733,14 +839,12 @@ export default function PageJa() {
             align-items: center;
           }
 
-          .nav-links a:hover {
+          .nav-links a:hover,
+          .nav-links button:hover {
             color: var(--text);
           }
         }
 
-        /* ============================================ */
-        /* Hamburger Menu - Mobile Only */
-        /* ============================================ */
         .hamburger {
           display: flex;
           flex-direction: column;
@@ -786,9 +890,6 @@ export default function PageJa() {
           }
         }
 
-        /* ============================================ */
-        /* Mobile Menu Overlay */
-        /* ============================================ */
         .mobile-menu {
           position: fixed;
           top: 61px;
@@ -811,7 +912,8 @@ export default function PageJa() {
           gap: 4px;
         }
 
-        .mobile-nav-links a {
+        .mobile-nav-links a,
+        .mobile-nav-links button {
           padding: 16px 20px;
           border-radius: 12px;
           background: var(--panel-2);
@@ -822,9 +924,13 @@ export default function PageJa() {
           align-items: center;
           font-size: 16px;
           font-weight: 500;
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
         }
 
-        .mobile-nav-links a:active {
+        .mobile-nav-links a:active,
+        .mobile-nav-links button:active {
           transform: scale(0.98);
         }
 
@@ -835,150 +941,109 @@ export default function PageJa() {
           margin-top: 8px;
         }
 
-        .mobile-nav-links a.mobile-lang {
+        .mobile-nav-links button.mobile-lang {
           background: rgba(124, 58, 237, 0.1);
           border-color: var(--accent);
           color: var(--accent);
           font-weight: 700;
         }
 
-        /* ============================================ */
-        /* Pills & Buttons - Desktop Only */
-        /* ============================================ */
-        .pill {
+        .pill,
+        .lang-switch {
           padding: 8px 14px;
           border: 1px solid var(--border);
           border-radius: 999px;
-          background: var(--panel-2);
+          font-size: 13px;
+          font-weight: 700;
           transition: all 0.2s ease;
-          white-space: nowrap;
+        }
+
+        .pill {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(34, 197, 94, 0.15));
+          color: var(--text);
+          border-color: var(--accent);
         }
 
         .pill:hover {
-          background: var(--panel);
-          border-color: rgba(255, 255, 255, 0.22);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(34, 197, 94, 0.25));
+          transform: translateY(-2px);
         }
 
         .lang-switch {
-          padding: 8px 14px;
-          border: 1px solid var(--accent);
-          border-radius: 999px;
-          background: rgba(124, 58, 237, 0.1);
-          color: var(--accent);
-          font-weight: 700;
-          transition: all 0.2s ease;
-          white-space: nowrap;
+          color: var(--muted);
         }
 
         .lang-switch:hover {
-          background: rgba(124, 58, 237, 0.2);
+          color: var(--text);
+          border-color: var(--text);
         }
 
-        /* ============================================ */
-        /* Hero Section - Mobile First */
-        /* ============================================ */
         .hero {
-          padding: 60px 0 40px;
+          min-height: 90vh;
+          display: flex;
+          align-items: center;
+          padding: 80px 0 60px;
+          position: relative;
         }
 
         @media (min-width: 768px) {
           .hero {
-            padding: 100px 0 60px;
+            min-height: 100vh;
+            padding: 100px 0 80px;
           }
         }
 
         .kicker {
-          margin: 0 0 12px;
+          color: var(--accent);
           font-weight: 700;
-          color: var(--muted2);
           font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          margin-bottom: 24px;
         }
 
         @media (min-width: 768px) {
           .kicker {
-            font-size: 15px;
+            font-size: 14px;
           }
         }
 
         .hero-title {
-          margin: 0;
-          font-size: 22px;
-          line-height: 1.3;
-          letter-spacing: -0.02em;
-          background: linear-gradient(135deg, var(--text), rgba(255, 255, 255, 0.7));
+          font-size: clamp(32px, 7vw, 72px);
+          font-weight: 800;
+          line-height: 1.15;
+          margin: 0 0 32px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.68));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
         }
 
-        @media (min-width: 480px) {
-          .hero-title {
-            font-size: 26px;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .hero-title {
-            font-size: 34px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .hero-title {
-            font-size: 48px;
-          }
-        }
-
-        .hero-subtitle {
-          margin: 16px 0 0;
-          font-size: 14px;
-          color: var(--muted2);
-          line-height: 1.6;
-          font-style: italic;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        .lang-note {
-          margin: 16px 0 0;
-          font-size: 12px;
-          color: var(--muted2);
-          line-height: 1.6;
-          padding: 12px;
-          background: rgba(124, 58, 237, 0.08);
-          border-left: 3px solid var(--accent);
-          border-radius: 4px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+        .hero-desc {
+          font-size: 16px;
+          line-height: 1.8;
+          color: var(--muted);
+          margin: 0 0 48px;
+          max-width: 700px;
         }
 
         @media (min-width: 768px) {
-          .lang-note {
-            font-size: 13px;
+          .hero-desc {
+            font-size: 18px;
           }
         }
 
-        .lang-note a {
-          color: var(--accent);
-          text-decoration: underline;
-        }
-
-        /* ============================================ */
-        /* CTA Buttons - Mobile First */
-        /* ============================================ */
-        .cta {
+        .hero-cta {
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          margin-top: 24px;
+          gap: 16px;
         }
 
         @media (min-width: 640px) {
-          .cta {
+          .hero-cta {
             flex-direction: row;
             flex-wrap: wrap;
+            gap: 20px;
           }
         }
 
@@ -986,265 +1051,90 @@ export default function PageJa() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: var(--touch-target);
-          padding: 0 20px;
+          padding: 16px 32px;
           border-radius: 12px;
-          border: 1px solid var(--border);
-          background: var(--panel-2);
-          color: var(--text);
           font-weight: 700;
-          font-size: 14px;
-          transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+          font-size: 15px;
+          transition: all 0.3s ease;
           cursor: pointer;
-          white-space: nowrap;
-          width: 100%;
-        }
-
-        @media (min-width: 640px) {
-          .btn {
-            width: auto;
-          }
-        }
-
-        .btn:active {
-          transform: scale(0.98);
+          border: none;
+          min-height: var(--touch-target);
+          text-align: center;
         }
 
         @media (min-width: 768px) {
-          .btn:hover {
-            transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.28);
-          }
-
-          .btn:active {
-            transform: translateY(-1px);
+          .btn {
+            font-size: 16px;
           }
         }
 
         .btn.primary {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(34, 197, 94, 0.6));
-          border-color: transparent;
-          box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          color: white;
+          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
         }
 
-        @media (min-width: 768px) {
-          .btn.primary:hover {
-            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.5);
-          }
+        .btn.primary:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
         }
 
-        .btn.pulse {
-          animation: pulse 3s ease-in-out infinite;
+        .btn.primary:active {
+          transform: translateY(-1px);
+        }
+
+        .btn.ghost {
+          border: 2px solid var(--border);
+          color: var(--text);
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        .btn.ghost:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes pulse {
           0%,
           100% {
-            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4);
+            opacity: 1;
           }
           50% {
-            box-shadow: 0 18px 60px rgba(124, 58, 237, 0.6);
+            opacity: 0.9;
           }
         }
 
-        .btn.ghost {
-          background: var(--panel-2);
-        }
-
-        /* ============================================ */
-        /* Operational Highlights - Mobile First */
-        /* ============================================ */
-        .operational-highlights {
-          margin-top: 32px;
-          padding: 24px 20px;
-          border: 2px solid rgba(124, 58, 237, 0.4);
-          background: rgba(124, 58, 237, 0.08);
-          border-radius: 16px;
-        }
-
-        @media (min-width: 768px) {
-          .operational-highlights {
-            padding: 32px;
-            border-radius: 20px;
-          }
-        }
-
-        .op-header {
-          font-weight: 900;
-          font-size: 12px;
-          color: var(--accent);
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 16px;
-          text-align: center;
-        }
-
-        @media (min-width: 768px) {
-          .op-header {
-            font-size: 14px;
-            margin-bottom: 20px;
-          }
-        }
-
-        .stats-operational {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-        }
-
-        @media (min-width: 640px) {
-          .stats-operational {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .stats-operational {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-          }
-        }
-
-        .stats {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 12px;
-          margin-top: 24px;
-        }
-
-        @media (min-width: 640px) {
-          .stats {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .stats {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-top: 32px;
-          }
-        }
-
-        .stat,
-        .stat-op {
-          border: 1px solid var(--border);
-          background: var(--panel);
-          border-radius: 16px;
-          padding: 20px;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          cursor: pointer;
-          text-align: left;
-        }
-
-        @media (min-width: 768px) {
-          .stat,
-          .stat-op {
-            border-radius: 18px;
-            padding: 24px;
-          }
-        }
-
-        .stat-op {
-          text-align: center;
-        }
-
-        .stat:active,
-        .stat-op:active {
-          transform: scale(0.98);
-        }
-
-        @media (min-width: 768px) {
-          .stat:hover,
-          .stat-op:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.22);
-          }
-
-          .stat:active,
-          .stat-op:active {
-            transform: scale(1);
-          }
-        }
-
-        .stat-v {
-          font-weight: 900;
-          font-size: 28px;
-          background: linear-gradient(135deg, var(--accent), var(--accent2));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        @media (min-width: 768px) {
-          .stat-v {
-            font-size: 32px;
-          }
-        }
-
-        .stat-l {
-          margin-top: 8px;
-          color: var(--muted);
-          font-size: 12px;
-          line-height: 1.5;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        @media (min-width: 768px) {
-          .stat-l {
-            font-size: 13px;
-          }
-        }
-
-        /* ============================================ */
-        /* Section - Mobile First */
-        /* ============================================ */
         .section {
-          padding: 60px 0;
+          padding: 80px 0;
         }
 
         @media (min-width: 768px) {
-          .section {
-            padding: 80px 0;
-          }
-        }
-
-        @media (min-width: 1024px) {
           .section {
             padding: 120px 0;
           }
         }
 
         .section-title {
-          margin: 0;
-          font-size: 24px;
-          letter-spacing: -0.01em;
+          font-size: clamp(28px, 5vw, 48px);
           font-weight: 800;
-          line-height: 1.2;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        @media (min-width: 768px) {
-          .section-title {
-            font-size: 28px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .section-title {
-            font-size: 32px;
-          }
+          text-align: center;
+          margin: 0 0 16px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.68));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .section-sub {
-          margin: 12px 0 0;
+          text-align: center;
+          font-size: 15px;
           color: var(--muted);
-          line-height: 1.7;
-          font-size: 14px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          margin: 0 0 64px;
         }
 
         @media (min-width: 768px) {
@@ -1253,248 +1143,170 @@ export default function PageJa() {
           }
         }
 
-        /* ============================================ */
-        /* Grid Layout - Mobile First */
-        /* ============================================ */
         .grid {
-          margin-top: 24px;
           display: grid;
-          gap: 20px;
           grid-template-columns: 1fr;
+          gap: 24px;
         }
 
         @media (min-width: 768px) {
           .grid {
-            margin-top: 32px;
-            gap: 24px;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 32px;
           }
         }
 
+        @media (min-width: 1024px) {
+          .grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
         .card {
-          border: 1px solid var(--border);
           background: var(--panel);
+          border: 1px solid var(--border);
           border-radius: 16px;
-          padding: 24px;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: transform;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          padding: 28px;
+          transition: all 0.3s ease;
         }
 
         @media (min-width: 768px) {
           .card {
-            border-radius: 20px;
             padding: 32px;
+          }
+
+          .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow);
+            border-color: rgba(255, 255, 255, 0.18);
           }
         }
 
-        /* ============================================ */
-        /* Not Optimize Grid - Mobile First */
-        /* ============================================ */
-        .not-optimize-grid {
-          margin-top: 24px;
-          display: grid;
-          gap: 16px;
+        .mini-title {
+          font-weight: 900;
+          font-size: 12px;
+          color: var(--text);
+          margin-bottom: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        @media (min-width: 768px) {
+          .mini-title {
+            font-size: 13px;
+          }
+        }
+
+        .list {
+          margin: 0;
+          padding-left: 20px;
+          color: var(--muted);
+          line-height: 1.75;
+          font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+          .list {
+            font-size: 14px;
+          }
+        }
+
+        .list li {
+          margin-bottom: 8px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        .clarification-box {
+          margin-top: 64px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(34, 197, 94, 0.05));
+          border: 1px solid rgba(124, 58, 237, 0.3);
+          border-radius: 16px;
+          padding: 28px;
+        }
+
+        @media (min-width: 768px) {
+          .clarification-box {
+            padding: 40px;
+          }
+        }
+
+        .clarification-inner {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+          .clarification-inner {
+            flex-direction: row;
+            gap: 24px;
+          }
+        }
+
+        .clarification-icon {
+          font-size: 48px;
+          flex-shrink: 0;
+        }
+
+        .clarification-title {
+          font-weight: 900;
+          font-size: 16px;
+          color: var(--accent);
+          margin-bottom: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        @media (min-width: 768px) {
+          .clarification-title {
+            font-size: 18px;
+          }
+        }
+
+        .clarification-text {
+          color: var(--muted);
+          line-height: 1.7;
+          font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+          .clarification-text {
+            font-size: 15px;
+          }
+        }
+
+        .grid.projects {
           grid-template-columns: 1fr;
         }
 
         @media (min-width: 768px) {
-          .not-optimize-grid {
-            gap: 20px;
+          .grid.projects {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
 
         @media (min-width: 1024px) {
-          .not-optimize-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 24px;
-            margin-top: 32px;
+          .grid.projects {
+            grid-template-columns: repeat(3, 1fr);
           }
         }
 
-        /* ============================================ */
-        /* PM Clarification & Context Cards */
-        /* ============================================ */
-        .pm-clarification,
-        .japan-context,
-        .tool-approach {
-          margin-top: 32px;
-          padding: 24px 20px;
-          border-radius: 16px;
-        }
-
-        @media (min-width: 768px) {
-          .pm-clarification,
-          .japan-context,
-          .tool-approach {
-            padding: 32px;
-            border-radius: 20px;
-            margin-top: 40px;
-          }
-        }
-
-        .pm-clarification {
-          border: 1px solid rgba(34, 197, 94, 0.3);
-          background: rgba(34, 197, 94, 0.06);
-        }
-
-        .japan-context {
-          border: 1px solid rgba(255, 190, 11, 0.3);
-          background: rgba(255, 190, 11, 0.06);
-        }
-
-        .tool-approach {
-          border: 1px solid rgba(124, 58, 237, 0.3);
-          background: rgba(124, 58, 237, 0.06);
-        }
-
-        .pm-clarification-inner,
-        .japan-context-inner,
-        .tool-approach-inner {
-          display: flex;
-          gap: 16px;
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
-        @media (min-width: 640px) {
-          .pm-clarification-inner,
-          .tool-approach-inner {
-            flex-direction: row;
-            gap: 20px;
-          }
-        }
-
-        .japan-context-inner {
-          flex-direction: column;
-        }
-
-        .pm-icon,
-        .tool-approach-icon {
-          font-size: 28px;
-          flex-shrink: 0;
-        }
-
-        @media (min-width: 768px) {
-          .pm-icon,
-          .tool-approach-icon {
-            font-size: 32px;
-          }
-        }
-
-        .pm-clarification-title {
-          font-weight: 900;
-          font-size: 15px;
-          margin-bottom: 12px;
-          color: var(--accent2);
-        }
-
-        .japan-context-title {
-          font-weight: 900;
-          font-size: 15px;
-          color: #ffbe0b;
-        }
-
-        .tool-approach-title {
-          font-weight: 900;
-          font-size: 15px;
-          margin-bottom: 12px;
-          color: var(--accent);
-        }
-
-        @media (min-width: 768px) {
-          .pm-clarification-title,
-          .japan-context-title,
-          .tool-approach-title {
-            font-size: 16px;
-          }
-        }
-
-        .pm-clarification-text,
-        .japan-context-text,
-        .tool-approach-text {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 13px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        @media (min-width: 768px) {
-          .pm-clarification-text,
-          .japan-context-text,
-          .tool-approach-text {
-            font-size: 14px;
-          }
-        }
-
-        /* ============================================ */
-        /* Japan Note Section */
-        /* ============================================ */
-        .japan-note-section {
-          padding: 40px 0;
-        }
-
-        @media (min-width: 768px) {
-          .japan-note-section {
-            padding: 60px 0;
-          }
-        }
-
-        .japan-note-card {
-          padding: 20px 24px;
-          border: 1px solid rgba(255, 190, 11, 0.3);
-          background: rgba(255, 190, 11, 0.06);
-          border-radius: 16px;
-          text-align: center;
-        }
-
-        @media (min-width: 768px) {
-          .japan-note-card {
-            padding: 24px 32px;
-          }
-        }
-
-        .japan-note-text {
-          margin: 0;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 12px;
-          font-style: italic;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        @media (min-width: 768px) {
-          .japan-note-text {
-            font-size: 14px;
-          }
-        }
-
-        /* ============================================ */
-        /* Project Cards - Mobile First */
-        /* ============================================ */
         .project-head {
           display: flex;
-          align-items: flex-start;
           justify-content: space-between;
-          gap: 12px;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 24px;
           flex-wrap: wrap;
         }
 
         .project-title {
-          margin: 0;
-          font-size: 16px;
-          line-height: 1.4;
-          font-weight: 700;
+          font-size: 18px;
+          font-weight: 900;
+          color: var(--text);
           flex: 1;
           min-width: 200px;
           word-wrap: break-word;
@@ -1503,7 +1315,7 @@ export default function PageJa() {
 
         @media (min-width: 768px) {
           .project-title {
-            font-size: 18px;
+            font-size: 20px;
           }
         }
 
@@ -1511,9 +1323,8 @@ export default function PageJa() {
           font-size: 10px;
           padding: 6px 12px;
           border-radius: 999px;
-          border: 1px solid var(--border);
-          color: var(--muted);
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(167, 139, 250, 0.2);
+          color: var(--accent);
           white-space: nowrap;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -1555,43 +1366,6 @@ export default function PageJa() {
           }
         }
 
-        .mini-title {
-          font-weight: 900;
-          font-size: 12px;
-          color: var(--text);
-          margin-bottom: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        @media (min-width: 768px) {
-          .mini-title {
-            font-size: 13px;
-          }
-        }
-
-        .list {
-          margin: 0;
-          padding-left: 20px;
-          color: var(--muted);
-          line-height: 1.75;
-          font-size: 13px;
-        }
-
-        @media (min-width: 768px) {
-          .list {
-            font-size: 14px;
-          }
-        }
-
-        .list li {
-          margin-bottom: 8px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
         .tags {
           display: flex;
           flex-wrap: wrap;
@@ -1620,123 +1394,52 @@ export default function PageJa() {
           }
         }
 
-        .project-links {
-          margin-top: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .project-link {
-          font-size: 13px;
-          color: var(--accent);
-          font-weight: 700;
-          transition: all 0.2s ease;
-          display: inline-flex;
-          align-items: center;
-          min-height: var(--touch-target);
-        }
-
-        @media (min-width: 768px) {
-          .project-link:hover {
-            color: var(--accent2);
-            transform: translateX(4px);
-          }
-        }
-
-        /* ============================================ */
-        /* Skills Grid - Mobile First */
-        /* ============================================ */
-        .grid.skills {
-          grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 768px) {
-          .grid.skills {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .grid.skills {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-        }
-
-        /* ============================================ */
-        /* Contact Card - Mobile First */
-        /* ============================================ */
         .contact-card {
-          margin-top: 24px;
-          display: flex;
-          gap: 20px;
-          align-items: flex-start;
-          justify-content: space-between;
-          flex-direction: column;
+          max-width: 900px;
+          margin: 0 auto;
+          background: var(--panel);
           border: 1px solid var(--border);
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(34, 197, 94, 0.1));
           border-radius: 16px;
-          padding: 24px 20px;
+          padding: 28px;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
         }
 
         @media (min-width: 768px) {
           .contact-card {
             flex-direction: row;
             align-items: center;
-            border-radius: 20px;
-            padding: 32px;
-            gap: 24px;
-            margin-top: 32px;
+            padding: 48px;
           }
         }
 
         .contact-left {
           flex: 1;
-          min-width: 0;
         }
 
         .contact-right {
           display: flex;
-          gap: 12px;
           flex-direction: column;
-          width: 100%;
+          gap: 16px;
         }
 
         @media (min-width: 640px) {
           .contact-right {
             flex-direction: row;
-            width: auto;
+            gap: 20px;
           }
         }
 
-        /* ============================================ */
-        /* Footer - Mobile First */
-        /* ============================================ */
         .footer {
+          padding: 40px 0;
           border-top: 1px solid var(--border);
-          padding: 24px 0;
-          color: var(--muted);
-        }
-
-        @media (min-width: 768px) {
-          .footer {
-            padding: 32px 0;
-          }
         }
 
         .footer-inner {
-          display: flex;
-          justify-content: center;
-          align-items: center;
           text-align: center;
-          font-size: 13px;
-        }
-
-        @media (min-width: 768px) {
-          .footer-inner {
-            justify-content: space-between;
-            font-size: 14px;
-          }
+          font-size: 14px;
+          color: var(--muted2);
         }
       `}</style>
     </main>
