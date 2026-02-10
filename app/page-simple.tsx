@@ -1,16 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
 
-// Dynamic import で遅延読み込み（エラーハンドリング付き）
-const ContactForm = dynamic(() => import('@/app/components/ContactForm'), {
-  loading: () => <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>,
-  ssr: false,
-});
+/**
+ * エラーが出る場合の簡易版サービスページ
+ * ContactFormを使わず、直接メールリンクを表示
+ * 
+ * 使い方: ContactFormのインポートでエラーが出る場合、
+ * このファイルを一時的に使って動作確認
+ */
 
-// アニメーション設定（既存ページから流用）
 const stagger = {
   hidden: { opacity: 0 },
   visible: {
@@ -28,81 +27,79 @@ const fadeUp = {
   },
 };
 
-export default function ServicesPageEn() {
-  const [selectedService, setSelectedService] = useState<string>('');
-
+export default function ServicesPageJaSimple() {
   const services = [
     {
       id: 'poc-to-production',
       icon: '🚀',
-      title: 'PoC → Production Migration Support',
-      tagline: 'Turn "it works" into "it ships"',
+      title: 'PoC→本番移行支援',
+      tagline: '「動いた」を「出せる」に変える',
       challenge: [
-        'PoC succeeded but can\'t move to production',
-        'Operational design and responsibility design unclear',
-        'Fear of technical debt prevents action',
+        'PoCは成功したが本番に進められない',
+        '運用設計・責任設計が曖昧で判断できない',
+        '技術負債が怖くて手が出せない',
       ],
       deliverables: [
-        'Production migration decision checklist',
-        'Operational procedures (including incident response)',
-        'Architecture review and risk assessment',
+        '本番移行判断チェックリスト',
+        '運用手順書（障害対応含む）',
+        'アーキテクチャレビュー・リスク評価',
       ],
-      timeline: '2-4 weeks',
-      pricing: 'Consultation required',
+      timeline: '2-4週間',
+      pricing: '要相談',
     },
     {
       id: 'legacy-renewal',
       icon: '🔧',
-      title: 'Legacy System Renewal PM',
-      tagline: 'From "can\'t touch" to "safe to change"',
+      title: 'レガシーシステム刷新PM',
+      tagline: '「触れない」を「安全に変えられる」に',
       challenge: [
-        'No one can touch the old system',
-        'Replacement plans repeatedly fail',
-        'Can\'t design phased migration',
+        '古いシステムを触れる人がいない',
+        'リプレイス計画が何度も頓挫している',
+        '段階的移行の設計ができない',
       ],
       deliverables: [
-        'Migration roadmap',
-        'Risk management plan',
-        'Technology selection & architecture design',
+        '移行ロードマップ',
+        'リスク管理計画',
+        '技術選定・アーキテクチャ設計',
       ],
-      timeline: '1-3 months',
-      pricing: 'Consultation required',
+      timeline: '1-3ヶ月',
+      pricing: '要相談',
     },
     {
       id: 'technical-advisory',
       icon: '💡',
-      title: 'Technical Advisory (1-2h/week)',
-      tagline: 'Decision support for CTOs and VPoEs',
+      title: '技術顧問（週1-2h）',
+      tagline: 'CTO・VPoEの意思決定支援',
       challenge: [
-        'Can\'t determine go/no-go decisions',
-        'Need perspective from outside the team',
-        'Want a sounding board for technical strategy',
+        'Go/No-Goの判断ができない',
+        'チーム外の視点が欲しい',
+        '技術戦略の壁打ち相手が欲しい',
       ],
       deliverables: [
-        'Weekly decision-making sessions',
-        'Architecture and technology selection advice',
-        'Production operation design support',
+        '週次での意思決定セッション',
+        'アーキテクチャ・技術選定アドバイス',
+        '本番運用設計支援',
       ],
-      timeline: 'Monthly contract (3-6 months recommended)',
-      pricing: 'Consultation required',
+      timeline: '月額契約（3-6ヶ月推奨）',
+      pricing: '要相談',
     },
     {
       id: 'load-testing',
       icon: '⚡',
-      title: 'Load Testing & Quality Improvement',
-      tagline: 'From "probably works" to "proven capacity"',
+      title: '負荷試験・品質改善支援',
+      tagline: '「たぶん大丈夫」を「証明済み」に',
       challenge: [
-        'Don\'t know the system\'s capacity limits',
-        'Can\'t ensure quality before production',
-        'Need to design test strategy from scratch',
+        'システムの限界値が分からない',
+        '本番前に品質を担保できない',
+        'テスト戦略を一から設計する必要がある',
       ],
       deliverables: [
-        'Load test design and execution (k6)',
-        'Test introduction and quality baseline (pytest)',
-        'Performance bottleneck analysis and improvement proposals',
+        '負荷試験設計・実行（k6）',
+        'テスト導入・品質ベースライン設定（pytest）',
+        'パフォーマンス・ボトルネック分析・改善提案',
       ],
-      timeline: '2-4 weeks',
-      pricing: 'Consultation required',
+      timeline: '2-4週間',
+      pricing: '要相談',
     },
   ];
 
@@ -140,18 +137,18 @@ export default function ServicesPageEn() {
             alignItems: 'center',
           }}
         >
-          <a href="/portfolio/en" style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.92)' }}>
+          <a href="/portfolio/ja" style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.92)' }}>
             H・M
           </a>
           <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-            <a href="/portfolio/en#projects" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
-              Projects
+            <a href="/portfolio/ja#projects" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
+              実績
             </a>
             <a href="/blog" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
-              Blog
+              ブログ
             </a>
-            <a href="/services/ja" style={{ color: '#7c3aed', fontWeight: 600 }}>
-              JA
+            <a href="/services/en" style={{ color: '#7c3aed', fontWeight: 600 }}>
+              EN
             </a>
           </nav>
         </div>
@@ -172,7 +169,7 @@ export default function ServicesPageEn() {
                 marginBottom: '16px',
               }}
             >
-              Services for IT × PM
+              IT × PM 領域で依頼できること
             </motion.p>
 
             <motion.h1
@@ -188,7 +185,7 @@ export default function ServicesPageEn() {
                 backgroundClip: 'text',
               }}
             >
-              What You Can Request
+              サービス内容
             </motion.h1>
 
             <motion.p
@@ -201,8 +198,7 @@ export default function ServicesPageEn() {
                 margin: '0 auto',
               }}
             >
-              Enterprise PM, decision-making design, production operations. We support the transition from "working" to
-              "production-ready."
+              エンタープライズPM、意思決定設計、本番運用。「動く」を「出せる」に変える支援をします。
             </motion.p>
           </motion.div>
         </div>
@@ -233,11 +229,6 @@ export default function ServicesPageEn() {
                   borderRadius: '16px',
                   padding: '32px',
                   transition: 'all 0.3s ease',
-                  cursor: 'pointer',
-                }}
-                onClick={() => {
-                  setSelectedService(service.title);
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>{service.icon}</div>
@@ -250,7 +241,7 @@ export default function ServicesPageEn() {
 
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.68)', marginBottom: '8px' }}>
-                    Challenges We Solve:
+                    解決する課題：
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(255, 255, 255, 0.68)', fontSize: '14px', lineHeight: 1.8 }}>
                     {service.challenge.map((item, index) => (
@@ -261,7 +252,7 @@ export default function ServicesPageEn() {
 
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.68)', marginBottom: '8px' }}>
-                    Deliverables:
+                    成果物：
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(255, 255, 255, 0.68)', fontSize: '14px', lineHeight: 1.8 }}>
                     {service.deliverables.map((item, index) => (
@@ -280,8 +271,8 @@ export default function ServicesPageEn() {
                     color: 'rgba(255, 255, 255, 0.55)',
                   }}
                 >
-                  <span>Timeline: {service.timeline}</span>
-                  <span>Pricing: {service.pricing}</span>
+                  <span>期間: {service.timeline}</span>
+                  <span>費用: {service.pricing}</span>
                 </div>
               </motion.div>
             ))}
@@ -289,7 +280,7 @@ export default function ServicesPageEn() {
         </div>
       </section>
 
-      {/* Contact Form */}
+      {/* Contact Section - シンプル版（メールリンク直接） */}
       <section id="contact" style={{ padding: '80px 24px', background: 'rgba(15, 23, 42, 0.3)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} variants={stagger}>
@@ -303,7 +294,7 @@ export default function ServicesPageEn() {
                 color: 'rgba(255, 255, 255, 0.92)',
               }}
             >
-              Get in Touch
+              お問い合わせ
             </motion.h2>
             <motion.p
               variants={fadeUp}
@@ -314,11 +305,31 @@ export default function ServicesPageEn() {
                 marginBottom: '40px',
               }}
             >
-              Let's discuss your project. We can start with just organizing the situation.
+              プロジェクトの状況をお聞かせください。まずは状況の整理からでもお話しできます。
             </motion.p>
 
-            <motion.div variants={fadeUp}>
-              <ContactForm language="en" servicePreset={selectedService} />
+            {/* シンプルなメールボタン */}
+            <motion.div variants={fadeUp} style={{ textAlign: 'center' }}>
+              <a
+                href="mailto:xzengbu@gmail.com?subject=お問い合わせ&body=お名前：%0D%0A会社名：%0D%0A興味のあるサービス：%0D%0Aメッセージ：%0D%0A"
+                style={{
+                  display: 'inline-block',
+                  padding: '16px 40px',
+                  background: 'linear-gradient(135deg, #7c3aed, #22c55e)',
+                  color: 'white',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                📧 メールで相談する
+              </a>
+              <p style={{ marginTop: '20px', fontSize: '14px', color: 'rgba(255, 255, 255, 0.55)' }}>
+                xzengbu@gmail.com
+              </p>
             </motion.div>
           </motion.div>
         </div>
@@ -327,7 +338,7 @@ export default function ServicesPageEn() {
       {/* Footer */}
       <footer style={{ padding: '40px 24px', textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: '14px' }}>
-          © {new Date().getFullYear()} H・M | <a href="/blog" style={{ color: '#7c3aed' }}>Blog</a> |{' '}
+          © {new Date().getFullYear()} H・M | <a href="/blog" style={{ color: '#7c3aed' }}>ブログ</a> |{' '}
           <a href="https://github.com/rancorder" target="_blank" rel="noreferrer" style={{ color: '#7c3aed' }}>
             GitHub
           </a>
