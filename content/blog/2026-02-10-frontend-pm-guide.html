@@ -211,159 +211,191 @@ tags: ["PM", "フロントエンド", "開発プロセス", "プロジェクト�
       color: #86efac;
     }
     
-    /* Mermaid図のスタイル */
-    .mermaid-container {
+    /* フローチャート風ビジュアル */
+    .visual-diagram {
       background: rgba(15, 23, 42, 0.6);
-      padding: 3rem;
+      padding: 2rem;
       border-radius: 12px;
-      margin: 3rem 0;
-      overflow-x: auto;
-      border: 1px solid rgba(124, 58, 237, 0.2);
-      cursor: pointer;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .diagram-card {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 2px solid rgba(124, 58, 237, 0.4);
       transition: all 0.3s ease;
       position: relative;
     }
     
-    .mermaid-container:hover {
-      transform: scale(1.02);
-      box-shadow: 0 8px 32px rgba(124, 58, 237, 0.4);
-      border-color: rgba(124, 58, 237, 0.5);
-      background: rgba(15, 23, 42, 0.8);
+    .diagram-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(124, 58, 237, 0.8);
+      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
     }
     
-    .mermaid-container::before {
-      content: '📊';
-      position: absolute;
-      top: 0.5rem;
-      left: 0.5rem;
-      font-size: 1.5rem;
-      opacity: 0.5;
-      transition: opacity 0.2s;
+    .diagram-card h4 {
+      color: #a78bfa;
+      margin-bottom: 1rem;
+      font-size: 1.125rem;
     }
     
-    .mermaid-container:hover::before {
-      opacity: 1;
+    .diagram-card ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      color: #cbd5e1;
     }
     
-    .mermaid-container::after {
-      content: '🔍 クリックで拡大';
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: rgba(124, 58, 237, 0.9);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: bold;
-      opacity: 0;
-      transition: opacity 0.3s;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    .diagram-card ul li {
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
     }
     
-    .mermaid-container:hover::after {
-      opacity: 1;
-    }
-    
-    .mermaid {
+    /* フローステップ */
+    .flow-steps {
       display: flex;
-      justify-content: center;
-      min-height: 400px;
-      transform: scale(1.2);
-      transform-origin: center;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 2rem 0;
     }
     
-    /* Mermaid SVG内のテキストを読みやすく */
-    .mermaid svg {
-      max-width: 100%;
-      height: auto;
+    .flow-step {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.1));
+      border-left: 4px solid #7c3aed;
+      padding: 1.5rem;
+      border-radius: 8px;
+      position: relative;
+      transition: all 0.3s ease;
     }
     
-    .mermaid text {
-      font-size: 20px !important;
-      font-weight: 500 !important;
-      fill: #e0e0e0 !important;
+    .flow-step:hover {
+      transform: translateX(10px);
+      border-left-width: 6px;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
     }
     
-    .mermaid .nodeLabel {
-      font-size: 18px !important;
-      font-weight: 600 !important;
-    }
-    
-    .mermaid .edgeLabel {
-      font-size: 16px !important;
-      background: rgba(15, 23, 42, 0.9) !important;
-      padding: 4px 8px !important;
-      border-radius: 4px !important;
-    }
-    
-    /* モーダル */
-    .diagram-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: 9999;
-      padding: 2rem;
-      overflow: auto;
-      animation: fadeIn 0.3s;
-    }
-    
-    .diagram-modal.active {
+    .flow-step::before {
+      content: attr(data-step);
+      position: absolute;
+      left: -2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2.5rem;
+      height: 2.5rem;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    
-    .diagram-modal-content {
-      background: rgba(15, 23, 42, 0.95);
-      padding: 3rem;
-      border-radius: 12px;
-      max-width: 95vw;
-      max-height: 90vh;
-      overflow: auto;
-      border: 2px solid rgba(124, 58, 237, 0.5);
-      position: relative;
-      transform: scale(1.3);
-      transition: transform 0.2s;
-    }
-    
-    .diagram-modal-content.zoomed {
-      transform: scale(1.8);
-    }
-    
-    .modal-controls {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      z-index: 10000;
-    }
-    
-    .modal-btn {
-      background: rgba(124, 58, 237, 0.9);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
       font-weight: bold;
-      transition: all 0.2s;
+      color: white;
+      font-size: 1.125rem;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
     }
     
-    .modal-btn:hover {
-      background: #7c3aed;
-      transform: scale(1.05);
+    .flow-step h4 {
+      color: #a78bfa;
+      margin-bottom: 0.75rem;
+      font-size: 1.25rem;
     }
     
-    .modal-btn.close {
-      background: rgba(239, 68, 68, 0.9);
+    /* 比較テーブル */
+    .comparison-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 2rem 0;
     }
     
-    .modal-btn.close:hover {
-      background: #ef4444;
+    .comparison-column {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .comparison-column.frontend {
+      border-color: rgba(124, 58, 237, 0.5);
+    }
+    
+    .comparison-column.backend {
+      border-color: rgba(59, 130, 246, 0.5);
+    }
+    
+    .comparison-column h4 {
+      color: #a78bfa;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+    
+    .comparison-column.backend h4 {
+      color: #60a5fa;
+    }
+    
+    /* 状態遷移 */
+    .state-flow {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 2rem 0;
+      overflow-x: auto;
+      padding: 1rem;
+    }
+    
+    .state-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(59, 130, 246, 0.2));
+      border: 2px solid #7c3aed;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      min-width: 120px;
+      text-align: center;
+      font-weight: bold;
+      color: #e0e0e0;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+    
+    .state-box:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+    }
+    
+    .state-arrow {
+      color: #94a3b8;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    
+    /* マインドマップ風グリッド */
+    .mindmap-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .mindmap-category {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .mindmap-category h4 {
+      color: #a78bfa;
+      margin-bottom: 1rem;
+      font-size: 1.125rem;
+      border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+      padding-bottom: 0.5rem;
     }
     
     /* Q&Aセクション */
@@ -398,23 +430,30 @@ tags: ["PM", "フロントエンド", "開発プロセス", "プロジェクト�
         font-size: 1.25rem;
       }
       
-      .mermaid-container {
-        padding: 1.5rem;
-        margin: 2rem 0;
+      .diagram-grid {
+        grid-template-columns: 1fr;
       }
       
-      .mermaid {
-        transform: scale(1);
-        min-height: 300px;
+      .comparison-table {
+        grid-template-columns: 1fr;
       }
       
-      .diagram-modal-content {
-        padding: 1.5rem;
-        transform: scale(1);
+      .mindmap-grid {
+        grid-template-columns: 1fr;
       }
       
-      .diagram-modal-content.zoomed {
-        transform: scale(1.3);
+      .flow-step {
+        margin-left: 2rem;
+      }
+      
+      .state-flow {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .state-arrow {
+        transform: rotate(90deg);
+        align-self: center;
       }
     }
     
@@ -427,52 +466,11 @@ tags: ["PM", "フロントエンド", "開発プロセス", "プロジェクト�
     }
   </style>
   
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>
-    mermaid.initialize({ 
-      startOnLoad: true,
-      theme: 'dark',
-      themeVariables: {
-        primaryColor: '#7c3aed',
-        primaryTextColor: '#e0e0e0',
-        primaryBorderColor: '#a78bfa',
-        lineColor: '#94a3b8',
-        secondaryColor: '#3b82f6',
-        tertiaryColor: '#22c55e',
-        background: '#0f172a',
-        mainBkg: '#1e293b',
-        secondBkg: '#334155',
-        textColor: '#e0e0e0',
-        fontSize: '20px',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      },
-      flowchart: {
-        nodeSpacing: 100,
-        rankSpacing: 100,
-        padding: 30,
-        curve: 'basis'
-      },
-      graph: {
-        nodeSpacing: 100,
-        rankSpacing: 100,
-        padding: 30
-      }
-    });
-  </script>
 </head>
 <body>
 
 <!-- パーティクル背景 -->
 <canvas id="particle-canvas"></canvas>
-
-<!-- Mermaid図拡大モーダル -->
-<div id="diagramModal" class="diagram-modal">
-  <div class="modal-controls">
-    <button class="modal-btn" id="zoomBtn">🔍 さらに拡大 (1.8倍)</button>
-    <button class="modal-btn close" id="closeModal">✕ 閉じる (ESC)</button>
-  </div>
-  <div class="diagram-modal-content" id="modalContent"></div>
-</div>
 
 <article>
   <div class="fade-in">
@@ -500,29 +498,37 @@ tags: ["PM", "フロントエンド", "開発プロセス", "プロジェクト�
     
     <p>主な役割は次の3つだ。</p>
     
-    <div class="mermaid-container">
-      <pre class="mermaid">
-graph TB
-    A[フロントエンドPMの役割] --> B[① 要件をUI/UXに翻訳する]
-    A --> C[② 技術制約を前提に設計を組み立てる]
-    A --> D[③ バックエンドとの境界を決める]
-    
-    B --> B1[業務要件を操作単位に分解]
-    B --> B2[どの状態で何ができるかを明確化]
-    
-    C --> C1[状態管理の理解]
-    C --> C2[APIの粒度・形式]
-    C --> C3[パフォーマンス制約]
-    
-    D --> D1[判断範囲の決定]
-    D --> D2[バリデーション位置]
-    D --> D3[エラー責任の明確化]
-    
-    style A fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff
-    style B fill:#3b82f6,stroke:#60a5fa,stroke-width:2px,color:#fff
-    style C fill:#3b82f6,stroke:#60a5fa,stroke-width:2px,color:#fff
-    style D fill:#3b82f6,stroke:#60a5fa,stroke-width:2px,color:#fff
-      </pre>
+    <div class="visual-diagram">
+      <h3 style="color: #a78bfa; text-align: center; margin-bottom: 1.5rem;">📊 フロントエンドPMの3つの役割</h3>
+      
+      <div class="diagram-grid">
+        <div class="diagram-card">
+          <h4>① 要件をUI/UXに翻訳する</h4>
+          <ul>
+            <li>業務要件を操作単位に分解</li>
+            <li>どの状態で何ができるかを明確化</li>
+            <li>利用者目線での設計</li>
+          </ul>
+        </div>
+        
+        <div class="diagram-card">
+          <h4>② 技術制約を前提に設計を組み立てる</h4>
+          <ul>
+            <li>状態管理の理解</li>
+            <li>APIの粒度・形式</li>
+            <li>パフォーマンス制約</li>
+          </ul>
+        </div>
+        
+        <div class="diagram-card">
+          <h4>③ バックエンドとの境界を決める</h4>
+          <ul>
+            <li>判断範囲の決定</li>
+            <li>バリデーション位置</li>
+            <li>エラー責任の明確化</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -562,28 +568,37 @@ graph TB
   <div class="fade-in delay-3">
     <h2>フロントエンド開発でよくある失敗</h2>
     
-    <div class="mermaid-container">
-      <pre class="mermaid">
-graph LR
-    A[よくある失敗パターン] --> B[仕様が画面単位で決まっている]
-    A --> C[UIはできているがUXが悪い]
-    A --> D[責任分界が曖昧]
-    
-    B --> B1[状態遷移が考慮されない]
-    B --> B2[操作の不整合が生まれる]
-    
-    C --> C1[操作順序が思考と合わない]
-    C --> C2[途中状態が考慮されていない]
-    C --> C3[エラー時の戻り方が不明]
-    
-    D --> D1[不具合の原因が特定できない]
-    D --> D2[修正スピードが落ちる]
-    
-    style A fill:#ef4444,stroke:#fca5a5,stroke-width:3px,color:#fff
-    style B fill:#f97316,stroke:#fdba74,stroke-width:2px,color:#fff
-    style C fill:#f97316,stroke:#fdba74,stroke-width:2px,color:#fff
-    style D fill:#f97316,stroke:#fdba74,stroke-width:2px,color:#fff
-      </pre>
+    <div class="visual-diagram">
+      <h3 style="color: #fca5a5; text-align: center; margin-bottom: 1.5rem;">⚠️ よくある失敗パターン</h3>
+      
+      <div class="diagram-grid">
+        <div class="diagram-card" style="border-color: rgba(239, 68, 68, 0.5);">
+          <h4 style="color: #fca5a5;">仕様が画面単位で決まっている</h4>
+          <ul>
+            <li>状態遷移が考慮されない</li>
+            <li>操作の不整合が生まれる</li>
+            <li>後から破綻する</li>
+          </ul>
+        </div>
+        
+        <div class="diagram-card" style="border-color: rgba(251, 146, 60, 0.5);">
+          <h4 style="color: #fdba74;">UIはできているがUXが悪い</h4>
+          <ul>
+            <li>操作順序が思考と合わない</li>
+            <li>途中状態が考慮されていない</li>
+            <li>エラー時の戻り方が不明</li>
+          </ul>
+        </div>
+        
+        <div class="diagram-card" style="border-color: rgba(239, 68, 68, 0.5);">
+          <h4 style="color: #fca5a5;">責任分界が曖昧</h4>
+          <ul>
+            <li>不具合の原因が特定できない</li>
+            <li>修正スピードが落ちる</li>
+            <li>チーム間の責任が不明確</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -633,24 +648,34 @@ graph LR
   <div class="fade-in">
     <h2>フロントエンドPMが最初にやるべきこと</h2>
     
-    <div class="mermaid-container">
-      <pre class="mermaid">
-graph TB
-    Start[プロジェクト開始] --> Step1[① 状態遷移を言語化する]
-    Step1 --> Step2[② API前提で画面を設計する]
-    Step2 --> Step3[③ フロントエンドの判断範囲を決める]
-    Step3 --> End[実装開始]
-    
-    Step1 --> S1[初期状態/入力中/確認中/完了/エラー]
-    Step2 --> S2[非同期処理中の表示/エラー時の表示]
-    Step3 --> S3[入力チェック/表示制御/一時状態管理]
-    
-    style Start fill:#22c55e,stroke:#86efac,stroke-width:2px,color:#fff
-    style End fill:#22c55e,stroke:#86efac,stroke-width:2px,color:#fff
-    style Step1 fill:#7c3aed,stroke:#a78bfa,stroke-width:2px,color:#fff
-    style Step2 fill:#7c3aed,stroke:#a78bfa,stroke-width:2px,color:#fff
-    style Step3 fill:#7c3aed,stroke:#a78bfa,stroke-width:2px,color:#fff
-      </pre>
+    <div class="visual-diagram">
+      <h3 style="color: #86efac; text-align: center; margin-bottom: 1.5rem;">🎯 PMが最初にやるべき3つのステップ</h3>
+      
+      <div class="flow-steps">
+        <div class="flow-step" data-step="1">
+          <h4>状態遷移を言語化する</h4>
+          <p>初期状態 → 入力中 → 確認中 → 完了 → エラー</p>
+          <p style="margin-top: 0.5rem; color: #94a3b8; font-size: 0.9rem;">画面一覧ではなく、状態の一覧を作る</p>
+        </div>
+        
+        <div class="flow-step" data-step="2">
+          <h4>API前提で画面を設計する</h4>
+          <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+            <li>非同期処理中の表示をどうするか</li>
+            <li>エラー時に何を見せるか</li>
+            <li>APIが返さない情報は表示できない</li>
+          </ul>
+        </div>
+        
+        <div class="flow-step" data-step="3">
+          <h4>フロントエンドの判断範囲を決める</h4>
+          <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+            <li>入力チェックはどこまで行うか</li>
+            <li>表示制御はどこで行うか</li>
+            <li>一時的な状態をどこに持つか</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -666,19 +691,32 @@ graph TB
         <li>エラー</li>
       </ul>
       
-      <div class="mermaid-container">
-        <pre class="mermaid">
-stateDiagram-v2
-    [*] --> 初期状態
-    初期状態 --> 入力中: ユーザー操作開始
-    入力中 --> 確認中: 入力完了
-    確認中 --> 送信中: 確定ボタン
-    確認中 --> 入力中: 修正ボタン
-    送信中 --> 完了: API成功
-    送信中 --> エラー: API失敗
-    エラー --> 入力中: 再入力
-    完了 --> [*]
-        </pre>
+      <div class="visual-diagram">
+        <h4 style="color: #86efac; text-align: center; margin-bottom: 1.5rem;">状態遷移の例</h4>
+        
+        <div class="state-flow">
+          <div class="state-box">初期状態</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box">入力中</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box">確認中</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box">送信中</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box" style="border-color: #22c55e;">完了</div>
+        </div>
+        
+        <div class="state-flow" style="margin-top: 1rem;">
+          <div class="state-box">送信中</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box" style="border-color: #ef4444;">エラー</div>
+          <div class="state-arrow">→</div>
+          <div class="state-box">入力中</div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.9rem;">
+          各状態からどの状態に遷移できるかを明確にする
+        </p>
       </div>
     </div>
     
@@ -718,19 +756,36 @@ stateDiagram-v2
       </ul>
       <p><strong>ここを決めるのが、フロントエンドPMの仕事だ。</strong></p>
       
-      <div class="mermaid-container">
-        <pre class="mermaid">
-graph LR
-    A[ユーザー入力] --> B{フロントエンド<br>バリデーション}
-    B -->|OK| C[API送信]
-    B -->|NG| D[エラー表示]
-    C --> E{バックエンド<br>バリデーション}
-    E -->|OK| F[DB保存]
-    E -->|NG| G[詳細エラー返却]
-    
-    style B fill:#7c3aed,stroke:#a78bfa,stroke-width:2px,color:#fff
-    style E fill:#3b82f6,stroke:#60a5fa,stroke-width:2px,color:#fff
-        </pre>
+      <div class="visual-diagram">
+        <h4 style="color: #a78bfa; text-align: center; margin-bottom: 1.5rem;">フロントエンド vs バックエンドの責任分界</h4>
+        
+        <div class="comparison-table">
+          <div class="comparison-column frontend">
+            <h4>フロントエンド</h4>
+            <ul style="padding-left: 1.5rem;">
+              <li>✓ 必須入力チェック</li>
+              <li>✓ 形式チェック（メール、電話番号）</li>
+              <li>✓ 文字数制限</li>
+              <li>✓ 一時的なUI状態管理</li>
+              <li>✓ ユーザビリティの最適化</li>
+            </ul>
+          </div>
+          
+          <div class="comparison-column backend">
+            <h4>バックエンド</h4>
+            <ul style="padding-left: 1.5rem;">
+              <li>✓ ビジネスロジックのバリデーション</li>
+              <li>✓ 一意性チェック（重複確認）</li>
+              <li>✓ 権限チェック</li>
+              <li>✓ データ整合性チェック</li>
+              <li>✓ セキュリティ検証</li>
+            </ul>
+          </div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 1rem; color: #94a3b8; font-size: 0.9rem;">
+          どちらで何を判断するかを明確に分けることで、不具合の切り分けが早くなる
+        </p>
       </div>
       
       <pre><code>責任分界の例:
@@ -809,28 +864,47 @@ graph LR
       <p><strong>これらを同時に扱うのが、フロントエンドPMの役割である。</strong></p>
     </div>
     
-    <div class="mermaid-container">
-      <pre class="mermaid">
-mindmap
-  root((フロントエンドPM))
-    要件定義
-      業務要件の分解
-      操作単位への変換
-      状態遷移の明確化
-    設計
-      UI設計
-      UX設計
-      API設計との整合
-    技術理解
-      コンポーネント設計
-      状態管理
-      非同期処理
-      パフォーマンス
-    チーム連携
-      バックエンドとの境界
-      デザイナーとの協働
-      エンジニアとの対話
-      </pre>
+    <div class="visual-diagram">
+      <h3 style="color: #86efac; text-align: center; margin-bottom: 1.5rem;">🎯 フロントエンドPMの4つの領域</h3>
+      
+      <div class="mindmap-grid">
+        <div class="mindmap-category">
+          <h4>要件定義</h4>
+          <ul style="padding-left: 1.5rem; color: #cbd5e1;">
+            <li>業務要件の分解</li>
+            <li>操作単位への変換</li>
+            <li>状態遷移の明確化</li>
+          </ul>
+        </div>
+        
+        <div class="mindmap-category">
+          <h4>設計</h4>
+          <ul style="padding-left: 1.5rem; color: #cbd5e1;">
+            <li>UI設計</li>
+            <li>UX設計</li>
+            <li>API設計との整合</li>
+          </ul>
+        </div>
+        
+        <div class="mindmap-category">
+          <h4>技術理解</h4>
+          <ul style="padding-left: 1.5rem; color: #cbd5e1;">
+            <li>コンポーネント設計</li>
+            <li>状態管理</li>
+            <li>非同期処理</li>
+            <li>パフォーマンス</li>
+          </ul>
+        </div>
+        
+        <div class="mindmap-category">
+          <h4>チーム連携</h4>
+          <ul style="padding-left: 1.5rem; color: #cbd5e1;">
+            <li>バックエンドとの境界</li>
+            <li>デザイナーとの協働</li>
+            <li>エンジニアとの対話</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -964,87 +1038,9 @@ mindmap
       console.log('Reinitializing article effects...');
       resize();
       createParticles();
-      // Mermaidも再初期化
-      if (typeof mermaid !== 'undefined') {
-        mermaid.init(undefined, document.querySelectorAll('.mermaid'));
-      }
-      // モーダル機能も再初期化
-      initDiagramModal();
     };
   }
 })();
-
-// Mermaid図のクリック拡大機能
-function initDiagramModal() {
-  const modal = document.getElementById('diagramModal');
-  const modalContent = document.getElementById('modalContent');
-  const closeBtn = document.getElementById('closeModal');
-  const zoomBtn = document.getElementById('zoomBtn');
-  const containers = document.querySelectorAll('.mermaid-container');
-  
-  if (!modal || !modalContent) return;
-  
-  let isZoomed = false;
-  
-  // 各Mermaid図にクリックイベントを追加
-  containers.forEach(container => {
-    container.addEventListener('click', function() {
-      const mermaidSvg = this.querySelector('.mermaid');
-      if (mermaidSvg) {
-        // SVGをクローンしてモーダルに表示
-        modalContent.innerHTML = '';
-        const clone = mermaidSvg.cloneNode(true);
-        modalContent.appendChild(clone);
-        modal.classList.add('active');
-        isZoomed = false;
-        modalContent.classList.remove('zoomed');
-      }
-    });
-  });
-  
-  // 閉じるボタン
-  closeBtn.addEventListener('click', function() {
-    modal.classList.remove('active');
-    isZoomed = false;
-    modalContent.classList.remove('zoomed');
-    zoomBtn.textContent = '🔍 さらに拡大 (1.8倍)';
-  });
-  
-  // ズームボタン
-  zoomBtn.addEventListener('click', function() {
-    isZoomed = !isZoomed;
-    if (isZoomed) {
-      modalContent.classList.add('zoomed');
-      this.textContent = '🔍 元のサイズに戻す (1.3倍)';
-    } else {
-      modalContent.classList.remove('zoomed');
-      this.textContent = '🔍 さらに拡大 (1.8倍)';
-    }
-  });
-  
-  // モーダル背景クリックで閉じる
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) {
-      modal.classList.remove('active');
-      isZoomed = false;
-      modalContent.classList.remove('zoomed');
-      zoomBtn.textContent = '🔍 さらに拡大 (1.8倍)';
-    }
-  });
-  
-  // ESCキーで閉じる
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      modal.classList.remove('active');
-      isZoomed = false;
-      modalContent.classList.remove('zoomed');
-      zoomBtn.textContent = '🔍 さらに拡大 (1.8倍)';
-    }
-  });
-}
-
-// 初回実行
-initDiagramModal();
 
 // スクロールに応じたフェードインアニメーション
 (function() {
