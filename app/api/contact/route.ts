@@ -256,7 +256,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ContactRe
     const { data: dataToYou, error: errorToYou } = await resend.emails.send({
       from: 'Contact Form <onboarding@resend.dev>',
       to: 'xzengbu@gmail.com', // あなたのメールアドレス
-      replyTo: email, // 返信先を問い合わせ者のメールに設定
+      reply_to: email, // 返信先を問い合わせ者のメールに設定
       subject: `【お問い合わせ】${name}様より - ${service || '一般問い合わせ'}`,
       html: htmlToYou,
     });
