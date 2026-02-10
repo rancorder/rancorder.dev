@@ -147,7 +147,7 @@ export default function ServicesPageJaSimple() {
             <a href="/blog" style={{ color: 'rgba(255, 255, 255, 0.68)' }}>
               ブログ
             </a>
-            <a href="/services/en" style={{ color: '#7c3aed', fontWeight: 600 }}>
+            <a href="/portfolio/ja" style={{ color: '#7c3aed', fontWeight: 600 }}>
               EN
             </a>
           </nav>
