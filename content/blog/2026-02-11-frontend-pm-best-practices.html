@@ -1,0 +1,764 @@
+<!--
+title: フロントエンドPMのためのベストプラクティス ── 迷ったときに「間違えにくい判断基準」
+date: 2026-02-11
+category: PM思考
+excerpt: フロントエンドPMの仕事は、正解を当てることではない。外しにくい判断を積み重ねることだ。この記事では、PMが迷ったときに使える「判断のベストプラクティス」を整理する。
+readingTime: 7 min read
+tags: ["PM思考", "フロントエンド", "技術マネジメント", "意思決定"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フロントエンドPMのためのベストプラクティス</title>
+  
+  <style>
+    /* ========================================
+       リセット・基本スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       パーティクルキャンバス（背景エフェクト）
+       ======================================== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* ========================================
+       シリーズナビゲーション
+       ======================================== */
+    .series-nav {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.05));
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    
+    .series-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .series-badge {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: white;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .series-progress {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .series-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item.current {
+      background: rgba(124, 58, 237, 0.2);
+      color: #c4b5fd;
+      font-weight: 600;
+    }
+    
+    .nav-item:not(.current) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+    
+    .nav-item:not(.current):hover {
+      background: rgba(124, 58, 237, 0.15);
+      color: #c4b5fd;
+      transform: translateX(3px);
+    }
+    
+    /* ========================================
+       タイトル - グラデーションテキスト
+       ======================================== */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      font-weight: 700;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    
+    .intro {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      background: rgba(124, 58, 237, 0.05);
+      border-left: 4px solid #7c3aed;
+      border-radius: 8px;
+    }
+    
+    /* ========================================
+       見出しスタイル
+       ======================================== */
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 1.875rem);
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #7c3aed, #3b82f6);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       段落・テキスト
+       ======================================== */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong, b {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       コードスタイル
+       ======================================== */
+    code {
+      background: rgba(124, 58, 237, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', Monaco, monospace;
+      color: #c4b5fd;
+      font-size: 0.9375rem;
+    }
+    
+    pre {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+      color: #94a3b8;
+    }
+    
+    /* ========================================
+       スライドインボックス（ベストプラクティス強調）
+       ======================================== */
+    .best-practice-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.05));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      animation: slideInLeft 0.8s ease-out;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .best-practice-box h3 {
+      margin-top: 0;
+      color: #c4b5fd;
+      font-size: 1.375rem;
+    }
+    
+    .best-practice-box p {
+      margin-bottom: 1rem;
+    }
+    
+    .best-practice-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* ========================================
+       ポイント強調エリア
+       ======================================== */
+    .highlight-point {
+      background: rgba(34, 197, 94, 0.08);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      border-left: 4px solid #22c55e;
+    }
+    
+    .highlight-point strong {
+      color: #4ade80;
+    }
+    
+    .warning-point {
+      background: rgba(239, 68, 68, 0.08);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      border-left: 4px solid #ef4444;
+    }
+    
+    .warning-point strong {
+      color: #f87171;
+    }
+    
+    /* ========================================
+       リスト
+       ======================================== */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li::marker {
+      color: #7c3aed;
+    }
+    
+    /* ========================================
+       セパレーター
+       ======================================== */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* ========================================
+       引用（👉 ベスプラ）
+       ======================================== */
+    .bestpractice {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(34, 197, 94, 0.1));
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      position: relative;
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.15);
+    }
+    
+    .bestpractice::before {
+      content: '👉 ';
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+    
+    /* ========================================
+       まとめセクション
+       ======================================== */
+    .summary-section {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(124, 58, 237, 0.05));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .summary-section h2 {
+      margin-top: 0;
+      color: #93c5fd;
+    }
+    
+    /* ========================================
+       フェードインアニメーション
+       ======================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    /* ========================================
+       レスポンシブ
+       ======================================== */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.125rem;
+      }
+      
+      .best-practice-box {
+        padding: 1.5rem;
+      }
+      
+      .series-links {
+        flex-direction: column;
+      }
+      
+      .nav-item {
+        text-align: center;
+      }
+    }
+    
+    /* ========================================
+       アクセシビリティ - 視覚効果の軽減
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクルエフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <!-- シリーズナビゲーション -->
+  <div class="series-nav">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第1回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <span class="nav-item current">第1回: ベストプラクティス</span>
+      <a href="/blog/2026-02-11-react-frontend-pm-guide" class="nav-item">第2回: React開発の考え方 →</a>
+    </div>
+  </div>
+
+  <h1 class="fade-in">フロントエンドPMのためのベストプラクティス</h1>
+  <div class="subtitle fade-in">迷ったときに「間違えにくい判断基準」</div>
+  
+  <div class="intro fade-in">
+    <p><strong>フロントエンドPMの仕事は、正解を当てることではない。</strong></p>
+    <p>外しにくい判断を積み重ねることだ。</p>
+  </div>
+  
+  <p>フロントエンド開発では、常に複数の「正しそうな選択肢」が並ぶ。</p>
+  
+  <ul>
+    <li>フロントで持つか、バックで持つか</li>
+    <li>今作るか、後で作るか</li>
+    <li>厳密にやるか、割り切るか</li>
+  </ul>
+  
+  <p>この記事では、フロントエンドPMが迷ったときに使える<strong>「判断のベスプラ」</strong>を整理する。</p>
+  
+  <p>技術の正解集ではない。<br>
+  <strong>PMとして事故りにくい選び方の話だ。</strong></p>
+  
+  <hr>
+  
+  <div class="best-practice-box">
+    <h2>ベスプラ① フロントエンドで「判断していいこと／ダメなこと」</h2>
+    
+    <p>まず一番多い迷い。</p>
+    
+    <p><strong>これはフロントで判断していいのか?</strong></p>
+    
+    <h3>判断していいこと</h3>
+    
+    <div class="highlight-point">
+      <ul>
+        <li><strong>表示制御</strong>（見せる／見せない）</li>
+        <li><strong>操作可能・不可</strong>の切り替え</li>
+        <li><strong>一時的な入力チェック</strong></li>
+      </ul>
+    </div>
+    
+    <p>理由は単純で、<strong>誤っても取り消せるから。</strong></p>
+    
+    <h3>判断してはいけないこと</h3>
+    
+    <div class="warning-point">
+      <ul>
+        <li><strong>ビジネスルールの確定</strong></li>
+        <li><strong>取り消せない状態遷移</strong></li>
+        <li><strong>金額・在庫・権限の最終判断</strong></li>
+      </ul>
+    </div>
+    
+    <p>これをフロントに寄せると、仕様変更＝即破綻になる。</p>
+    
+    <div class="bestpractice">
+      「取り消せない判断は、フロントに置かない」
+    </div>
+  </div>
+  
+  <div class="best-practice-box">
+    <h2>ベスプラ② 状態（State）を増やしていい条件・ダメな条件</h2>
+    
+    <p>状態管理は、フロントエンドPMが最も事故りやすい領域。</p>
+    
+    <h3>状態を増やしていい条件</h3>
+    
+    <div class="highlight-point">
+      <ul>
+        <li><strong>表示のためだけ</strong>に必要</li>
+        <li><strong>他の画面・機能に影響しない</strong></li>
+        <li><strong>再読み込みで消えても問題ない</strong></li>
+      </ul>
+      
+      <p><strong>例:</strong></p>
+      <ul>
+        <li>ローディング中かどうか</li>
+        <li>入力途中かどうか</li>
+      </ul>
+    </div>
+    
+    <h3>状態を増やしてはいけない条件</h3>
+    
+    <div class="warning-point">
+      <ul>
+        <li><strong>複数画面で共有される</strong></li>
+        <li><strong>API結果と二重管理になる</strong></li>
+        <li><strong>「どれが正か」説明できない</strong></li>
+      </ul>
+    </div>
+    
+    <p>ここで状態を増やすと、後から必ずバグる。</p>
+    
+    <div class="bestpractice">
+      「その状態、APIとズレたらどうなる？」<br>
+      即答できなければ増やさない
+    </div>
+  </div>
+  
+  <div class="best-practice-box">
+    <h2>ベスプラ③ API仕様が固まっていないときの進め方</h2>
+    
+    <p>現場でよくある状況。</p>
+    
+    <p><strong>APIまだだけど、画面は先に作りたい</strong></p>
+    
+    <p>これは条件付きでOK。</p>
+    
+    <h3>進めていい条件</h3>
+    
+    <div class="highlight-point">
+      <ul>
+        <li><strong>APIの責務が明確</strong></li>
+        <li><strong>エラーケースが想像できる</strong></li>
+        <li><strong>画面が「仮」だと全員理解している</strong></li>
+      </ul>
+    </div>
+    
+    <h3>止めるべきサイン</h3>
+    
+    <div class="warning-point">
+      <ul>
+        <li><strong>APIの返却項目が増え続けている</strong></li>
+        <li><strong>画面側でデータ加工が始まる</strong></li>
+        <li><strong>「とりあえず」で判断が置かれ始める</strong></li>
+      </ul>
+    </div>
+    
+    <div class="bestpractice">
+      「画面が先行していいのは、<br>
+      APIの責任範囲が固まっているときだけ」
+    </div>
+  </div>
+  
+  <div class="best-practice-box">
+    <h2>ベスプラ④ フロントエンドPMが介入すべきレビュー観点</h2>
+    
+    <p>フロントエンドPMは<strong>コードレビューをする必要はない。</strong></p>
+    
+    <p>だが、見ないといけないレビュー軸がある。</p>
+    
+    <h3>見るべきポイント</h3>
+    
+    <div class="highlight-point">
+      <ul>
+        <li><strong>この判断、どこで確定しているか</strong></li>
+        <li><strong>状態が増えた理由を説明できるか</strong></li>
+        <li><strong>後から仕様変更したら、どこが壊れるか</strong></li>
+      </ul>
+    </div>
+    
+    <p>ここを聞いて説明が曖昧なら、設計がまだ未完成。</p>
+    
+    <div class="bestpractice">
+      「将来の変更点を説明できない設計は止める」
+    </div>
+  </div>
+  
+  <div class="best-practice-box">
+    <h2>ベスプラ⑤ PMが「今はやらない」と言うべきタイミング</h2>
+    
+    <p><strong>PMの仕事は進めることだけじゃない。</strong></p>
+    
+    <h3>止めるべきタイミング</h3>
+    
+    <div class="warning-point">
+      <ul>
+        <li><strong>判断材料が揃っていない</strong></li>
+        <li><strong>技術で誤魔化し始めた</strong></li>
+        <li><strong>「あとで直す」が増えた</strong></li>
+      </ul>
+    </div>
+    
+    <p>ここで止めないと、後で必ず炎上する。</p>
+    
+    <div class="bestpractice">
+      「迷っている時点で、設計は未完成」
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="summary-section">
+    <h2>まとめ：ベスプラは「逃げ道を減らすため」にある</h2>
+    
+    <p>フロントエンドPMのベスプラは、<strong>正解を当てるためではない。</strong></p>
+    
+    <p><strong>間違えにくい選択肢を残すためにある。</strong></p>
+    
+    <ul>
+      <li>取り消せない判断はフロントに置かない</li>
+      <li>状態は増やす理由を説明できるときだけ</li>
+      <li>APIが曖昧なら、画面も仮にする</li>
+      <li>将来の変更点を説明できない設計は止める</li>
+    </ul>
+    
+    <p><strong>これだけ守るだけで、炎上率は目に見えて下がる。</strong></p>
+  </div>
+
+  <!-- シリーズナビゲーション（末尾） -->
+  <div class="series-nav" style="margin-top: 3rem; margin-bottom: 0;">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第1回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <span class="nav-item current">第1回: ベストプラクティス</span>
+      <a href="/blog/2026-02-11-react-frontend-pm-guide" class="nav-item">第2回: React開発の考え方 →</a>
+    </div>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  /* ========================================
+     パーティクルシステム（控えめ設定）
+     ======================================== */
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // 控えめなパーティクル数（ビジネス記事のため）
+  const PARTICLE_COUNT = Math.min(60, Math.floor((width * height) / 15000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 1.5 + 0.5,
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端で跳ね返る
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル本体（紫と緑のグラデーション）
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
+      gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+      gradient.addColorStop(1, 'rgba(34, 197, 94, 0.3)');
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ（控えめ）
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', resize);
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  /* ========================================
+     クライアント遷移対応（Next.js App Router）
+     ======================================== */
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing article effects...');
+      resize();
+      createParticles();
+    };
+  }
+  
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1255 @@
+<!--
+title: フロントエンドPMのための状態管理ベストプラクティス ── グローバルにする判断基準と、事故るサイン
+date: 2026-02-11
+category: PM思考
+excerpt: フロントエンド開発で、PMが一番やらかしやすい判断がある。「この状態、グローバルに持ちますか？」ここで曖昧なまま進むと、後から必ず壊れる。状態管理の判断基準だけを整理する。
+readingTime: 8 min read
+tags: ["PM思考", "状態管理", "React", "フロントエンド", "技術マネジメント"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フロントエンドPMのための状態管理ベストプラクティス</title>
+  
+  <style>
+    /* ========================================
+       リセット・基本スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       パーティクルキャンバス（背景エフェクト）
+       ======================================== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* ========================================
+       シリーズナビゲーション
+       ======================================== */
+    .series-nav {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(124, 58, 237, 0.05));
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    
+    .series-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .series-badge {
+      background: linear-gradient(135deg, #ef4444, #7c3aed);
+      color: white;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .series-progress {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .series-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item.current {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      font-weight: 600;
+    }
+    
+    .nav-item:not(.current) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+    
+    .nav-item:not(.current):hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      transform: translateX(3px);
+    }
+    
+    /* ========================================
+       タイトル - グラデーションテキスト（警告→判断→安定）
+       ======================================== */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #ef4444, #7c3aed, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      font-weight: 700;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    
+    .intro {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+    }
+    
+    .intro strong {
+      color: #fca5a5;
+    }
+    
+    /* ========================================
+       見出しスタイル
+       ======================================== */
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 1.875rem);
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #ef4444, #7c3aed);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       段落・テキスト
+       ======================================== */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong, b {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       コードスタイル
+       ======================================== */
+    code {
+      background: rgba(239, 68, 68, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', Monaco, monospace;
+      color: #fca5a5;
+      font-size: 0.9375rem;
+    }
+    
+    /* ========================================
+       影響範囲の視覚化ボックス
+       ======================================== */
+    .impact-visual-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.9));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .impact-visual-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
+      animation: sweep 3s ease-in-out infinite;
+    }
+    
+    @keyframes sweep {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    .impact-visual-box h3 {
+      margin-top: 0;
+      color: #fca5a5;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .impact-visual-box p {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .impact-list {
+      list-style: none;
+      margin: 1.5rem 0;
+      padding-left: 0;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .impact-list li {
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 3px solid #ef4444;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    /* ========================================
+       状態分類の3ボックス（前記事との連続性）
+       ======================================== */
+    .state-type-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .state-type-box {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 2px solid;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .state-type-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .state-type-box.ui-state {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box.server-state {
+      border-color: #fbbf24;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box.business-state {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box h4 {
+      font-size: 1.125rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .state-type-box.ui-state h4 { color: #4ade80; }
+    .state-type-box.server-state h4 { color: #fbbf24; }
+    .state-type-box.business-state h4 { color: #f87171; }
+    
+    .state-type-box .label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+    }
+    
+    .state-type-box.ui-state .label {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+    
+    .state-type-box.server-state .label {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+    
+    .state-type-box.business-state .label {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+    
+    /* ========================================
+       判断フローボックス
+       ======================================== */
+    .decision-flow-box {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(124, 58, 237, 0.1));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 2.5rem 0;
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+    }
+    
+    .decision-flow-box h3 {
+      margin-top: 0;
+      color: #93c5fd;
+      font-size: 1.5rem;
+    }
+    
+    .condition-list {
+      list-style: none;
+      margin: 1.5rem 0;
+      padding: 0;
+    }
+    
+    .condition-list li {
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      font-size: 1.0625rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .condition-list li::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      background: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    
+    .decision-note {
+      background: rgba(34, 197, 94, 0.1);
+      padding: 1.25rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      font-style: italic;
+      color: #cbd5e1;
+    }
+    
+    .decision-note strong {
+      color: #4ade80;
+    }
+    
+    /* ========================================
+       警告サインボックス
+       ======================================== */
+    .warning-signs-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(15, 23, 42, 0.9));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+    }
+    
+    .warning-signs-box h3 {
+      color: #fca5a5;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .warning-signs-box h3::before {
+      content: '🚨';
+      font-size: 1.5rem;
+    }
+    
+    .warning-list {
+      list-style: none;
+      margin: 1.5rem 0;
+      padding: 0;
+    }
+    
+    .warning-list li {
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      font-size: 1.0625rem;
+      position: relative;
+    }
+    
+    .warning-list li::before {
+      content: '✗';
+      position: absolute;
+      left: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ef4444;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    
+    .warning-list li {
+      padding-left: 2.5rem;
+    }
+    
+    /* ========================================
+       失敗パターンカード
+       ======================================== */
+    .failure-patterns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .failure-card {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    
+    .failure-card:hover {
+      transform: translateY(-5px);
+      border-color: #ef4444;
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2);
+    }
+    
+    .failure-card h4 {
+      color: #fca5a5;
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .failure-card h4::before {
+      content: '❌';
+      font-size: 1.25rem;
+    }
+    
+    .failure-card .problem {
+      background: rgba(239, 68, 68, 0.1);
+      padding: 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9375rem;
+    }
+    
+    .failure-card .result {
+      font-size: 0.9375rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    
+    .failure-card .result::before {
+      content: '→ ';
+      color: #ef4444;
+      font-weight: 700;
+    }
+    
+    /* ========================================
+       質問リストボックス
+       ======================================== */
+    .question-box {
+      background: rgba(124, 58, 237, 0.08);
+      padding: 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .question-box ol {
+      counter-reset: question-counter;
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .question-box ol li {
+      counter-increment: question-counter;
+      position: relative;
+      padding-left: 3rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+    
+    .question-box ol li::before {
+      content: counter(question-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    
+    /* ========================================
+       判断基準の一文ボックス
+       ======================================== */
+    .golden-rule-box {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(124, 58, 237, 0.1));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 3px solid #fbbf24;
+      box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+      text-align: center;
+    }
+    
+    .golden-rule-box .quote {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 2rem;
+      line-height: 1.4;
+    }
+    
+    .golden-rule-answers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .golden-rule-answers .answer {
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 1.0625rem;
+    }
+    
+    .golden-rule-answers .answer.local {
+      background: rgba(34, 197, 94, 0.15);
+      border: 2px solid #22c55e;
+    }
+    
+    .golden-rule-answers .answer.backend {
+      background: rgba(59, 130, 246, 0.15);
+      border: 2px solid #3b82f6;
+    }
+    
+    .golden-rule-answers .answer.dont {
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid #ef4444;
+    }
+    
+    .golden-rule-answers .answer strong {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 1.125rem;
+    }
+    
+    .golden-rule-answers .answer.local strong { color: #4ade80; }
+    .golden-rule-answers .answer.backend strong { color: #60a5fa; }
+    .golden-rule-answers .answer.dont strong { color: #f87171; }
+    
+    /* ========================================
+       リスト
+       ======================================== */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li::marker {
+      color: #7c3aed;
+    }
+    
+    /* ========================================
+       セパレーター
+       ======================================== */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* ========================================
+       PMアクション引用（👉）
+       ======================================== */
+    .pm-action {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.1));
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.15);
+    }
+    
+    .pm-action::before {
+      content: '👉 ';
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+    
+    .pm-action strong {
+      color: #c4b5fd;
+    }
+    
+    /* ========================================
+       まとめセクション
+       ======================================== */
+    .summary-section {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.05));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .summary-section h2 {
+      margin-top: 0;
+      color: #c4b5fd;
+    }
+    
+    .summary-section .key-points {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 2rem;
+      border-radius: 10px;
+      margin-top: 2rem;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    .summary-section .key-points ul {
+      margin-left: 0;
+      list-style: none;
+    }
+    
+    .summary-section .key-points li {
+      padding: 0.75rem 0;
+      padding-left: 2rem;
+      position: relative;
+      font-size: 1.0625rem;
+      font-weight: 500;
+    }
+    
+    .summary-section .key-points li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #7c3aed;
+      font-size: 1.25rem;
+    }
+    
+    /* ========================================
+       フェードインアニメーション
+       ======================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    /* ========================================
+       レスポンシブ
+       ======================================== */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.125rem;
+      }
+      
+      .state-type-container,
+      .failure-patterns,
+      .golden-rule-answers {
+        grid-template-columns: 1fr;
+      }
+      
+      .question-box ol li {
+        padding-left: 2.5rem;
+        font-size: 1rem;
+      }
+      
+      .golden-rule-box .quote {
+        font-size: 1.25rem;
+      }
+      
+      .series-links {
+        flex-direction: column;
+      }
+      
+      .nav-item {
+        text-align: center;
+      }
+    }
+    
+    /* ========================================
+       アクセシビリティ - 視覚効果の軽減
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクルエフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <!-- シリーズナビゲーション -->
+  <div class="series-nav">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第3回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-react-frontend-pm-guide" class="nav-item">← 第2回: React開発の考え方</a>
+      <span class="nav-item current">第3回: 状態管理</span>
+      <a href="/blog/2026-02-11-frontend-backend-boundary" class="nav-item">第4回: 責任分界 →</a>
+    </div>
+  </div>
+
+  <h1 class="fade-in">フロントエンドPMのための状態管理ベストプラクティス</h1>
+  <div class="subtitle fade-in">グローバルにする判断基準と、事故るサイン</div>
+  
+  <div class="intro fade-in">
+    <p>フロントエンド開発で、<strong>PMが一番やらかしやすい判断がある。</strong></p>
+    <p style="font-size: 1.25rem; font-weight: 600; margin-top: 1rem;">
+      この状態、グローバルに持ちますか？
+    </p>
+    <p style="margin-top: 1rem;">ここで曖昧なまま進むと、後から必ず壊れる。</p>
+  </div>
+  
+  <p>この記事では、</p>
+  
+  <ul>
+    <li><code>Redux</code>が良い</li>
+    <li><code>Zustand</code>が良い</li>
+    <li><code>Context</code>はダメ</li>
+  </ul>
+  
+  <p>みたいな話はしない。</p>
+  
+  <p>代わりに、PMとして<strong>「いつグローバルにしていいか」「いつ止めるべきか」</strong><br>
+  その判断基準だけを整理する。</p>
+  
+  <hr>
+  
+  <h2>そもそも「状態管理」で壊れる理由</h2>
+  
+  <p>状態管理が難しい理由は単純だ。</p>
+  
+  <p style="font-size: 1.25rem; font-weight: 600; color: #fca5a5; margin: 1.5rem 0;">
+    状態は、増えた瞬間に"影響範囲"を持つ。
+  </p>
+  
+  <div class="impact-visual-box">
+    <h3>影響範囲の伝播</h3>
+    
+    <p>1画面の話だと思っていた</p>
+    <p>1機能だけのつもりだった</p>
+    
+    <p style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 600;">それがいつの間にか、</p>
+    
+    <ul class="impact-list">
+      <li>他画面</li>
+      <li>他機能</li>
+      <li>他チーム</li>
+    </ul>
+    
+    <p style="margin-top: 1rem;">に伝播する。</p>
+  </div>
+  
+  <p style="font-size: 1.125rem; font-weight: 600; margin: 2rem 0;">
+    問題は技術ではない。<br>
+    <strong style="color: #ef4444;">PMが「影響範囲」を見ないまま判断していることだ。</strong>
+  </p>
+  
+  <hr>
+  
+  <h2>PM向けに定義する「状態」の種類</h2>
+  
+  <p>まず整理する。<br>
+  PMは、この3種類を区別しないと判断できない。</p>
+  
+  <div class="state-type-container">
+    <div class="state-type-box ui-state">
+      <div class="label">PM判断: ローカルで持ってOK</div>
+      <h4>① 表示のためだけの状態</h4>
+      <p style="font-size: 0.9375rem; color: #94a3b8; margin-bottom: 1rem;">（UI State）</p>
+      
+      <p style="margin-bottom: 0.75rem; font-weight: 600;">例：</p>
+      <ul style="margin-bottom: 1rem;">
+        <li>ローディング中</li>
+        <li>モーダルの開閉</li>
+        <li>入力途中</li>
+      </ul>
+      
+      <p style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;">特徴</p>
+      <ul style="font-size: 0.9375rem;">
+        <li>表示にしか使わない</li>
+        <li>消えても問題ない</li>
+        <li>APIと関係ない</li>
+      </ul>
+      
+      <div class="pm-action" style="margin-top: 1rem; border-color: #22c55e; background: rgba(34, 197, 94, 0.1);">
+        むしろグローバルにしない
+      </div>
+    </div>
+    
+    <div class="state-type-box server-state">
+      <div class="label">PM判断: 二重管理しない</div>
+      <h4>② データ由来の状態</h4>
+      <p style="font-size: 0.9375rem; color: #94a3b8; margin-bottom: 1rem;">（Server State）</p>
+      
+      <p style="margin-bottom: 0.75rem; font-weight: 600;">例：</p>
+      <ul style="margin-bottom: 1rem;">
+        <li>APIから取得した一覧</li>
+        <li>詳細データ</li>
+        <li>更新結果</li>
+      </ul>
+      
+      <p style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;">特徴</p>
+      <ul style="font-size: 0.9375rem;">
+        <li>正はバックエンド</li>
+        <li>再取得できる</li>
+        <li>同期ズレが最大リスク</li>
+      </ul>
+      
+      <div class="pm-action" style="margin-top: 1rem; border-color: #fbbf24; background: rgba(251, 191, 36, 0.1);">
+        フロントで"正"を作らない
+      </div>
+    </div>
+    
+    <div class="state-type-box business-state">
+      <div class="label">PM判断: フロントに持たせない</div>
+      <h4>③ 業務を左右する状態</h4>
+      <p style="font-size: 0.9375rem; color: #94a3b8; margin-bottom: 1rem;">（Business State）</p>
+      
+      <p style="margin-bottom: 0.75rem; font-weight: 600;">例：</p>
+      <ul style="margin-bottom: 1rem;">
+        <li>ステータス</li>
+        <li>権限</li>
+        <li>確定フラグ</li>
+      </ul>
+      
+      <p style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;">特徴</p>
+      <ul style="font-size: 0.9375rem;">
+        <li>取り消せない</li>
+        <li>業務判断に直結</li>
+        <li>間違うと事故る</li>
+      </ul>
+      
+      <div class="pm-action" style="margin-top: 1rem; border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+        表示するだけ
+      </div>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="decision-flow-box">
+    <h2>グローバルにしていい条件【PM判断軸】</h2>
+    
+    <p>ここが一番大事。</p>
+    
+    <h3 style="margin-top: 2rem;">グローバルにしていい状態の条件</h3>
+    
+    <p>次の3つを<strong>すべて満たす</strong>場合のみ。</p>
+    
+    <ul class="condition-list">
+      <li>複数の画面・機能で使う</li>
+      <li>更新タイミングが明確</li>
+      <li>影響範囲を説明できる</li>
+    </ul>
+    
+    <div class="decision-note">
+      <strong>「便利そうだから」は理由にならない。</strong>
+    </div>
+  </div>
+  
+  <div class="warning-signs-box">
+    <h3>グローバルにしてはいけないサイン</h3>
+    
+    <p>現場でよくある地雷。</p>
+    
+    <ul class="warning-list">
+      <li>とりあえず共有したい</li>
+      <li>Contextで渡すのが面倒</li>
+      <li>あとで整理する予定</li>
+    </ul>
+    
+    <p style="margin-top: 1.5rem; font-size: 1.125rem; font-weight: 600;">
+      これが出た瞬間、<strong style="color: #fca5a5;">PMは止めるべき。</strong>
+    </p>
+    
+    <div class="pm-action" style="margin-top: 1.5rem; border-color: #ef4444; background: rgba(239, 68, 68, 0.15);">
+      <strong>「後で整理する状態は、必ず整理されない」</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <h2>PMがレビューで必ず聞くべき質問</h2>
+  
+  <p><strong>コードを読まなくていい。</strong><br>
+  この質問だけでいい。</p>
+  
+  <div class="question-box">
+    <ol>
+      <li>この状態は、どこで生まれる？</li>
+      <li>それが変わったら、どこが再描画される？</li>
+      <li>仕様が変わったら、どこを直す？</li>
+    </ol>
+  </div>
+  
+  <p style="font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem;">
+    ここで<strong style="color: #ef4444;">即答できない設計は、グローバルにしてはいけない。</strong>
+  </p>
+  
+  <hr>
+  
+  <h2>よくある失敗パターン（PM視点）</h2>
+  
+  <div class="failure-patterns">
+    <div class="failure-card">
+      <h4>失敗①</h4>
+      <div class="problem">
+        「画面間で共有したい」<br>からグローバル化
+      </div>
+      <div class="result">
+        後で「この画面では使わない」が始まり、if地獄になる。
+      </div>
+    </div>
+    
+    <div class="failure-card">
+      <h4>失敗②</h4>
+      <div class="problem">
+        APIの状態を<br>フロントで加工して保持
+      </div>
+      <div class="result">
+        正がどれか分からなくなる。再取得のたびに壊れる。
+      </div>
+    </div>
+    
+    <div class="failure-card">
+      <h4>失敗③</h4>
+      <div class="problem">
+        業務判断を<br>フロントで吸収
+      </div>
+      <div class="result">
+        バックエンドと責任分界が崩壊。炎上一直線。
+      </div>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="golden-rule-box">
+    <h2 style="margin-top: 0; color: #fbbf24;">状態管理でPMが守るべき一文</h2>
+    
+    <p>これだけ覚えておけばいい。</p>
+    
+    <div class="quote">
+      「その状態、<br>なくなったら何が壊れる？」
+    </div>
+    
+    <p style="margin-bottom: 1.5rem;">答えが</p>
+    
+    <div class="golden-rule-answers">
+      <div class="answer local">
+        <strong>画面だけ</strong>
+        <div>→ ローカル</div>
+      </div>
+      
+      <div class="answer backend">
+        <strong>業務</strong>
+        <div>→ バックエンド</div>
+      </div>
+      
+      <div class="answer dont">
+        <strong>よく分からない</strong>
+        <div>→ 作らない</div>
+      </div>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="summary-section">
+    <h2>まとめ：状態管理は「技術選定」じゃない</h2>
+    
+    <p style="font-size: 1.125rem; margin-bottom: 2rem;">
+      フロントエンドPMにとって、<strong>状態管理はツールの話ではない。</strong>
+    </p>
+    
+    <p style="font-size: 1.0625rem; margin-bottom: 1.5rem;">
+      <code>Redux</code>か<br>
+      <code>Zustand</code>か<br>
+      <code>Context</code>か
+    </p>
+    
+    <p style="font-size: 1.125rem; font-weight: 600; margin-bottom: 2rem;">ではなく、</p>
+    
+    <p style="font-size: 1.25rem; font-weight: 700; color: #c4b5fd; margin-bottom: 2rem;">
+      「どこまでフロントが責任を持つか」<br>
+      を決める設計の話だ。
+    </p>
+    
+    <div class="key-points">
+      <ul>
+        <li>表示はフロント</li>
+        <li>正はバックエンド</li>
+        <li>迷ったら増やさない</li>
+      </ul>
+    </div>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+      これだけ守るだけで、<br>
+      <strong style="color: #4ade80;">React案件の事故率は劇的に下がる。</strong>
+    </p>
+  </div>
+
+  <!-- シリーズナビゲーション（末尾） -->
+  <div class="series-nav" style="margin-top: 3rem; margin-bottom: 0;">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第3回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-react-frontend-pm-guide" class="nav-item">← 第2回: React開発の考え方</a>
+      <span class="nav-item current">第3回: 状態管理</span>
+      <a href="/blog/2026-02-11-frontend-backend-boundary" class="nav-item">第4回: 責任分界 →</a>
+    </div>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  /* ========================================
+     パーティクルシステム（状態管理の複雑性を表現）
+     ======================================== */
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // 状態の複雑性を表現するパーティクル
+  const PARTICLE_COUNT = Math.min(90, Math.floor((width * height) / 11000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    const colors = [
+      'rgba(239, 68, 68, 0.6)',   // Red - 危険
+      'rgba(124, 58, 237, 0.5)',  // Purple - 判断
+      'rgba(59, 130, 246, 0.5)',  // Blue - 安定
+    ];
+    
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 1.8 + 0.7,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端で跳ね返る
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル本体
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ（状態の依存関係を表現）
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          // 距離が近いほど太く、明るく
+          const opacity = 0.2 * (1 - distance / 120);
+          ctx.strokeStyle = `rgba(124, 58, 237, ${opacity})`;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', resize);
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  /* ========================================
+     クライアント遷移対応（Next.js App Router）
+     ======================================== */
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing state management article effects...');
+      resize();
+      createParticles();
+    };
+  }
+  
+})();
+</script>
+
+</body>
+</html>

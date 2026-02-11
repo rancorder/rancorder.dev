@@ -1,0 +1,1010 @@
+<!--
+title: フロントエンドPMが知っておくべきReact開発の考え方【実装しない人向け】
+date: 2026-02-11
+category: PM思考
+excerpt: フロントエンドPMは、Reactのコードを書く必要はない。ただし、Reactで何が起きているかを理解していないと、設計判断ができない。React前提でPMが判断すべきポイントだけを整理する。
+readingTime: 8 min read
+tags: ["PM思考", "React", "フロントエンド", "技術マネジメント", "状態管理"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フロントエンドPMが知っておくべきReact開発の考え方</title>
+  
+  <style>
+    /* ========================================
+       リセット・基本スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       パーティクルキャンバス（背景エフェクト）
+       ======================================== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* ========================================
+       シリーズナビゲーション
+       ======================================== */
+    .series-nav {
+      background: linear-gradient(135deg, rgba(97, 218, 251, 0.1), rgba(124, 58, 237, 0.05));
+      border: 2px solid rgba(97, 218, 251, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    
+    .series-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .series-badge {
+      background: linear-gradient(135deg, #61dafb, #7c3aed);
+      color: white;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .series-progress {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .series-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item.current {
+      background: rgba(97, 218, 251, 0.2);
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+    
+    .nav-item:not(.current) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+    
+    .nav-item:not(.current):hover {
+      background: rgba(97, 218, 251, 0.15);
+      color: #7dd3fc;
+      transform: translateX(3px);
+    }
+    
+    /* ========================================
+       タイトル - グラデーションテキスト
+       ======================================== */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #61dafb, #7c3aed, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      font-weight: 700;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    
+    .intro {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      background: rgba(97, 218, 251, 0.05);
+      border-left: 4px solid #61dafb;
+      border-radius: 8px;
+    }
+    
+    /* ========================================
+       見出しスタイル
+       ======================================== */
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 1.875rem);
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #61dafb, #7c3aed);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       段落・テキスト
+       ======================================== */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong, b {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       コードスタイル
+       ======================================== */
+    code {
+      background: rgba(97, 218, 251, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', Monaco, monospace;
+      color: #7dd3fc;
+      font-size: 0.9375rem;
+    }
+    
+    /* ========================================
+       React概念ボックス（スキャンボックス風）
+       ======================================== */
+    .react-concept-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(97, 218, 251, 0.4);
+      padding: 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      box-shadow: 0 4px 20px rgba(97, 218, 251, 0.15);
+    }
+    
+    .react-concept-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(97, 218, 251, 0.2), transparent);
+      animation: scan 4s linear infinite;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    .react-concept-box h3 {
+      margin-top: 0;
+      color: #7dd3fc;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .react-concept-box p,
+    .react-concept-box ul {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       PMジャッジメントボックス（スライドイン）
+       ======================================== */
+    .pm-judgment-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.05));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      animation: slideInLeft 0.8s ease-out;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .pm-judgment-box h3 {
+      margin-top: 0;
+      color: #c4b5fd;
+      font-size: 1.375rem;
+    }
+    
+    /* ========================================
+       状態種類の分類ボックス
+       ======================================== */
+    .state-type-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .state-type-box {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 2px solid;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .state-type-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .state-type-box.safe {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box.caution {
+      border-color: #fbbf24;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box.danger {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.8));
+    }
+    
+    .state-type-box h4 {
+      font-size: 1.125rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .state-type-box.safe h4 { color: #4ade80; }
+    .state-type-box.caution h4 { color: #fbbf24; }
+    .state-type-box.danger h4 { color: #f87171; }
+    
+    .state-type-box .label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+    }
+    
+    .state-type-box.safe .label {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+    
+    .state-type-box.caution .label {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+    
+    .state-type-box.danger .label {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+    
+    /* ========================================
+       ポイント強調エリア
+       ======================================== */
+    .good-sign {
+      background: rgba(34, 197, 94, 0.08);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      border-left: 4px solid #22c55e;
+    }
+    
+    .good-sign h4 {
+      color: #4ade80;
+      margin-bottom: 0.75rem;
+      font-size: 1.125rem;
+    }
+    
+    .bad-sign {
+      background: rgba(239, 68, 68, 0.08);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      border-left: 4px solid #ef4444;
+    }
+    
+    .bad-sign h4 {
+      color: #f87171;
+      margin-bottom: 0.75rem;
+      font-size: 1.125rem;
+    }
+    
+    /* ========================================
+       地雷警告ボックス
+       ======================================== */
+    .landmine-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(15, 23, 42, 0.9));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+    }
+    
+    .landmine-box h3 {
+      color: #fca5a5;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .landmine-box h3::before {
+      content: '⚠️';
+      font-size: 1.5rem;
+    }
+    
+    /* ========================================
+       リスト
+       ======================================== */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li::marker {
+      color: #61dafb;
+    }
+    
+    /* ========================================
+       セパレーター
+       ======================================== */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* ========================================
+       PMアクション引用（👉）
+       ======================================== */
+    .pm-action {
+      background: linear-gradient(135deg, rgba(97, 218, 251, 0.15), rgba(124, 58, 237, 0.1));
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 2px solid rgba(97, 218, 251, 0.3);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      box-shadow: 0 4px 15px rgba(97, 218, 251, 0.15);
+    }
+    
+    .pm-action::before {
+      content: '👉 ';
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+    
+    .pm-action strong {
+      color: #7dd3fc;
+    }
+    
+    /* ========================================
+       質問リストボックス
+       ======================================== */
+    .question-box {
+      background: rgba(59, 130, 246, 0.08);
+      padding: 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .question-box ol {
+      counter-reset: question-counter;
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .question-box ol li {
+      counter-increment: question-counter;
+      position: relative;
+      padding-left: 3rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+    
+    .question-box ol li::before {
+      content: counter(question-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: linear-gradient(135deg, #3b82f6, #7c3aed);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    
+    /* ========================================
+       まとめセクション
+       ======================================== */
+    .summary-section {
+      background: linear-gradient(135deg, rgba(97, 218, 251, 0.1), rgba(124, 58, 237, 0.05));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 1px solid rgba(97, 218, 251, 0.3);
+    }
+    
+    .summary-section h2 {
+      margin-top: 0;
+      color: #7dd3fc;
+    }
+    
+    /* ========================================
+       次記事予告ボックス
+       ======================================== */
+    .next-article-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(236, 72, 153, 0.1));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 2px solid rgba(236, 72, 153, 0.4);
+      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
+    }
+    
+    .next-article-box h3 {
+      margin-top: 0;
+      color: #f9a8d4;
+      font-size: 1.5rem;
+    }
+    
+    .next-article-box .next-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fbbf24;
+      margin: 1rem 0;
+    }
+    
+    /* ========================================
+       フェードインアニメーション
+       ======================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    /* ========================================
+       レスポンシブ
+       ======================================== */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.125rem;
+      }
+      
+      .state-type-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .question-box ol li {
+        padding-left: 2.5rem;
+        font-size: 1rem;
+      }
+      
+      .series-links {
+        flex-direction: column;
+      }
+      
+      .nav-item {
+        text-align: center;
+      }
+    }
+    
+    /* ========================================
+       アクセシビリティ - 視覚効果の軽減
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクルエフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <!-- シリーズナビゲーション -->
+  <div class="series-nav">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第2回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-frontend-pm-best-practices" class="nav-item">← 第1回: ベストプラクティス</a>
+      <span class="nav-item current">第2回: React開発の考え方</span>
+      <a href="/blog/2026-02-11-state-management-best-practices" class="nav-item">第3回: 状態管理 →</a>
+    </div>
+  </div>
+
+  <h1 class="fade-in">フロントエンドPMが知っておくべきReact開発の考え方</h1>
+  <div class="subtitle fade-in">【実装しない人向け】</div>
+  
+  <div class="intro fade-in">
+    <p><strong>フロントエンドPMは、Reactのコードを書く必要はない。</strong></p>
+    <p>ただし、<strong>Reactで何が起きているかを理解していないと、設計判断ができない。</strong></p>
+  </div>
+  
+  <p>この記事では、</p>
+  
+  <ul>
+    <li>コンポーネントの書き方</li>
+    <li>hooksの使い方</li>
+  </ul>
+  
+  <p>は一切扱わない。</p>
+  
+  <p>代わりに、<strong>React前提でPMが判断すべきポイントだけ</strong>を整理する。</p>
+  
+  <hr>
+  
+  <h2>なぜReactを知らないPMは詰まるのか</h2>
+  
+  <p>React開発でPMが詰まる瞬間は、だいたい決まっている。</p>
+  
+  <ul>
+    <li>「それ、<strong>React的にどうなんですか？</strong>」と言われる</li>
+    <li><strong>状態をどう持つか</strong>で議論が止まる</li>
+    <li><strong>修正の影響範囲</strong>が読めない</li>
+  </ul>
+  
+  <p>原因はシンプル。</p>
+  
+  <p><strong>Reactの"設計単位"を知らないまま、画面や機能の話をしているから。</strong></p>
+  
+  <hr>
+  
+  <h2>React開発の基本単位は「画面」ではない</h2>
+  
+  <p>PMが最初に理解すべきこと。</p>
+  
+  <p>Reactの基本単位は<strong>画面でもページでもない。</strong></p>
+  
+  <p style="font-size: 1.25rem; font-weight: 600; color: #7dd3fc; margin: 1.5rem 0;">
+    <code>コンポーネント</code>だ。
+  </p>
+  
+  <div class="react-concept-box">
+    <h3>コンポーネントとは何か（PM向け定義）</h3>
+    
+    <ul>
+      <li><strong>見た目</strong></li>
+      <li><strong>振る舞い</strong></li>
+      <li><strong>必要なデータ</strong></li>
+    </ul>
+    
+    <p>をひとまとまりにした<strong>責任単位。</strong></p>
+    
+    <p style="margin-top: 1.5rem;">つまりReactでは、</p>
+    
+    <p style="font-size: 1.125rem; font-weight: 600; color: #7dd3fc;">
+      「どこまでを一つの責任として扱うか」
+    </p>
+    
+    <p>を決めることが、そのまま<strong>設計になる。</strong></p>
+  </div>
+  
+  <hr>
+  
+  <div class="pm-judgment-box">
+    <h2>PMが判断すべきコンポーネント分割の観点</h2>
+    
+    <p>ここがSEO的にも刺さる部分。</p>
+    
+    <div class="good-sign">
+      <h4>分けていいサイン</h4>
+      <ul>
+        <li>表示条件が違う</li>
+        <li>使い回される</li>
+        <li>仕様変更が入りそう</li>
+      </ul>
+    </div>
+    
+    <div class="pm-action">
+      <strong>分けないと、修正コストが指数関数的に増える。</strong>
+    </div>
+    
+    <div class="bad-sign">
+      <h4>分けない方がいいサイン</h4>
+      <ul>
+        <li>見た目以外の差がない</li>
+        <li>状態を共有しすぎる</li>
+        <li>分けた理由を説明できない</li>
+      </ul>
+    </div>
+    
+    <div class="pm-action">
+      <strong>分けすぎると、構造が理解できなくなる。</strong>
+    </div>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+      PMは「きれいに分ける」ではなく<br>
+      <strong style="color: #7dd3fc;">「将来壊れにくい単位」</strong>を選ぶ。
+    </p>
+  </div>
+  
+  <hr>
+  
+  <h2>Reactにおける「状態」は設計そのもの</h2>
+  
+  <p>React開発での最大の設計論点は、<strong>状態（State）</strong>だ。</p>
+  
+  <p><strong>ここでPMが判断を間違えると、あとから取り返しがつかない。</strong></p>
+  
+  <h3>PMが最低限理解すべき状態の種類</h3>
+  
+  <div class="state-type-container">
+    <div class="state-type-box safe">
+      <div class="label">PM判断: 自由に持っていい</div>
+      <h4>① 表示のための状態</h4>
+      <ul>
+        <li>ローディング中</li>
+        <li>開閉状態</li>
+        <li>入力途中</li>
+      </ul>
+    </div>
+    
+    <div class="state-type-box caution">
+      <div class="label">PM判断: 二重管理しない</div>
+      <h4>② API由来の状態</h4>
+      <ul>
+        <li>取得したデータ</li>
+        <li>更新結果</li>
+      </ul>
+      <p style="margin-top: 1rem; font-size: 0.9375rem; color: #fbbf24;">
+        <strong>フロントで正を作らない</strong>
+      </p>
+    </div>
+    
+    <div class="state-type-box danger">
+      <div class="label">PM判断: フロントに持たせない</div>
+      <h4>③ ビジネス状態</h4>
+      <ul>
+        <li>進行ステータス</li>
+        <li>権限</li>
+        <li>確定フラグ</li>
+      </ul>
+      <p style="margin-top: 1rem; font-size: 0.9375rem; color: #f87171;">
+        <strong>バックエンド責務</strong>
+      </p>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="landmine-box">
+    <h3>React PMがやってはいけない判断</h3>
+    
+    <p>現場で多い地雷。</p>
+    
+    <ul style="font-size: 1.0625rem; margin-top: 1rem;">
+      <li>「とりあえずフロントで持ちましょう」</li>
+      <li>「UI側で吸収しましょう」</li>
+      <li>「後で整理すれば大丈夫です」</li>
+    </ul>
+    
+    <p style="margin-top: 1.5rem; font-size: 1.125rem; font-weight: 600; color: #fca5a5;">
+      Reactは、後で整理しにくい構造を持つ。
+    </p>
+    
+    <p style="font-size: 1.0625rem;">
+      一度持たせた状態は、必ず他のコンポーネントに伝播する。
+    </p>
+    
+    <div class="pm-action" style="margin-top: 1.5rem; border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+      <strong>PMが止めるべきサイン。</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <h2>PMがレビューで見るべきReact設計の質問</h2>
+  
+  <p><strong>コードは見なくていい。</strong></p>
+  <p>この3つを聞くだけでいい。</p>
+  
+  <div class="question-box">
+    <ol>
+      <li>この状態は、どこで生まれた？</li>
+      <li>それが変わったら、どこに影響する？</li>
+      <li>将来この仕様が変わったら、どこを直す？</li>
+    </ol>
+  </div>
+  
+  <p style="font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem;">
+    ここで<strong style="color: #ef4444;">即答できない設計は危ない。</strong>
+  </p>
+  
+  <hr>
+  
+  <div class="summary-section">
+    <h2>React前提でのPMの立ち位置まとめ</h2>
+    
+    <p style="font-size: 1.125rem; margin-bottom: 1.5rem;">フロントエンドPMは、</p>
+    
+    <p style="font-size: 1.125rem; font-weight: 600; color: #7dd3fc;">
+      Reactを書く人 <span style="color: #94a3b8;">ではない。</span><br>
+      <span style="color: #4ade80;">Reactで壊れにくい判断をする人だ。</span>
+    </p>
+    
+    <ul style="margin-top: 2rem; font-size: 1.0625rem;">
+      <li><strong>コンポーネントは責任単位</strong></li>
+      <li><strong>状態は設計そのもの</strong></li>
+      <li><strong>取り消せない判断はフロントに置かない</strong></li>
+    </ul>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+      これを理解しているだけで、<br>
+      <strong style="color: #4ade80;">React案件の炎上率は激減する。</strong>
+    </p>
+  </div>
+  
+  <hr>
+  
+  <div class="next-article-box">
+    <h3>次に必ず読まれる記事（予告）</h3>
+    
+    <p>ここまで来た読者は、次にこう検索する。</p>
+    
+    <ul style="margin: 1rem 0;">
+      <li>React 状態管理 違い</li>
+      <li>状態管理 フロントエンド PM</li>
+      <li>グローバルステート いつ使う</li>
+    </ul>
+    
+    <div class="pm-action" style="border-color: #ec4899; background: rgba(236, 72, 153, 0.15);">
+      次はこれを書く。
+    </div>
+    
+    <div class="next-title">
+      📝 フロントエンドPMのための状態管理ベストプラクティス<br>
+      （グローバルにする判断基準）
+    </div>
+  </div>
+
+  <!-- シリーズナビゲーション（末尾） -->
+  <div class="series-nav" style="margin-top: 3rem; margin-bottom: 0;">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第2回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-frontend-pm-best-practices" class="nav-item">← 第1回: ベストプラクティス</a>
+      <span class="nav-item current">第2回: React開発の考え方</span>
+      <a href="/blog/2026-02-11-state-management-best-practices" class="nav-item">第3回: 状態管理 →</a>
+    </div>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  /* ========================================
+     パーティクルシステム（React技術記事）
+     ======================================== */
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // React色のパーティクル（青系）
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 12000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        radius: Math.random() * 1.8 + 0.8,
+        color: Math.random() > 0.5 ? 'rgba(97, 218, 251, 0.6)' : 'rgba(124, 58, 237, 0.5)',
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端で跳ね返る
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル本体
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 110) {
+          ctx.strokeStyle = `rgba(97, 218, 251, ${0.2 * (1 - distance / 110)})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', resize);
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  /* ========================================
+     クライアント遷移対応（Next.js App Router）
+     ======================================== */
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing React article effects...');
+      resize();
+      createParticles();
+    };
+  }
+  
+})();
+</script>
+
+</body>
+</html>

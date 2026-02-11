@@ -1,0 +1,1354 @@
+<!--
+title: フロントエンドPMが決めるバックエンドとの責任分界ベストプラクティス
+date: 2026-02-11
+category: PM思考
+excerpt: フロントエンド開発が荒れる原因は、技術力不足でもコミュニケーション不足でもない。責任分界が曖昧なまま進んでいることだ。フロントエンドPMが判断すべき「線の引き方」を実務ベースで整理する。
+readingTime: 9 min read
+tags: ["PM思考", "技術マネジメント", "アーキテクチャ", "責任分界", "API設計"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フロントエンドPMが決めるバックエンドとの責任分界ベストプラクティス</title>
+  
+  <style>
+    /* ========================================
+       リセット・基本スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       パーティクルキャンバス（背景エフェクト）
+       ======================================== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* ========================================
+       シリーズナビゲーション
+       ======================================== */
+    .series-nav {
+      background: linear-gradient(135deg, rgba(97, 218, 251, 0.1), rgba(34, 197, 94, 0.05));
+      border: 2px solid rgba(97, 218, 251, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    
+    .series-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .series-badge {
+      background: linear-gradient(135deg, #61dafb, #22c55e);
+      color: white;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .series-progress {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .series-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item.current {
+      background: rgba(97, 218, 251, 0.2);
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+    
+    .nav-item:not(.current) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+    
+    .nav-item:not(.current):hover {
+      background: rgba(97, 218, 251, 0.15);
+      color: #7dd3fc;
+      transform: translateX(3px);
+    }
+    
+    /* ========================================
+       タイトル - グラデーションテキスト（青→緑の対比）
+       ======================================== */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #61dafb, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      font-weight: 700;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    
+    .intro {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      background: rgba(124, 58, 237, 0.05);
+      border-left: 4px solid #7c3aed;
+      border-radius: 8px;
+    }
+    
+    /* ========================================
+       見出しスタイル
+       ======================================== */
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 1.875rem);
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #61dafb, #22c55e);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       段落・テキスト
+       ======================================== */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong, b {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       コードスタイル
+       ======================================== */
+    code {
+      background: rgba(97, 218, 251, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', Monaco, monospace;
+      color: #7dd3fc;
+      font-size: 0.9375rem;
+    }
+    
+    /* ========================================
+       対比ボックス（フロント vs バック）
+       ======================================== */
+    .contrast-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin: 2.5rem 0;
+    }
+    
+    .role-box {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2rem;
+      border-radius: 12px;
+      border: 2px solid;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .role-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+    }
+    
+    .role-box.frontend {
+      border-color: #61dafb;
+    }
+    
+    .role-box.frontend::before {
+      color: #61dafb;
+    }
+    
+    .role-box.backend {
+      border-color: #22c55e;
+    }
+    
+    .role-box.backend::before {
+      color: #22c55e;
+    }
+    
+    .role-box h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.375rem;
+    }
+    
+    .role-box.frontend h3 {
+      color: #7dd3fc;
+    }
+    
+    .role-box.backend h3 {
+      color: #4ade80;
+    }
+    
+    .role-box .role-icon {
+      font-size: 1.5rem;
+    }
+    
+    .role-box ul {
+      list-style: none;
+      margin-left: 0;
+      margin-top: 1.5rem;
+    }
+    
+    .role-box ul li {
+      padding: 0.75rem 0;
+      padding-left: 2rem;
+      position: relative;
+      font-size: 1.0625rem;
+    }
+    
+    .role-box.frontend ul li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #61dafb;
+      font-size: 1.25rem;
+    }
+    
+    .role-box.backend ul li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #22c55e;
+      font-size: 1.25rem;
+    }
+    
+    /* ========================================
+       責任分界の明確化ボックス
+       ======================================== */
+    .boundary-section {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(15, 23, 42, 0.9));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.4);
+      position: relative;
+    }
+    
+    .boundary-section h2 {
+      margin-top: 0;
+      color: #c4b5fd;
+    }
+    
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .boundary-card {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border-left: 4px solid;
+      transition: transform 0.3s ease;
+    }
+    
+    .boundary-card:hover {
+      transform: translateX(5px);
+    }
+    
+    .boundary-card.backend-only {
+      border-color: #22c55e;
+    }
+    
+    .boundary-card.frontend-ok {
+      border-color: #61dafb;
+    }
+    
+    .boundary-card h4 {
+      font-size: 1.125rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .boundary-card.backend-only h4 {
+      color: #4ade80;
+    }
+    
+    .boundary-card.frontend-ok h4 {
+      color: #7dd3fc;
+    }
+    
+    .boundary-card ul {
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .boundary-card ul li {
+      padding: 0.5rem 0;
+      font-size: 0.9375rem;
+      color: #cbd5e1;
+    }
+    
+    /* ========================================
+       バリデーション責任表
+       ======================================== */
+    .validation-table {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 2rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .validation-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    
+    .validation-row:last-child {
+      border-bottom: none;
+    }
+    
+    .validation-row.header {
+      background: rgba(124, 58, 237, 0.2);
+      font-weight: 600;
+      color: #c4b5fd;
+    }
+    
+    .validation-col.location {
+      font-weight: 600;
+    }
+    
+    .validation-col.frontend { color: #7dd3fc; }
+    .validation-col.backend { color: #4ade80; }
+    
+    .validation-col.reason {
+      color: #94a3b8;
+      font-size: 0.9375rem;
+    }
+    
+    /* ========================================
+       API契約書風ボックス
+       ======================================== */
+    .api-contract-box {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(15, 23, 42, 0.9));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 3px solid #fbbf24;
+      box-shadow: 0 0 40px rgba(251, 191, 36, 0.2);
+      position: relative;
+    }
+    
+    .api-contract-box::before {
+      content: '📄';
+      position: absolute;
+      top: -1.5rem;
+      left: 2rem;
+      font-size: 3rem;
+      background: #0a0a0a;
+      padding: 0 0.5rem;
+    }
+    
+    .api-contract-box h3 {
+      margin-top: 0;
+      color: #fbbf24;
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .contract-point {
+      background: rgba(251, 191, 36, 0.1);
+      padding: 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      border-left: 4px solid #fbbf24;
+    }
+    
+    .contract-point:last-child {
+      margin-bottom: 0;
+    }
+    
+    .contract-point strong {
+      color: #fbbf24;
+    }
+    
+    /* ========================================
+       判断フローボックス（取り消せるか）
+       ======================================== */
+    .decision-flow-final {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(34, 197, 94, 0.1));
+      padding: 3rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      text-align: center;
+    }
+    
+    .decision-flow-final .question {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 3rem;
+      line-height: 1.4;
+    }
+    
+    .decision-arrows {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .decision-path {
+      padding: 2rem;
+      border-radius: 10px;
+      border: 2px solid;
+      background: rgba(15, 23, 42, 0.8);
+    }
+    
+    .decision-path.revocable {
+      border-color: #61dafb;
+    }
+    
+    .decision-path.irrevocable {
+      border-color: #22c55e;
+    }
+    
+    .decision-path .condition {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .decision-path.revocable .condition {
+      color: #7dd3fc;
+    }
+    
+    .decision-path.irrevocable .condition {
+      color: #4ade80;
+    }
+    
+    .decision-path .arrow {
+      font-size: 2rem;
+      margin: 1rem 0;
+    }
+    
+    .decision-path .result {
+      font-size: 1.375rem;
+      font-weight: 700;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    
+    .decision-path.revocable .result {
+      background: rgba(97, 218, 251, 0.2);
+      color: #7dd3fc;
+    }
+    
+    .decision-path.irrevocable .result {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+    
+    /* ========================================
+       介入すべきサインボックス
+       ======================================== */
+    .intervention-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(15, 23, 42, 0.9));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid #ef4444;
+    }
+    
+    .intervention-box h3 {
+      color: #fca5a5;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .intervention-box h3::before {
+      content: '🚨';
+      font-size: 1.5rem;
+    }
+    
+    .sign-list {
+      list-style: none;
+      margin: 1.5rem 0 0 0;
+      padding: 0;
+    }
+    
+    .sign-list li {
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 4px solid #ef4444;
+      border-radius: 8px;
+      font-size: 1.0625rem;
+    }
+    
+    /* ========================================
+       エラー責任ボックス
+       ======================================== */
+    .error-responsibility-box {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .error-responsibility-box h4 {
+      color: #fca5a5;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    
+    .error-point {
+      background: rgba(239, 68, 68, 0.1);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid #ef4444;
+    }
+    
+    .error-point:last-child {
+      margin-bottom: 0;
+    }
+    
+    .bad-examples {
+      margin-top: 1.5rem;
+    }
+    
+    .bad-examples h5 {
+      color: #f87171;
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .bad-examples ul {
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .bad-examples li {
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      background: rgba(239, 68, 68, 0.08);
+      border-radius: 6px;
+      position: relative;
+      padding-left: 2.5rem;
+    }
+    
+    .bad-examples li::before {
+      content: '✗';
+      position: absolute;
+      left: 1rem;
+      color: #ef4444;
+      font-weight: 700;
+    }
+    
+    /* ========================================
+       リスト
+       ======================================== */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li::marker {
+      color: #7c3aed;
+    }
+    
+    /* ========================================
+       セパレーター
+       ======================================== */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* ========================================
+       PMアクション引用（👉）
+       ======================================== */
+    .pm-action {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.1));
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      margin: 2rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.15);
+    }
+    
+    .pm-action::before {
+      content: '👉 ';
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+    
+    .pm-action strong {
+      color: #c4b5fd;
+    }
+    
+    /* ========================================
+       重要引用ボックス
+       ======================================== */
+    .key-quote {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(236, 72, 153, 0.1));
+      padding: 2rem 2.5rem;
+      border-radius: 12px;
+      margin: 2.5rem 0;
+      border: 2px solid rgba(236, 72, 153, 0.4);
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      color: #f9a8d4;
+      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
+    }
+    
+    /* ========================================
+       まとめセクション
+       ======================================== */
+    .summary-section {
+      background: linear-gradient(135deg, rgba(97, 218, 251, 0.1), rgba(34, 197, 94, 0.05));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 1px solid rgba(97, 218, 251, 0.3);
+    }
+    
+    .summary-section h2 {
+      margin-top: 0;
+      color: #7dd3fc;
+    }
+    
+    .summary-principles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .principle-card {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 2px solid;
+      text-align: center;
+    }
+    
+    .principle-card.frontend-principle {
+      border-color: #61dafb;
+    }
+    
+    .principle-card.backend-principle {
+      border-color: #22c55e;
+    }
+    
+    .principle-card.api-principle {
+      border-color: #fbbf24;
+    }
+    
+    .principle-card.error-principle {
+      border-color: #ef4444;
+    }
+    
+    .principle-card .label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      opacity: 0.7;
+    }
+    
+    .principle-card .value {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    
+    .principle-card.frontend-principle .value { color: #7dd3fc; }
+    .principle-card.backend-principle .value { color: #4ade80; }
+    .principle-card.api-principle .value { color: #fbbf24; }
+    .principle-card.error-principle .value { color: #f87171; }
+    
+    /* ========================================
+       フェードインアニメーション
+       ======================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    /* ========================================
+       レスポンシブ
+       ======================================== */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.125rem;
+      }
+      
+      .contrast-container,
+      .boundary-grid,
+      .decision-arrows,
+      .summary-principles {
+        grid-template-columns: 1fr;
+      }
+      
+      .validation-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+      
+      .decision-flow-final .question {
+        font-size: 1.375rem;
+      }
+      
+      .decision-path .result {
+        font-size: 1.125rem;
+      }
+      
+      .series-links {
+        flex-direction: column;
+      }
+      
+      .nav-item {
+        text-align: center;
+      }
+    }
+    
+    /* ========================================
+       アクセシビリティ - 視覚効果の軽減
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクルエフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <!-- シリーズナビゲーション -->
+  <div class="series-nav">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第4回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-state-management-best-practices" class="nav-item">← 第3回: 状態管理</a>
+      <span class="nav-item current">第4回: 責任分界</span>
+      <a href="/blog/2026-02-11-pm-checklist-final" class="nav-item">第5回: チェックリスト →</a>
+    </div>
+  </div>
+
+  <h1 class="fade-in">フロントエンドPMが決めるバックエンドとの責任分界ベストプラクティス</h1>
+  
+  <div class="intro fade-in">
+    <p>フロントエンド開発が荒れる原因は、<br>
+    技術力不足でも、コミュニケーション不足でもない。</p>
+    
+    <p style="font-size: 1.25rem; font-weight: 600; margin-top: 1rem;">
+      <strong>責任分界が曖昧なまま進んでいることだ。</strong>
+    </p>
+  </div>
+  
+  <p>特にフロントエンドPMは、次の問いから逃げられない。</p>
+  
+  <p style="font-size: 1.25rem; font-weight: 600; color: #7dd3fc; margin: 1.5rem 0;">
+    これはフロントの責任か？<br>
+    それともバックエンドか？
+  </p>
+  
+  <p>この記事では、<br>
+  <strong>フロントエンドPMが判断すべき「線の引き方」</strong>を<br>
+  実務ベースで整理する。</p>
+  
+  <hr>
+  
+  <h2>なぜ責任分界は必ず揉めるのか</h2>
+  
+  <p>理由はシンプル。</p>
+  
+  <div class="contrast-container">
+    <div class="role-box frontend">
+      <h3><span class="role-icon">🎨</span> フロントエンド</h3>
+      <p style="font-size: 1.125rem; font-weight: 600; margin-top: 1rem;">「体験」を見る</p>
+    </div>
+    
+    <div class="role-box backend">
+      <h3><span class="role-icon">⚙️</span> バックエンド</h3>
+      <p style="font-size: 1.125rem; font-weight: 600; margin-top: 1rem;">「正しさ」を見る</p>
+    </div>
+  </div>
+  
+  <p style="font-size: 1.125rem; font-weight: 600; margin: 2rem 0;">
+    この2つは、<strong style="color: #ef4444;">必ず衝突する。</strong>
+  </p>
+  
+  <p>どちらも正しい。<br>
+  だからこそ、<strong>事前に線を引いていないと、必ず炎上する。</strong></p>
+  
+  <hr>
+  
+  <h2>PMが理解すべき前提：フロントとバックの役割は対等ではない</h2>
+  
+  <p>まず誤解を壊す。</p>
+  
+  <p style="margin: 1.5rem 0;">
+    <span style="color: #94a3b8;">フロントが軽い</span><br>
+    <span style="color: #94a3b8;">バックが重い</span>
+  </p>
+  
+  <p style="font-size: 1.125rem; font-weight: 600;">ではない。</p>
+  
+  <p style="font-size: 1.25rem; font-weight: 600; color: #c4b5fd; margin: 1.5rem 0;">
+    役割が違うだけ。
+  </p>
+  
+  <div class="contrast-container">
+    <div class="role-box backend">
+      <h3><span class="role-icon">⚙️</span> バックエンドの役割</h3>
+      <ul>
+        <li>正を持つ</li>
+        <li>取り消せない判断をする</li>
+        <li>業務ルールを保証する</li>
+      </ul>
+    </div>
+    
+    <div class="role-box frontend">
+      <h3><span class="role-icon">🎨</span> フロントエンドの役割</h3>
+      <ul>
+        <li>見せる</li>
+        <li>誘導する</li>
+        <li>一時的に補助する</li>
+      </ul>
+    </div>
+  </div>
+  
+  <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+    この前提を外すと、<br>
+    <strong style="color: #ef4444;">どんな設計も破綻する。</strong>
+  </p>
+  
+  <hr>
+  
+  <div class="boundary-section">
+    <h2>責任分界① 「正（マスター）」はどこにあるか</h2>
+    
+    <p>最初に決めるのはこれ。</p>
+    
+    <p style="font-size: 1.25rem; font-weight: 600; color: #fbbf24; margin: 1.5rem 0;">
+      このデータの「正」はどこか？
+    </p>
+    
+    <div class="boundary-grid">
+      <div class="boundary-card backend-only">
+        <h4>バックエンドが正であるもの</h4>
+        <ul>
+          <li>金額</li>
+          <li>在庫</li>
+          <li>ステータス</li>
+          <li>権限</li>
+        </ul>
+      </div>
+      
+      <div class="boundary-card frontend-ok">
+        <h4>フロントが持っていいのは？</h4>
+        <ul>
+          <li>表示用の加工</li>
+          <li>並び替え</li>
+          <li>一時的な入力状態</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="pm-action" style="margin-top: 2rem; border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+      <strong>例外なし。フロントが正を持った瞬間、事故る。</strong>
+    </div>
+    
+    <div class="pm-action" style="margin-top: 1rem; border-color: #61dafb; background: rgba(97, 218, 251, 0.1);">
+      正ではないものだけ。
+    </div>
+    
+    <div class="key-quote" style="margin-top: 2rem;">
+      「これ、ズレたら誰が責任取る？」
+    </div>
+    
+    <p style="margin-top: 1.5rem; font-size: 1.125rem; font-weight: 600;">
+      答えが曖昧なら、<br>
+      <strong style="color: #ef4444;">フロントに置いてはいけない。</strong>
+    </p>
+  </div>
+  
+  <hr>
+  
+  <div class="boundary-section">
+    <h2>責任分界② バリデーションはどこまでやるか</h2>
+    
+    <p>これも揉めやすい。</p>
+    
+    <div class="validation-table">
+      <div class="validation-row header">
+        <div class="validation-col">場所</div>
+        <div class="validation-col">種類</div>
+        <div class="validation-col">理由</div>
+      </div>
+      
+      <div class="validation-row">
+        <div class="validation-col location frontend">フロント</div>
+        <div class="validation-col">
+          未入力チェック<br>
+          文字数制限<br>
+          フォーマット（メール等）
+        </div>
+        <div class="validation-col reason">
+          UX向上のため
+        </div>
+      </div>
+      
+      <div class="validation-row">
+        <div class="validation-col location backend">バック</div>
+        <div class="validation-col">
+          業務ルール<br>
+          整合性チェック<br>
+          権限チェック
+        </div>
+        <div class="validation-col reason">
+          フロントは信用しない
+        </div>
+      </div>
+    </div>
+    
+    <div class="pm-action" style="margin-top: 2rem;">
+      <strong>「フロントのバリデーションは親切、バックのバリデーションは責任」</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="boundary-section">
+    <h2>責任分界③ エラー時の責任はどこにあるか</h2>
+    
+    <p>エラー対応は、責任分界が一番露出する場面。</p>
+    
+    <div class="error-responsibility-box">
+      <h4>PMが決めるべき3点</h4>
+      
+      <div class="error-point">
+        <strong>1. エラーの種類（業務／技術）</strong>
+      </div>
+      
+      <div class="error-point">
+        <strong>2. 再試行できるか</strong>
+      </div>
+      
+      <div class="error-point">
+        <strong>3. 利用者に何を伝えるか</strong>
+      </div>
+      
+      <div class="bad-examples">
+        <h5>やってはいけない例</h5>
+        <ul>
+          <li>フロントでエラーを握りつぶす</li>
+          <li>「想定外」で済ませる</li>
+          <li>とりあえず汎用メッセージ</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="pm-action" style="margin-top: 2rem;">
+      <strong>エラーは仕様の一部。PMが決めないと、必ず後回しになる。</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="boundary-section">
+    <h2>責任分界④ APIは「実装の詳細」ではない</h2>
+    
+    <p>フロントエンドPMが<strong>一番意識を変えるべきポイント。</strong></p>
+    
+    <div class="api-contract-box">
+      <h3>APIは、フロントとバックの契約書だ。</h3>
+      
+      <div class="contract-point">
+        <strong>このAPIで何を保証しているか</strong>
+      </div>
+      
+      <div class="contract-point">
+        <strong>失敗時、何が返るか</strong>
+      </div>
+      
+      <div class="contract-point">
+        <strong>将来項目が増えたらどうするか</strong>
+      </div>
+    </div>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+      ここを決めずに「とりあえず叩く」は、<br>
+      <strong style="color: #ef4444;">設計放棄。</strong>
+    </p>
+  </div>
+  
+  <hr>
+  
+  <h2>PMが間に入るべきタイミング</h2>
+  
+  <p>PMが介入すべきサインは明確。</p>
+  
+  <div class="intervention-box">
+    <h3>これが出たら介入</h3>
+    
+    <ul class="sign-list">
+      <li>フロントが<strong>業務判断</strong>を持ち始めた</li>
+      <li>バックが<strong>UX</strong>を気にし始めた</li>
+      <li>「それは<strong>そっちで</strong>」が増えた</li>
+    </ul>
+  </div>
+  
+  <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+    これは衝突ではなく、<br>
+    <strong style="color: #fbbf24;">線が引かれていないサイン。</strong>
+  </p>
+  
+  <p style="margin-top: 1.5rem; font-size: 1.0625rem;">
+    PMの仕事は、どちらかの肩を持つことじゃない。
+  </p>
+  
+  <p style="font-size: 1.25rem; font-weight: 700; color: #c4b5fd; margin-top: 1rem;">
+    線を引くことだ。
+  </p>
+  
+  <hr>
+  
+  <h2>判断に迷ったときの一文</h2>
+  
+  <p>最後に、PMが迷ったときの判断軸を1つ。</p>
+  
+  <div class="decision-flow-final">
+    <div class="question">
+      「それは、取り消せる判断か？」
+    </div>
+    
+    <div class="decision-arrows">
+      <div class="decision-path revocable">
+        <div class="condition">取り消せる</div>
+        <div class="arrow">↓</div>
+        <div class="result">フロント</div>
+      </div>
+      
+      <div class="decision-path irrevocable">
+        <div class="condition">取り消せない</div>
+        <div class="arrow">↓</div>
+        <div class="result">バック</div>
+      </div>
+    </div>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600; color: #e0e0e0;">
+      これで<strong style="color: #4ade80;">8割の議論は終わる。</strong>
+    </p>
+  </div>
+  
+  <hr>
+  
+  <div class="summary-section">
+    <h2>まとめ：責任分界は「技術設計」ではなく「PM設計」</h2>
+    
+    <div class="summary-principles">
+      <div class="principle-card backend-principle">
+        <div class="label">正</div>
+        <div class="value">バックエンド</div>
+      </div>
+      
+      <div class="principle-card frontend-principle">
+        <div class="label">体験</div>
+        <div class="value">フロントエンド</div>
+      </div>
+      
+      <div class="principle-card api-principle">
+        <div class="label">API</div>
+        <div class="value">契約</div>
+      </div>
+      
+      <div class="principle-card error-principle">
+        <div class="label">エラー</div>
+        <div class="value">仕様</div>
+      </div>
+    </div>
+    
+    <p style="margin-top: 2.5rem; font-size: 1.25rem; font-weight: 600; text-align: center;">
+      これを誰が決めるか？
+    </p>
+    
+    <p style="font-size: 1.5rem; font-weight: 700; color: #7dd3fc; text-align: center; margin-top: 1rem;">
+      フロントエンドPMだ。
+    </p>
+  </div>
+
+  <!-- シリーズナビゲーション（末尾） -->
+  <div class="series-nav" style="margin-top: 3rem; margin-bottom: 0;">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ</span>
+      <span class="series-progress">第4回 / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-state-management-best-practices" class="nav-item">← 第3回: 状態管理</a>
+      <span class="nav-item current">第4回: 責任分界</span>
+      <a href="/blog/2026-02-11-pm-checklist-final" class="nav-item">第5回: チェックリスト →</a>
+    </div>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  /* ========================================
+     パーティクルシステム（フロント/バックの2色分離）
+     ======================================== */
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // フロント/バックの分離を表現
+  const PARTICLE_COUNT = Math.min(100, Math.floor((width * height) / 11000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const side = Math.random() > 0.5 ? 'frontend' : 'backend';
+      
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        radius: Math.random() * 1.8 + 0.7,
+        side: side,
+        color: side === 'frontend' 
+          ? 'rgba(97, 218, 251, 0.6)'   // 青 - フロント
+          : 'rgba(34, 197, 94, 0.6)',   // 緑 - バック
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端で跳ね返る
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル本体
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 同じ側のパーティクルを線で結ぶ（責任分界を表現）
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        // 同じ側のパーティクルのみ接続
+        if (particles[i].side !== particles[j].side) continue;
+        
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          const opacity = 0.2 * (1 - distance / 120);
+          const color = particles[i].side === 'frontend'
+            ? `rgba(97, 218, 251, ${opacity})`
+            : `rgba(34, 197, 94, ${opacity})`;
+          
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', resize);
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  /* ========================================
+     クライアント遷移対応（Next.js App Router）
+     ======================================== */
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing boundary article effects...');
+      resize();
+      createParticles();
+    };
+  }
+  
+})();
+</script>
+
+</body>
+</html>

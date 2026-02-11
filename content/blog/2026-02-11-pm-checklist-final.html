@@ -1,0 +1,1129 @@
+<!--
+title: フロントエンドPMのための判断チェックリスト【炎上回避・保存版】
+date: 2026-02-11
+category: PM思考
+excerpt: フロントエンドPMの仕事は、正解を当てることじゃない。炎上する判断を、事前に外すことだ。設計レビュー前、実装着手前、本番リリース前に淡々と確認するためのチェックリスト。
+readingTime: 7 min read
+tags: ["PM思考", "チェックリスト", "技術マネジメント", "炎上回避", "保存版"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フロントエンドPMのための判断チェックリスト【炎上回避・保存版】</title>
+  
+  <style>
+    /* ========================================
+       シリーズナビゲーション
+       ======================================== */
+    .series-nav {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(124, 58, 237, 0.08));
+      border: 2px solid rgba(251, 191, 36, 0.4);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    
+    .series-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .series-badge {
+      background: linear-gradient(135deg, #fbbf24, #7c3aed);
+      color: white;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .series-progress {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .series-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-item {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9375rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item.current {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+      font-weight: 600;
+    }
+    
+    .nav-item:not(.current) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+    
+    .nav-item:not(.current):hover {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+      transform: translateX(3px);
+    }
+    
+    /* ========================================
+       リセット・基本スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* ========================================
+       パーティクルキャンバス（背景エフェクト）
+       ======================================== */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* ========================================
+       タイトル - グラデーションテキスト（紫→金）
+       ======================================== */
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+      background: linear-gradient(135deg, #7c3aed, #fbbf24, #f59e0b);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      font-weight: 700;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #0a0a0a;
+      padding: 0.5rem 1.5rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+    }
+    
+    .intro {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      padding: 1.5rem;
+      background: rgba(251, 191, 36, 0.08);
+      border-left: 4px solid #fbbf24;
+      border-radius: 8px;
+    }
+    
+    /* ========================================
+       使用タイミングボックス
+       ======================================== */
+    .timing-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(15, 23, 42, 0.9));
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid rgba(124, 58, 237, 0.4);
+    }
+    
+    .timing-box h3 {
+      margin-top: 0;
+      color: #c4b5fd;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .timing-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .timing-list li {
+      padding: 0.75rem 1.5rem;
+      margin-bottom: 0.75rem;
+      background: rgba(124, 58, 237, 0.1);
+      border-left: 4px solid #7c3aed;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    
+    .timing-list li:last-child {
+      margin-bottom: 0;
+    }
+    
+    .usage-note {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(251, 191, 36, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      font-size: 0.9375rem;
+      color: #cbd5e1;
+    }
+    
+    /* ========================================
+       見出しスタイル
+       ======================================== */
+    h2 {
+      font-size: clamp(1.5rem, 4vw, 1.875rem);
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #f1f5f9;
+      font-weight: 700;
+      position: relative;
+      padding-left: 1rem;
+    }
+    
+    h2::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 70%;
+      background: linear-gradient(180deg, #fbbf24, #7c3aed);
+      border-radius: 2px;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       段落・テキスト
+       ======================================== */
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong, b {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    /* ========================================
+       チェックリストカード
+       ======================================== */
+    .checklist-item {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      border: 2px solid;
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .checklist-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    .checklist-item.critical {
+      border-color: #ef4444;
+    }
+    
+    .checklist-item.important {
+      border-color: #fbbf24;
+    }
+    
+    .checklist-item.standard {
+      border-color: #3b82f6;
+    }
+    
+    .checklist-number {
+      position: absolute;
+      top: -1rem;
+      left: 2rem;
+      background: #0a0a0a;
+      padding: 0 1rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .checklist-number .check-icon {
+      font-size: 1.25rem;
+    }
+    
+    .checklist-item.critical .checklist-number {
+      color: #ef4444;
+    }
+    
+    .checklist-item.important .checklist-number {
+      color: #fbbf24;
+    }
+    
+    .checklist-item.standard .checklist-number {
+      color: #60a5fa;
+    }
+    
+    .checklist-title {
+      font-size: 1.375rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+    }
+    
+    .check-points {
+      list-style: none;
+      margin: 1.5rem 0;
+      padding: 0;
+    }
+    
+    .check-points li {
+      padding: 0.75rem 0;
+      padding-left: 2rem;
+      position: relative;
+      font-size: 1.0625rem;
+      color: #cbd5e1;
+    }
+    
+    .check-points li::before {
+      content: '☐';
+      position: absolute;
+      left: 0;
+      font-size: 1.25rem;
+      color: #94a3b8;
+    }
+    
+    /* ========================================
+       PMアクション引用（👉）
+       ======================================== */
+    .pm-action {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.1));
+      padding: 1.5rem 2rem;
+      border-radius: 10px;
+      margin: 1.5rem 0 0 0;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.15);
+    }
+    
+    .pm-action::before {
+      content: '👉 ';
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+    
+    .pm-action strong {
+      color: #c4b5fd;
+    }
+    
+    .pm-action.critical {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(15, 23, 42, 0.1));
+    }
+    
+    .pm-action.critical strong {
+      color: #fca5a5;
+    }
+    
+    /* ========================================
+       キーメッセージボックス
+       ======================================== */
+    .key-message-box {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(124, 58, 237, 0.1));
+      padding: 3rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 3px solid #fbbf24;
+      box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+      text-align: center;
+    }
+    
+    .key-message-box h2 {
+      margin-top: 0;
+      color: #fbbf24;
+      font-size: 1.75rem;
+      padding-left: 0;
+    }
+    
+    .key-message-box h2::before {
+      display: none;
+    }
+    
+    .key-message-box .question {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fbbf24;
+      margin: 2rem 0;
+      line-height: 1.4;
+    }
+    
+    .key-message-box .answer {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-top: 1.5rem;
+    }
+    
+    .key-message-box .answer strong {
+      color: #ef4444;
+      font-size: 1.375rem;
+    }
+    
+    /* ========================================
+       サマリーセクション
+       ======================================== */
+    .summary-section {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.05));
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 3rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+    
+    .summary-section h2 {
+      margin-top: 0;
+      color: #c4b5fd;
+    }
+    
+    .summary-principles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    
+    .principle-item {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #7c3aed;
+      font-weight: 500;
+    }
+    
+    .final-note {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 10px;
+      border: 2px solid #22c55e;
+      text-align: center;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #4ade80;
+    }
+    
+    /* ========================================
+       シリーズ完結ボックス
+       ======================================== */
+    .series-complete-box {
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(124, 58, 237, 0.15));
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 4rem 0;
+      border: 3px solid rgba(236, 72, 153, 0.5);
+      box-shadow: 0 0 50px rgba(236, 72, 153, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .series-complete-box::before {
+      content: '🎉';
+      position: absolute;
+      top: -1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 4rem;
+      background: #0a0a0a;
+      padding: 0 1rem;
+    }
+    
+    .series-complete-box h2 {
+      margin-top: 1rem;
+      color: #f9a8d4;
+      text-align: center;
+      padding-left: 0;
+    }
+    
+    .series-complete-box h2::before {
+      display: none;
+    }
+    
+    .series-topics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .topic-contrast {
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 10px;
+    }
+    
+    .topic-contrast.old {
+      border: 2px solid rgba(148, 163, 184, 0.3);
+    }
+    
+    .topic-contrast.new {
+      border: 2px solid rgba(236, 72, 153, 0.5);
+    }
+    
+    .topic-contrast .label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      opacity: 0.7;
+    }
+    
+    .topic-contrast .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    
+    .topic-contrast.old .value {
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
+    
+    .topic-contrast.new .value {
+      color: #f9a8d4;
+    }
+    
+    .series-conclusion {
+      margin-top: 2rem;
+      padding: 2rem;
+      background: rgba(251, 191, 36, 0.1);
+      border-radius: 10px;
+      border: 2px solid #fbbf24;
+      text-align: center;
+    }
+    
+    .series-conclusion p {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+    
+    .series-conclusion .final-message {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-top: 1rem;
+    }
+    
+    /* ========================================
+       リスト
+       ======================================== */
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    li::marker {
+      color: #7c3aed;
+    }
+    
+    /* ========================================
+       セパレーター
+       ======================================== */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* ========================================
+       フェードインアニメーション
+       ======================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    /* ========================================
+       レスポンシブ
+       ======================================== */
+    @media (max-width: 768px) {
+      article {
+        padding: 3rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1.125rem;
+      }
+      
+      .checklist-item {
+        padding: 1.5rem;
+      }
+      
+      .checklist-number {
+        font-size: 1.25rem;
+      }
+      
+      .summary-principles {
+        grid-template-columns: 1fr;
+      }
+      
+      .series-topics {
+        grid-template-columns: 1fr;
+      }
+      
+      .key-message-box,
+      .series-complete-box {
+        padding: 2rem 1.5rem;
+      }
+      
+      .key-message-box .question {
+        font-size: 1.25rem;
+      }
+      
+      .series-links {
+        flex-direction: column;
+      }
+      
+      .nav-item {
+        text-align: center;
+      }
+    }
+    
+    /* ========================================
+       アクセシビリティ - 視覚効果の軽減
+       ======================================== */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景パーティクルエフェクト -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <!-- シリーズナビゲーション -->
+  <div class="series-nav">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ 🎉</span>
+      <span class="series-progress">第5回（最終回） / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-frontend-backend-boundary" class="nav-item">← 第4回: 責任分界</a>
+      <span class="nav-item current">第5回: チェックリスト【完結】</span>
+    </div>
+  </div>
+
+  <h1 class="fade-in">フロントエンドPMのための判断チェックリスト</h1>
+  <div class="badge fade-in">炎上回避・保存版</div>
+  
+  <div class="intro fade-in">
+    <p><strong>フロントエンドPMの仕事は、正解を当てることじゃない。</strong></p>
+    <p style="font-size: 1.25rem; font-weight: 600; margin-top: 1rem;">
+      炎上する判断を、事前に外すことだ。
+    </p>
+  </div>
+  
+  <div class="timing-box">
+    <h3>このチェックリストを使うタイミング</h3>
+    <ul class="timing-list">
+      <li>設計レビュー前</li>
+      <li>実装着手前</li>
+      <li>本番リリース前</li>
+    </ul>
+    
+    <div class="usage-note">
+      全部できていなくてもいい。<br>
+      <strong>「説明できない項目」があるかどうかだけを見る。</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="checklist-item critical">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック①</span>
+    </div>
+    
+    <h3 class="checklist-title">役割と責任は言語化されているか</h3>
+    
+    <ul class="check-points">
+      <li>フロントエンドPMの責任範囲を説明できる</li>
+      <li>バックエンドPM／エンジニアの責任範囲を説明できる</li>
+      <li>「どっちでもいい」が残っていない</li>
+    </ul>
+    
+    <div class="pm-action critical">
+      曖昧な責任は、必ず後で衝突する。
+    </div>
+  </div>
+  
+  <div class="checklist-item critical">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック②</span>
+    </div>
+    
+    <h3 class="checklist-title">フロントとバックの「正」は分かれているか</h3>
+    
+    <ul class="check-points">
+      <li>金額・在庫・権限の正はバックエンド</li>
+      <li>フロントは表示と一時状態のみ</li>
+      <li>フロントに「最終判断」が置かれていない</li>
+    </ul>
+    
+    <div class="pm-action critical">
+      <strong>正を2つ持った瞬間、事故は確定。</strong>
+    </div>
+  </div>
+  
+  <div class="checklist-item important">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック③</span>
+    </div>
+    
+    <h3 class="checklist-title">状態（State）を増やした理由を説明できるか</h3>
+    
+    <ul class="check-points">
+      <li>その状態は何のために存在するか</li>
+      <li>消えたら何が困るか</li>
+      <li>APIとズレたらどうなるか</li>
+    </ul>
+    
+    <div class="pm-action">
+      即答できないなら、その状態は作ってはいけない。
+    </div>
+  </div>
+  
+  <div class="checklist-item important">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック④</span>
+    </div>
+    
+    <h3 class="checklist-title">グローバル状態は最小限か</h3>
+    
+    <ul class="check-points">
+      <li>複数画面で本当に必要か</li>
+      <li>更新タイミングが明確か</li>
+      <li>影響範囲を説明できるか</li>
+    </ul>
+    
+    <div class="pm-action">
+      「便利そうだから」は却下。
+    </div>
+  </div>
+  
+  <div class="checklist-item important">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑤</span>
+    </div>
+    
+    <h3 class="checklist-title">APIは契約として扱われているか</h3>
+    
+    <ul class="check-points">
+      <li>APIの成功・失敗時の挙動が決まっている</li>
+      <li>エラーコードや理由を前提にUIを設計している</li>
+      <li>将来項目が増えたときの影響を想定している</li>
+    </ul>
+    
+    <div class="pm-action">
+      APIを「とりあえず叩く」と、設計は必ず後回しになる。
+    </div>
+  </div>
+  
+  <div class="checklist-item standard">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑥</span>
+    </div>
+    
+    <h3 class="checklist-title">バリデーションの責任は分かれているか</h3>
+    
+    <ul class="check-points">
+      <li><strong>フロント：</strong>入力しやすさ・UX</li>
+      <li><strong>バック：</strong>業務ルール・整合性</li>
+    </ul>
+    
+    <div class="pm-action">
+      フロントは親切、バックは責任。
+    </div>
+  </div>
+  
+  <div class="checklist-item critical">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑦</span>
+    </div>
+    
+    <h3 class="checklist-title">エラー時の振る舞いは決まっているか</h3>
+    
+    <ul class="check-points">
+      <li>どのエラーを利用者に見せるか</li>
+      <li>再試行できるか</li>
+      <li>オペレーションに逃がすか</li>
+    </ul>
+    
+    <div class="pm-action critical">
+      <strong>エラー未定義＝仕様未完成。</strong>
+    </div>
+  </div>
+  
+  <div class="checklist-item critical">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑧</span>
+    </div>
+    
+    <h3 class="checklist-title">「あとで直す」が残っていないか</h3>
+    
+    <ul class="check-points">
+      <li>仮実装</li>
+      <li>一時対応</li>
+      <li>暫定対応</li>
+    </ul>
+    
+    <div class="pm-action critical">
+      これが増えてきたら、<strong>設計が破綻し始めているサイン。</strong>
+    </div>
+  </div>
+  
+  <div class="checklist-item critical">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑨</span>
+    </div>
+    
+    <h3 class="checklist-title">判断を取り消せる設計になっているか</h3>
+    
+    <ul class="check-points">
+      <li>フロントで行う判断は取り消せる</li>
+      <li>取り消せない判断はバックにある</li>
+      <li>誰が巻き戻せるか決まっている</li>
+    </ul>
+    
+    <div class="pm-action critical">
+      <strong>取り消せない判断をフロントに置いたら終わり。</strong>
+    </div>
+  </div>
+  
+  <div class="checklist-item important">
+    <div class="checklist-number">
+      <span class="check-icon">☐</span>
+      <span>チェック⑩</span>
+    </div>
+    
+    <h3 class="checklist-title">PMとして「止める判断」をしているか</h3>
+    
+    <ul class="check-points">
+      <li>判断材料が揃っていないのに進めていないか</li>
+      <li>技術で誤魔化していないか</li>
+      <li>「進めること」だけが目的になっていないか</li>
+    </ul>
+    
+    <div class="pm-action">
+      止めるのもPMの仕事。
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="key-message-box">
+    <h2>10個も覚えなくていい</h2>
+    
+    <p style="font-size: 1.125rem; margin-bottom: 2rem;">
+      このチェックリストで一番大事なのはこれ。
+    </p>
+    
+    <div class="question">
+      説明できない判断が、<br>1つでもあるか？
+    </div>
+    
+    <div class="answer">
+      あるなら、<br>
+      <strong>それが次に燃える場所だ。</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="summary-section">
+    <h2>まとめ：フロントエンドPMは「判断を減らす人」</h2>
+    
+    <div class="summary-principles">
+      <div class="principle-item">正はバックエンド</div>
+      <div class="principle-item">状態は最小</div>
+      <div class="principle-item">APIは契約</div>
+      <div class="principle-item">エラーは仕様</div>
+    </div>
+    
+    <p style="margin-top: 2rem; font-size: 1.125rem; font-weight: 600;">
+      そして何より、
+    </p>
+    
+    <p style="font-size: 1.25rem; font-weight: 700; color: #c4b5fd; margin: 1rem 0;">
+      判断を増やさない。<br>
+      増やすなら、責任を決める。
+    </p>
+    
+    <div class="final-note">
+      それができれば、<br>
+      フロントエンドPMとして<br>
+      <strong>現場はかなり静かになる。</strong>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <div class="series-complete-box">
+    <h2>シリーズ完結</h2>
+    
+    <p style="font-size: 1.125rem; text-align: center; margin: 2rem 0;">
+      この記事で扱ったのは、
+    </p>
+    
+    <div class="series-topics">
+      <div class="topic-contrast old">
+        <div class="label">ではなく</div>
+        <div class="value">技術の知識</div>
+      </div>
+      
+      <div class="topic-contrast new">
+        <div class="label">むしろ</div>
+        <div class="value">判断の位置</div>
+      </div>
+    </div>
+    
+    <div class="series-conclusion">
+      <p>
+        フロントエンドPMとして<br>
+        「なぜか燃えにくい人」になるための<br>
+        最低限の装備は、ここに全部ある。
+      </p>
+      
+      <p class="final-message">
+        あとは、現場で使うだけ。
+      </p>
+    </div>
+  </div>
+
+  <!-- シリーズナビゲーション（末尾） -->
+  <div class="series-nav" style="margin-top: 3rem; margin-bottom: 0;">
+    <div class="series-header">
+      <span class="series-badge">フロントエンドPMシリーズ 🎉</span>
+      <span class="series-progress">第5回（最終回） / 全5回</span>
+    </div>
+    <div class="series-links">
+      <a href="/blog/2026-02-11-frontend-pm-best-practices" class="nav-item">第1回: ベストプラクティス</a>
+      <a href="/blog/2026-02-11-react-frontend-pm-guide" class="nav-item">第2回: React開発の考え方</a>
+      <a href="/blog/2026-02-11-state-management-best-practices" class="nav-item">第3回: 状態管理</a>
+      <a href="/blog/2026-02-11-frontend-backend-boundary" class="nav-item">第4回: 責任分界</a>
+      <span class="nav-item current">第5回: チェックリスト【完結】</span>
+    </div>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  /* ========================================
+     パーティクルシステム（金色・完結を表現）
+     ======================================== */
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  
+  // 金色と紫のパーティクルで達成感を表現
+  const PARTICLE_COUNT = Math.min(100, Math.floor((width * height) / 11000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    const colors = [
+      'rgba(251, 191, 36, 0.6)',  // Gold
+      'rgba(245, 158, 11, 0.5)',  // Orange-gold
+      'rgba(124, 58, 237, 0.5)',  // Purple
+    ];
+    
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        radius: Math.random() * 2 + 0.8,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      // 画面端で跳ね返る
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      // パーティクル本体
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          const opacity = 0.2 * (1 - distance / 120);
+          ctx.strokeStyle = `rgba(251, 191, 36, ${opacity})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  // イベントリスナー
+  window.addEventListener('resize', resize);
+  
+  // 初期化
+  resize();
+  createParticles();
+  draw();
+  
+  /* ========================================
+     クライアント遷移対応（Next.js App Router）
+     ======================================== */
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing checklist article effects...');
+      resize();
+      createParticles();
+    };
+  }
+  
+})();
+</script>
+
+</body>
+</html>
