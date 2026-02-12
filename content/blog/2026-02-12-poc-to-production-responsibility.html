@@ -1,0 +1,455 @@
+<!--
+title: PoCは成功した。それでも本番に進まない理由。
+date: 2026-02-12
+category: PM思考
+excerpt: 実証は成功した。精度も出た。現場も「使えなくはない」と言っている。それでも、本番に進まない。なぜか。技術は動いている。止まっているのは、組織ではなく、責任の構造である。
+readingTime: 8 min read
+tags: ["PM思考", "組織設計", "本番化", "責任設計"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoCは成功した。それでも本番に進まない理由。</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3.5rem;
+      margin-bottom: 1.25rem;
+      color: #f1f5f9;
+      border-left: 4px solid rgba(124, 58, 237, 0.6);
+      padding-left: 1rem;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* フェードインアニメーション */
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+    
+    .fade-in-delay-1 { animation-delay: 0.2s; }
+    .fade-in-delay-2 { animation-delay: 0.4s; }
+    .fade-in-delay-3 { animation-delay: 0.6s; }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* 光スライド横エフェクト（弱め） */
+    .light-slide {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .light-slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(124, 58, 237, 0.08) 50%,
+        transparent 100%
+      );
+      animation: lightSlideHorizontal 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes lightSlideHorizontal {
+      0% {
+        left: -100%;
+      }
+      50% {
+        left: 100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid rgba(124, 58, 237, 0.7);
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+      border-radius: 8px;
+      opacity: 0;
+      animation: slideInLeft 0.8s ease-out forwards;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .slide-box p {
+      margin-bottom: 0.75rem;
+    }
+    
+    .slide-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .slide-box ul {
+      margin: 0.75rem 0;
+      padding-left: 1.5rem;
+    }
+    
+    .slide-box li {
+      margin: 0.5rem 0;
+      color: #cbd5e1;
+    }
+    
+    /* 引用スタイル */
+    .quote-block {
+      background: rgba(15, 23, 42, 0.4);
+      border-left: 4px solid rgba(34, 197, 94, 0.5);
+      padding: 1.25rem 1.75rem;
+      margin: 2rem 0;
+      border-radius: 6px;
+      font-style: italic;
+      color: #94a3b8;
+    }
+    
+    /* キーメッセージ */
+    .key-message {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      text-align: center;
+      padding: 2rem;
+      margin: 3rem 0;
+      background: rgba(124, 58, 237, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+        margin-top: 2.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+      
+      .key-message {
+        font-size: 1.125rem;
+        padding: 1.5rem;
+      }
+    }
+    
+    /* アニメーション無効化（アクセシビリティ対応） */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<article>
+  <div class="fade-in">
+    <h1 class="light-slide">PoCは成功した。<br>それでも本番に進まない理由。</h1>
+    <p style="font-size: 1.125rem; color: #94a3b8; margin-top: 1rem;">実証は成功した。精度も出た。現場も「使えなくはない」と言っている。<br>それでも、本番に進まない。なぜか。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-in fade-in-delay-1">
+    <p>多くの会議では、こう言われる。</p>
+    
+    <div class="quote-block">
+      「もう少し様子を見よう」<br>
+      「他部署の理解を得てから」<br>
+      「来期予算で検討しよう」
+    </div>
+    
+    <p class="light-slide"><strong>あなたも経験があるはずだ。</strong></p>
+    
+    <p>「技術的には問題ありません」</p>
+    
+    <p>そう説明したあとに、<br>会議室の空気が重くなる瞬間を。</p>
+    
+    <p>技術は動いている。<br>止まっているのは、組織だ。</p>
+    
+    <p>だが、組織が悪いわけではない。</p>
+    
+    <p class="light-slide"><strong>止まっているのは、責任の構造である。</strong></p>
+  </div>
+  
+  <h2 class="fade-in fade-in-delay-2 light-slide">PoCは技術の確認。<br>本番化は、責任の固定。</h2>
+  
+  <div class="fade-in fade-in-delay-3">
+    <p>PoCは技術的に成立するかを確認する工程。</p>
+    
+    <p>本番化は、その技術を誰が背負うかを決める工程。</p>
+    
+    <p><strong>ここを混同した瞬間、案件は止まる。</strong></p>
+    
+    <p>多くのPoCが止まる理由は単純だ。</p>
+    
+    <div class="slide-box">
+      <ul>
+        <li>運用責任者が<strong>"役職名"で固定されていない</strong></li>
+        <li>KPIが<strong>評価制度に接続されていない</strong></li>
+        <li>保守費用の<strong>予算コードが確定していない</strong></li>
+        <li>障害時の<strong>意思決定経路が定義されていない</strong></li>
+      </ul>
+    </div>
+    
+    <p>つまり、</p>
+    
+    <p class="light-slide" style="font-size: 1.1875rem;"><strong>成果物はあるが、背負う人がいない。</strong></p>
+    
+    <p>組織は無責任な変化を受け入れない。</p>
+    
+    <p>それは保守的なのではない。</p>
+    
+    <p><strong>合理的なのだ。</strong></p>
+  </div>
+  
+  <h2>金型の話をしよう。</h2>
+  
+  <div>
+    <p>金型を掘る。</p>
+    
+    <p>寸法が出るかどうかは、加工後に分かる。</p>
+    
+    <p>もしNGだったらどうするか。</p>
+    
+    <p><strong>その場で考えるのは遅い。</strong></p>
+    
+    <p>設計段階でこう考える。</p>
+    
+    <div class="slide-box">
+      <ul>
+        <li>±0.02なら研磨で修正</li>
+        <li>±0.05なら肉盛り＋再加工</li>
+        <li>それ以上なら再設計</li>
+      </ul>
+    </div>
+    
+    <p>この<strong>"分岐設計"</strong>があれば、<br>NGは事故ではなく工程になる。</p>
+    
+    <p class="light-slide"><strong>精神的に揺れないのは、<br>成功するからではない。</strong></p>
+    
+    <p class="light-slide"><strong>失敗後の選択肢が見えているからだ。</strong></p>
+    
+    <p style="margin-top: 2rem;">PoCも同じだ。</p>
+    
+    <div class="slide-box">
+      <p style="margin-bottom: 0.5rem;">未達ならどうする。</p>
+      <p style="margin-bottom: 0.5rem;">予算が下りなければどうする。</p>
+      <p>責任者が異動したらどうする。</p>
+    </div>
+    
+    <p><strong>ここまで設計されているか。</strong></p>
+  </div>
+  
+  <h2 class="light-slide">本番化とは「縮退ルートの合意」</h2>
+  
+  <div>
+    <p>本番前提の製造業では、撤退はほぼない。</p>
+    
+    <p>だが実際には、<br>縮小・段階導入・スコープ再定義という<br><strong>"縮退"</strong>は常に存在する。</p>
+    
+    <p>それを事前に握っているかどうか。</p>
+    
+    <div class="key-message light-slide">
+      本番化とは勇気ではない。<br>縮退条件の事前合意である。
+    </div>
+  </div>
+  
+  <h2>なぜ止まるのか</h2>
+  
+  <div>
+    <p>多くのPMは成果物を作る。</p>
+    
+    <p><strong>だが責任を固定しない。</strong></p>
+    
+    <p>なぜか。</p>
+    
+    <p class="light-slide"><strong>責任の固定は、政治だからだ。</strong></p>
+    
+    <p class="light-slide"><strong>評価制度や予算コードに触れるからだ。</strong></p>
+    
+    <p>技術よりも重い。</p>
+    
+    <p>だから後回しにされる。</p>
+    
+    <p><strong>だが止まる原因の大半は、そこにある。</strong></p>
+  </div>
+  
+  <h2 class="light-slide">実証を成功させるPMは多い。<br>本番に移行させるPMは少ない。</h2>
+  
+  <div>
+    <p>違いは技術力ではない。</p>
+    
+    <p class="light-slide"><strong>移行設計の有無。</strong></p>
+    
+    <p style="margin-top: 2rem;">本番化とは、</p>
+    
+    <div class="slide-box">
+      <ul>
+        <li>人を固定する</li>
+        <li>予算を固定する</li>
+        <li>失敗時の矢面を固定する</li>
+      </ul>
+    </div>
+    
+    <p>という行為だ。</p>
+    
+    <p><strong>これがない限り、<br>PoCは何度でも成功し、何度でも止まる。</strong></p>
+  </div>
+  
+  <h2>製造業は保守的なのか？</h2>
+  
+  <div>
+    <p>違う。</p>
+    
+    <p class="light-slide"><strong>責任が未定義な変化を拒絶しているだけだ。</strong></p>
+    
+    <p>責任が固定されれば、<br>むしろ速い。</p>
+  </div>
+  
+  <h2>止まっている案件は、動かせる。</h2>
+  
+  <div>
+    <p>技術を疑う前に、<br>責任の構造を疑う。</p>
+    
+    <p>PoCが止まっているなら、<br>それは失敗ではない。</p>
+    
+    <p class="light-slide"><strong>設計が足りないだけだ。</strong></p>
+  </div>
+  
+  <hr>
+  
+  <h2>最後に一つだけ。</h2>
+  
+  <div>
+    <p class="light-slide"><strong>技術の問題だと思っている限り、<br>あなたの案件は止まり続ける。</strong></p>
+    
+    <p style="margin-top: 2rem;">止めているのは技術ではない。</p>
+    
+    <div class="key-message light-slide">
+      技術を疑う前に、<br>誰が背負うのかを疑え。
+    </div>
+    
+    <p style="margin-top: 2.5rem; text-align: center; font-size: 1.125rem; color: #94a3b8;">本番化は勇気ではない。設計だ。<br><strong style="color: #f1f5f9;">その設計をするのが、PMの仕事だ。</strong></p>
+  </div>
+
+</article>
+
+<script>
+// クライアント遷移対応の再初期化関数
+if (!window.reinitBlogArticle) {
+  window.reinitBlogArticle = function() {
+    console.log('Reinitializing article effects for PoC to Production article...');
+    
+    // アニメーションをリセット（必要に応じて）
+    const fadeElements = document.querySelectorAll('.fade-in');
+    fadeElements.forEach(el => {
+      el.style.animation = 'none';
+      setTimeout(() => {
+        el.style.animation = '';
+      }, 10);
+    });
+    
+    const slideBoxes = document.querySelectorAll('.slide-box');
+    slideBoxes.forEach(el => {
+      el.style.animation = 'none';
+      setTimeout(() => {
+        el.style.animation = '';
+      }, 10);
+    });
+  };
+}
+</script>
+
+</body>
+</html>
