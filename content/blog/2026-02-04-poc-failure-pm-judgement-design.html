@@ -1,17 +1,17 @@
 <!--
-title: PoCが本番で壊れるPMは、だいたい同じ「勘違い」をしている── 技術PMが見落とす「判断の境界」設計
+title: PoCは成功した。それでも本番化しない理由は、技術ではない。
 date: 2026-02-04
 category: PM思考
-excerpt: PoCでは問題なく動いていたシステムが、本番で突然壊れる。技術仕様は正しく、実装もレビュー済み。それでも壊れる理由は「判断の境界」が設計されていないからだ。技術が分かるPMほど陥る落とし穴と、その構造的な解決策を実務レベルで言語化する。
-readingTime: 14 min read
-tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "システム設計", "排他制御"]
+excerpt: PoCの成功率は高い。本番移行率は低い。この矛盾を説明できるだろうか。技術は動く。意思決定が動かない。止めているのは責任の構造だ。
+tags: ["PoC", "PM", "意思決定", "投資判断", "本番化"]
+readingTime: 5 min read
 -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PoCが本番で壊れるPMは、だいたい同じ「勘違い」をしている</title>
+  <title>PoCは成功した。それでも本番化しない理由は、技術ではない。</title>
   
   <style>
     /* リセット・基本スタイル */
@@ -22,12 +22,11 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif;
       line-height: 1.8;
       color: #e0e0e0;
       background: #0a0a0a;
       min-height: 100vh;
-      overflow-x: hidden;
     }
     
     article {
@@ -38,7 +37,65 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       z-index: 1;
     }
     
-    /* パーティクル背景 */
+    /* グラデーションテキスト（タイトル） */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      line-height: 1.3;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+      border-left: 4px solid #7c3aed;
+      padding-left: 1rem;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #a78bfa;
+      font-style: normal;
+      font-weight: 500;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* パーティクルキャンバス */
     #particle-canvas {
       position: fixed;
       top: 0;
@@ -49,164 +106,15 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       pointer-events: none;
     }
     
-    /* タイトル - グラデーションエフェクト */
-    h1 {
-      font-size: clamp(1.875rem, 5vw, 2.5rem);
-      margin-bottom: 1.5rem;
-      line-height: 1.3;
-      background: linear-gradient(135deg, #ef4444, #7c3aed, #3b82f6);
-      background-size: 300% 300%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 8s ease infinite;
-    }
-    
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    
-    h2 {
-      font-size: 1.875rem;
-      margin-top: 3.5rem;
-      margin-bottom: 1.5rem;
-      color: #f1f5f9;
-      padding-left: 1rem;
-      border-left: 4px solid #7c3aed;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out forwards;
-      transition: all 0.3s ease;
-    }
-    
-    h2:hover {
-      border-left-color: #a78bfa;
-      transform: translateX(4px);
-      text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
-    }
-    
-    h3 {
-      font-size: 1.5rem;
-      margin-top: 2.5rem;
-      margin-bottom: 1rem;
-      color: #e2e8f0;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out 0.2s forwards;
-    }
-    
-    p {
-      margin-bottom: 1.5rem;
-      color: #cbd5e1;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out 0.3s forwards;
-    }
-    
-    strong {
-      color: #e2e8f0;
-      font-weight: 600;
-    }
-    
-    em {
-      color: #a78bfa;
-      font-style: normal;
-      font-weight: 500;
-    }
-    
-    code {
-      background: rgba(124, 58, 237, 0.15);
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      color: #a78bfa;
-      font-size: 0.9em;
-    }
-    
-    hr {
-      border: none;
-      border-top: 1px solid rgba(148, 163, 184, 0.2);
-      margin: 3rem 0;
-    }
-    
-    /* リスト */
-    ul {
-      margin: 1.5rem 0;
-      padding-left: 1.5rem;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out 0.4s forwards;
-    }
-    
-    ul li {
-      margin-bottom: 0.75rem;
-      color: #cbd5e1;
-      position: relative;
-      padding-left: 0.5rem;
-    }
-    
-    ul li::marker {
-      color: #7c3aed;
-    }
-    
-    /* 引用 */
-    blockquote {
-      background: rgba(15, 23, 42, 0.6);
-      border-left: 4px solid #ef4444;
-      padding: 1.5rem;
-      margin: 2rem 0;
-      border-radius: 0 8px 8px 0;
-      font-size: 1.125rem;
-      color: #f1f5f9;
-      opacity: 0;
-      animation: slideInLeft 0.8s ease-out 0.4s forwards;
-      transition: all 0.4s ease;
-    }
-    
-    blockquote:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4),
-                  0 0 20px rgba(239, 68, 68, 0.3);
-      background: rgba(15, 23, 42, 0.8);
-      border-left-color: #fca5a5;
-    }
-    
-    /* スライドインボックス - 重要なポイント */
-    .slide-box {
-      background: rgba(15, 23, 42, 0.6);
-      border-left: 4px solid #7c3aed;
-      padding: 1.5rem;
-      margin: 2rem 0;
-      border-radius: 0 8px 8px 0;
-      opacity: 0;
-      animation: slideInLeft 0.8s ease-out 0.4s forwards;
-      transition: all 0.4s ease;
-      cursor: default;
-    }
-    
-    .slide-box:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4),
-                  0 0 20px rgba(124, 58, 237, 0.3);
-      background: rgba(15, 23, 42, 0.8);
-      border-left-color: #a78bfa;
-    }
-    
-    .slide-box strong {
-      display: block;
-      font-size: 1.125rem;
-      margin-bottom: 0.75rem;
-      color: #a78bfa;
-    }
-    
-    /* スキャンボックス - 技術的な内容 */
+    /* スキャンボックス（重要な概念の強調） */
     .scan-box {
       position: relative;
       overflow: hidden;
       background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(124, 58, 237, 0.3);
       padding: 1.5rem;
       border-radius: 8px;
       margin: 2rem 0;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out 0.5s forwards;
     }
     
     .scan-box::after {
@@ -216,7 +124,7 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+      background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.2), transparent);
       animation: scan 4s linear infinite;
     }
     
@@ -225,106 +133,28 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       100% { top: 100%; }
     }
     
-    .scan-box h4 {
-      color: #60a5fa;
-      margin-bottom: 1rem;
-      font-size: 1.125rem;
+    .scan-box p {
+      margin-bottom: 0.75rem;
     }
     
-    .scan-box ul {
-      opacity: 1;
-      animation: none;
+    .scan-box p:last-child {
+      margin-bottom: 0;
     }
     
-    /* 警告ボックス */
-    .warning-box {
-      background: rgba(251, 191, 36, 0.1);
-      border: 2px solid rgba(251, 191, 36, 0.3);
-      border-radius: 8px;
+    /* スライドインボックス（4つの設計など） */
+    .slide-box {
+      background: rgba(124, 58, 237, 0.05);
+      border-left: 3px solid #7c3aed;
       padding: 1.5rem;
       margin: 2rem 0;
-      opacity: 0;
-      animation: fadeInUp 0.8s ease-out 0.6s forwards;
-    }
-    
-    .warning-box::before {
-      content: "⚠️ ";
-      font-size: 1.5rem;
-      margin-right: 0.5rem;
-    }
-    
-    /* ネオンリンク - Colabデモ用 */
-    .neon-link {
-      display: inline-block;
-      padding: 1rem 2rem;
-      border: 2px solid #3b82f6;
-      border-radius: 8px;
-      background: transparent;
-      color: #60a5fa;
-      text-decoration: none;
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-      transition: all 0.3s ease;
-      margin: 1rem 0;
-      font-weight: 600;
-    }
-    
-    .neon-link:hover {
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      box-shadow: 0 0 40px rgba(59, 130, 246, 0.7);
-      transform: translateY(-2px);
-    }
-    
-    /* フッターボックス */
-    .footer-box {
-      background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.15));
-      border: 1px solid rgba(124, 58, 237, 0.3);
-      border-radius: 12px;
-      padding: 2rem;
-      margin: 4rem 0 2rem 0;
-      text-align: center;
-      opacity: 0;
-      animation: fadeInUp 1s ease-out 0.7s forwards;
-    }
-    
-    .footer-box p {
-      margin-bottom: 1rem;
-      font-size: 1.125rem;
-      color: #e2e8f0;
-      opacity: 1;
-      animation: none;
-    }
-    
-    .footer-box ul {
-      list-style: none;
-      padding: 0;
-      margin: 1.5rem 0;
-      opacity: 1;
-      animation: none;
-    }
-    
-    .footer-box ul li {
-      margin-bottom: 0.5rem;
-      color: #cbd5e1;
-      padding-left: 0;
-    }
-    
-    /* フェードインアニメーション */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      border-radius: 4px;
+      animation: slideInLeft 0.8s ease-out;
     }
     
     @keyframes slideInLeft {
       from {
         opacity: 0;
-        transform: translateX(-50px);
+        transform: translateX(-100px);
       }
       to {
         opacity: 1;
@@ -332,31 +162,57 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       }
     }
     
-    /* レスポンシブ */
+    .slide-box h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: #a78bfa;
+    }
+    
+    .slide-box ol, .slide-box ul {
+      margin-left: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    .slide-box li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    /* 重要な数値や引用の強調 */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(59, 130, 246, 0.1));
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    .highlight-box p {
+      font-size: 1.1rem;
+      text-align: center;
+      color: #e2e8f0;
+    }
+    
+    /* モバイル対応 */
     @media (max-width: 768px) {
-      article {
-        padding: 3rem 1.5rem;
-      }
-      
       h1 {
-        font-size: 1.75rem;
+        font-size: 2rem;
       }
       
       h2 {
         font-size: 1.5rem;
       }
       
-      h3 {
-        font-size: 1.25rem;
+      article {
+        padding: 2rem 1rem;
       }
     }
     
-    /* アニメーション削減 */
+    /* アニメーション無効化 */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+      * {
+        animation: none !important;
+        transition: none !important;
       }
     }
   </style>
@@ -367,356 +223,167 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
 <canvas id="particle-canvas"></canvas>
 
 <article>
-  <h1>PoCが本番で壊れるPMは、だいたい同じ「勘違い」をしている</h1>
+  <h1>PoCは成功した。<br>それでも本番化しない理由は、技術ではない。</h1>
   
-  <p><strong>PoCが壊れた。しかも、本番でだけ。</strong></p>
+  <p><strong>PoCは動く。デモは通る。現場も「いけそうですね」と言う。</strong></p>
   
-  <p>仕様は合っていた。実装もレビュー済み。テストも通っている。それでも壊れた。</p>
+  <p>それでも本番化しない。</p>
   
-  <p>このとき、多くのPMはこう言う。</p>
-  
-  <blockquote>
-    「想定が足りなかった」
-  </blockquote>
-  
-  <p>それは間違いじゃない。ただし、<strong>一番大事なところを外している。</strong></p>
-  
-  <p>技術的には正しい判断をしている。エンジニアとのコミュニケーションも取れている。にもかかわらず、本番環境に移行した瞬間に問題が噴出する。</p>
-  
-  <p>この現象は偶然ではない。構造的な原因がある。そして、その原因は技術の領域ではなく、<em>PMの設計対象の認識</em>にある。</p>
+  <p>理由は単純だ。<br><strong>検証しているリスクを間違えている。</strong></p>
   
   <hr>
   
-  <h2>PoCが本番で壊れる原因は、技術ではなく「判断設計」にある</h2>
-  
-  <p>技術が分かるPMほど、「正しい実装」に安心してしまう。</p>
-  
-  <p>PoCの段階では、それで問題が起きない。なぜなら、判断する人が限られているからだ。</p>
-  
-  <ul>
-    <li>操作する人が限られている（開発チームとステークホルダーのみ）</li>
-    <li>同時に動く処理が少ない（シングルユーザー前提のテスト）</li>
-    <li>判断が暗黙でも成立する（「誰が何をする」が会話で共有されている）</li>
-  </ul>
-  
-  <p>この状態では、<strong>設計の穴が表に出ない。</strong></p>
-  
-  <p>PoCフェーズでは、システムを触る人数が限られている。開発メンバー数名と、レビューに入るステークホルダーが数名。せいぜい10人程度だ。この規模では、「誰がいつ何をするか」が暗黙的に共有される。</p>
-  
-  <p>例えば、在庫管理システムのPoCを考えてみよう。デモでは、PMが「今、商品Aの在庫を1つ減らします」と宣言してから操作する。エンジニアは「では、その間は他の操作を待ちます」と暗黙に理解する。この<em>暗黙の秩序</em>が、PoCを成立させている。</p>
-  
-  <div class="slide-box">
-    <strong>PoCが成立する3つの暗黙の前提</strong>
-    <p>① 操作する人が見える範囲にいる<br>
-    ② 同時操作が起きても口頭で調整できる<br>
-    ③ 例外時には「ちょっと待って」が通用する</p>
+  <div class="highlight-box">
+    <p>PoCの成功率は高い。<br>本番移行率は低い。<br>この矛盾を説明できるだろうか。</p>
   </div>
   
-  <p>技術が分かるPMは、実装の正しさを確認する。データベース設計が適切か、APIの仕様が明確か、エラーハンドリングが書かれているか。これらは全て重要だ。</p>
+  <h2>技術リスクと投資リスクの層ズレ</h2>
   
-  <p>しかし、ここには見えていないものがある。それは、<strong>判断が衝突したときの振る舞い</strong>だ。</p>
-  
-  <hr>
-  
-  <h2>本番で増えるのは、機能じゃない</h2>
-  
-  <p>本番で増えるのは<strong>判断</strong>だ。</p>
-  
-  <ul>
-    <li>利用者（数十人、数百人、数千人へ）</li>
-    <li>外部連携（他システムからの自動リクエスト）</li>
-    <li>バッチ処理（定期的に走る自動ジョブ）</li>
-    <li>運用オペレーション（障害対応、データ修正、手動調整）</li>
-  </ul>
-  
-  <p>判断が<strong>同時に走り始めた瞬間</strong>、それまで隠れていた空白が露出する。そして壊れる。</p>
-  
-  <p>PoCでは1人だった操作者が、本番では100人になる。バッチが1日1回だったのが、1時間に1回になる。外部システムとの連携が1つだったのが、5つになる。</p>
-  
-  <p>この変化は、単なる「スケールの問題」ではない。<em>判断主体の数が増える</em>ことで、システムの振る舞いが根本的に変わる。</p>
+  <p>多くのPoCは「技術成立」を証明している。</p>
   
   <div class="scan-box">
-    <h4>本番環境で増える判断主体の例</h4>
-    <ul>
-      <li><strong>利用者の判断</strong>：在庫を確認する、注文を確定する、キャンセルする</li>
-      <li><strong>外部システムの判断</strong>：在庫データを定期同期する、価格を更新する</li>
-      <li><strong>バッチの判断</strong>：期限切れデータを削除する、集計を実行する</li>
-      <li><strong>運用者の判断</strong>：緊急メンテナンスを実施する、データを修正する</li>
-    </ul>
+    <p>・アルゴリズムは動く</p>
+    <p>・データは取れる</p>
+    <p>・精度は出る</p>
   </div>
   
-  <p>先ほどの在庫管理システムで考えてみよう。本番では以下のような状況が同時に発生する。</p>
+  <p>だが経営が知りたいのはそれではない。</p>
   
-  <p>ユーザーAが商品の在庫数を確認している。同時に、ユーザーBが同じ商品を注文しようとしている。そのタイミングで、外部の在庫管理システムから在庫数の更新リクエストが届く。さらに、定期バッチが「24時間以上確保されている予約在庫」を開放しようとする。</p>
+  <p>経営が知りたいのは、<br><strong>それに投資して、回収できるのか？</strong></p>
   
-  <p>これらの判断は、<strong>誰が優先されるべきか</strong>が定義されていない。</p>
-  
-  <hr>
-  
-  <h2>壊れているのは、技術じゃない</h2>
-  
-  <p>実装でもない。ライブラリでもない。</p>
-  
-  <p>壊れているのは、</p>
-  
-  <div class="slide-box">
-    <strong>誰が、いつ、何を決めていいのか</strong>
-    <p>が、最後まで定義されていない構造だ。</p>
-  </div>
-  
-  <p>ここまで読んで「なるほど」と思ったなら、<strong>あなたのPoCも、まだ安全とは言えない。</strong></p>
-  
-  <p>なぜそうなるのか。それを構造で理解するには、もう一段深く掘り下げる必要がある。</p>
-  
-  <hr>
-  
-  <h2>技術が分かるPMほど見落とす「判断の境界」とは何か</h2>
-  
-  <p>PMの仕事は何か。多くの場合、こう整理される。</p>
-  
-  <ul>
-    <li>要件定義（何を作るか）</li>
-    <li>仕様策定（どう動くか）</li>
-    <li>進捗管理（いつ完成するか）</li>
-  </ul>
-  
-  <p>正しい。だが、それだけでは足りない。</p>
-  
-  <p>PoCが本番で壊れる現場では、<strong>もう一つの設計対象</strong>が抜け落ちている。それが「判断の境界」だ。</p>
-  
-  <h3>判断の境界とは何か</h3>
-  
-  <p>判断の境界とは、次の問いに答えることだ。</p>
-  
-  <ul>
-    <li><strong>誰が</strong>判断するのか（判断主体の明確化）</li>
-    <li><strong>いつ</strong>判断してよいのか（判断タイミングの制御）</li>
-    <li>その判断は、他と<strong>独立</strong>しているのか（判断の排他性）</li>
-  </ul>
-  
-  <p>これが曖昧だと、<strong>正しい判断同士が衝突する。</strong></p>
-  
-  <p>在庫管理システムを再び例にとろう。在庫数が「5」の商品があるとする。</p>
-  
-  <p>ユーザーAが在庫を確認した。「5個ある」と表示された。購入を決めて、カートに入れた。</p>
-  
-  <p>同時に、ユーザーBも在庫を確認した。同じく「5個ある」と表示された。彼もカートに入れた。</p>
-  
-  <p>さらに同時に、定期バッチが「確保されているが未決済の在庫を開放する」処理を実行した。結果、在庫が「7」に増えた。</p>
-  
-  <p>この状況で、システムは何を「正しい在庫数」として扱うべきか？</p>
-  
-  <ul>
-    <li>ユーザーAが見た「5」？</li>
-    <li>ユーザーBが見た「5」？</li>
-    <li>バッチ実行後の「7」？</li>
-    <li>誰かが購入確定した後の「3」または「2」？</li>
-  </ul>
-  
-  <p><strong>判断の境界が設計されていない</strong>と、この問いに答えられない。</p>
-  
-  <div class="warning-box">
-    <p>技術的には全て「正しい」処理だ。しかし、判断の順序が定義されていないため、システムとしての整合性が壊れる。</p>
-  </div>
-  
-  <h3>正しさでは、判断は守れない</h3>
-  
-  <p>よくある誤解がある。</p>
-  
-  <blockquote>
-    正しい判断をすれば、問題は起きない
-  </blockquote>
-  
-  <p>違う。</p>
-  
-  <p>判断は、<strong>配置を間違えた瞬間に壊れる。</strong></p>
-  
-  <p>在庫確認、在庫引き当て、在庫開放。これらは全て「正しい」処理だ。ロジックにバグはない。データベースアクセスも適切だ。</p>
-  
-  <p>しかし、これらが<em>同時に実行されたとき</em>、何が起きるかは定義されていない。</p>
-  
-  <p>Redisロックのデモが示しているのは、排他制御の話ではない。<strong>判断を直列化しないと、正しさは簡単に破壊される</strong>という事実だ。</p>
-  
-  <div class="slide-box">
-    <strong>判断の直列化とは</strong>
-    <p>複数の判断主体が同じリソースにアクセスしようとしたとき、それらを「順番待ち」させる仕組み。技術的には排他制御、ロック、トランザクションなどで実現されるが、本質は<em>「誰が先に判断するか」を明確にすること</em>だ。</p>
-  </div>
-  
-  <h3>PMの仕事を一段引き上げる</h3>
-  
-  <p>PMの仕事は、正しい判断をすることではない。</p>
-  
-  <p><strong>判断が衝突しない配置を作ること</strong>だ。</p>
-  
-  <p>ここが未定義なまま進むと、</p>
-  
-  <ul>
-    <li>技術は正しい</li>
-    <li>人も真面目</li>
-    <li>プロセスも回っている</li>
-  </ul>
-  
-  <p>それでも、壊れる。</p>
-  
-  <p>判断が競合した瞬間に何が起きるかは、一度デモで見ると戻れない。目の前で在庫数がおかしくなる様子を見れば、「ロックを入れればいい」という表面的な対処では済まないことが理解できる。</p>
-  
-  <hr>
-  
-  <h2>PoCを本番に進める前に、PMが確認すべき判断チェックリスト</h2>
-  
-  <p>PoCを本番に進める前、次の問いに答えてみてほしい。</p>
+  <p>つまり、</p>
   
   <div class="scan-box">
-    <h4>判断チェックリスト</h4>
-    <ul>
-      <li><strong>判断主体は1つに定義されているか？</strong><br>
-      → 同じリソースに対して、同時に判断できる主体は1つだけか？</li>
-      
-      <li><strong>同時に判断が走る前提で設計しているか？</strong><br>
-      → 「まさか同時には起きないだろう」という希望的観測に依存していないか?</li>
-      
-      <li><strong>例外時、止められる人は決まっているか？</strong><br>
-      → システムが異常状態になったとき、誰が判断を止める権限を持つか?</li>
-      
-      <li><strong>判断を後から戻せる権限はあるか？</strong><br>
-      → 誤った判断が実行された場合、それをロールバックできる仕組みはあるか?</li>
-      
-      <li><strong>判断結果は、他の判断と独立しているか？</strong><br>
-      → ある判断の結果が、他の判断に暗黙的に影響を与えていないか?</li>
-    </ul>
+    <p><strong>PoCは技術リスクを潰している。</strong><br>しかし本番化に必要なのは投資リスクの解消だ。</p>
   </div>
   
-  <p>ここで手が止まった項目、<strong>今の案件で説明できますか？</strong></p>
+  <p>この層ズレが、止まりの正体だ。</p>
   
-  <p>できないなら、それは「あとで考える話」ではない。それは<em>今、設計すべき話</em>だ。</p>
+  <p>技術は動く。<em>意思決定が動かない。</em></p>
   
-  <h3>なぜPoCでは問題にならないのか</h3>
+  <h2>決裁会議で止まる理由</h2>
   
-  <p>PoCでは、</p>
+  <p>決裁会議で止まる案件には共通点がある。</p>
   
-  <ul>
-    <li>判断主体が少ない（開発チームとレビュアーのみ）</li>
-    <li>判断が暗黙で回る（「今、在庫を減らします」と宣言してから操作）</li>
-    <li>同時実行が起きにくい（シングルユーザー前提のデモ）</li>
-  </ul>
+  <div class="scan-box">
+    <p>・ROIの前提が曖昧</p>
+    <p>・失敗時の損失上限が未定義</p>
+    <p>・保守予算が仮置き</p>
+    <p>・運用責任者が名指しされていない</p>
+  </div>
   
-  <p>だから壊れない。</p>
+  <p>「この前提でGoと言えますか？」</p>
   
-  <p>本番で壊れる理由は単純だ。<strong>判断が増えただけ。</strong></p>
+  <p>と問われた瞬間、<em>空気が止まる。</em></p>
   
-  <p>技術の話ではない。設計の話だ。具体的には、<em>判断の境界を設計する</em>という、PMの仕事が抜けていたという話だ。</p>
+  <p>つまり、</p>
+  
+  <p><strong>成功の定義が弱い。</strong><br><strong>失敗の定義は存在しない。</strong></p>
+  
+  <p>これでは「Go」は出ない。</p>
+  
+  <p><em>勇気の問題ではない。設計の問題だ。</em></p>
+  
+  <h2>PoCは実験ではない</h2>
+  
+  <p>PoCは本来、</p>
+  
+  <div class="highlight-box">
+    <p><strong>投資判断のための情報生成プロセス</strong><br>であるべきだ。</p>
+  </div>
+  
+  <p>ところが実態はこうなる。</p>
+  
+  <p><strong>PoC開始時に、本番移行条件が存在していない。</strong></p>
+  
+  <p>だから終わった後に議論が始まる。</p>
+  
+  <div class="scan-box">
+    <p>「もう少し検証を」</p>
+    <p>「精度を上げてから」</p>
+    <p>「追加データを取ってから」</p>
+  </div>
+  
+  <p>誰も反対していない。<br>誰もGoと言わない。</p>
+  
+  <p>これは技術不足ではない。<br><strong>判定条件の未設計だ。</strong></p>
+  
+  <h2>本番化に必要な4つの設計</h2>
+  
+  <p>これを定義せずにPoCを始めるのは、<br><strong>判定基準のない受験をさせるのと同じだ。</strong></p>
+  
+  <p>本番化を偶然にしないために必要なのは、次の4つ。</p>
   
   <div class="slide-box">
-    <strong>判断の境界を設計するとは</strong>
-    <p>誰が、いつ、何を判断してよいのかを明確に定義し、判断同士が衝突しない配置を作ること。これには、排他制御、トランザクション、ロック、キュー、状態遷移の設計などが含まれる。</p>
+    <ol>
+      <li><strong>Go/No-Goの数値基準</strong></li>
+      <li><strong>ROI前提の合意</strong></li>
+      <li><strong>責任の帰属</strong></li>
+      <li><strong>失敗時の出口設計</strong></li>
+    </ol>
   </div>
   
-  <p>判断競合がどう壊すかは、具体例で一度見た方が早い。実際にRedisロックのデモを見れば、「同時に2人が在庫を引き当てようとしたとき、何が起きるか」が目に見える。</p>
+  <p>これがPoC開始時に存在していれば、<br>終わった瞬間に判断できる。</p>
   
-  <div class="slide-box" style="margin-top: 3rem; text-align: center;">
-    <strong style="display: block; margin-bottom: 1rem; font-size: 1.25rem;">判断競合を可視化したデモ</strong>
-    <p style="margin-bottom: 1.5rem; opacity: 1; animation: none;">Google Colab上で、判断の衝突が何を壊すのかを実際に確認できます。<br>
-    ※動かすこと自体が目的ではなく、「何が起きるか」を見るための教材です</p>
-    <p style="opacity: 1; animation: none;">
-      <a href="https://colab.research.google.com/drive/1ZV1Fxeo03FyPoojmzXb6UWEvTc_xe1kH?hl=ja" class="neon-link" target="_blank" rel="noopener noreferrer">
-        Google Colab デモを開く →
-      </a>
-    </p>
+  <p>存在していなければ、</p>
+  
+  <p><em>半年後も同じ会議室で、同じ議論をしている。</em></p>
+  
+  <h2>PoCかMVPかは本質ではない</h2>
+  
+  <p>PoCかMVPか、という議論は枝葉だ。</p>
+  
+  <p>重要なのは、<br><strong>どのリスクを潰しているか。</strong></p>
+  
+  <div class="scan-box">
+    <p>技術か。市場か。運用か。投資か。</p>
   </div>
   
-  <hr>
+  <p>判断設計がなければ、どちらも止まる。</p>
   
-  <h2>なぜRedisロックを入れても、PoCの問題は再発するのか</h2>
+  <h2>責任構造が止めている</h2>
   
-  <p>問題が起きたとき、最初に出る対策。</p>
+  <p>本番化とは、</p>
   
-  <blockquote>
-    「ロックを入れよう」
-  </blockquote>
-  
-  <p>間違ってはいない。だが、それで<strong>再発が止まらない現場</strong>は多い。</p>
-  
-  <h3>ロックが解決しているもの</h3>
-  
-  <p>ロックが解決するのは、</p>
-  
-  <ul>
-    <li>処理の競合（同時にデータを書き換える）</li>
-    <li>データ破壊（不整合な状態になる）</li>
-  </ul>
-  
-  <p>だ。これは重要だ。しかし、本番で壊しているのは<strong>判断の同時実行</strong>だ。</p>
-  
-  <p>ロックを入れることで、「在庫テーブルへの同時書き込み」は防げる。しかし、それだけでは足りない。</p>
-  
-  <p>例えば、在庫確認の画面を開いたとき、ユーザーは「在庫が5個ある」と表示される。その時点では、ロックは取得されていない。ユーザーがカートに入れるボタンを押すまで、数秒、あるいは数分の時間がある。</p>
-  
-  <p>その間に、他のユーザーが在庫を購入するかもしれない。バッチが在庫を調整するかもしれない。外部システムが在庫を更新するかもしれない。</p>
-  
-  <p>ユーザーが「カートに入れる」ボタンを押したとき、<strong>システムは何を判断すべきか？</strong></p>
-  
-  <ul>
-    <li>画面に表示されていた「5個」を信じるのか？</li>
-    <li>その時点の最新の在庫数を再確認するのか？</li>
-    <li>在庫が既に0になっていたら、どうするのか？</li>
-  </ul>
-  
-  <p>ロックは「書き込み処理の競合」を防ぐが、<em>「判断タイミングのズレ」</em>は防がない。</p>
-  
-  <h3>技術対処が効かなくなる瞬間</h3>
-  
-  <p>さらに複雑になるのは、</p>
-  
-  <ul>
-    <li>判断主体が増える（ユーザー、バッチ、外部システム、運用者）</li>
-    <li>判断経路が増える（Web画面、API、管理画面、バッチ処理）</li>
-    <li>人が介在する（運用者の手動調整、障害対応）</li>
-  </ul>
-  
-  <p>この瞬間、ロックは<strong>部分最適</strong>になる。</p>
-  
-  <p>在庫テーブルにはロックが入っている。しかし、注文テーブル、予約テーブル、配送テーブルには入っていない。それぞれは独立して動く。</p>
-  
-  <p>運用者が管理画面から「この注文をキャンセルする」操作をする。在庫が戻る。しかし、同時に外部システムが「在庫同期」を実行していたら？ バッチが「予約期限切れの在庫開放」を実行していたら？</p>
-  
-  <div class="warning-box">
-    <p>ロックを入れても、判断の境界が設計されていなければ、問題は別の場所で発生する。</p>
+  <div class="highlight-box">
+    <p><strong>予算の質が変わる瞬間だ。</strong><br>実験費から、責任費へ。</p>
   </div>
   
-  <h3>本質は「判断の直列化」</h3>
+  <p>この瞬間に</p>
   
-  <p>Redisは手段。本質は、</p>
-  
-  <div class="slide-box">
-    <strong>誰の判断を、いつ、1列に並ばせるか。</strong>
+  <div class="scan-box">
+    <p>・誰が運用を背負うのか</p>
+    <p>・誰が失敗を引き受けるのか</p>
   </div>
   
-  <p>これを設計していない限り、PoCは何度でも壊れる。</p>
+  <p>が曖昧だと、止まる。</p>
   
-  <p>ロックを入れるのは、判断の直列化を実現するための<em>一つの手段</em>だ。しかし、どの判断をどの順序で処理すべきかが定義されていなければ、ロックを入れる場所も、ロックの粒度も、ロックの取得タイミングも決められない。</p>
+  <p>技術は関係ない。</p>
   
-  <p>判断の境界を設計することは、次のような問いに答えることだ。</p>
+  <p><strong>止めているのは責任の構造だ。</strong></p>
   
-  <ul>
-    <li>在庫確認と在庫引き当ては、どちらが優先されるか？</li>
-    <li>ユーザーの注文とバッチの在庫調整が衝突したら、どちらを先に処理するか？</li>
-    <li>外部システムからの在庫更新と、運用者の手動修正が同時に発生したら、どう扱うか？</li>
-  </ul>
+  <h2>本番化は勇気ではない</h2>
   
-  <p>これらは技術的な問いではなく、<strong>ビジネスルールの問い</strong>だ。そして、これを定義するのはPMの仕事だ。</p>
+  <p>成功した技術を本番に変えるのは、<br>勇気ではない。</p>
   
-  <hr>
+  <p><strong>判定設計だ。</strong></p>
   
-  <div class="footer-box">
-    <p>この違和感を──</p>
-    
-    <ul>
-      <li>自分で整理する</li>
-      <li>壁打ちで確認する</li>
-      <li>設計ごと一緒に見直す</li>
-    </ul>
-    
-    <p>どれを選ぶかで、次に壊れるかどうかは変わります。</p>
+  <div class="highlight-box">
+    <p>本番化は結果。<br>設計されていないものは起きない。</p>
+  </div>
+  
+  <h2>最後に</h2>
+  
+  <p>PoCが止まるのは失敗ではない。<br><strong>設計不足だ。</strong></p>
+  
+  <p>もし本番移行率を上げたいなら、<br>技術を磨く前に、</p>
+  
+  <p><em>投資判断の設計を磨くべきだ。</em></p>
+  
+  <p>そこに手を入れない限り、<br>成功率と移行率の矛盾は消えない。</p>
+  
+  <div class="highlight-box">
+    <p><strong>本番化できない組織は、<br>技術が足りないのではない。<br>覚悟の設計が足りない。</strong></p>
   </div>
 
 </article>
@@ -730,7 +397,7 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
   let width = window.innerWidth;
   let height = window.innerHeight;
   let particles = [];
-  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+  const PARTICLE_COUNT = Math.min(60, Math.floor((width * height) / 15000)); // 控えめに
 
   function resize() {
     width = window.innerWidth;
@@ -745,9 +412,9 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        radius: Math.random() * 2 + 1,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 1.5 + 0.5,
       });
     }
   }
@@ -755,7 +422,7 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
   function draw() {
     ctx.clearRect(0, 0, width, height);
     
-    // パーティクル描画
+    // パーティクル描画（控えめな色）
     particles.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
@@ -763,21 +430,21 @@ tags: ["PM思考", "PoCマネジメント", "判断設計", "技術PM", "シス�
       if (p.x < 0 || p.x > width) p.vx *= -1;
       if (p.y < 0 || p.y > height) p.vy *= -1;
       
-      ctx.fillStyle = 'rgba(124, 58, 237, 0.5)';
+      ctx.fillStyle = 'rgba(124, 58, 237, 0.4)';
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fill();
     });
     
-    // 距離が近いパーティクルを線で結ぶ
+    // 距離が近いパーティクルを線で結ぶ（控えめ）
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance < 120) {
-          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 120)})`;
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 100)})`;
           ctx.lineWidth = 0.5;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
