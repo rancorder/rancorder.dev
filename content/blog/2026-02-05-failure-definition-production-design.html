@@ -1,0 +1,502 @@
+<!--
+title: 失敗を定義しない組織は、本番化できない。
+date: 2026-02-05
+category: PM思考
+excerpt: 成功の条件は語られる。だが失敗の条件は誰も語らない。本番化とは覚悟の可視化である。覚悟とは精神論ではない。損失の上限を明示し、撤退ラインを決め、責任を割り振ることだ。
+tags: ["PoC", "PM", "失敗定義", "投資判断", "本番化"]
+readingTime: 5 min read
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>失敗を定義しない組織は、本番化できない。</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* グラデーションテキスト（タイトル） */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      background: linear-gradient(135deg, #ef4444, #7c3aed, #3b82f6);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s ease infinite;
+      line-height: 1.3;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.875rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+      border-left: 4px solid #ef4444;
+      padding-left: 1rem;
+    }
+    
+    h3 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+    
+    strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+    
+    em {
+      color: #a78bfa;
+      font-style: normal;
+      font-weight: 500;
+    }
+    
+    hr {
+      border: none;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* スキャンボックス（重要な概念の強調） */
+    .scan-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    
+    .scan-box::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(239, 68, 68, 0.2), transparent);
+      animation: scan 4s linear infinite;
+    }
+    
+    @keyframes scan {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    
+    .scan-box p {
+      margin-bottom: 0.75rem;
+    }
+    
+    .scan-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* スライドインボックス */
+    .slide-box {
+      background: rgba(239, 68, 68, 0.05);
+      border-left: 3px solid #ef4444;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 4px;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .slide-box h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: #fca5a5;
+    }
+    
+    .slide-box ul {
+      margin-left: 1.5rem;
+      color: #cbd5e1;
+    }
+    
+    .slide-box li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+    
+    /* 重要な数値や引用の強調 */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(124, 58, 237, 0.1));
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .highlight-box p {
+      font-size: 1.1rem;
+      text-align: center;
+      color: #e2e8f0;
+    }
+    
+    /* 決裁会議の描写 */
+    .scene-box {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 2rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border-left: 4px solid rgba(239, 68, 68, 0.5);
+      font-style: italic;
+      color: #94a3b8;
+    }
+    
+    .scene-box p {
+      color: #94a3b8;
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      article {
+        padding: 2rem 1rem;
+      }
+    }
+    
+    /* アニメーション無効化 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクル背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<article>
+  <h1>失敗を定義しない組織は、本番化できない。</h1>
+  
+  <p><strong>PoCは成功した。</strong></p>
+  
+  <p>精度は出た。<br>データも揃った。<br>現場の反応も悪くない。</p>
+  
+  <p>それでも止まる。</p>
+  
+  <p>なぜか。</p>
+  
+  <hr>
+  
+  <p>成功の条件は語られる。<br>だが――</p>
+  
+  <p><strong>失敗の条件は誰も語らない。</strong></p>
+  
+  <p>ここが本質だ。</p>
+  
+  <h2>本番化とは、覚悟の可視化である</h2>
+  
+  <p>本番化とは、単なる導入ではない。</p>
+  
+  <div class="highlight-box">
+    <p><strong>予算の性質が変わる瞬間だ。</strong><br>実験費から、責任費へ。</p>
+  </div>
+  
+  <p>この瞬間、組織は無意識に問いを持つ。</p>
+  
+  <p><em>もし失敗したら、どうなる？</em></p>
+  
+  <p>この問いに答えられない限り、<br>Goは出ない。</p>
+  
+  <p>勇気の問題ではない。<br><strong>構造の問題だ。</strong></p>
+  
+  <h2>成功定義だけでは足りない</h2>
+  
+  <p>多くのPoCはこう設計される。</p>
+  
+  <div class="scan-box">
+    <p>・精度◯％以上</p>
+    <p>・処理時間◯秒以内</p>
+    <p>・テスト環境で安定稼働</p>
+  </div>
+  
+  <p>だがそれは成功の定義にすぎない。</p>
+  
+  <p><strong>失敗の定義はどうなっているか。</strong></p>
+  
+  <div class="scan-box">
+    <p>・どの数値を下回ったら撤退か</p>
+    <p>・どこまでコスト超過したら停止か</p>
+    <p>・何ヶ月成果が出なければ見直すか</p>
+  </div>
+  
+  <p>ここが決まっていない。</p>
+  
+  <p>つまり、</p>
+  
+  <p><strong>下限が存在しない。</strong></p>
+  
+  <p>下限がない投資は、怖い。</p>
+  
+  <p>だから止まる。</p>
+  
+  <h2>決裁会議で起きていること</h2>
+  
+  <p>決裁会議で止まる案件には共通点がある。</p>
+  
+  <div class="scene-box">
+    <p>反対意見は出ない。<br>だが賛成も出ない。</p>
+    
+    <p>沈黙が続く。</p>
+    
+    <p>そして誰かが言う。</p>
+    
+    <p>「もう少し様子を見ましょう。」</p>
+  </div>
+  
+  <p>これは慎重さではない。</p>
+  
+  <p><strong>失敗条件が未設計な状態への防御反応だ。</strong></p>
+  
+  <p>人は不確実性よりも、<br><em>無制限のリスクを恐れる。</em></p>
+  
+  <h2>失敗定義とは、損失の上限を決めること</h2>
+  
+  <p>失敗を定義するとは、悲観することではない。</p>
+  
+  <p><strong>損失の最大値を決めることだ。</strong></p>
+  
+  <div class="slide-box">
+    <ul>
+      <li>最大損失はいくらか</li>
+      <li>撤退ラインはどこか</li>
+      <li>途中で止める権限は誰か</li>
+    </ul>
+  </div>
+  
+  <p>ここが明確なら、Goは出やすくなる。</p>
+  
+  <p>逆説だが、</p>
+  
+  <div class="highlight-box">
+    <p><strong>失敗を定義するほど、本番化しやすくなる。</strong></p>
+  </div>
+  
+  <p>なぜか。</p>
+  
+  <p>投資は成功期待値ではなく、<br><strong>損失上限で判断されるからだ。</strong></p>
+  
+  <h2>技術ではなく、責任の設計</h2>
+  
+  <p>本番化を止めているのは技術ではない。</p>
+  
+  <p><strong>責任の所在だ。</strong></p>
+  
+  <div class="scan-box">
+    <p>成功したときの称賛は曖昧でも進む。</p>
+    <p>だが失敗したときの責任が曖昧だと、止まる。</p>
+  </div>
+  
+  <p>誰が引き受けるのか。<br>どこまで引き受けるのか。</p>
+  
+  <p>ここを設計しないままPoCを進めるのは、</p>
+  
+  <p><em>出口のないトンネルに入るのと同じだ。</em></p>
+  
+  <h2>PoCは実験ではない</h2>
+  
+  <p>PoCは本来、</p>
+  
+  <div class="highlight-box">
+    <p><strong>投資判断のための情報生成プロセス</strong><br>であるべきだ。</p>
+  </div>
+  
+  <p>その中に含まれるべきものは、</p>
+  
+  <p>成功確率だけではない。</p>
+  
+  <p><strong>失敗時の損失設計だ。</strong></p>
+  
+  <p>ここが欠けると、</p>
+  
+  <p>PoCは「可能性の証明」で終わる。</p>
+  
+  <p>本番化にはならない。</p>
+  
+  <h2>本番化は勇気ではない</h2>
+  
+  <p>本番化できない組織は、臆病なのではない。</p>
+  
+  <p><strong>構造が未設計なのだ。</strong></p>
+  
+  <p>成功条件を語るだけでは足りない。</p>
+  
+  <p>失敗条件を語れない限り、<br>投資は決断にならない。</p>
+  
+  <h2>最後に</h2>
+  
+  <p>本番化とは、覚悟の設計だ。</p>
+  
+  <p>覚悟とは精神論ではない。</p>
+  
+  <div class="scan-box">
+    <p>損失の上限を明示し、</p>
+    <p>撤退ラインを決め、</p>
+    <p>責任を割り振ることだ。</p>
+  </div>
+  
+  <div class="highlight-box">
+    <p><strong>失敗を定義しない組織は、本番化できない。</strong></p>
+    <p>それは技術が足りないからではない。<br>決断の設計が足りないからだ。</p>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  const PARTICLE_COUNT = Math.min(60, Math.floor((width * height) / 15000));
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        radius: Math.random() * 1.5 + 0.5,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画（赤系の色に変更）
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          ctx.strokeStyle = `rgba(239, 68, 68, ${0.15 * (1 - distance / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[j].x);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  createParticles();
+  draw();
+  
+  // 再初期化用（クライアント遷移対応）
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      resize();
+      createParticles();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
