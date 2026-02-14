@@ -1,0 +1,610 @@
+<!--
+title: とある恐怖のPoC物語
+date: 2026-02-14
+category: PM思考
+excerpt: PoCは成功していた。少なくとも、そう扱われていた。外部APIからデータを取得し、内部DBに同期するだけの、小さな機能。誰も困っていなかった。しかし...
+readingTime: 8 min read
+tags: ["PoC", "プロジェクト管理", "意思決定", "技術判断"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>とある恐怖のPoC物語</title>
+  
+  <style>
+    /* リセット・基本スタイル */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif;
+      line-height: 1.8;
+      color: #e0e0e0;
+      background: #0a0a0a;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    /* パーティクルキャンバス */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    /* スキャンライン */
+    .scanline-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(15, 23, 42, 0.4) 1px,
+        transparent 1px
+      );
+      background-size: 100% 3px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 1;
+      animation: scanlineMove 8s linear infinite;
+    }
+    
+    @keyframes scanlineMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100px; }
+    }
+    
+    article {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* タイトル - グラデーション効果 */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #ef4444, #dc2626, #7c3aed);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+      line-height: 1.2;
+    }
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    h2 {
+      font-size: 1.75rem;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f1f5f9;
+      border-left: 4px solid #ef4444;
+      padding-left: 1rem;
+    }
+    
+    h3 {
+      font-size: 1.375rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #e2e8f0;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      color: #cbd5e1;
+      font-size: 1.0625rem;
+    }
+    
+    strong {
+      color: #fca5a5;
+      font-weight: 600;
+    }
+    
+    ul, ol {
+      margin: 1.5rem 0;
+      padding-left: 2rem;
+    }
+    
+    li {
+      margin: 0.75rem 0;
+      color: #cbd5e1;
+    }
+    
+    code {
+      background: rgba(239, 68, 68, 0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #fca5a5;
+      font-size: 0.9375rem;
+    }
+    
+    pre {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    pre code {
+      background: none;
+      padding: 0;
+      color: #94a3b8;
+    }
+    
+    hr {
+      border: none;
+      border-top: 2px solid rgba(239, 68, 68, 0.2);
+      margin: 3rem 0;
+    }
+    
+    /* フェードインアニメーション */
+    .fade-section {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+    
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* セクションごとに遅延 */
+    .fade-section:nth-of-type(1) { animation-delay: 0.1s; }
+    .fade-section:nth-of-type(2) { animation-delay: 0.2s; }
+    .fade-section:nth-of-type(3) { animation-delay: 0.3s; }
+    .fade-section:nth-of-type(4) { animation-delay: 0.4s; }
+    .fade-section:nth-of-type(5) { animation-delay: 0.5s; }
+    .fade-section:nth-of-type(6) { animation-delay: 0.6s; }
+    .fade-section:nth-of-type(7) { animation-delay: 0.7s; }
+    .fade-section:nth-of-type(8) { animation-delay: 0.8s; }
+    .fade-section:nth-of-type(9) { animation-delay: 0.9s; }
+    .fade-section:nth-of-type(10) { animation-delay: 1.0s; }
+    .fade-section:nth-of-type(11) { animation-delay: 1.1s; }
+    .fade-section:nth-of-type(12) { animation-delay: 1.2s; }
+    .fade-section:nth-of-type(13) { animation-delay: 1.3s; }
+    
+    /* コードブロックのハイライト */
+    .code-highlight {
+      background: rgba(15, 23, 42, 0.95);
+      border-left: 4px solid #ef4444;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      font-family: 'Courier New', monospace;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+    
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      article {
+        padding: 2rem 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* アクセシビリティ対応 */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- パーティクルキャンバス -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- スキャンライン -->
+<div class="scanline-overlay"></div>
+
+<article>
+  <h1>とある恐怖のPoC物語</h1>
+  
+  <div class="fade-section">
+    <p>PoCは成功していた。<br>
+    少なくとも、そう扱われていた。</p>
+    
+    <p>外部APIからデータを取得し、<br>
+    内部DBに同期するだけの、小さな機能。</p>
+    
+    <p>要件は単純だった。<br>
+    「外部のデータを自動で取り込みたい」</p>
+    
+    <p>エンジニアは実装した。<br>
+    PMはレビューした。<br>
+    ビジネス側はデモを見た。</p>
+    
+    <p>誰も困っていなかった。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>PoCの成果</h2>
+    
+    <p>同期処理の実行結果は、こう返ってくる。</p>
+    
+    <div class="code-highlight">{
+  "fetched": 1247,
+  "saved": 1186,
+  "skipped": 61,
+  "duration_ms": 3421
+}</div>
+    
+    <p>数字は揃っている。<br>
+    処理時間も悪くない。<br>
+    例外は出ていない。</p>
+    
+    <p>テストはすべて通っていた。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>エンジニアの視点</h2>
+    
+    <p>コードを見る限り、問題はない。</p>
+    
+    <ul>
+      <li>型は定義されている</li>
+      <li>try-catch もある</li>
+      <li>重複データは弾いている</li>
+      <li>不正な値も保存しない</li>
+      <li>ログも出ている</li>
+    </ul>
+    
+    <p>「skipped があるのは仕様通りですよね?」</p>
+    
+    <p>仕様書には<br>
+    「取得したデータを保存する」<br>
+    としか書かれていない。</p>
+    
+    <p>何件保存できなかったかは返している。<br>
+    理由まで返すとは書いていない。</p>
+    
+    <p>止める理由がない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>PMの視点</h2>
+    
+    <p>ダッシュボードには数字が増えている。</p>
+    
+    <p>1186 / 1247<br>
+    約95%。</p>
+    
+    <p>悪くない。<br>
+    むしろ良い。</p>
+    
+    <p>ユーザーからのクレームもない。<br>
+    スプリントは予定通り終わる。</p>
+    
+    <p>「完璧じゃなくても動くなら、次に進みたい」</p>
+    
+    <p>skipped の 61 件が<br>
+    重要かどうかは、正直わからない。</p>
+    
+    <p>でも、<br>
+    「データ同期機能」は動いている。</p>
+    
+    <p>止める理由が見当たらない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>ビジネス側の視点</h2>
+    
+    <p>営業資料に書ける。</p>
+    
+    <ul>
+      <li>データ連携</li>
+      <li>自動同期</li>
+      <li>管理画面で確認可能</li>
+    </ul>
+    
+    <p>デモもできる。<br>
+    競合も似たようなものだ。</p>
+    
+    <p>顧客から<br>
+    「同期されていない」とは<br>
+    まだ言われていない。</p>
+    
+    <p>skipped という単語の意味は<br>
+    よく分からない。</p>
+    
+    <p>でも、<br>
+    エンジニアもPMも問題ないと言っている。</p>
+    
+    <p>止める理由がない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>何も起きない時間</h2>
+    
+    <p>PoCは成功扱いされた。</p>
+    
+    <p>チケットは Done。<br>
+    次の機能に進んだ。</p>
+    
+    <p>ログは残っている。<br>
+    コードも残っている。<br>
+    判断も、その場では正しかった。</p>
+    
+    <p>何も壊れていない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>2週間後</h2>
+    
+    <p>ビジネス側から、静かに問い合わせが来る。</p>
+    
+    <p>「一部の商品データが表示されないって<br>
+    　顧客から言われてるんですが」</p>
+    
+    <p>エンジニアがログを見る。</p>
+    
+    <div class="code-highlight">WARN: Skipped item id=234 (duplicate)
+WARN: Skipped item id=456 (invalid_format)
+...</div>
+    
+    <p>61件のうち、<br>
+    58件がバリデーションエラーだった。</p>
+    
+    <p>その中に、<br>
+    顧客が最も見たかった<br>
+    高額商品が含まれていた。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>会議</h2>
+    
+    <p><strong>PM</strong><br>
+    「仕様通りに実装されていますよね?」</p>
+    
+    <p><strong>エンジニア</strong><br>
+    「はい。skipped 件数も返してます」</p>
+    
+    <p><strong>ビジネス</strong><br>
+    「でも、どれが skip されたか<br>
+    　分からないですよね?」</p>
+    
+    <p><strong>PM</strong><br>
+    「ログには出てます」</p>
+    
+    <p><strong>ビジネス</strong><br>
+    「毎回ログを見るんですか?」</p>
+    
+    <p><strong>エンジニア</strong><br>
+    「内訳を返すようにしますか?」</p>
+    
+    <p><strong>PM</strong><br>
+    「工数は?」</p>
+    
+    <p><strong>エンジニア</strong><br>
+    「半日くらいです」</p>
+    
+    <p><strong>PM</strong><br>
+    「……来週で」</p>
+    
+    <p>誰も怒っていない。<br>
+    誰も間違っていない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>1ヶ月後</h2>
+    
+    <p>skipped の内訳は表示されるようになった。</p>
+    
+    <p>その頃、<br>
+    別の事実が静かに判明する。</p>
+    
+    <p><code>fetched: 1247</code><br>
+    これは<br>
+    「APIから取得した件数」。</p>
+    
+    <p>API側には、<br>
+    実は 1893 件のデータがあった。</p>
+    
+    <p>重要度の低い 646 件は<br>
+    最初から取得されていなかった。</p>
+    
+    <p>誰もそれに気づいていなかった。</p>
+    
+    <p>fetched という名前が、<br>
+    「全部取った」ように見せていた。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <h2>残ったもの</h2>
+    
+    <p>ログは正しい。<br>
+    コードも正しい。<br>
+    テストも正しい。</p>
+    
+    <p>Slackのやりとりも残っている。<br>
+    チケットもクローズされている。</p>
+    
+    <p>でも、</p>
+    
+    <ul>
+      <li>なぜGOを出したのか</li>
+      <li>何を成功と呼んだのか</li>
+      <li>どこで判断すべきだったのか</li>
+    </ul>
+    
+    <p>それだけが、<br>
+    どこにも書かれていない。</p>
+  </div>
+  
+  <hr>
+  
+  <div class="fade-section">
+    <p>PoCは失敗していない。<br>
+    炎上もしていない。</p>
+    
+    <p>ただ、<br>
+    「そのまま本番になってしまった」。</p>
+    
+    <p>この話が怖いのは、<br>
+    誰かの失敗談じゃないからだ。</p>
+    
+    <p>今この瞬間も、<br>
+    どこかで<br>
+    同じ数字が<br>
+    同じ安心感を生んでいる。</p>
+    
+    <p>あなたの現場でも。</p>
+    
+    <p>そしてたぶん、<br>
+    それは<br>
+    まだ成功している。</p>
+  </div>
+
+</article>
+
+<script>
+(function() {
+  'use strict';
+  
+  // パーティクルシステム
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  let particles = [];
+  const PARTICLE_COUNT = Math.min(80, Math.floor((width * height) / 15000));
+  
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.5 + 0.3,
+      });
+    }
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    
+    // パーティクル描画（赤系で不穏な雰囲気）
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+      
+      ctx.fillStyle = `rgba(239, 68, 68, ${p.opacity})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // 距離が近いパーティクルを線で結ぶ
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) {
+          const opacity = 0.15 * (1 - distance / 100);
+          ctx.strokeStyle = `rgba(220, 38, 38, ${opacity})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  function init() {
+    resize();
+    createParticles();
+    draw();
+  }
+  
+  window.addEventListener('resize', resize);
+  init();
+  
+  // クライアント遷移対応の再初期化関数
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing PoC Horror Story effects...');
+      init();
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
