@@ -855,16 +855,25 @@ function showRejection() {
   document.getElementById('rejection').classList.add('active');
 }
 
-// モーダル外クリックで閉じる
-document.getElementById('selectionModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    closeModal();
+// DOM読み込み完了後に実行
+document.addEventListener('DOMContentLoaded', function() {
+  // モーダル外クリックで閉じる
+  const modal = document.getElementById('selectionModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
   }
-});
 
-// スムーススクロール
-(function() {
+  // スムーススクロール
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    // onclick属性を持つ要素（モーダルボタン）は除外
+    if (anchor.hasAttribute('onclick')) {
+      return;
+    }
+    
     anchor.addEventListener('click', function(e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
@@ -883,7 +892,7 @@ document.getElementById('selectionModal').addEventListener('click', function(e) 
       console.log('Reinitializing LP effects...');
     };
   }
-})();
+});
 </script>
 
 </body>
