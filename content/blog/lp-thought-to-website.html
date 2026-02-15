@@ -68,17 +68,6 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     }
     
-    section.fade-on-scroll {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-    }
-    
-    section.fade-on-scroll.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    
     .wrap {
       max-width: 900px;
       margin: 0 auto;
@@ -133,17 +122,6 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       border-left: 4px solid var(--primary);
       border-radius: 8px;
       margin: 2rem 0;
-    }
-    
-    .box.fade-on-scroll {
-      opacity: 0;
-      transform: translateX(-50px);
-      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-    }
-    
-    .box.fade-on-scroll.visible {
-      opacity: 1;
-      transform: translateX(0);
     }
     
     .box strong {
@@ -456,7 +434,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 定義 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>これは何か</h2>
 
@@ -473,7 +451,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       あなたがやることは一つだけ。
     </p>
 
-    <div class="box fade-on-scroll">
+    <div class="box">
       テーマを書く。<br>
       思想を書く。<br>
       以上。
@@ -482,7 +460,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 問題提起 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>なぜ、あなたは止まったのか</h2>
 
@@ -509,7 +487,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 解決策 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>解決策は単純で、残酷</h2>
 
@@ -517,7 +495,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       このシステムは、最初にこう決めています。
     </p>
 
-    <div class="box fade-on-scroll">
+    <div class="box">
       迷わせない。<br>
       選ばせない。<br>
       逃がさない。
@@ -536,7 +514,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 究極形 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>究極形：思想 → 実装</h2>
 
@@ -544,7 +522,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       このシステムには、<strong>Claude用の専用プロンプト</strong>が付属します。
     </p>
 
-    <div class="box fade-on-scroll">
+    <div class="box">
       思想を書く<br>
       ↓<br>
       AIがコーディング<br>
@@ -566,7 +544,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 管理画面 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>管理画面でできること</h2>
 
@@ -594,7 +572,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 価格 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>価格</h2>
 
@@ -631,7 +609,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 選別 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>これは誰のためのものか</h2>
 
@@ -660,7 +638,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </section>
 
 <!-- 最終通告 -->
-<section class="fade-on-scroll">
+<section>
   <div class="wrap">
     <h2>最後に</h2>
 
@@ -884,28 +862,8 @@ document.getElementById('selectionModal').addEventListener('click', function(e) 
   }
 });
 
-// スクロールに応じたフェードイン
+// スムーススクロール
 (function() {
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px'
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, observerOptions);
-
-  // セクションとボックスを監視
-  document.querySelectorAll('.fade-on-scroll').forEach(el => {
-    observer.unobserve(el);
-    observer.observe(el);
-  });
-
-  // スムーススクロール
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
       e.preventDefault();
@@ -923,13 +881,6 @@ document.getElementById('selectionModal').addEventListener('click', function(e) 
   if (!window.reinitBlogArticle) {
     window.reinitBlogArticle = function() {
       console.log('Reinitializing LP effects...');
-      
-      // オブザーバーを再設定
-      document.querySelectorAll('.fade-on-scroll').forEach(el => {
-        el.classList.remove('visible');
-        observer.unobserve(el);
-        observer.observe(el);
-      });
     };
   }
 })();
