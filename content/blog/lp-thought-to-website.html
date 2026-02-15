@@ -165,12 +165,14 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
       font-size: 1.25rem;
       font-weight: bold;
       text-decoration: none;
-      border-radius: 12px;
       border: 2px solid transparent;
+      border-radius: 12px;
       transition: all 0.3s ease;
       box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      font-family: inherit;
     }
     
     .cta-button::before {
@@ -250,6 +252,152 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
         animation: none !important;
         transition: none !important;
       }
+    }
+    
+    /* ===== モーダル（選別アンケート） ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 9999;
+      overflow-y: auto;
+      padding: 2rem 1rem;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: var(--bg-card);
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      max-width: 700px;
+      width: 100%;
+      position: relative;
+    }
+    
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 2rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.5rem;
+      transition: color 0.2s;
+    }
+    
+    .modal-close:hover {
+      color: var(--text-bright);
+    }
+    
+    .step-content {
+      display: none;
+    }
+    
+    .step-content.active {
+      display: block;
+    }
+    
+    .question-title {
+      font-size: 1.5rem;
+      color: var(--text-bright);
+      margin-bottom: 2rem;
+      line-height: 1.4;
+    }
+    
+    .answer-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .answer-btn {
+      flex: 1;
+      padding: 1.25rem;
+      font-size: 1.125rem;
+      font-weight: bold;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    
+    .answer-btn.yes {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    
+    .answer-btn.yes:hover {
+      background: rgba(34, 197, 94, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .answer-btn.no {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    
+    .answer-btn.no:hover {
+      background: rgba(239, 68, 68, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .final-cta {
+      margin-top: 3rem;
+      text-align: center;
+    }
+    
+    .final-cta-button {
+      display: inline-block;
+      padding: 1.5rem 3rem;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: white;
+      font-size: 1.25rem;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+    }
+    
+    .final-cta-button:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.6);
+    }
+    
+    .rejection-message {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .rejection-message h3 {
+      color: var(--text-bright);
+      margin-bottom: 1rem;
+    }
+    
+    .rejection-message p {
+      color: var(--text-muted);
+    }
+    
+    .step-indicator {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
     }
   </style>
 </head>
@@ -427,9 +575,9 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 
     <div class="price-container">
       <div class="price">10万円</div>
-      <a href="mailto:product@newaddr.com?subject=Webサイト生成システム申込&body=以下の5つの質問にすべてYesと回答できる方のみ、ご記入の上送信してください。%0D%0A%0D%0A【質問1】このシステムには、管理画面で記事を書く機能はありません。%0D%0A回答：%0D%0A%0D%0A【質問2】構造・機能・運用フローについて、あとから変更や相談はできません。%0D%0A回答：%0D%0A%0D%0A【質問3】更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。%0D%0A回答：%0D%0A%0D%0A【質問4】10万円は「制作費」ではなく、自由を手放すための費用です。%0D%0A回答：%0D%0A%0D%0A【質問5】それでも申し込みますか。%0D%0A回答：%0D%0A%0D%0A----%0D%0A氏名：%0D%0Aメールアドレス：" class="cta-button">
+      <button class="cta-button" onclick="openModal()">
         <span>もう迷わないと決める</span>
-      </a>
+      </button>
     </div>
 
     <hr>
@@ -505,40 +653,231 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
     </div>
 
     <div class="price-container" style="margin-top: 3rem;">
-      <a href="mailto:product@newaddr.com?subject=Webサイト生成システム申込&body=以下の5つの質問にすべてYesと回答できる方のみ、ご記入の上送信してください。%0D%0A%0D%0A【質問1】このシステムには、管理画面で記事を書く機能はありません。%0D%0A回答：%0D%0A%0D%0A【質問2】構造・機能・運用フローについて、あとから変更や相談はできません。%0D%0A回答：%0D%0A%0D%0A【質問3】更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。%0D%0A回答：%0D%0A%0D%0A【質問4】10万円は「制作費」ではなく、自由を手放すための費用です。%0D%0A回答：%0D%0A%0D%0A【質問5】それでも申し込みますか。%0D%0A回答：%0D%0A%0D%0A----%0D%0A氏名：%0D%0Aメールアドレス：" class="cta-button">
+      <button class="cta-button" onclick="openModal()">
         <span>次は止まらない側に行く</span>
-      </a>
+      </button>
     </div>
   </div>
 </section>
 
-<script>
-// スムーススクロール
-(function() {
-  function setupSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
-      anchor.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href === '#' || href === 'javascript:void(0)') {
-          return;
-        }
-        
-        e.preventDefault();
-        const target = document.querySelector(href);
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }
-      });
-    });
-  }
+<!-- 選別アンケートモーダル -->
+<div class="modal-overlay" id="selectionModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    
+    <!-- ステップ0: 注意書き -->
+    <div class="step-content active" id="step0">
+      <h3 class="question-title">
+        ここから先は<br>
+        「申し込む人を増やすためのフォーム」ではありません。
+      </h3>
+      <p>
+        合わない人は、ここで閉じることを推奨します。
+      </p>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="nextStep(1)">
+          ⭕ 進む
+        </button>
+        <button class="answer-btn no" onclick="closeModal()">
+          ❌ 閉じる
+        </button>
+      </div>
+    </div>
+    
+    <!-- ステップ1: 思想への同意 -->
+    <div class="step-content" id="step1">
+      <div class="step-indicator">質問 1/5</div>
+      <h3 class="question-title">
+        このシステムには、管理画面で記事を書く機能はありません。
+      </h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="nextStep(2)">
+          ⭕ Yes（理解した）
+        </button>
+        <button class="answer-btn no" onclick="showRejection()">
+          ❌ No（理解できない）
+        </button>
+      </div>
+    </div>
+    
+    <!-- ステップ2: 自由の放棄 -->
+    <div class="step-content" id="step2">
+      <div class="step-indicator">質問 2/5</div>
+      <h3 class="question-title">
+        構造・機能・運用フローについて、<br>
+        あとから変更や相談はできません。
+      </h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="nextStep(3)">
+          ⭕ Yes（それでいい）
+        </button>
+        <button class="answer-btn no" onclick="showRejection()">
+          ❌ No（自由が欲しい）
+        </button>
+      </div>
+    </div>
+    
+    <!-- ステップ3: 責任の所在 -->
+    <div class="step-content" id="step3">
+      <div class="step-indicator">質問 3/5</div>
+      <h3 class="question-title">
+        更新が止まった場合、<br>
+        それは「設計の問題」であり、<br>
+        あなた自身を責めないと約束できますか。
+      </h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="nextStep(4)">
+          ⭕ Yes（設計に責任を預ける）
+        </button>
+        <button class="answer-btn no" onclick="showRejection()">
+          ❌ No（自分でコントロールしたい）
+        </button>
+      </div>
+    </div>
+    
+    <!-- ステップ4: 金の意味 -->
+    <div class="step-content" id="step4">
+      <div class="step-indicator">質問 4/5</div>
+      <h3 class="question-title">
+        10万円は「制作費」ではなく、<br>
+        自由を手放すための費用です。
+      </h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="nextStep(5)">
+          ⭕ Yes（理解した）
+        </button>
+        <button class="answer-btn no" onclick="showRejection()">
+          ❌ No（納得できない）
+        </button>
+      </div>
+    </div>
+    
+    <!-- ステップ5: 最終確認 -->
+    <div class="step-content" id="step5">
+      <div class="step-indicator">最終確認 5/5</div>
+      <h3 class="question-title">
+        それでも申し込みますか。
+      </h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" onclick="showFinalCTA()">
+          ⭕ Yes（戻らない）
+        </button>
+        <button class="answer-btn no" onclick="closeModal()">
+          ❌ No（今回はやめる）
+        </button>
+      </div>
+    </div>
+    
+    <!-- 最終CTA -->
+    <div class="step-content" id="finalCTA">
+      <h3 class="question-title">
+        すべての質問に同意されました。
+      </h3>
+      <p style="text-align: center; margin-bottom: 2rem;">
+        下記より申込手続きにお進みください。
+      </p>
+      <div class="final-cta">
+        <a href="mailto:product@newaddr.com?subject=Webサイト生成システム申込&body=以下の5つの質問にすべてYesと回答できる方のみ、ご記入の上送信してください。%0D%0A%0D%0A【質問1】このシステムには、管理画面で記事を書く機能はありません。%0D%0A回答：%0D%0A%0D%0A【質問2】構造・機能・運用フローについて、あとから変更や相談はできません。%0D%0A回答：%0D%0A%0D%0A【質問3】更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。%0D%0A回答：%0D%0A%0D%0A【質問4】10万円は「制作費」ではなく、自由を手放すための費用です。%0D%0A回答：%0D%0A%0D%0A【質問5】それでも申し込みますか。%0D%0A回答：%0D%0A%0D%0A----%0D%0A氏名：%0D%0Aメールアドレス：" class="final-cta-button">
+          申込手続きに進む
+        </a>
+      </div>
+    </div>
+    
+    <!-- 不合格画面 -->
+    <div class="step-content" id="rejection">
+      <div class="rejection-message">
+        <h3>この商品は向いていません</h3>
+        <p>
+          ご理解いただきありがとうございました。<br>
+          またの機会がありましたら、お待ちしております。
+        </p>
+        <div style="margin-top: 2rem;">
+          <button class="answer-btn no" onclick="closeModal()" style="max-width: 200px; margin: 0 auto;">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupSmoothScroll);
-  } else {
-    setupSmoothScroll();
+<script>
+// モーダル制御
+function openModal() {
+  const modal = document.getElementById('selectionModal');
+  if (!modal) return;
+  
+  // すべてのステップを非表示
+  document.querySelectorAll('.step-content').forEach(function(step) {
+    step.classList.remove('active');
+  });
+  
+  // ステップ0を表示
+  const step0 = document.getElementById('step0');
+  if (step0) {
+    step0.classList.add('active');
+  }
+  
+  // モーダル表示
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  const modal = document.getElementById('selectionModal');
+  if (!modal) return;
+  
+  modal.classList.remove('active');
+}
+
+function nextStep(stepNumber) {
+  // すべてのステップを非表示
+  document.querySelectorAll('.step-content').forEach(function(step) {
+    step.classList.remove('active');
+  });
+  
+  // 指定されたステップを表示
+  const targetStep = document.getElementById('step' + stepNumber);
+  if (targetStep) {
+    targetStep.classList.add('active');
+  }
+}
+
+function showFinalCTA() {
+  // すべてのステップを非表示
+  document.querySelectorAll('.step-content').forEach(function(step) {
+    step.classList.remove('active');
+  });
+  
+  // 最終CTAを表示
+  const finalCTA = document.getElementById('finalCTA');
+  if (finalCTA) {
+    finalCTA.classList.add('active');
+  }
+}
+
+function showRejection() {
+  // すべてのステップを非表示
+  document.querySelectorAll('.step-content').forEach(function(step) {
+    step.classList.remove('active');
+  });
+  
+  // 不合格画面を表示
+  const rejection = document.getElementById('rejection');
+  if (rejection) {
+    rejection.classList.add('active');
+  }
+}
+
+// 初期化
+(function() {
+  // モーダル外クリックで閉じる
+  const modal = document.getElementById('selectionModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
   }
   
   // クライアント遷移対応
