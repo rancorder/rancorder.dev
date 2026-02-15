@@ -578,7 +578,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 
     <div class="price-container">
       <div class="price">10万円</div>
-      <a href="#" class="cta-button" onclick="openModal(event)">
+      <a href="javascript:void(0)" class="cta-button" onclick="openModal(event)">
         <span>もう迷わないと決める</span>
       </a>
     </div>
@@ -656,7 +656,7 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
     </div>
 
     <div class="price-container" style="margin-top: 3rem;">
-      <a href="#" class="cta-button" onclick="openModal(event)">
+      <a href="javascript:void(0)" class="cta-button" onclick="openModal(event)">
         <span>次は止まらない側に行く</span>
       </a>
     </div>
@@ -807,12 +807,15 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 <script>
 // モーダル制御
 function openModal(event) {
-  event.preventDefault();
-  event.stopPropagation();
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   
   const modal = document.getElementById('selectionModal');
+  if (!modal) return;
   
-  // 完全リセット
+  // すべてのステップを非表示
   document.querySelectorAll('.step-content').forEach(step => {
     step.classList.remove('active');
   });
@@ -829,36 +832,34 @@ function openModal(event) {
 
 function closeModal() {
   const modal = document.getElementById('selectionModal');
+  if (!modal) return;
+  
   modal.classList.remove('active');
   
-  // 閉じる際に状態をリセット
-  document.querySelectorAll('.step-content').forEach(step => {
-    step.classList.remove('active');
-  });
-  
-  // 次回開いたときのためにステップ0をセット
-  const step0 = document.getElementById('step0');
-  if (step0) {
-    step0.classList.add('active');
-  }
+  // 状態を完全リセット
+  setTimeout(function() {
+    document.querySelectorAll('.step-content').forEach(step => {
+      step.classList.remove('active');
+    });
+    
+    const step0 = document.getElementById('step0');
+    if (step0) {
+      step0.classList.add('active');
+    }
+  }, 300); // モーダルのフェードアウト後にリセット
 }
 
-function resetModal() {
+function nextStep(stepNumber) {
   // すべてのステップを非表示
   document.querySelectorAll('.step-content').forEach(step => {
     step.classList.remove('active');
   });
-  // ステップ0を表示
-  document.getElementById('step0').classList.add('active');
-}
-
-function nextStep(stepNumber) {
-  // 現在のステップを非表示
-  document.querySelectorAll('.step-content').forEach(step => {
-    step.classList.remove('active');
-  });
-  // 次のステップを表示
-  document.getElementById('step' + stepNumber).classList.add('active');
+  
+  // 指定されたステップを表示
+  const targetStep = document.getElementById('step' + stepNumber);
+  if (targetStep) {
+    targetStep.classList.add('active');
+  }
 }
 
 function showFinalCTA() {
@@ -866,8 +867,12 @@ function showFinalCTA() {
   document.querySelectorAll('.step-content').forEach(step => {
     step.classList.remove('active');
   });
+  
   // 最終CTAを表示
-  document.getElementById('finalCTA').classList.add('active');
+  const finalCTA = document.getElementById('finalCTA');
+  if (finalCTA) {
+    finalCTA.classList.add('active');
+  }
 }
 
 function showRejection() {
@@ -875,48 +880,61 @@ function showRejection() {
   document.querySelectorAll('.step-content').forEach(step => {
     step.classList.remove('active');
   });
+  
   // 不合格画面を表示
-  document.getElementById('rejection').classList.add('active');
+  const rejection = document.getElementById('rejection');
+  if (rejection) {
+    rejection.classList.add('active');
+  }
 }
 
-// DOM読み込み完了後に実行
-document.addEventListener('DOMContentLoaded', function() {
-  // モーダル外クリックで閉じる
-  const modal = document.getElementById('selectionModal');
-  if (modal) {
-    modal.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeModal();
-      }
-    });
-  }
-
-  // スムーススクロール
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    // onclick属性を持つ要素（モーダルボタン）は除外
-    if (anchor.hasAttribute('onclick')) {
-      return;
+// DOM読み込み後に実行（即座実行 + DOMContentLoaded両対応）
+(function initializePage() {
+  function setupEventListeners() {
+    // モーダル外クリックで閉じる
+    const modal = document.getElementById('selectionModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeModal();
+        }
+      });
     }
-    
-    anchor.addEventListener('click', function(e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    });
-  });
 
-  // クライアント遷移対応の再初期化関数
-  if (!window.reinitBlogArticle) {
-    window.reinitBlogArticle = function() {
-      console.log('Reinitializing LP effects...');
-    };
+    // スムーススクロール
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      // onclick属性を持つ要素（モーダルボタン）は除外
+      if (anchor.hasAttribute('onclick')) {
+        return;
+      }
+      
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // クライアント遷移対応の再初期化関数
+    if (!window.reinitBlogArticle) {
+      window.reinitBlogArticle = function() {
+        console.log('Reinitializing LP effects...');
+      };
+    }
   }
-});
+
+  // 既にDOMが読み込まれている場合は即座に実行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupEventListeners);
+  } else {
+    setupEventListeners();
+  }
+})();
 </script>
 
 </body>
