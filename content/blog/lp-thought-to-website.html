@@ -808,15 +808,39 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 // モーダル制御
 function openModal(event) {
   event.preventDefault();
+  event.stopPropagation();
+  
   const modal = document.getElementById('selectionModal');
+  
+  // 完全リセット
+  document.querySelectorAll('.step-content').forEach(step => {
+    step.classList.remove('active');
+  });
+  
+  // ステップ0を表示
+  const step0 = document.getElementById('step0');
+  if (step0) {
+    step0.classList.add('active');
+  }
+  
+  // モーダル表示
   modal.classList.add('active');
-  // 初期状態に戻す
-  resetModal();
 }
 
 function closeModal() {
   const modal = document.getElementById('selectionModal');
   modal.classList.remove('active');
+  
+  // 閉じる際に状態をリセット
+  document.querySelectorAll('.step-content').forEach(step => {
+    step.classList.remove('active');
+  });
+  
+  // 次回開いたときのためにステップ0をセット
+  const step0 = document.getElementById('step0');
+  if (step0) {
+    step0.classList.add('active');
+  }
 }
 
 function resetModal() {
