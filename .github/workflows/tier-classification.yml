@@ -1,0 +1,68 @@
+name: Tier Classification
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'content/blog/**/*.html'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'content/blog/**/*.html'
+
+jobs:
+  classify-articles:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Classify articles by Tier
+        run: node scripts/lint-blog-articles.js
+        continue-on-error: false  # 失敗時はワークフローを停止
+      
+      - name: Upload classification report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tier-classification-report
+          path: |
+            content/blog/**/*.html
+          retention-days: 7
+      
+      - name: Comment on PR (on failure)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔴 Tier 2 制約違反が検出されました
+              
+              このPRに含まれる記事が Tier 2 の制約に違反しています。
+              
+              詳細は上記のログを確認してください。
+              
+              ### 次のステップ
+              
+              1️⃣ **制約を守った実装に修正する（Tier 2 維持）**
+              - \`<form>\`、\`localStorage\`、\`fetch()\` などを削除
+              - 制約の詳細は [仕様書 v3.1](docs/spec-v3.1.md) を参照
+              
+              2️⃣ **tier: 3 を宣言する（保証外として公開）**
+              - 記事のメタデータに \`tier: 3\` を追加
+              - 記事内に警告（\`<callout-box type="warning">\`）を追加
+              
+              ### 重要
+              この CI failure は「バグ」ではなく、**自動降格の通知**です。
+              どちらを選択しても構いませんが、責任範囲を明確にするため、
+              必ずどちらかの対応をお願いします。`
+            })
