@@ -805,6 +805,11 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </div>
 
 <script>
+// グローバル初期化フラグ
+if (typeof window.lpInitialized === 'undefined') {
+  window.lpInitialized = false;
+}
+
 // モーダル制御
 function openModal(event) {
   if (event) {
@@ -812,22 +817,36 @@ function openModal(event) {
     event.stopPropagation();
   }
   
-  const modal = document.getElementById('selectionModal');
-  if (!modal) return;
+  console.log('openModal called');
   
-  // すべてのステップを非表示
-  document.querySelectorAll('.step-content').forEach(step => {
+  const modal = document.getElementById('selectionModal');
+  if (!modal) {
+    console.error('Modal not found');
+    return;
+  }
+  
+  // 強制的にすべてをリセット
+  const allSteps = document.querySelectorAll('.step-content');
+  console.log('Total steps:', allSteps.length);
+  
+  allSteps.forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // ステップ0を表示
-  const step0 = document.getElementById('step0');
-  if (step0) {
-    step0.classList.add('active');
-  }
-  
-  // モーダル表示
-  modal.classList.add('active');
+  // ステップ0を確実に表示
+  setTimeout(function() {
+    const step0 = document.getElementById('step0');
+    if (step0) {
+      step0.classList.add('active');
+      console.log('Step0 activated');
+    } else {
+      console.error('Step0 not found');
+    }
+    
+    // モーダル表示
+    modal.classList.add('active');
+    console.log('Modal activated');
+  }, 10);
 }
 
 function closeModal() {
@@ -836,26 +855,14 @@ function closeModal() {
   
   modal.classList.remove('active');
   
-  // 状態を完全リセット
-  setTimeout(function() {
-    document.querySelectorAll('.step-content').forEach(step => {
-      step.classList.remove('active');
-    });
-    
-    const step0 = document.getElementById('step0');
-    if (step0) {
-      step0.classList.add('active');
-    }
-  }, 300); // モーダルのフェードアウト後にリセット
+  // リセットは次回のopenModalに任せる
 }
 
 function nextStep(stepNumber) {
-  // すべてのステップを非表示
-  document.querySelectorAll('.step-content').forEach(step => {
+  document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 指定されたステップを表示
   const targetStep = document.getElementById('step' + stepNumber);
   if (targetStep) {
     targetStep.classList.add('active');
@@ -863,12 +870,10 @@ function nextStep(stepNumber) {
 }
 
 function showFinalCTA() {
-  // すべてのステップを非表示
-  document.querySelectorAll('.step-content').forEach(step => {
+  document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 最終CTAを表示
   const finalCTA = document.getElementById('finalCTA');
   if (finalCTA) {
     finalCTA.classList.add('active');
@@ -876,21 +881,26 @@ function showFinalCTA() {
 }
 
 function showRejection() {
-  // すべてのステップを非表示
-  document.querySelectorAll('.step-content').forEach(step => {
+  document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 不合格画面を表示
   const rejection = document.getElementById('rejection');
   if (rejection) {
     rejection.classList.add('active');
   }
 }
 
-// DOM読み込み後に実行（即座実行 + DOMContentLoaded両対応）
+// 初期化（一度だけ実行）
 (function initializePage() {
+  if (window.lpInitialized) {
+    console.log('Already initialized, skipping');
+    return;
+  }
+  
   function setupEventListeners() {
+    console.log('Setting up event listeners');
+    
     // モーダル外クリックで閉じる
     const modal = document.getElementById('selectionModal');
     if (modal) {
@@ -902,8 +912,7 @@ function showRejection() {
     }
 
     // スムーススクロール
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      // onclick属性を持つ要素（モーダルボタン）は除外
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
       if (anchor.hasAttribute('onclick')) {
         return;
       }
@@ -920,19 +929,22 @@ function showRejection() {
       });
     });
 
-    // クライアント遷移対応の再初期化関数
-    if (!window.reinitBlogArticle) {
-      window.reinitBlogArticle = function() {
-        console.log('Reinitializing LP effects...');
-      };
-    }
+    // 初期化完了
+    window.lpInitialized = true;
+    console.log('LP initialized');
   }
 
-  // 既にDOMが読み込まれている場合は即座に実行
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupEventListeners);
   } else {
     setupEventListeners();
+  }
+  
+  // クライアント遷移対応の再初期化関数
+  if (!window.reinitBlogArticle) {
+    window.reinitBlogArticle = function() {
+      console.log('Reinitializing LP effects...');
+    };
   }
 })();
 </script>
