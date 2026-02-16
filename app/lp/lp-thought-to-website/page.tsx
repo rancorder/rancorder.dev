@@ -1,11 +1,101 @@
 // app/lp/lp-thought-to-website/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function ThoughtToWebsiteLandingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // パーティクルシステム
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let particles: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      radius: number;
+    }> = [];
+    let animationId: number;
+
+    const PARTICLE_COUNT = Math.min(60, Math.floor((width * height) / 20000));
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas!.width = width;
+      canvas!.height = height;
+    }
+
+    function createParticles() {
+      particles = [];
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 2 + 1,
+        });
+      }
+    }
+
+    function draw() {
+      ctx!.clearRect(0, 0, width, height);
+
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+
+        ctx!.fillStyle = 'rgba(124, 58, 237, 0.6)';
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx!.fill();
+      });
+
+      // 線で結ぶ
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) {
+            ctx!.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 120)})`;
+            ctx!.lineWidth = 0.5;
+            ctx!.beginPath();
+            ctx!.moveTo(particles[i].x, particles[i].y);
+            ctx!.lineTo(particles[j].x, particles[j].y);
+            ctx!.stroke();
+          }
+        }
+      }
+
+      animationId = requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    createParticles();
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
 
   const openModal = () => {
     setCurrentStep(0);
@@ -35,29 +125,75 @@ export default function ThoughtToWebsiteLandingPage() {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+
+        @keyframes scanline {
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(100%);
+          }
+        }
+
+        @keyframes glowPulse {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(124, 58, 237, 0.8);
+          }
+        }
       `}</style>
 
       <div className="lp-container">
+        {/* パーティクル背景 */}
+        <canvas ref={canvasRef} className="particle-canvas" />
+
+        {/* スキャンライン */}
+        <div className="scanline-overlay" />
+
         {/* ファーストビュー */}
-        <section className="section">
+        <section className="section hero-section">
           <div className="wrap">
             <h1 className="main-title">
               テーマと思想を書くと、<br />
               Webサイトが自動で完成する。
             </h1>
 
-            <p className="lead">
+            <p className="lead fade-in">
               設計も、実装も、CMS操作も不要。<br />
               書いた内容がそのままHTMLになり、公開まで終わります。<br />
-              <strong>※ 過去にブログを止めたことがある人専用</strong>
+              <strong className="pulse-text">※ 過去にブログを止めたことがある人専用</strong>
             </p>
 
-            <div className="box">
+            <div className="box scan-box">
               <strong>ただし条件があります。</strong><br />
               この仕組みは、あなたに<strong>選択肢を与えません</strong>。
             </div>
 
-            <p className="note">
+            <p className="note fade-in">
               ※ 管理画面で記事は書けません<br />
               ※ 構造は変更できません<br />
               ※ 自由は、最初からありません
@@ -66,7 +202,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 定義 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>これは何か</h2>
 
@@ -92,7 +228,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 問題提起 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>なぜ、あなたは止まったのか</h2>
 
@@ -100,7 +236,7 @@ export default function ThoughtToWebsiteLandingPage() {
               続かなかった理由は、才能でも根性でもありません。
             </p>
 
-            <p>
+            <p className="emphasis-text">
               <strong>自由が多すぎた。</strong><br />
               それだけです。
             </p>
@@ -119,7 +255,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 解決策 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>解決策は単純で、残酷</h2>
 
@@ -127,7 +263,7 @@ export default function ThoughtToWebsiteLandingPage() {
               このシステムは、最初にこう決めています。
             </p>
 
-            <div className="box">
+            <div className="box emphasis-box">
               迷わせない。<br />
               選ばせない。<br />
               逃がさない。
@@ -146,7 +282,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 究極形 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>究極形：思想 → 実装</h2>
 
@@ -154,7 +290,7 @@ export default function ThoughtToWebsiteLandingPage() {
               このシステムには、<strong>Claude用の専用プロンプト</strong>が付属します。
             </p>
 
-            <div className="box">
+            <div className="box flow-box">
               思想を書く<br />
               ↓<br />
               AIがコーディング<br />
@@ -176,7 +312,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 管理画面 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>管理画面でできること</h2>
 
@@ -196,7 +332,7 @@ export default function ThoughtToWebsiteLandingPage() {
               <strong>現実を見る場所です。</strong>
             </p>
 
-            <p className="danger">
+            <p className="danger pulse-text">
               ここで操作できるようになった瞬間、<br />
               このシステムは失敗です。
             </p>
@@ -204,13 +340,13 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 価格 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>価格</h2>
 
             <div className="price-container">
               <div className="price">10万円</div>
-              <button className="cta-button" onClick={openModal}>
+              <button className="cta-button glow-button" onClick={openModal}>
                 <span>もう迷わないと決める</span>
               </button>
             </div>
@@ -241,7 +377,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 選別 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>これは誰のためのものか</h2>
 
@@ -270,7 +406,7 @@ export default function ThoughtToWebsiteLandingPage() {
         </section>
 
         {/* 最終通告 */}
-        <section className="section">
+        <section className="section fade-section">
           <div className="wrap">
             <h2>最後に</h2>
 
@@ -288,7 +424,7 @@ export default function ThoughtToWebsiteLandingPage() {
             </div>
 
             <div className="price-container" style={{ marginTop: '3rem' }}>
-              <button className="cta-button" onClick={openModal}>
+              <button className="cta-button glow-button" onClick={openModal}>
                 <span>次は止まらない側に行く</span>
               </button>
             </div>
@@ -301,9 +437,8 @@ export default function ThoughtToWebsiteLandingPage() {
             <div className="modal-content">
               <button className="modal-close" onClick={closeModal}>&times;</button>
 
-              {/* ステップ0 */}
               {currentStep === 0 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <h3 className="question-title">
                     ここから先は<br />
                     「申し込む人を増やすためのフォーム」ではありません。
@@ -322,9 +457,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* ステップ1 */}
               {currentStep === 1 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="step-indicator">質問 1/5</div>
                   <h3 className="question-title">
                     このシステムには、管理画面で記事を書く機能はありません。
@@ -340,9 +474,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* ステップ2 */}
               {currentStep === 2 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="step-indicator">質問 2/5</div>
                   <h3 className="question-title">
                     構造・機能・運用フローについて、<br />
@@ -359,9 +492,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* ステップ3 */}
               {currentStep === 3 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="step-indicator">質問 3/5</div>
                   <h3 className="question-title">
                     更新が止まった場合、<br />
@@ -379,9 +511,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* ステップ4 */}
               {currentStep === 4 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="step-indicator">質問 4/5</div>
                   <h3 className="question-title">
                     10万円は「制作費」ではなく、<br />
@@ -398,9 +529,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* ステップ5 */}
               {currentStep === 5 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="step-indicator">最終確認 5/5</div>
                   <h3 className="question-title">
                     それでも申し込みますか。
@@ -416,9 +546,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* 最終CTA */}
               {currentStep === 100 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <h3 className="question-title">
                     すべての質問に同意されました。
                   </h3>
@@ -427,7 +556,7 @@ export default function ThoughtToWebsiteLandingPage() {
                   </p>
                   <div className="final-cta">
                     <a
-                      href="mailto:product@newaddr.com?subject=Webサイト生成システム申込&body=以下の5つの質問にすべてYesと回答できる方のみ、ご記入の上送信してください。%0D%0A%0D%0A【質問1】このシステムには、管理画面で記事を書く機能はありません。%0D%0A回答：%0D%0A%0D%0A【質問2】構造・機能・運用フローについて、あとから変更や相談はできません。%0D%0A回答：%0D%0A%0D%0A【質問3】更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。%0D%0A回答：%0D%0A%0D%0A【質問4】10万円は「制作費」ではなく、自由を手放すための費用です。%0D%0A回答：%0D%0A%0D%0A【質問5】それでも申し込みますか。%0D%0A回答：%0D%0A%0D%0A----%0D%0A氏名：%0D%0Aメールアドレス："
+                      href="mailto:product@newaddr.com?subject=Webサイト生成システム申込"
                       className="final-cta-button"
                     >
                       申込手続きに進む
@@ -436,9 +565,8 @@ export default function ThoughtToWebsiteLandingPage() {
                 </div>
               )}
 
-              {/* 不合格画面 */}
               {currentStep === 99 && (
-                <div className="step-content">
+                <div className="step-content fade-in">
                   <div className="rejection-message">
                     <h3>この商品は向いていません</h3>
                     <p>
@@ -466,30 +594,56 @@ export default function ThoughtToWebsiteLandingPage() {
           background: #0a0a0a;
           overflow-x: hidden;
           position: relative;
+          min-height: 100vh;
         }
 
-        .lp-container::before {
-          content: '';
+        /* パーティクル背景 */
+        .particle-canvas {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        /* スキャンライン */
+        .scanline-overlay {
           position: fixed;
           inset: 0;
-          background: radial-gradient(
-            circle at 20% 30%,
-            rgba(124, 58, 237, 0.15) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 80% 70%,
-            rgba(34, 197, 94, 0.1) 0%,
-            transparent 50%
+          background-image: linear-gradient(
+            to bottom,
+            rgba(124, 58, 237, 0.03) 1px,
+            transparent 1px
           );
+          background-size: 100% 4px;
+          opacity: 0.5;
           pointer-events: none;
-          z-index: -1;
+          z-index: 1;
+          animation: scanline 8s linear infinite;
         }
 
         .section {
           padding: 5rem 1.5rem;
           border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+          position: relative;
         }
+
+        .hero-section {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+        }
+
+        .fade-section {
+          opacity: 0;
+          animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .fade-section:nth-of-type(2) { animation-delay: 0.1s; }
+        .fade-section:nth-of-type(3) { animation-delay: 0.2s; }
+        .fade-section:nth-of-type(4) { animation-delay: 0.3s; }
 
         .wrap {
           max-width: 900px;
@@ -512,6 +666,17 @@ export default function ThoughtToWebsiteLandingPage() {
           font-size: clamp(1.75rem, 3vw, 2.5rem);
           margin-bottom: 1.5rem;
           color: #ffffff;
+          position: relative;
+        }
+
+        h2::after {
+          content: '';
+          position: absolute;
+          bottom: -10px;
+          left: 0;
+          width: 60px;
+          height: 3px;
+          background: linear-gradient(90deg, #7c3aed, transparent);
         }
 
         p {
@@ -523,6 +688,25 @@ export default function ThoughtToWebsiteLandingPage() {
           font-size: 1.25rem;
           color: #94a3b8;
           line-height: 1.6;
+          animation: fadeInUp 0.8s ease 0.3s forwards;
+          opacity: 0;
+        }
+
+        .fade-in {
+          animation: fadeInUp 0.8s ease 0.5s forwards;
+          opacity: 0;
+        }
+
+        .pulse-text {
+          animation: pulse 2s ease-in-out infinite;
+          display: inline-block;
+        }
+
+        .emphasis-text {
+          font-size: 1.3rem;
+          font-weight: 600;
+          color: #ffffff;
+          text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
         }
 
         .note {
@@ -537,6 +721,59 @@ export default function ThoughtToWebsiteLandingPage() {
           border-left: 4px solid #7c3aed;
           border-radius: 8px;
           margin: 2rem 0;
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* 全てのボックスに光を走らせる */
+        .box::after {
+          content: '';
+          position: absolute;
+          top: -100%;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.15), transparent);
+          animation: scanline 4s linear infinite;
+          pointer-events: none;
+        }
+
+        .scan-box {
+          border: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        /* scan-boxはより強い光 */
+        .scan-box::after {
+          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.3), transparent);
+          animation: scanline 3s linear infinite;
+        }
+
+        .emphasis-box {
+          background: rgba(239, 68, 68, 0.1);
+          border-left-color: #ef4444;
+          font-size: 1.2rem;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        /* emphasis-boxは赤い光 */
+        .emphasis-box::after {
+          background: linear-gradient(180deg, transparent, rgba(239, 68, 68, 0.2), transparent);
+          animation: scanline 3.5s linear infinite;
+        }
+
+        .flow-box {
+          background: rgba(34, 197, 94, 0.1);
+          border-left-color: #22c55e;
+          text-align: center;
+          font-size: 1.1rem;
+          line-height: 2;
+        }
+
+        /* flow-boxは緑の光 */
+        .flow-box::after {
+          background: linear-gradient(180deg, transparent, rgba(34, 197, 94, 0.2), transparent);
+          animation: scanline 4.5s linear infinite;
         }
 
         .box strong {
@@ -551,6 +788,15 @@ export default function ThoughtToWebsiteLandingPage() {
         li {
           margin-bottom: 0.75rem;
           font-size: 1.0625rem;
+          position: relative;
+        }
+
+        li::before {
+          content: '▹';
+          position: absolute;
+          left: -1.5rem;
+          color: #7c3aed;
+          font-weight: bold;
         }
 
         .price-container {
@@ -566,6 +812,7 @@ export default function ThoughtToWebsiteLandingPage() {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           margin-bottom: 1rem;
+          animation: pulse 3s ease-in-out infinite;
         }
 
         .cta-button {
@@ -583,6 +830,10 @@ export default function ThoughtToWebsiteLandingPage() {
           overflow: hidden;
           font-family: inherit;
           transition: all 0.3s ease;
+        }
+
+        .glow-button {
+          animation: glowPulse 2s ease-in-out infinite;
         }
 
         .cta-button::before {
@@ -635,6 +886,22 @@ export default function ThoughtToWebsiteLandingPage() {
           border: 2px solid rgba(124, 58, 237, 0.3);
           text-align: center;
           margin-top: 3rem;
+          box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* final-messageにも光を走らせる */
+        .final-message::after {
+          content: '';
+          position: absolute;
+          top: -100%;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.25), transparent);
+          animation: scanline 3s linear infinite;
+          pointer-events: none;
         }
 
         /* モーダル */
@@ -648,16 +915,33 @@ export default function ThoughtToWebsiteLandingPage() {
           justify-content: center;
           padding: 2rem 1rem;
           overflow-y: auto;
+          backdrop-filter: blur(4px);
         }
 
         .modal-content {
-          background: rgba(15, 23, 42, 0.9);
+          background: rgba(15, 23, 42, 0.95);
           border: 2px solid rgba(124, 58, 237, 0.3);
           border-radius: 12px;
           padding: 3rem 2rem;
           max-width: 700px;
           width: 100%;
           position: relative;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          overflow: hidden;
+        }
+
+        /* モーダルにも光を走らせる */
+        .modal-content::before {
+          content: '';
+          position: absolute;
+          top: -100%;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.2), transparent);
+          animation: scanline 3s linear infinite;
+          pointer-events: none;
+          z-index: 0;
         }
 
         .modal-close {
@@ -672,6 +956,7 @@ export default function ThoughtToWebsiteLandingPage() {
           line-height: 1;
           padding: 0.5rem;
           transition: color 0.2s;
+          z-index: 10;
         }
 
         .modal-close:hover {
@@ -680,6 +965,8 @@ export default function ThoughtToWebsiteLandingPage() {
 
         .step-content {
           display: block;
+          position: relative;
+          z-index: 1;
         }
 
         .question-title {
@@ -716,6 +1003,7 @@ export default function ThoughtToWebsiteLandingPage() {
         .answer-btn.yes:hover {
           background: rgba(34, 197, 94, 0.2);
           transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
         }
 
         .answer-btn.no {
@@ -727,6 +1015,7 @@ export default function ThoughtToWebsiteLandingPage() {
         .answer-btn.no:hover {
           background: rgba(239, 68, 68, 0.2);
           transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
         }
 
         .final-cta {
