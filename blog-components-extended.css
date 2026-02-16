@@ -1,0 +1,443 @@
+/* ============================================
+   Extended Blog Components Styles v1.0
+   rancorder.dev 追加スタイル
+   ============================================ */
+
+/* ============================================
+   YES/NO Question
+   ============================================ */
+.yes-no-question {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.05);
+}
+
+.question-container {
+  width: 100%;
+}
+
+.question-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #f8fafc;
+  line-height: 1.4;
+}
+
+.question-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-yes,
+.btn-no {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.btn-yes {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.btn-yes:hover {
+  background: rgba(34, 197, 94, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+.btn-no {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-no:hover {
+  background: rgba(239, 68, 68, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.question-result {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(167, 139, 250, 0.1);
+  border-left: 4px solid #a78bfa;
+  border-radius: 8px;
+  animation: slideIn 0.3s ease;
+}
+
+.question-result p {
+  margin: 0.5rem 0;
+}
+
+.question-result strong {
+  color: #c4b5fd;
+}
+
+/* ============================================
+   Delayed Reveal
+   ============================================ */
+.delayed-reveal {
+  margin: 2rem 0;
+}
+
+.reveal-trigger {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+}
+
+.reveal-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+}
+
+.reveal-trigger:active {
+  transform: translateY(0);
+}
+
+.reveal-content {
+  margin-top: 1.5rem;
+}
+
+.reveal-loading {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #a78bfa;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  display: inline-block;
+  animation: spin 1.5s linear infinite;
+}
+
+.loading-text {
+  display: block;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.reveal-body {
+  padding: 1.5rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  animation: fadeIn 0.5s ease;
+}
+
+/* ============================================
+   Question Flow (Multi-Step)
+   ============================================ */
+.question-flow {
+  margin: 2rem 0;
+  padding: 2rem;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.5);
+  min-height: 300px;
+}
+
+.question-step {
+  animation: slideIn 0.3s ease;
+}
+
+.step-header {
+  margin-bottom: 1.5rem;
+}
+
+.step-number {
+  font-size: 0.85rem;
+  color: #a78bfa;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.step-progress {
+  margin-top: 0.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+  transition: width 0.3s ease;
+}
+
+.step-question {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.step-content {
+  margin-bottom: 1.5rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.step-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.step-btn {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #a78bfa;
+  border-radius: 8px;
+  background: rgba(167, 139, 250, 0.1);
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.step-btn:hover {
+  background: rgba(167, 139, 250, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
+}
+
+.step-yes {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.step-yes:hover {
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.step-no {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.step-no:hover {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================
+   Flow Result
+   ============================================ */
+.flow-result {
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+  padding: 1rem;
+}
+
+.flow-result h3 {
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  color: #f8fafc;
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  padding: 1rem;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 8px;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.result-content {
+  margin: 2rem auto;
+  max-width: 500px;
+  padding: 2rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  line-height: 1.6;
+}
+
+.result-content p {
+  margin: 0;
+  color: #e2e8f0;
+}
+
+.result-content strong {
+  color: #4ade80;
+  font-size: 1.1rem;
+}
+
+.restart-btn {
+  margin-top: 2rem;
+  padding: 0.75rem 2rem;
+  background: rgba(167, 139, 250, 0.2);
+  border: 2px solid #a78bfa;
+  color: #a78bfa;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.restart-btn:hover {
+  background: rgba(167, 139, 250, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Show Once (Tier 3)
+   ============================================ */
+.show-once {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  position: relative;
+  animation: slideDown 0.3s ease;
+}
+
+.show-once-container {
+  position: relative;
+}
+
+.show-once-close {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(251, 191, 36, 0.2);
+  border: 2px solid #fbbf24;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.show-once-close:hover {
+  background: rgba(251, 191, 36, 0.3);
+  transform: rotate(90deg);
+}
+
+.show-once-content {
+  padding-right: 1rem;
+}
+
+/* ============================================
+   Scroll Reveal
+   ============================================ */
+scroll-reveal {
+  display: block;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 640px) {
+  .question-buttons,
+  .step-buttons {
+    flex-direction: column;
+  }
+  
+  .result-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .question-text,
+  .step-question {
+    font-size: 1.1rem;
+  }
+}
