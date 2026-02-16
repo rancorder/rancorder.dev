@@ -1,0 +1,248 @@
+<!--
+title: 思想を書くとWebサイトが完成する
+date: 2026-02-15
+category: Product
+excerpt: テーマと思想を書くと、設計も実装も不要でWebサイトが自動生成・公開される。
+readingTime: 8 min read
+tier: 2
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>思想を書くとWebサイトが完成する</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-dark: #0a0a0a;
+      --bg-card: rgba(15, 23, 42, 0.9);
+      --text-main: #e0e0e0;
+      --text-bright: #ffffff;
+      --primary: #7c3aed;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      color: var(--text-main);
+      background: var(--bg-dark);
+      padding: 2rem 1rem;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--text-bright); }
+    h2 { font-size: 2rem; margin: 2rem 0 1rem; color: var(--text-bright); }
+    p { font-size: 1.125rem; margin-bottom: 1rem; }
+    .cta-button {
+      display: inline-block;
+      padding: 1.25rem 3rem;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: white;
+      font-size: 1.25rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin: 2rem 0;
+    }
+    .cta-button:hover { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: var(--bg-card);
+      border: 2px solid rgba(124, 58, 237, 0.3);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      max-width: 700px;
+      width: 90%;
+    }
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--text-main);
+      font-size: 2rem;
+      cursor: pointer;
+    }
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+    .question-title { font-size: 1.5rem; color: var(--text-bright); margin-bottom: 2rem; }
+    .answer-buttons { display: flex; gap: 1rem; margin-top: 2rem; }
+    .answer-btn {
+      flex: 1;
+      padding: 1.25rem;
+      font-size: 1.125rem;
+      font-weight: bold;
+      border: 2px solid;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .answer-btn.yes {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .answer-btn.no {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .final-cta-button {
+      display: inline-block;
+      padding: 1.25rem 3rem;
+      background: var(--success);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>思想を書くとWebサイトが完成する</h1>
+  <p>テーマと思想を書くと、設計も実装も不要でWebサイトが自動生成される。</p>
+  
+  <h2>価格：10万円</h2>
+  <button class="cta-button" data-action="open-modal">もう迷わないと決める</button>
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" data-modal>
+  <div class="modal-content">
+    
+    <div class="step-content active" data-step="0">
+      <h3 class="question-title">ここから先は申し込む人を増やすためのフォームではありません。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-next="1">⭕ 進む</button>
+        <button class="answer-btn no" data-close>❌ 閉じる</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="1">
+      <h3 class="question-title">このシステムには、管理画面で記事を書く機能はありません。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-next="2">⭕ Yes</button>
+        <button class="answer-btn no" data-reject>❌ No</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="2">
+      <h3 class="question-title">構造・機能・運用フローについて、あとから変更や相談はできません。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-next="3">⭕ Yes</button>
+        <button class="answer-btn no" data-reject>❌ No</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="3">
+      <h3 class="question-title">更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-next="4">⭕ Yes</button>
+        <button class="answer-btn no" data-reject>❌ No</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="4">
+      <h3 class="question-title">10万円は「制作費」ではなく、自由を手放すための費用です。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-next="5">⭕ Yes</button>
+        <button class="answer-btn no" data-reject>❌ No</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="5">
+      <h3 class="question-title">それでも申し込みますか。</h3>
+      <div class="answer-buttons">
+        <button class="answer-btn yes" data-final>⭕ Yes</button>
+        <button class="answer-btn no" data-close>❌ No</button>
+      </div>
+    </div>
+    
+    <div class="step-content" data-step="final">
+      <h3 class="question-title">すべての質問に同意されました。</h3>
+      <p style="text-align: center; margin: 2rem 0;">
+        <a href="mailto:product@newaddr.com?subject=申込" class="final-cta-button">申込手続きに進む</a>
+      </p>
+    </div>
+    
+    <div class="step-content" data-step="reject">
+      <h3 class="question-title">この商品は向いていません</h3>
+      <p style="text-align: center;">ご理解いただきありがとうございました。</p>
+      <div class="answer-buttons">
+        <button class="answer-btn no" data-close style="max-width: 200px; margin: 0 auto;">閉じる</button>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  
+  const modal = document.querySelector('[data-modal]');
+  const steps = document.querySelectorAll('[data-step]');
+  
+  function showStep(stepId) {
+    steps.forEach(s => s.classList.remove('active'));
+    const target = document.querySelector('[data-step="' + stepId + '"]');
+    if (target) target.classList.add('active');
+  }
+  
+  function openModal() {
+    showStep('0');
+    modal.classList.add('active');
+  }
+  
+  function closeModal() {
+    modal.classList.remove('active');
+  }
+  
+  // イベント委譲
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    
+    if (btn.hasAttribute('data-action') && btn.getAttribute('data-action') === 'open-modal') {
+      openModal();
+    }
+    else if (btn.hasAttribute('data-close')) {
+      closeModal();
+    }
+    else if (btn.hasAttribute('data-next')) {
+      const next = btn.getAttribute('data-next');
+      showStep(next);
+    }
+    else if (btn.hasAttribute('data-reject')) {
+      showStep('reject');
+    }
+    else if (btn.hasAttribute('data-final')) {
+      showStep('final');
+    }
+  });
+  
+  // モーダル外クリックで閉じる
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+  
+  console.log('✅ LP ready');
+})();
+</script>
+</body>
+</html>
