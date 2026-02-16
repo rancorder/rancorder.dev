@@ -1,180 +1,133 @@
 // app/sitemap.ts
+// LPページを自動検出してサイトマップに含める
 import { MetadataRoute } from 'next';
-import { getAllPosts } from '@/lib/mdx';
 import fs from 'fs';
 import path from 'path';
+import matter from 'gray-matter';
 
-interface ExternalArticle {
-  title: string;
-  url: string;
-  source: 'Qiita' | 'Zenn';
-  date: string;
-  excerpt: string;
-}
-
-interface BlogPost {
+interface Post {
   slug: string;
   date: string;
+  title: string;
 }
 
-/**
- * content/blog ディレクトリから直接HTMLファイルを読み込む
- */
-function getBlogPostsFromHtml(): BlogPost[] {
-  try {
-    const blogDir = path.join(process.cwd(), 'content', 'blog');
-    
-    if (!fs.existsSync(blogDir)) {
-      console.warn('[Sitemap] content/blog directory not found');
-      return [];
-    }
+interface LPPage {
+  path: string;
+  lastModified: Date;
+}
 
-    const files = fs.readdirSync(blogDir);
-    const htmlFiles = files.filter(file => file.endsWith('.html'));
-
-    console.log(`[Sitemap] Found ${htmlFiles.length} HTML files in content/blog`);
-
-    const posts: BlogPost[] = htmlFiles.map(filename => {
-      const filePath = path.join(blogDir, filename);
-      const stats = fs.statSync(filePath);
+// ブログ記事を取得
+function getAllPosts(): Post[] {
+  const contentDir = path.join(process.cwd(), 'content/blog');
+  
+  if (!fs.existsSync(contentDir)) {
+    return [];
+  }
+  
+  const files = fs.readdirSync(contentDir);
+  
+  const posts = files
+    .filter(file => file.endsWith('.html'))
+    .map(file => {
+      const filePath = path.join(contentDir, file);
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const { data } = matter(fileContent);
       
-      // ファイル名から slug を抽出（拡張子を除く）
-      const slug = filename.replace('.html', '');
-      
-      // ファイルの更新日時を使用
-      const date = stats.mtime.toISOString();
-
-      console.log(`[Sitemap] Processing: ${slug} (${date})`);
-
       return {
-        slug,
-        date,
+        slug: file.replace('.html', ''),
+        date: data.date || new Date().toISOString(),
+        title: data.title || '',
       };
-    });
-
-    return posts;
-  } catch (error) {
-    console.error('[Sitemap] Failed to load HTML blog posts:', error);
-    return [];
-  }
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  return posts;
 }
 
-/**
- * 外部記事をJSONファイルから直接読み込み
- * sitemap生成時に確実に読み込むため、lib/external-articlesに依存しない
- */
-function loadExternalArticles(): ExternalArticle[] {
-  try {
-    // 複数のパスを試行
-    const possiblePaths = [
-      path.join(process.cwd(), 'public', 'external-articles.json'),
-      path.join(process.cwd(), '..', 'public', 'external-articles.json'),
-      './public/external-articles.json',
-    ];
-
-    for (const filePath of possiblePaths) {
-      try {
-        if (fs.existsSync(filePath)) {
-          console.log(`[Sitemap] Found external-articles.json at: ${filePath}`);
-          const fileContent = fs.readFileSync(filePath, 'utf-8');
-          const articles = JSON.parse(fileContent);
-          
-          if (Array.isArray(articles)) {
-            console.log(`[Sitemap] Loaded ${articles.length} external articles`);
-            return articles;
-          }
-        }
-      } catch (err) {
-        // 次のパスを試行
-        continue;
-      }
-    }
-
-    console.warn('[Sitemap] external-articles.json not found in any location');
-    return [];
-  } catch (error) {
-    console.error('[Sitemap] Failed to load external articles:', error);
+// ===== LPページを自動検出 =====
+function getAllLPPages(): LPPage[] {
+  const lpDir = path.join(process.cwd(), 'app/lp');
+  
+  if (!fs.existsSync(lpDir)) {
     return [];
   }
+  
+  const lpPages: LPPage[] = [];
+  
+  try {
+    // /app/lp/* のディレクトリを取得
+    const dirs = fs.readdirSync(lpDir, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    
+    dirs.forEach(dir => {
+      const pagePath = path.join(lpDir, dir, 'page.tsx');
+      
+      // page.tsx が存在するかチェック
+      if (fs.existsSync(pagePath)) {
+        const stats = fs.statSync(pagePath);
+        
+        lpPages.push({
+          path: `/lp/${dir}`,
+          lastModified: stats.mtime,
+        });
+        
+        console.log(`✅ Detected LP: /lp/${dir}`);
+      }
+    });
+  } catch (error) {
+    console.error('Error scanning LP directory:', error);
+  }
+  
+  return lpPages;
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://rancorder.vercel.app';
   
-  // 内部ブログ記事（HTMLファイルから直接読み込み）
-  let posts: BlogPost[] = [];
-  try {
-    // まずMDX形式を試す
-    const mdxPosts = getAllPosts();
-    if (mdxPosts.length > 0) {
-      console.log(`[Sitemap] Found ${mdxPosts.length} MDX posts`);
-      posts = mdxPosts;
-    } else {
-      // MDXが無ければHTMLファイルを読み込む
-      console.log('[Sitemap] No MDX posts found, trying HTML files');
-      posts = getBlogPostsFromHtml();
-    }
-  } catch (error) {
-    console.error('[Sitemap] Failed to get MDX posts, trying HTML:', error);
-    posts = getBlogPostsFromHtml();
-  }
-
-  // 外部記事（直接読み込み）
-  const externalArticles = loadExternalArticles();
-
-  // 静的ページ
-  const staticPages: MetadataRoute.Sitemap = [
+  // ブログ記事を取得
+  const posts = getAllPosts();
+  const blogUrls = posts.map(post => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+  
+  // ===== LPページを自動検出 =====
+  const lpPages = getAllLPPages();
+  const lpUrls = lpPages.map(page => ({
+    url: `${baseUrl}${page.path}`,
+    lastModified: page.lastModified,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+  
+  console.log(`📊 Sitemap generated:`);
+  console.log(`  - Blog posts: ${posts.length}`);
+  console.log(`  - LP pages: ${lpPages.length}`);
+  
+  return [
+    // トップページ
     {
       url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1.0,
     },
-    {
-      url: `${baseUrl}/ja`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
+    
+    // ブログ一覧
     {
       url: `${baseUrl}/blog`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
-    {
-      url: `${baseUrl}/portfolio/en`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/portfolio/ja`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
+    
+    // ブログ記事（自動）
+    ...blogUrls,
+    
+    // ===== LPページ（自動で追加） =====
+    ...lpUrls,
   ];
-
-  // 内部記事
-  const postPages: MetadataRoute.Sitemap = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.date),
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
-  }));
-
-  // 外部記事
-  // Google Search Console のルールにより、外部ドメインのURLはサイトマップから除外
-  // 外部記事は参考情報として残すが、サイトマップには含めない
-  const externalPages: MetadataRoute.Sitemap = [];
-  
-  console.log(`[Sitemap] External articles (${externalArticles.length}) are excluded from sitemap per Google's guidelines`);
-
-  const allPages = [...staticPages, ...postPages, ...externalPages];
-  
-  console.log(`[Sitemap] Generated sitemap with ${allPages.length} total pages`);
-  console.log(`[Sitemap] Breakdown: ${staticPages.length} static + ${postPages.length} posts + ${externalPages.length} external`);
-  
-  return allPages;
 }
