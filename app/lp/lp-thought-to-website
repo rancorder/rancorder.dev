@@ -1,11 +1,3 @@
-<!--
-title: 思想を書くとWebサイトが完成する
-date: 2026-02-15
-category: Product
-excerpt: テーマと思想を書くと、設計も実装も不要でWebサイトが自動生成・公開される。
-readingTime: 8 min read
-tier: 2
--->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
