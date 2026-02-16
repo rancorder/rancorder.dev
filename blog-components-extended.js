@@ -8,6 +8,11 @@
 // ============================================
 class YesNoQuestion extends HTMLElement {
   connectedCallback() {
+    // 既に初期化済みならスキップ（重複初期化を防ぐ）
+    if (this.hasAttribute('data-initialized')) {
+      return;
+    }
+    
     const question = this.getAttribute('question') || 'Yes or No?';
     const yesSlot = this.querySelector('[slot="yes"]');
     const noSlot = this.querySelector('[slot="no"]');
@@ -50,6 +55,9 @@ class YesNoQuestion extends HTMLElement {
       buttons.hidden = true;
       this.setAttribute('data-answer', 'no');
     });
+    
+    // 初期化済みフラグを設定
+    this.setAttribute('data-initialized', 'true');
   }
 }
 
@@ -58,6 +66,10 @@ class YesNoQuestion extends HTMLElement {
 // ============================================
 class DelayedReveal extends HTMLElement {
   connectedCallback() {
+    if (this.hasAttribute('data-initialized')) {
+      return;
+    }
+    
     const triggerText = this.getAttribute('trigger-text') || 'Show Content';
     const delay = parseInt(this.getAttribute('delay')) || 2000;
     const content = this.innerHTML;
@@ -88,6 +100,8 @@ class DelayedReveal extends HTMLElement {
         body.hidden = false;
       }, delay);
     });
+    
+    this.setAttribute('data-initialized', 'true');
   }
 }
 
@@ -96,6 +110,10 @@ class DelayedReveal extends HTMLElement {
 // ============================================
 class QuestionFlow extends HTMLElement {
   connectedCallback() {
+    if (this.hasAttribute('data-initialized')) {
+      return;
+    }
+    
     const steps = Array.from(this.querySelectorAll('[data-question-step]'));
     let currentStep = 0;
     let answers = [];
@@ -193,6 +211,8 @@ class QuestionFlow extends HTMLElement {
         this.connectedCallback(); // 再初期化
       });
     };
+    
+    this.setAttribute('data-initialized', 'true');
   }
 }
 
@@ -201,6 +221,10 @@ class QuestionFlow extends HTMLElement {
 // ============================================
 class ScrollReveal extends HTMLElement {
   connectedCallback() {
+    if (this.hasAttribute('data-initialized')) {
+      return;
+    }
+    
     const threshold = parseFloat(this.getAttribute('threshold')) || 0.2;
     const delay = parseInt(this.getAttribute('delay')) || 0;
     
@@ -221,6 +245,7 @@ class ScrollReveal extends HTMLElement {
     }, { threshold });
     
     observer.observe(this);
+    this.setAttribute('data-initialized', 'true');
   }
 }
 
@@ -229,6 +254,10 @@ class ScrollReveal extends HTMLElement {
 // ============================================
 class ShowOnce extends HTMLElement {
   connectedCallback() {
+    if (this.hasAttribute('data-initialized')) {
+      return;
+    }
+    
     const id = this.getAttribute('id');
     
     if (!id) {
@@ -270,6 +299,8 @@ class ShowOnce extends HTMLElement {
         }, 300);
       });
       
+      this.setAttribute('data-initialized', 'true');
+      
     } catch (error) {
       // localStorage が使えない環境 → 警告表示
       console.warn('ShowOnce: localStorage not available', error);
@@ -292,9 +323,42 @@ customElements.define('question-flow', QuestionFlow);
 customElements.define('scroll-reveal', ScrollReveal);
 customElements.define('show-once', ShowOnce); // Tier 3
 
+// ============================================
+// グローバル再初期化関数（クライアント遷移対応）
+// ============================================
+window.reinitBlogArticle = function() {
+  console.log('🔄 Reinitializing all custom elements...');
+  
+  // すべてのカスタム要素を再初期化
+  const elements = [
+    'yes-no-question',
+    'delayed-reveal',
+    'question-flow',
+    'scroll-reveal',
+    'show-once'
+  ];
+  
+  elements.forEach(tagName => {
+    const instances = document.querySelectorAll(tagName);
+    instances.forEach(element => {
+      // 初期化済みフラグを削除して再初期化を許可
+      element.removeAttribute('data-initialized');
+      element.removeAttribute('data-answer');
+      
+      // connectedCallback を再実行
+      if (element.connectedCallback) {
+        element.connectedCallback();
+      }
+    });
+  });
+  
+  console.log('✅ Reinitialization complete');
+};
+
 console.log('✅ Extended components loaded:');
 console.log('  - yes-no-question (Tier 2)');
 console.log('  - delayed-reveal (Tier 2)');
 console.log('  - question-flow (Tier 2)');
 console.log('  - scroll-reveal (Tier 2)');
 console.log('  - show-once (Tier 3 - localStorage)');
+console.log('  - window.reinitBlogArticle() available');
