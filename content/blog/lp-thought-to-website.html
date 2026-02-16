@@ -802,91 +802,73 @@ tags: ["Webサイト生成", "自動化", "制約設計"]
 </div>
 
 <script>
-// モーダル制御
-function openModal() {
+// ===== グローバル関数として定義（クライアント遷移対応） =====
+window.openModal = function() {
   const modal = document.getElementById('selectionModal');
   if (!modal) return;
   
-  // すべてのステップを非表示
   document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // ステップ0を表示
   const step0 = document.getElementById('step0');
-  if (step0) {
-    step0.classList.add('active');
-  }
+  if (step0) step0.classList.add('active');
   
-  // モーダル表示
   modal.classList.add('active');
-}
+};
 
-function closeModal() {
+window.closeModal = function() {
   const modal = document.getElementById('selectionModal');
-  if (!modal) return;
-  
-  modal.classList.remove('active');
-}
+  if (modal) modal.classList.remove('active');
+};
 
-function nextStep(stepNumber) {
-  // すべてのステップを非表示
+window.nextStep = function(stepNumber) {
   document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 指定されたステップを表示
   const targetStep = document.getElementById('step' + stepNumber);
-  if (targetStep) {
-    targetStep.classList.add('active');
-  }
-}
+  if (targetStep) targetStep.classList.add('active');
+};
 
-function showFinalCTA() {
-  // すべてのステップを非表示
+window.showFinalCTA = function() {
   document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 最終CTAを表示
   const finalCTA = document.getElementById('finalCTA');
-  if (finalCTA) {
-    finalCTA.classList.add('active');
-  }
-}
+  if (finalCTA) finalCTA.classList.add('active');
+};
 
-function showRejection() {
-  // すべてのステップを非表示
+window.showRejection = function() {
   document.querySelectorAll('.step-content').forEach(function(step) {
     step.classList.remove('active');
   });
   
-  // 不合格画面を表示
   const rejection = document.getElementById('rejection');
-  if (rejection) {
-    rejection.classList.add('active');
-  }
-}
+  if (rejection) rejection.classList.add('active');
+};
 
-// 初期化
+// ===== 初期化（即時実行） =====
 (function() {
   // モーダル外クリックで閉じる
   const modal = document.getElementById('selectionModal');
   if (modal) {
     modal.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        closeModal();
-      }
+      if (e.target === modal) window.closeModal();
     });
   }
   
-  // クライアント遷移対応
-  if (!window.reinitBlogArticle) {
-    window.reinitBlogArticle = function() {
-      console.log('Reinitializing LP...');
-    };
-  }
+  console.log('✅ LP initialized (modal controls ready)');
 })();
+
+// ===== クライアント遷移対応 =====
+if (!window.reinitBlogArticle) {
+  window.reinitBlogArticle = function() {
+    console.log('🔄 Reinitializing LP...');
+    // LPは再初期化不要（グローバル関数なので）
+  };
+}
 </script>
 
 </body>
