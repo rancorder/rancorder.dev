@@ -1,0 +1,384 @@
+<!--
+title: このブログの設計思想と使えるすべての機能
+date: 2026-02-17
+category: 開発
+excerpt: React化されたこのブログは何ができて、何がうれしいのか。機能・メリット・インタラクティブ要素を全部まとめた。
+readingTime: 8 min read
+tags: ["React", "Next.js", "ブログ設計", "インタラクティブ"]
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>このブログの設計思想と使えるすべての機能</title>
+</head>
+<body>
+
+<article aria-label="記事本文">
+
+  <header>
+    <fade-in delay="0">
+      <h1>このブログの設計思想と使えるすべての機能</h1>
+      <p>
+        React化されたこのブログは何ができて、何がうれしいのか。
+        設計の背景から使えるインタラクティブ要素まで、全部まとめた。
+      </p>
+    </fade-in>
+  </header>
+
+  <hr />
+
+  <!-- ========================================
+       1. 設計思想
+       ======================================== -->
+
+  <fade-in delay="0">
+    <section aria-label="設計思想">
+      <h2>なぜReact化したのか</h2>
+
+      <p>
+        ブログ記事はHTMLファイルで管理している。
+        それ自体は変えない。変えたのは、<strong>その HTML を誰が解釈するか</strong>だ。
+      </p>
+
+      <p>
+        以前の構成では、Web Components（カスタム要素）をブラウザに解釈させていた。
+        結果として 2 つの問題が起きた。
+      </p>
+
+      <callout-box type="warning" title="以前の構成で起きていた問題">
+        <p>
+          ① ページ遷移のたびにアニメーションが動かなくなる<br />
+          ② <code>blog-components.js</code> が読み込まれておらず、カスタムタグが未定義のまま表示される
+        </p>
+      </callout-box>
+
+      <p>
+        React 化によって HTML の「構造」だけを読み込み、
+        動作は React コンポーネントが担う形にした。
+        ファイルはそのまま。表示だけが正確になった。
+      </p>
+    </section>
+  </fade-in>
+
+  <!-- ========================================
+       2. システムの特徴
+       ======================================== -->
+
+  <fade-in delay="200">
+    <section aria-label="システムの特徴">
+      <h2>システムが持つ 5 つの特徴</h2>
+
+      <p>
+        このシステムがどう設計されているかを整理する。
+        技術的な話より「どういう前提で動いているか」の話が大事だ。
+      </p>
+
+      <accordion-item title="① HTMLファイルは変えない">
+        <p>
+          記事は <code>content/blog/*.html</code> に置く。
+          React 化の前も後も同じ場所、同じ書き方。
+          既存の記事を移行する作業は発生しない。
+        </p>
+        <p>
+          変わったのはレンダリング方法だけ。
+          <code>dangerouslySetInnerHTML</code> から <code>BlogRenderer</code> に差し替えた一行だけが変更点だ。
+        </p>
+      </accordion-item>
+
+      <accordion-item title="② Server Component で静的生成">
+        <p>
+          HTML のパースはビルド時にサーバー側で行われる。
+          ユーザーに届く時点ですでに React ツリーになっている。
+          cheerio がサーバー側でのみ動き、クライアントのバンドルには含まれない。
+        </p>
+      </accordion-item>
+
+      <accordion-item title="③ フォールバック機能">
+        <p>
+          パースに失敗した場合は自動的に <code>dangerouslySetInnerHTML</code> に戻る。
+          記事が表示されなくなることはない。
+          コンソールに <code>Parse failed, using fallback</code> と出たら確認するサインだ。
+        </p>
+      </accordion-item>
+
+      <accordion-item title="④ クライアント遷移で動き続ける">
+        <p>
+          Next.js のクライアント遷移（SPA的な遷移）の後も、
+          アニメーションや インタラクティブ機能が正しく動く。
+          React のライフサイクルで管理されているため、再マウント時に自動で再実行される。
+        </p>
+      </accordion-item>
+
+      <accordion-item title="⑤ canonical が自動で設定される">
+        <p>
+          <code>generateMetadata</code> 内で <code>alternates.canonical</code> を設定している。
+          記事 URL が正規 URL として検索エンジンに伝わる。
+          HTML ファイル側に書く必要はない。
+        </p>
+      </accordion-item>
+
+    </section>
+  </fade-in>
+
+  <!-- ========================================
+       3. メリット・ベネフィット
+       ======================================== -->
+
+  <fade-in delay="400">
+    <section aria-label="メリットとベネフィット">
+      <h2>何がうれしいか</h2>
+
+      <p>
+        設計の良さはその設計を使う人間にとっての話だ。
+        書く人・読む人・開発する人、それぞれに違う恩恵がある。
+      </p>
+
+      <h3>書く人にとって</h3>
+
+      <comparison-card
+        title="記事ファイルの管理"
+        good="HTML ファイルを content/blog/ に置くだけで公開される"
+        bad="CMS にログインして、フォームを埋めて、プレビューして、公開ボタンを押す"
+      />
+
+      <comparison-card
+        title="インタラクティブ要素"
+        good="タグを書くだけで動く。&lt;fade-in&gt; と書けばアニメーションになる"
+        bad="JavaScript を書いて、DOMを取得して、イベントを登録して、クリーンアップして…"
+      />
+
+      <h3>読む人にとって</h3>
+
+      <callout-box type="success" title="読者体験の向上">
+        <p>
+          スクロールに連動したフェードイン、クリックで展開するアコーディオン、
+          コードのワンクリックコピー。
+          情報を「読む」だけでなく「触れる」体験が記事の中にある。
+        </p>
+      </callout-box>
+
+      <h3>開発・運用する人にとって</h3>
+
+      <progress-bar value="95" max="100" label="Lighthouse SEO スコア目標" />
+      <progress-bar value="90" max="100" label="Lighthouse Performance 目標" />
+      <progress-bar value="95" max="100" label="Accessibility 目標" />
+
+      <p style="margin-top: 1rem;">
+        SSG（静的生成）により、ページは高速に配信される。
+        canonical は自動設定。OGP も <code>generateMetadata</code> で管理される。
+        SEO に必要な設定が漏れにくい構造だ。
+      </p>
+
+    </section>
+  </fade-in>
+
+  <!-- ========================================
+       4. 使えるインタラクティブ機能
+       ======================================== -->
+
+  <fade-in delay="600">
+    <section aria-label="使えるインタラクティブ機能">
+      <h2>使えるインタラクティブ機能・エフェクト一覧</h2>
+
+      <p>
+        記事に書けるカスタムタグを全種類まとめる。
+        すべてカスタムタグを HTML に書くだけで動く。JS を書く必要はない。
+      </p>
+
+      <h3>🎞️ アニメーション系</h3>
+
+      <callout-box type="info" title="fade-in — スクロールフェードイン">
+        <p>
+          スクロールして要素が画面に入ったタイミングで、下からふわっと浮かび上がる。
+          <code>delay</code> でミリ秒単位の遅延を設定できる。複数要素を順番に出すのに使う。
+        </p>
+        <code-block language="html">
+&lt;fade-in delay="200"&gt;
+  &lt;p&gt;スクロールで表示される&lt;/p&gt;
+&lt;/fade-in&gt;
+        </code-block>
+      </callout-box>
+
+      <h3>🗂️ 情報整理系</h3>
+
+      <callout-box type="info" title="callout-box — 情報ボックス">
+        <p>
+          <code>type</code> に応じてアイコンと色が変わる強調ボックス。
+          info / warning / success / critical の 4 種類。
+        </p>
+        <code-block language="html">
+&lt;callout-box type="warning" title="注意"&gt;
+  &lt;p&gt;ここに注意事項&lt;/p&gt;
+&lt;/callout-box&gt;
+        </code-block>
+      </callout-box>
+
+      <callout-box type="info" title="accordion-item — 折りたたみ">
+        <p>
+          クリックで開閉するアコーディオン。
+          補足情報や FAQ など、最初から全部見せたくない内容に使う。
+          <code>title</code> がクリック可能なヘッダーになる。
+        </p>
+        <code-block language="html">
+&lt;accordion-item title="詳細を見る"&gt;
+  &lt;p&gt;展開したときに見える内容&lt;/p&gt;
+&lt;/accordion-item&gt;
+        </code-block>
+      </callout-box>
+
+      <callout-box type="info" title="comparison-card — Good / Bad 比較">
+        <p>
+          2 つの選択肢を横並びで比較する。
+          設計の判断や、やるべき・やらないべきの対比を伝えるときに使う。
+        </p>
+        <code-block language="html">
+&lt;comparison-card
+  title="比較タイトル"
+  good="良い例"
+  bad="悪い例"
+/&gt;
+        </code-block>
+      </callout-box>
+
+      <h3>💻 コード系</h3>
+
+      <callout-box type="info" title="code-block — コードブロック">
+        <p>
+          言語名を指定してコードを表示する。
+          右上にコピーボタンが表示され、ワンクリックでクリップボードにコピーできる。
+          対応言語は javascript / typescript / python / bash / html / css / json など。
+        </p>
+        <code-block language="html">
+&lt;code-block language="python"&gt;
+def hello():
+    print("Hello!")
+&lt;/code-block&gt;
+        </code-block>
+      </callout-box>
+
+      <h3>✅ 操作系</h3>
+
+      <callout-box type="info" title="interactive-checklist — チェックリスト">
+        <p>
+          クリックでチェックが入る TO-DO リスト。
+          チェック済みの項目は薄くなり、打ち消し線が入る。
+          手順チェックや確認項目の列挙に使う。
+        </p>
+        <code-block language="html">
+&lt;interactive-checklist&gt;
+  &lt;ul&gt;
+    &lt;li&gt;確認項目 1&lt;/li&gt;
+    &lt;li&gt;確認項目 2&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/interactive-checklist&gt;
+        </code-block>
+      </callout-box>
+
+      <callout-box type="info" title="tool-tip — ツールチップ">
+        <p>
+          テキストにホバーすると補足説明がポップアップする。
+          専門用語や略語の説明に使う。
+          表示位置は top / bottom / left / right で指定できる。
+        </p>
+        <code-block language="html">
+&lt;tool-tip text="補足説明" position="top"&gt;
+  ホバーしてみて
+&lt;/tool-tip&gt;
+        </code-block>
+      </callout-box>
+
+      <h3>📊 可視化系</h3>
+
+      <callout-box type="info" title="progress-bar — プログレスバー">
+        <p>
+          数値を視覚的なバーで表示する。
+          達成率・進捗・スコアなどを数字だけでなく形で見せるときに使う。
+          <code>value</code> と <code>max</code> で割合を計算して表示される。
+        </p>
+        <code-block language="html">
+&lt;progress-bar value="75" max="100" label="進捗" /&gt;
+        </code-block>
+      </callout-box>
+
+    </section>
+  </fade-in>
+
+  <!-- ========================================
+       5. 使えるチェックリスト（実際に動くやつ）
+       ======================================== -->
+
+  <fade-in delay="800">
+    <section aria-label="記事を書くときのチェックリスト">
+      <h2>記事を書くときの確認事項</h2>
+
+      <p>
+        記事を公開する前に確認すべき項目をまとめた。
+        実際にチェックできる。
+      </p>
+
+      <interactive-checklist>
+        <ul>
+          <li>frontmatter の title, date, excerpt が設定されている</li>
+          <li>ファイル名が YYYY-MM-DD-slug.html の形式になっている</li>
+          <li>見出し構造が h1 → h2 → h3 の順番になっている</li>
+          <li>カスタムタグの閉じタグが正しい</li>
+          <li><code>npm run dev</code> でローカル確認済み</li>
+          <li><code>npm run build</code> でビルドエラーがないことを確認済み</li>
+          <li>git push 済み</li>
+          <li>Vercel デプロイが成功した</li>
+          <li>本番 URL で表示確認した</li>
+        </ul>
+      </interactive-checklist>
+
+    </section>
+  </fade-in>
+
+  <!-- ========================================
+       6. まとめ
+       ======================================== -->
+
+  <fade-in delay="1000">
+    <section aria-label="まとめ">
+      <h2>まとめ</h2>
+
+      <p>
+        このブログシステムは「HTML ファイルを書く」という動作は変えないまま、
+        React のレンダリングと SSG の恩恵を受けられるように設計されている。
+      </p>
+
+      <p>
+        記事を書く人は、タグを覚えるだけでアニメーションや強調ボックス、
+        折りたたみメニューが使える。
+        JS を書く必要はない。
+      </p>
+
+      <p>
+        読む人は、スクロールに連動した体験と、情報を整理された形で受け取れる。
+      </p>
+
+      <callout-box type="success" title="一言でいうと">
+        <p>
+          書くのが簡単で、読むのが心地よく、運用が壊れにくい。
+          それがこのブログシステムの設計意図だ。
+        </p>
+      </callout-box>
+
+    </section>
+  </fade-in>
+
+  <hr />
+
+  <footer aria-label="記事フッター">
+    <p>
+      カスタムタグの詳細な使い方は
+      <code>CUSTOM_TAGS_QUICK_REFERENCE.md</code> を参照。
+      新しいタグを追加したい場合は <code>components/blog/</code> にコンポーネントを追加するだけでよい。
+    </p>
+  </footer>
+
+</article>
+
+</body>
+</html>
