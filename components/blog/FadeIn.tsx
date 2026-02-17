@@ -1,4 +1,3 @@
-// components/blog/FadeIn.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -9,11 +8,7 @@ interface FadeInProps {
   children: React.ReactNode;
 }
 
-/**
- * スクロールに応じてフェードインするコンポーネント
- * IntersectionObserverで画面内に入ったら発火
- */
-export function FadeIn({ delay = 0, duration = 600, children }: FadeInProps) {
+export function FadeIn({ delay = 0, duration = 700, children }: FadeInProps) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -21,10 +16,9 @@ export function FadeIn({ delay = 0, duration = 600, children }: FadeInProps) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // delayミリ秒後に表示
           setTimeout(() => {
             setIsVisible(true);
-          }, delay * 1000); // delayは秒単位で指定される想定
+          }, delay * 1000);
         }
       },
       { threshold: 0.1 }
@@ -34,7 +28,6 @@ export function FadeIn({ delay = 0, duration = 600, children }: FadeInProps) {
       observer.observe(ref.current);
     }
 
-    // クリーンアップ
     return () => {
       observer.disconnect();
     };
@@ -45,8 +38,16 @@ export function FadeIn({ delay = 0, duration = 600, children }: FadeInProps) {
       ref={ref}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-        transition: `all ${duration}ms ease`,
+        transform: isVisible
+          ? 'translateY(0px) scale(1)'
+          : 'translateY(36px) scale(0.97)',
+        filter: isVisible ? 'blur(0px)' : 'blur(6px)',
+        transition: [
+          `opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+          `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+          `filter ${Math.round(duration * 0.8)}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+        ].join(', '),
+        willChange: 'opacity, transform, filter',
       }}
     >
       {children}
