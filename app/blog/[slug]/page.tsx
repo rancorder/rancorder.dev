@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPost, getAllPosts, getRelatedPosts } from '@/lib/posts';
+import { BlogRenderer } from '@/components/blog/blog-renderer';
 import ParticleInitializer from './ParticleInitializer';
 import ParticleGlobalSetup from './ParticleGlobalSetup';
 import './blog-post.css';
 
 // ===================================
-// メタデータ生成（SEO対応）
+// メタデータ生成（SEO対応 + canonical追加）
 // ===================================
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug);
@@ -20,12 +21,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: post.title,
     description: post.excerpt || post.title,
+    alternates: {
+      canonical: `https://rancorder.dev/blog/${params.slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt || post.title,
       type: 'article',
       publishedTime: post.date,
       tags: post.tags,
+      url: `https://rancorder.dev/blog/${params.slug}`,
     },
   };
 }
@@ -106,15 +111,12 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
         </div>
       </header>
 
-      {/* 記事コンテンツ */}
+      {/* 記事コンテンツ - BlogRendererを使用 */}
       <article className="blog-post-content">
-        <div
-          className="blog-content-wrapper"
-          dangerouslySetInnerHTML={{ __html: post.html }}
-        />
+        <BlogRenderer html={post.html} />
       </article>
 
-      {/* ★ 関連記事セクション（新規追加） */}
+      {/* ★ 関連記事セクション */}
       {relatedPosts.length > 0 && (
         <section className="related-posts-section">
           <div className="related-posts-container">
