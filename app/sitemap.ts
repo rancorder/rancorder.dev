@@ -1,5 +1,5 @@
 // app/sitemap.ts
-// LPページを自動検出してサイトマップに含める
+// LPページを自動検出してサイトマップに含める（ディレクトリスキップ対応）
 import { MetadataRoute } from 'next';
 import fs from 'fs';
 import path from 'path';
@@ -16,7 +16,7 @@ interface LPPage {
   lastModified: Date;
 }
 
-// ブログ記事を取得
+// ブログ記事を取得（ディレクトリをスキップ）
 function getAllPosts(): Post[] {
   const contentDir = path.join(process.cwd(), 'content/blog');
   
@@ -27,7 +27,20 @@ function getAllPosts(): Post[] {
   const files = fs.readdirSync(contentDir);
   
   const posts = files
-    .filter(file => file.endsWith('.html'))
+    .filter(file => {
+      // ===== ディレクトリをスキップ =====
+      const filePath = path.join(contentDir, file);
+      const stat = fs.statSync(filePath);
+      
+      // ディレクトリならスキップ
+      if (stat.isDirectory()) {
+        console.log(`⏭️  Skipping directory: ${file}`);
+        return false;
+      }
+      
+      // .html ファイルのみ
+      return file.endsWith('.html');
+    })
     .map(file => {
       const filePath = path.join(contentDir, file);
       const fileContent = fs.readFileSync(filePath, 'utf-8');
@@ -44,7 +57,7 @@ function getAllPosts(): Post[] {
   return posts;
 }
 
-// ===== LPページを自動検出 =====
+// LPページを自動検出
 function getAllLPPages(): LPPage[] {
   const lpDir = path.join(process.cwd(), 'app/lp');
   
@@ -94,7 +107,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
   
-  // ===== LPページを自動検出 =====
+  // LPページを自動検出
   const lpPages = getAllLPPages();
   const lpUrls = lpPages.map(page => ({
     url: `${baseUrl}${page.path}`,
@@ -127,7 +140,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // ブログ記事（自動）
     ...blogUrls,
     
-    // ===== LPページ（自動で追加） =====
+    // LPページ（自動で追加）
     ...lpUrls,
   ];
 }
