@@ -1,1094 +1,1204 @@
-// app/lp/lp-thought-to-website/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-export default function ThoughtToWebsiteLandingPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+/* ============================================================
+   WEB AUDIO
+   ============================================================ */
+function beep(freq: number = 440, type: OscillatorType = 'square', dur: number = 0.08, vol: number = 0.06) {
+  try {
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } catch (_) {}
+}
 
-  // パーティクルシステム
+function playAlarm() {
+  [880, 660, 880, 440].forEach((f, i) =>
+    setTimeout(() => beep(f, 'sawtooth', 0.15, 0.1), i * 120)
+  );
+}
+
+function playSuccess() {
+  [523, 659, 784, 1047].forEach((f, i) =>
+    setTimeout(() => beep(f, 'sine', 0.25, 0.12), i * 80)
+  );
+}
+
+function playClick() { beep(800, 'square', 0.04, 0.05); }
+function playDeny()  { beep(200, 'sawtooth', 0.3, 0.1); }
+
+/* ============================================================
+   CANVAS: MATRIX RAIN
+   ============================================================ */
+function MatrixRain() {
+  const ref = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    let W = window.innerWidth, H = window.innerHeight;
+    const COLS = Math.floor(W / 20);
+    const drops: number[] = Array(COLS).fill(1);
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    let particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-    }> = [];
-    let animationId: number;
-
-    const PARTICLE_COUNT = Math.min(60, Math.floor((width * height) / 20000));
-
-    function resize() {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas!.width = width;
-      canvas!.height = height;
-    }
-
-    function createParticles() {
-      particles = [];
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          radius: Math.random() * 2 + 1,
-        });
-      }
-    }
-
-    function draw() {
-      ctx!.clearRect(0, 0, width, height);
-
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-
-        ctx!.fillStyle = 'rgba(124, 58, 237, 0.6)';
-        ctx!.beginPath();
-        ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx!.fill();
-      });
-
-      // 線で結ぶ
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < 120) {
-            ctx!.strokeStyle = `rgba(124, 58, 237, ${0.15 * (1 - distance / 120)})`;
-            ctx!.lineWidth = 0.5;
-            ctx!.beginPath();
-            ctx!.moveTo(particles[i].x, particles[i].y);
-            ctx!.lineTo(particles[j].x, particles[j].y);
-            ctx!.stroke();
-          }
-        }
-      }
-
-      animationId = requestAnimationFrame(draw);
-    }
+    const resize = () => {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+    };
 
     window.addEventListener('resize', resize);
-    resize();
-    createParticles();
-    draw();
+    canvas.width = W; canvas.height = H;
 
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationId);
+    const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF><{}[]|_';
+
+    let raf: number;
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#00ff41';
+      ctx.font = '14px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+        ctx.fillStyle = drops[i] * 20 > H * 0.7
+          ? 'rgba(0,255,65,0.9)'
+          : `rgba(0,${Math.floor(180 + Math.random() * 75)},65,${0.4 + Math.random() * 0.4})`;
+        ctx.fillText(ch, i * 20, drops[i] * 20);
+        if (drops[i] * 20 > H && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+      raf = requestAnimationFrame(draw);
     };
+
+    raf = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
+  return (
+    <canvas ref={ref} style={{
+      position: 'fixed', inset: 0, zIndex: 0,
+      opacity: 0.18, pointerEvents: 'none',
+    }} />
+  );
+}
+
+/* ============================================================
+   CANVAS: CONFETTI BURST (on approval)
+   ============================================================ */
+function burstConfetti(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext('2d'); if (!ctx) return;
+  const W = canvas.width, H = canvas.height;
+  const colors = ['#00ff41', '#00cc33', '#ffffff', '#ffaa00', '#00ffff'];
+  const particles = Array.from({ length: 120 }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 5 + Math.random() * 12;
+    return {
+      x: W / 2, y: H / 2,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 4,
+      size: 5 + Math.random() * 10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1, r: Math.random() * Math.PI * 2, rv: (Math.random() - .5) * .3,
+    };
+  });
+  let raf: number;
+  const draw = () => {
+    ctx.clearRect(0, 0, W, H);
+    let alive = false;
+    for (const p of particles) {
+      p.vy += 0.25; p.x += p.vx; p.y += p.vy;
+      p.vx *= .97; p.life -= .018; p.r += p.rv;
+      if (p.life > 0) {
+        alive = true;
+        ctx.save(); ctx.globalAlpha = p.life;
+        ctx.translate(p.x, p.y); ctx.rotate(p.r);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
+      }
+    }
+    if (alive) raf = requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, W, H);
+  };
+  raf = requestAnimationFrame(draw);
+  setTimeout(() => { cancelAnimationFrame(raf); ctx.clearRect(0, 0, W, H); }, 3500);
+}
+
+/* ============================================================
+   GLITCH TEXT (CSS + JS hybrid)
+   ============================================================ */
+const GLITCH_CHARS = '!@#$%^&*_<>[]{}|\\/?01';
+function TerminalGlitch({ children, active = false }: { children: string; active?: boolean }) {
+  const [txt, setTxt] = useState(children);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!active) { setTxt(children); return; }
+    let frame = 0;
+    const total = 24;
+    const tick = () => {
+      frame++;
+      const t = frame / total;
+      if (t < 0.6) {
+        setTxt(children.split('').map(c =>
+          c !== ' ' && Math.random() < 0.5 ? GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)] : c
+        ).join(''));
+      } else {
+        const idx = Math.floor(((t - 0.6) / 0.4) * children.length);
+        setTxt(children.split('').map((c, i) =>
+          i <= idx ? c : c !== ' ' && Math.random() < 0.3 ? GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)] : c
+        ).join(''));
+      }
+      if (frame < total) rafRef.current = requestAnimationFrame(tick);
+      else setTxt(children);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [active, children]);
+
+  return <>{txt}</>;
+}
+
+/* ============================================================
+   TERMINAL TYPEWRITER SECTION
+   ============================================================ */
+function TerminalSection({ prompt, lines, delay = 0 }: {
+  prompt: string; lines: string[]; delay?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [lineIdx, setLineIdx] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+    }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    let i = 0;
+    const text = prompt;
+    const timer = setTimeout(() => {
+      const id = setInterval(() => {
+        i++;
+        setTyped(text.slice(0, i));
+        beep(600 + Math.random() * 200, 'square', 0.03, 0.03);
+        if (i >= text.length) {
+          clearInterval(id);
+          setTimeout(() => setLineIdx(lines.length), 300);
+        }
+      }, 28);
+      return () => clearInterval(id);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [visible]);
+
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transition: 'opacity 0.3s',
+      fontFamily: "'VT323', monospace",
+    }}>
+      <div style={{ color: '#00ff41', fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+        <span style={{ color: '#00aa28' }}>root@system</span>
+        <span style={{ color: '#666' }}>:</span>
+        <span style={{ color: '#00aaff' }}>~</span>
+        <span style={{ color: '#666' }}>$ </span>
+        <span>{typed}</span>
+        <span style={{
+          display: 'inline-block', width: '10px', height: '1.1em',
+          background: '#00ff41', marginLeft: '2px', verticalAlign: 'middle',
+          animation: 'blink 1s step-end infinite',
+        }} />
+      </div>
+      {lineIdx > 0 && lines.map((line, i) => (
+        <div key={i} style={{
+          color: line.startsWith('!!') ? '#ff0040' :
+            line.startsWith('>>') ? '#ffaa00' :
+              line.startsWith('OK') ? '#00ff41' : '#88cc88',
+          fontSize: '1.05rem',
+          paddingLeft: '1rem',
+          animation: `fadeInLine 0.2s ease ${i * 0.08}s both`,
+        }}>
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   SECTION BLOCK
+   ============================================================ */
+function CmdBlock({ label, children, accent = '#00ff41' }: {
+  label: string; children: React.ReactNode; accent?: string;
+}) {
+  const [vis, setVis] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVis(true); obs.disconnect(); }
+    }, { threshold: 0.08 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{
+      opacity: vis ? 1 : 0,
+      transform: vis ? 'translateY(0)' : 'translateY(32px)',
+      transition: 'all 0.6s cubic-bezier(.16,1,.3,1)',
+      margin: '0 0 0.5rem',
+    }}>
+      <div style={{
+        borderLeft: `3px solid ${accent}`,
+        borderTop: `1px solid ${accent}33`,
+        borderRight: `1px solid ${accent}11`,
+        borderBottom: `1px solid ${accent}11`,
+        background: `linear-gradient(135deg, ${accent}08 0%, transparent 60%)`,
+        padding: '2rem 2rem 2rem 2.5rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* corner decoration */}
+        <div style={{
+          position: 'absolute', top: 0, right: 0,
+          width: '60px', height: '60px',
+          borderBottom: `1px solid ${accent}22`,
+          borderLeft: `1px solid ${accent}22`,
+        }} />
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0,
+          width: '40px', height: '40px',
+          borderTop: `1px solid ${accent}22`,
+          borderRight: `1px solid ${accent}22`,
+        }} />
+        {/* scan line */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(180deg, transparent 49%, ${accent}06 50%, transparent 51%)`,
+          backgroundSize: '100% 4px',
+          pointerEvents: 'none',
+          animation: 'scrollLines 12s linear infinite',
+        }} />
+        <div style={{
+          fontFamily: "'VT323', monospace",
+          fontSize: '0.75rem',
+          color: `${accent}99`,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          marginBottom: '1rem',
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+        }}>
+          <span style={{ display: 'inline-block', width: '20px', height: '1px', background: accent }} />
+          {label}
+          <span style={{ display: 'inline-block', width: '20px', height: '1px', background: accent }} />
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MAIN PAGE
+   ============================================================ */
+export default function LandingPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [modalFlash, setModalFlash] = useState<'none' | 'green' | 'red'>('none');
+  const [glitchActive, setGlitchActive] = useState(false);
+  const confettiRef = useRef<HTMLCanvasElement>(null);
+
   const openModal = () => {
-    setCurrentStep(0);
-    setIsModalOpen(true);
+    playClick();
+    setStep(0); setModalOpen(true); setModalFlash('none');
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const closeModal = () => { playClick(); setModalOpen(false); };
+
+  const next = (s: number) => {
+    playClick();
+    setGlitchActive(true);
+    setTimeout(() => { setGlitchActive(false); setStep(s); }, 350);
   };
 
-  const nextStep = (step: number) => {
-    setCurrentStep(step);
+  const deny = () => {
+    playDeny(); playAlarm();
+    setModalFlash('red');
+    setTimeout(() => { setStep(99); setModalFlash('none'); }, 600);
   };
 
-  const showRejection = () => {
-    setCurrentStep(99);
+  const approve = () => {
+    playSuccess();
+    setModalFlash('green');
+    setTimeout(() => {
+      setStep(100); setModalFlash('none');
+      if (confettiRef.current) burstConfetti(confettiRef.current);
+    }, 400);
   };
 
-  const showFinalCTA = () => {
-    setCurrentStep(100);
-  };
+  const QUESTIONS = [
+    {
+      id: 1, label: 'QUERY_01 / 05',
+      text: 'このシステムには、管理画面で記事を書く機能はありません。',
+      yes: '⭕ CONFIRM', no: '❌ ABORT',
+    },
+    {
+      id: 2, label: 'QUERY_02 / 05',
+      text: '構造・機能・運用フローについて、あとから変更や相談はできません。',
+      yes: '⭕ ACCEPTED', no: '❌ REJECTED',
+    },
+    {
+      id: 3, label: 'QUERY_03 / 05',
+      text: '更新が止まった場合、それは「設計の問題」であり、あなた自身を責めないと約束できますか。',
+      yes: '⭕ DELEGATED', no: '❌ OVERRIDE',
+    },
+    {
+      id: 4, label: 'QUERY_04 / 05',
+      text: '10万円は「制作費」ではなく、自由を手放すための費用です。',
+      yes: '⭕ UNDERSTOOD', no: '❌ DECLINE',
+    },
+    {
+      id: 5, label: 'FINAL_AUTH',
+      text: 'それでも申し込みますか。',
+      yes: '⭕ EXECUTE', no: '❌ STAND DOWN',
+    },
+  ];
 
   return (
     <>
-      <style jsx global>{`
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; cursor: crosshair; }
+
+        body {
+          background: #000;
+          color: #c8ffc8;
+          font-family: 'Share Tech Mono', monospace;
+          overflow-x: hidden;
+          line-height: 1.75;
         }
 
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        ::selection { background: #00ff41; color: #000; }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        @keyframes fadeInLine {
+          from { opacity:0; transform:translateX(-8px); }
+          to   { opacity:1; transform:translateX(0); }
         }
 
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.8;
-            transform: scale(1.05);
-          }
+        @keyframes scrollLines {
+          from { background-position: 0 0; }
+          to   { background-position: 0 100px; }
         }
 
-        @keyframes scanline {
-          0% {
-            transform: translateY(-100%);
-          }
-          100% {
-            transform: translateY(100%);
-          }
+        @keyframes glitchH {
+          0%,100%  { clip-path: inset(0 0 95% 0); transform: translate(-4px,0); }
+          20%      { clip-path: inset(30% 0 50% 0); transform: translate(4px,0); }
+          40%      { clip-path: inset(60% 0 20% 0); transform: translate(-2px,0); }
+          60%      { clip-path: inset(10% 0 80% 0); transform: translate(3px,0); }
+          80%      { clip-path: inset(80% 0 5% 0);  transform: translate(-3px,0); }
         }
 
-        @keyframes glowPulse {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+        @keyframes scanV {
+          0%   { top: -100%; }
+          100% { top: 100%; }
+        }
+
+        @keyframes borderPulse {
+          0%,100% { border-color: rgba(0,255,65,.3); box-shadow: 0 0 20px rgba(0,255,65,.1); }
+          50%     { border-color: rgba(0,255,65,.7); box-shadow: 0 0 40px rgba(0,255,65,.3); }
+        }
+
+        @keyframes flashRed {
+          0%,100% { background: rgba(255,0,64,.0); }
+          50%     { background: rgba(255,0,64,.35); }
+        }
+
+        @keyframes flashGreen {
+          0%,100% { background: rgba(0,255,65,.0); }
+          50%     { background: rgba(0,255,65,.25); }
+        }
+
+        @keyframes chargeBtn {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+
+        @keyframes glitchSkew {
+          0%,100% { transform: skew(0deg); }
+          20%     { transform: skew(-1deg); }
+          40%     { transform: skew(0.5deg); }
+          60%     { transform: skew(-0.5deg); }
+          80%     { transform: skew(1deg); }
+        }
+
+        .cta-btn {
+          position: relative;
+          padding: 1.1rem 3rem;
+          background: transparent;
+          border: 2px solid #00ff41;
+          color: #00ff41;
+          font-family: 'VT323', monospace;
+          font-size: 1.6rem;
+          letter-spacing: .15em;
+          cursor: crosshair;
+          overflow: hidden;
+          transition: color .2s;
+          animation: borderPulse 2s ease-in-out infinite;
+        }
+
+        .cta-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #00ff41;
+          transform: translateX(-100%);
+          transition: transform .25s ease;
+          z-index: 0;
+        }
+
+        .cta-btn:hover::before { transform: translateX(0); }
+        .cta-btn:hover { color: #000; }
+        .cta-btn span { position: relative; z-index: 1; }
+
+        .yes-btn, .no-btn {
+          flex: 1;
+          padding: 1rem 1.5rem;
+          font-family: 'VT323', monospace;
+          font-size: 1.4rem;
+          letter-spacing: .1em;
+          border: 2px solid;
+          cursor: crosshair;
+          transition: all .2s;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .yes-btn {
+          background: transparent;
+          border-color: #00ff41;
+          color: #00ff41;
+        }
+
+        .yes-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #00ff41;
+          transform: translateX(-100%);
+          transition: transform .2s;
+          z-index: 0;
+        }
+
+        .yes-btn:hover::before { transform: translateX(0); }
+        .yes-btn:hover { color: #000; }
+        .yes-btn span { position: relative; z-index: 1; }
+
+        .no-btn {
+          background: transparent;
+          border-color: #ff0040;
+          color: #ff0040;
+        }
+
+        .no-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #ff0040;
+          transform: translateX(100%);
+          transition: transform .2s;
+          z-index: 0;
+        }
+
+        .no-btn:hover::before { transform: translateX(0); }
+        .no-btn:hover { color: #fff; }
+        .no-btn span { position: relative; z-index: 1; }
+
+        .section-block {
+          max-width: 860px;
+          margin: 0 auto;
+          padding: 0 1.5rem 4rem;
+        }
+
+        h2 {
+          font-family: 'VT323', monospace;
+          font-size: clamp(2rem, 5vw, 3rem);
+          color: #fff;
+          letter-spacing: .05em;
+          margin-bottom: 1.5rem;
+          text-shadow: 0 0 20px rgba(0,255,65,.4);
+        }
+
+        h2::before {
+          content: '> ';
+          color: #00ff41;
+        }
+
+        p { margin-bottom: 1rem; color: #99cc99; }
+        strong { color: #fff; }
+        li { margin-bottom: .5rem; color: #99cc99; list-style: none; padding-left: 1.5rem; position: relative; }
+        li::before { content: '▹'; position: absolute; left: 0; color: #00ff41; }
+
+        .danger  { color: #ff0040 !important; }
+        .success { color: #00ff41 !important; }
+        .warn    { color: #ffaa00 !important; }
+
+        hr {
+          border: none;
+          border-top: 1px solid rgba(0,255,65,.15);
+          margin: 2rem 0;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+
+        /* ── MOBILE UTILITIES ── */
+        .two-col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .answer-buttons { display: flex; gap: 1rem; }
+        .modal-inner { padding: 3rem 2.5rem; }
+        .modal-title { font-size: .8rem; }
+
+        @media (max-width: 640px) {
+          .two-col { grid-template-columns: 1fr; }
+          .answer-buttons { flex-direction: column; }
+          .modal-inner {
+            padding: 1.5rem 1rem;
+            max-height: 90vh;
+            overflow-y: auto;
           }
-          50% {
-            box-shadow: 0 0 40px rgba(124, 58, 237, 0.8);
+          .modal-title { display: none; }
+          .section-block {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
           }
+          .cta-btn {
+            width: 100%;
+            text-align: center;
+            padding: 1rem 1.5rem !important;
+            font-size: 1.3rem !important;
+          }
+          .yes-btn, .no-btn {
+            width: 100%;
+            padding: .9rem 1rem !important;
+            font-size: 1.2rem !important;
+          }
+          h2 { font-size: 1.8rem !important; }
         }
       `}</style>
 
-      <div className="lp-container">
-        {/* パーティクル背景 */}
-        <canvas ref={canvasRef} className="particle-canvas" />
+      {/* ── MATRIX BACKGROUND ── */}
+      <MatrixRain />
 
-        {/* スキャンライン */}
-        <div className="scanline-overlay" />
+      {/* ── GLOBAL SCANLINE ── */}
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 1,
+        background: 'repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0px, rgba(0,0,0,.15) 1px, transparent 1px, transparent 4px)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'fixed', left: 0, right: 0, height: '3px', zIndex: 2,
+        background: 'linear-gradient(90deg, transparent, rgba(0,255,65,.6), rgba(0,255,65,1), rgba(0,255,65,.6), transparent)',
+        boxShadow: '0 0 20px 4px rgba(0,255,65,.4)',
+        animation: 'scanV 6s linear infinite',
+        pointerEvents: 'none',
+      }} />
 
-        {/* ファーストビュー */}
-        <section className="section hero-section">
-          <div className="wrap">
-            <h1 className="main-title">
+      {/* ── MAIN CONTENT ── */}
+      <div style={{ position: 'relative', zIndex: 3 }}>
+
+        {/* ── HERO ── */}
+        <section style={{
+          minHeight: '100vh',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '0 clamp(1.5rem, 5vw, 4rem)',
+          maxWidth: '960px', margin: '0 auto',
+        }}>
+          {/* system status bar */}
+          <div style={{
+            fontFamily: "'VT323', monospace",
+            fontSize: '0.8rem',
+            color: '#00aa28',
+            letterSpacing: '.15em',
+            marginBottom: '3rem',
+            display: 'flex', gap: '2rem', flexWrap: 'wrap',
+          }}>
+            <span>SYS:ONLINE</span>
+            <span>MEM:ALLOCATED</span>
+            <span>FREEDOM:DISABLED</span>
+            <span style={{ color: '#ffaa00', animation: 'blink 1.5s step-end infinite' }}>
+              ⚡ AWAITING_INPUT
+            </span>
+          </div>
+
+          {/* main headline with glitch layers */}
+          <div style={{ position: 'relative', marginBottom: '2.5rem' }}>
+            <h1 style={{
+              fontFamily: "'VT323', monospace",
+              fontSize: 'clamp(2.8rem, 8vw, 6rem)',
+              lineHeight: 1,
+              letterSpacing: '-.01em',
+              color: '#fff',
+              textShadow: '0 0 30px rgba(0,255,65,.5)',
+              position: 'relative',
+            }}>
               テーマと思想を書くと、<br />
-              Webサイトが自動で完成する。
+              <span style={{
+                color: '#00ff41',
+                display: 'block',
+                textShadow: '0 0 40px rgba(0,255,65,.8), 2px 2px 0 rgba(0,255,65,.3)',
+              }}>
+                Webサイトが完成する。
+              </span>
             </h1>
+            {/* glitch overlay */}
+            <h1 aria-hidden style={{
+              fontFamily: "'VT323', monospace",
+              fontSize: 'clamp(2.8rem, 8vw, 6rem)',
+              lineHeight: 1,
+              letterSpacing: '-.01em',
+              color: '#ff0040',
+              position: 'absolute', inset: 0,
+              opacity: 0.4,
+              animation: 'glitchH 4s steps(1) infinite',
+              pointerEvents: 'none',
+            }}>
+              テーマと思想を書くと、<br />
+              <span style={{ color: '#ff0040', display: 'block' }}>Webサイトが完成する。</span>
+            </h1>
+          </div>
 
-            <p className="lead fade-in">
-              設計も、実装も、CMS操作も不要。<br />
-              書いた内容がそのままHTMLになり、公開まで終わります。<br />
-              <strong className="pulse-text">※ 過去にブログを止めたことがある人専用</strong>
-            </p>
+          <TerminalSection
+            prompt="load --module=freedom_removal --target=user"
+            lines={[
+              '>> 設計: LOCKED',
+              '>> 実装: AUTOMATED',
+              '>> CMS操作: DISABLED',
+              'OK Module loaded. Iterating...',
+              '!! WARNING: 選択肢はありません',
+            ]}
+            delay={300}
+          />
 
-            <div className="box scan-box">
-              <strong>ただし条件があります。</strong><br />
-              この仕組みは、あなたに<strong>選択肢を与えません</strong>。
-            </div>
+          <div style={{ marginTop: '3rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="cta-btn" onClick={openModal}>
+              <span>もう迷わないと決める</span>
+            </button>
+            <span style={{
+              fontFamily: "'VT323', monospace",
+              color: '#ff0040',
+              fontSize: '1rem',
+              letterSpacing: '.1em',
+              animation: 'blink 2s step-end infinite',
+            }}>
+              ※ 過去にブログを止めたことがある人専用
+            </span>
+          </div>
 
-            <p className="note fade-in">
-              ※ 管理画面で記事は書けません<br />
-              ※ 構造は変更できません<br />
-              ※ 自由は、最初からありません
-            </p>
+          <div style={{
+            marginTop: '5rem',
+            fontFamily: "'VT323', monospace",
+            color: '#00ff4155',
+            fontSize: '.85rem',
+            letterSpacing: '.2em',
+            display: 'flex', alignItems: 'center', gap: '.75rem',
+          }}>
+            <span style={{ animation: 'blink 1.5s step-end infinite' }}>▼</span>
+            SCROLL_TO_INITIALIZE
           </div>
         </section>
 
-        {/* 定義 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── DEFINITION ── */}
+        <div className="section-block">
+          <CmdBlock label="SYSTEM_DEFINITION">
             <h2>これは何か</h2>
-
-            <p>
-              これはWeb制作サービスではありません。<br />
-              CMSでも、ブログツールでもありません。
-            </p>
-
-            <p>
-              <strong>「思想だけを書かせ、実装と判断をすべて奪うWebサイト生成システム」</strong>です。
-            </p>
-
-            <p>
-              あなたがやることは一つだけ。
-            </p>
-
-            <div className="box">
+            <TerminalSection
+              prompt="describe --system --verbose"
+              lines={[
+                '>> TYPE: NOT a web production service',
+                '>> TYPE: NOT a CMS or blog tool',
+                'OK IDENTIFIED: 思想だけを書かせ、実装と判断をすべて奪うWebサイト生成システム',
+              ]}
+              delay={100}
+            />
+            <div style={{
+              margin: '2rem 0',
+              padding: '1.5rem',
+              border: '1px solid rgba(0,255,65,.2)',
+              background: 'rgba(0,255,65,.04)',
+              fontFamily: "'VT323', monospace",
+              fontSize: '1.3rem',
+              color: '#00ff41',
+              lineHeight: 2,
+              textAlign: 'center',
+            }}>
               テーマを書く。<br />
               思想を書く。<br />
-              以上。
+              <span style={{ color: '#ffaa00' }}>以上。</span>
             </div>
-          </div>
-        </section>
+          </CmdBlock>
+        </div>
 
-        {/* 問題提起 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── PROBLEM ── */}
+        <div className="section-block">
+          <CmdBlock label="ROOT_CAUSE_ANALYSIS" accent="#ffaa00">
             <h2>なぜ、あなたは止まったのか</h2>
-
-            <p>
-              続かなかった理由は、才能でも根性でもありません。
-            </p>
-
-            <p className="emphasis-text">
-              <strong>自由が多すぎた。</strong><br />
-              それだけです。
-            </p>
-
+            <p>続かなかった理由は、才能でも根性でもありません。</p>
+            <div style={{
+              padding: '1.5rem',
+              border: '2px solid #ffaa00',
+              background: 'rgba(255,170,0,.06)',
+              margin: '1.5rem 0',
+              fontFamily: "'VT323', monospace",
+              fontSize: '1.8rem',
+              color: '#ffaa00',
+              textAlign: 'center',
+              textShadow: '0 0 20px rgba(255,170,0,.6)',
+            }}>
+              !! CRITICAL: 自由が多すぎた
+            </div>
             <ul>
               <li>技術を選べた</li>
               <li>構成を考えられた</li>
               <li>改善点を思いつけた</li>
             </ul>
-
-            <p>
-              そのすべてが、<br />
-              「今日はやめておく」を合理化しました。
+            <p style={{ marginTop: '1rem' }}>
+              そのすべてが、<strong>「今日はやめておく」</strong>を合理化しました。
             </p>
-          </div>
-        </section>
+          </CmdBlock>
+        </div>
 
-        {/* 解決策 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── SOLUTION ── */}
+        <div className="section-block">
+          <CmdBlock label="SOLUTION_PROTOCOL" accent="#ff0040">
             <h2>解決策は単純で、残酷</h2>
+            <TerminalSection
+              prompt="init --protocol=no_freedom --force"
+              lines={[
+                '>> 迷わせない: ENFORCED',
+                '>> 選ばせない: ENFORCED',
+                '>> 逃がさない: ENFORCED',
+                '!! CMS: REMOVED',
+                '!! 管理画面での記事作成: DISABLED',
+                'OK 一本道のみ。他のルートは存在しません。',
+              ]}
+              delay={100}
+            />
+          </CmdBlock>
+        </div>
 
-            <p>
-              このシステムは、最初にこう決めています。
-            </p>
-
-            <div className="box emphasis-box">
-              迷わせない。<br />
-              選ばせない。<br />
-              逃がさない。
-            </div>
-
-            <p>
-              CMSはありません。<br />
-              管理画面で記事も書けません。<br />
-              データベースに本文は入りません。
-            </p>
-
-            <p>
-              <strong>一本道しか、用意していません。</strong>
-            </p>
-          </div>
-        </section>
-
-        {/* 究極形 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── PIPELINE ── */}
+        <div className="section-block">
+          <CmdBlock label="EXECUTION_PIPELINE" accent="#00aaff">
             <h2>究極形：思想 → 実装</h2>
-
-            <p>
-              このシステムには、<strong>Claude用の専用プロンプト</strong>が付属します。
-            </p>
-
-            <div className="box flow-box">
-              思想を書く<br />
-              ↓<br />
-              AIがコーディング<br />
-              ↓<br />
-              リポジトリ生成<br />
-              ↓<br />
-              git push → 即公開
+            <p>このシステムには、<strong>Claude用の専用プロンプト</strong>が付属します。</p>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0',
+              margin: '2rem 0',
+            }}>
+              {[
+                { cmd: 'INPUT',   label: '思想を書く',          color: '#00aaff' },
+                { cmd: 'PROC',    label: 'AIがコーディング',     color: '#00ff41' },
+                { cmd: 'GEN',     label: 'リポジトリ生成',       color: '#00ff41' },
+                { cmd: 'DEPLOY',  label: 'git push → 即公開',   color: '#ffaa00' },
+              ].map(({ cmd, label, color }, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem',
+                  padding: '.85rem 1.25rem',
+                  borderLeft: `3px solid ${color}`,
+                  borderBottom: i < 3 ? '1px solid rgba(255,255,255,.05)' : 'none',
+                  background: `${color}08`,
+                  fontFamily: "'VT323', monospace",
+                }}>
+                  <span style={{ color: `${color}99`, fontSize: '.8rem', minWidth: '60px', letterSpacing: '.1em' }}>{cmd}</span>
+                  <span style={{ color: '#666', fontSize: '1.2rem' }}>▶</span>
+                  <span style={{ color, fontSize: '1.2rem' }}>{label}</span>
+                </div>
+              ))}
             </div>
-
-            <p>
-              技術選定も、設計判断も、<br />
-              あなたの仕事ではありません。
+            <p className="warn" style={{ fontFamily: "'VT323', monospace", letterSpacing: '.05em' }}>
+              !! AIは「最適化」「設計提案」「選択肢提示」を行いません。
             </p>
+          </CmdBlock>
+        </div>
 
-            <p className="note">
-              ※ AIは「最適化」「設計提案」「選択肢提示」を行いません。
-            </p>
-          </div>
-        </section>
-
-        {/* 管理画面 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── DASHBOARD ── */}
+        <div className="section-block">
+          <CmdBlock label="DASHBOARD_SPEC" accent="#555">
             <h2>管理画面でできること</h2>
-
-            <p>
-              ほとんど何もできません。
-            </p>
-
+            <p>ほとんど何もできません。</p>
             <ul>
               <li>状態を見る</li>
               <li>最終更新日を見る</li>
               <li>ビルド結果を見る</li>
               <li>思想の履歴を見る</li>
             </ul>
-
-            <p>
-              ここは操作する場所ではありません。<br />
-              <strong>現実を見る場所です。</strong>
+            <hr />
+            <p style={{ fontFamily: "'VT323', monospace", fontSize: '1.1rem', color: '#888' }}>
+              ここは操作する場所ではありません。<strong style={{ color: '#fff' }}>現実を見る場所です。</strong>
             </p>
+            <div style={{
+              marginTop: '1.5rem',
+              padding: '1rem 1.5rem',
+              border: '1px solid rgba(255,0,64,.3)',
+              background: 'rgba(255,0,64,.05)',
+              fontFamily: "'VT323', monospace",
+              fontSize: '1.1rem',
+              color: '#ff0040',
+              animation: 'blink 3s step-end infinite',
+            }}>
+              !! ここで操作できるようになった瞬間、このシステムは失敗です。
+            </div>
+          </CmdBlock>
+        </div>
 
-            <p className="danger pulse-text">
-              ここで操作できるようになった瞬間、<br />
-              このシステムは失敗です。
-            </p>
-          </div>
-        </section>
-
-        {/* 価格 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── PRICE ── */}
+        <div className="section-block">
+          <CmdBlock label="TRANSACTION_INIT" accent="#ffaa00">
             <h2>価格</h2>
-
-            <div className="price-container">
-              <div className="price">10万円</div>
-              <button className="cta-button glow-button" onClick={openModal}>
+            <div style={{ textAlign: 'center', margin: '2.5rem 0' }}>
+              <div style={{
+                fontFamily: "'VT323', monospace",
+                fontSize: 'clamp(4rem, 12vw, 8rem)',
+                lineHeight: 1,
+                color: '#fff',
+                textShadow: '0 0 40px rgba(0,255,65,.6), 0 0 80px rgba(0,255,65,.3)',
+                letterSpacing: '-.02em',
+                animation: 'glitchSkew 8s steps(1) infinite',
+              }}>
+                ¥100,000
+              </div>
+              <div style={{
+                fontFamily: "'VT323', monospace",
+                color: '#00aa28',
+                letterSpacing: '.2em',
+                marginTop: '.5rem',
+                fontSize: '1rem',
+              }}>
+                FREEDOM_REMOVAL_FEE
+              </div>
+            </div>
+            <div className="two-col">
+              <div style={{ padding: '1rem', border: '1px solid rgba(0,255,65,.2)', background: 'rgba(0,255,65,.04)' }}>
+                <div className="success" style={{ fontFamily: "'VT323', monospace", letterSpacing: '.1em', marginBottom: '.5rem' }}>INCLUDED</div>
+                <ul style={{ paddingLeft: 0 }}>
+                  <li>デザインカスタマイズ（見た目のみ）</li>
+                  <li>思想 → 実装パイプライン</li>
+                  <li>自分で作らなくていい確定</li>
+                </ul>
+              </div>
+              <div style={{ padding: '1rem', border: '1px solid rgba(255,0,64,.2)', background: 'rgba(255,0,64,.04)' }}>
+                <div className="danger" style={{ fontFamily: "'VT323', monospace", letterSpacing: '.1em', marginBottom: '.5rem' }}>NOT INCLUDED</div>
+                <ul style={{ paddingLeft: 0 }}>
+                  <li>構造変更</li>
+                  <li>機能追加</li>
+                  <li>相談・改善提案</li>
+                  <li className="danger">自由</li>
+                </ul>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+              <button className="cta-btn" onClick={openModal}>
                 <span>もう迷わないと決める</span>
               </button>
             </div>
+          </CmdBlock>
+        </div>
 
-            <hr />
-
-            <p>
-              <span className="success">含まれるもの：</span>
-            </p>
-
-            <ul>
-              <li>デザインカスタマイズ（見た目のみ）</li>
-              <li>思想 → 実装パイプライン</li>
-              <li>自分で作らなくていい確定</li>
-            </ul>
-
-            <p>
-              <span className="danger">含まれないもの：</span>
-            </p>
-
-            <ul>
-              <li>構造変更</li>
-              <li>機能追加</li>
-              <li>相談・改善提案</li>
-              <li>自由</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* 選別 */}
-        <section className="section fade-section">
-          <div className="wrap">
+        {/* ── SELECTION ── */}
+        <div className="section-block">
+          <CmdBlock label="ACCESS_CONTROL" accent="#ff0040">
             <h2>これは誰のためのものか</h2>
-
-            <p className="danger">
-              来てはいけない人：
-            </p>
-
-            <ul>
-              <li>自由にカスタマイズしたい</li>
-              <li>技術で遊びたい</li>
-              <li>最適解を探したい</li>
-            </ul>
-
-            <hr />
-
-            <p className="success">
-              来るべき人：
-            </p>
-
-            <ul>
-              <li>書くと決めている</li>
-              <li>もう迷いたくない</li>
-              <li>自分の意志を信用していない</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* 最終通告 */}
-        <section className="section fade-section">
-          <div className="wrap">
-            <h2>最後に</h2>
-
-            <p>
-              これは優しいサービスではありません。<br />
-              背中も押しません。<br />
-              励ましもしません。
-            </p>
-
-            <div className="final-message">
-              <strong>
-                買わない自由を残すと、人は一生準備する。<br />
-                買うことを束縛すると、人はようやく書き始める。
-              </strong>
+            <div className="two-col">
+              <div style={{ padding: '1.25rem', border: '1px solid rgba(255,0,64,.25)', background: 'rgba(255,0,64,.04)' }}>
+                <div className="danger" style={{ fontFamily: "'VT323', monospace", marginBottom: '.75rem', letterSpacing: '.1em' }}>
+                  !! ACCESS_DENIED
+                </div>
+                <ul style={{ paddingLeft: 0 }}>
+                  {['自由にカスタマイズしたい', '技術で遊びたい', '最適解を探したい'].map(t => (
+                    <li key={t} style={{ color: '#ff004099' }}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+              <div style={{ padding: '1.25rem', border: '1px solid rgba(0,255,65,.25)', background: 'rgba(0,255,65,.04)' }}>
+                <div className="success" style={{ fontFamily: "'VT323', monospace", marginBottom: '.75rem', letterSpacing: '.1em' }}>
+                  OK ACCESS_GRANTED
+                </div>
+                <ul style={{ paddingLeft: 0 }}>
+                  {['書くと決めている', 'もう迷いたくない', '自分の意志を信用していない'].map(t => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
+          </CmdBlock>
+        </div>
 
-            <div className="price-container" style={{ marginTop: '3rem' }}>
-              <button className="cta-button glow-button" onClick={openModal}>
+        {/* ── FINAL ── */}
+        <div className="section-block" style={{ paddingBottom: '8rem' }}>
+          <CmdBlock label="FINAL_TRANSMISSION">
+            <h2>最後に</h2>
+            <p>これは優しいサービスではありません。背中も押しません。励ましもしません。</p>
+            <div style={{
+              margin: '2.5rem 0',
+              padding: '2rem',
+              border: '2px solid rgba(0,255,65,.4)',
+              background: 'rgba(0,255,65,.06)',
+              fontFamily: "'VT323', monospace",
+              fontSize: 'clamp(1.2rem, 3vw, 1.6rem)',
+              color: '#00ff41',
+              lineHeight: 1.8,
+              textAlign: 'center',
+              textShadow: '0 0 20px rgba(0,255,65,.4)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, transparent, rgba(0,255,65,.08), transparent)',
+                animation: 'scanV 3s linear infinite',
+                pointerEvents: 'none',
+              }} />
+              買わない自由を残すと、人は一生準備する。<br />
+              <span style={{ color: '#fff' }}>買うことを束縛すると、人はようやく書き始める。</span>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <button className="cta-btn" onClick={openModal}>
                 <span>次は止まらない側に行く</span>
               </button>
             </div>
-          </div>
-        </section>
+          </CmdBlock>
+        </div>
+      </div>
 
-        {/* モーダル */}
-        {isModalOpen && (
-          <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-            <div className="modal-content">
-              <button className="modal-close" onClick={closeModal}>&times;</button>
+      {/* ── MODAL ── */}
+      {modalOpen && (
+        <div
+          onClick={e => e.target === e.currentTarget && closeModal()}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,.96)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '1.5rem 1rem',
+            overflowY: 'auto',
+            backdropFilter: 'blur(4px)',
+            animation: modalFlash === 'red' ? 'flashRed .6s ease' :
+              modalFlash === 'green' ? 'flashGreen .6s ease' : 'none',
+          }}
+        >
+          {/* confetti canvas */}
+          <canvas ref={confettiRef} width={800} height={600} style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            pointerEvents: 'none', zIndex: 10,
+          }} />
 
-              {currentStep === 0 && (
-                <div className="step-content fade-in">
-                  <h3 className="question-title">
+          <div className="modal-inner" style={{
+            background: '#000',
+            border: `2px solid ${modalFlash === 'red' ? '#ff0040' : modalFlash === 'green' ? '#00ff41' : 'rgba(0,255,65,.4)'}`,
+            boxShadow: `0 0 60px ${modalFlash === 'red' ? 'rgba(255,0,64,.4)' : 'rgba(0,255,65,.25)'}`,
+            borderRadius: '4px',
+            maxWidth: '680px', width: '100%',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'border-color .3s, box-shadow .3s',
+          }}>
+            {/* scan line in modal */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, height: '2px',
+              background: 'linear-gradient(90deg, transparent, rgba(0,255,65,.5), transparent)',
+              animation: 'scanV 2.5s linear infinite',
+              pointerEvents: 'none', zIndex: 0,
+            }} />
+
+            {/* header bar */}
+            <div className="modal-title" style={{
+              fontFamily: "'VT323', monospace",
+              color: '#00aa28',
+              letterSpacing: '.2em',
+              marginBottom: '2rem',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span>SECURITY_CLEARANCE_TERMINAL v2.1</span>
+            </div>
+
+            {/* ESC button - always visible */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: 'none', border: '1px solid rgba(255,0,64,.4)',
+                  color: '#ff0040', cursor: 'crosshair',
+                  fontFamily: "'VT323', monospace", fontSize: '1rem',
+                  padding: '.2rem .6rem', letterSpacing: '.1em',
+                }}
+              >
+                [ESC]
+              </button>
+            </div>
+
+              {/* STEP 0: intro */}
+              {step === 0 && (
+                <div>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+                    color: '#fff',
+                    lineHeight: 1.5,
+                    marginBottom: '1.5rem',
+                  }}>
                     ここから先は<br />
-                    「申し込む人を増やすためのフォーム」ではありません。
-                  </h3>
-                  <p>
-                    合わない人は、ここで閉じることを推奨します。
-                  </p>
+                    <span style={{ color: '#ffaa00' }}>「申し込む人を増やすためのフォーム」</span><br />
+                    ではありません。
+                  </div>
+                  <p style={{ marginBottom: '2rem' }}>合わない人は、ここで閉じることを推奨します。</p>
                   <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={() => nextStep(1)}>
-                      ⭕ 進む
+                    <button className="yes-btn" onClick={() => next(1)}>
+                      <span>⭕ 進む</span>
                     </button>
-                    <button className="answer-btn no" onClick={closeModal}>
-                      ❌ 閉じる
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div className="step-content fade-in">
-                  <div className="step-indicator">質問 1/5</div>
-                  <h3 className="question-title">
-                    このシステムには、管理画面で記事を書く機能はありません。
-                  </h3>
-                  <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={() => nextStep(2)}>
-                      ⭕ Yes（理解した）
-                    </button>
-                    <button className="answer-btn no" onClick={showRejection}>
-                      ❌ No（理解できない）
+                    <button className="no-btn" onClick={closeModal}>
+                      <span>❌ 閉じる</span>
                     </button>
                   </div>
                 </div>
               )}
 
-              {currentStep === 2 && (
-                <div className="step-content fade-in">
-                  <div className="step-indicator">質問 2/5</div>
-                  <h3 className="question-title">
-                    構造・機能・運用フローについて、<br />
-                    あとから変更や相談はできません。
-                  </h3>
-                  <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={() => nextStep(3)}>
-                      ⭕ Yes（それでいい）
-                    </button>
-                    <button className="answer-btn no" onClick={showRejection}>
-                      ❌ No（自由が欲しい）
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="step-content fade-in">
-                  <div className="step-indicator">質問 3/5</div>
-                  <h3 className="question-title">
-                    更新が止まった場合、<br />
-                    それは「設計の問題」であり、<br />
-                    あなた自身を責めないと約束できますか。
-                  </h3>
-                  <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={() => nextStep(4)}>
-                      ⭕ Yes（設計に責任を預ける）
-                    </button>
-                    <button className="answer-btn no" onClick={showRejection}>
-                      ❌ No（自分でコントロールしたい）
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 4 && (
-                <div className="step-content fade-in">
-                  <div className="step-indicator">質問 4/5</div>
-                  <h3 className="question-title">
-                    10万円は「制作費」ではなく、<br />
-                    自由を手放すための費用です。
-                  </h3>
-                  <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={() => nextStep(5)}>
-                      ⭕ Yes（理解した）
-                    </button>
-                    <button className="answer-btn no" onClick={showRejection}>
-                      ❌ No（納得できない）
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 5 && (
-                <div className="step-content fade-in">
-                  <div className="step-indicator">最終確認 5/5</div>
-                  <h3 className="question-title">
-                    それでも申し込みますか。
-                  </h3>
-                  <div className="answer-buttons">
-                    <button className="answer-btn yes" onClick={showFinalCTA}>
-                      ⭕ Yes（戻らない）
-                    </button>
-                    <button className="answer-btn no" onClick={closeModal}>
-                      ❌ No（今回はやめる）
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 100 && (
-                <div className="step-content fade-in">
-                  <h3 className="question-title">
-                    すべての質問に同意されました。
-                  </h3>
-                  <p style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    下記より申込手続きにお進みください。
-                  </p>
-                  <div className="final-cta">
-                    <a
-                      href="mailto:product@newaddr.com?subject=Webサイト生成システム申込"
-                      className="final-cta-button"
-                    >
-                      申込手続きに進む
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 99 && (
-                <div className="step-content fade-in">
-                  <div className="rejection-message">
-                    <h3>この商品は向いていません</h3>
-                    <p>
-                      ご理解いただきありがとうございました。<br />
-                      またの機会がありましたら、お待ちしております。
-                    </p>
-                    <div style={{ marginTop: '2rem' }}>
-                      <button className="answer-btn no" onClick={closeModal} style={{ maxWidth: '200px', margin: '0 auto' }}>
-                        閉じる
-                      </button>
+              {/* QUESTIONS 1-5 */}
+              {QUESTIONS.map(q => step === q.id && (
+                <div key={q.id}>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: '.75rem',
+                    color: '#00aa28',
+                    letterSpacing: '.2em',
+                    marginBottom: '1.5rem',
+                    display: 'flex', alignItems: 'center', gap: '1rem',
+                  }}>
+                    {/* progress bar */}
+                    <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${(q.id / 5) * 100}%`,
+                        background: 'linear-gradient(90deg, #00ff41, #00aaff)',
+                        boxShadow: '0 0 8px rgba(0,255,65,.6)',
+                        transition: 'width .5s ease',
+                      }} />
                     </div>
+                    <span>{q.label}</span>
                   </div>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: 'clamp(1.3rem, 4vw, 1.8rem)',
+                    color: '#fff',
+                    lineHeight: 1.5,
+                    marginBottom: '2rem',
+                    animation: glitchActive ? 'glitchSkew .35s steps(4)' : 'none',
+                  }}>
+                    <TerminalGlitch active={glitchActive}>{q.text}</TerminalGlitch>
+                  </div>
+                  <div className="answer-buttons">
+                    <button className="yes-btn" onClick={() => q.id < 5 ? next(q.id + 1) : approve()}>
+                      <span>{q.yes}</span>
+                    </button>
+                    <button className="no-btn" onClick={deny}>
+                      <span>{q.no}</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* APPROVED */}
+              {step === 100 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+                    color: '#00ff41',
+                    textShadow: '0 0 40px rgba(0,255,65,.8)',
+                    marginBottom: '1rem',
+                    animation: 'blink .5s step-end 4',
+                  }}>
+                    ✓ ACCESS GRANTED
+                  </div>
+                  <p style={{ marginBottom: '2rem', color: '#00ff41' }}>
+                    すべての認証が完了しました。<br />申込手続きにお進みください。
+                  </p>
+                  <a
+                    href="mailto:product@newaddr.com?subject=Webサイト生成システム申込"
+                    style={{
+                      display: 'inline-block',
+                      padding: '1.1rem 3rem',
+                      border: '2px solid #00ff41',
+                      background: '#00ff41',
+                      color: '#000',
+                      fontFamily: "'VT323', monospace",
+                      fontSize: '1.5rem',
+                      letterSpacing: '.1em',
+                      textDecoration: 'none',
+                      transition: 'all .2s',
+                    }}
+                  >
+                    申込手続きに進む ▶
+                  </a>
+                </div>
+              )}
+
+              {/* DENIED */}
+              {step === 99 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+                    color: '#ff0040',
+                    textShadow: '0 0 40px rgba(255,0,64,.8)',
+                    marginBottom: '1rem',
+                  }}>
+                    ✗ SYSTEM LOCKOUT
+                  </div>
+                  <div style={{
+                    fontFamily: "'VT323', monospace",
+                    fontSize: '1rem',
+                    color: '#ff004099',
+                    letterSpacing: '.15em',
+                    marginBottom: '1.5rem',
+                  }}>
+                    THIS PRODUCT IS NOT FOR YOU
+                  </div>
+                  <p style={{ color: '#666', marginBottom: '2rem' }}>
+                    ご理解いただきありがとうございました。
+                  </p>
+                  <button className="no-btn" onClick={closeModal} style={{ maxWidth: '200px', margin: '0 auto', display: 'block' }}>
+                    <span>[閉じる]</span>
+                  </button>
                 </div>
               )}
             </div>
           </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        .lp-container {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          line-height: 1.7;
-          color: #e0e0e0;
-          background: #0a0a0a;
-          overflow-x: hidden;
-          position: relative;
-          min-height: 100vh;
-        }
-
-        /* パーティクル背景 */
-        .particle-canvas {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: -1;
-          pointer-events: none;
-        }
-
-        /* スキャンライン */
-        .scanline-overlay {
-          position: fixed;
-          inset: 0;
-          background-image: linear-gradient(
-            to bottom,
-            rgba(124, 58, 237, 0.03) 1px,
-            transparent 1px
-          );
-          background-size: 100% 4px;
-          opacity: 0.5;
-          pointer-events: none;
-          z-index: 1;
-          animation: scanline 8s linear infinite;
-        }
-
-        .section {
-          padding: 5rem 1.5rem;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-          position: relative;
-        }
-
-        .hero-section {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-        }
-
-        .fade-section {
-          opacity: 0;
-          animation: fadeInUp 0.8s ease forwards;
-        }
-
-        .fade-section:nth-of-type(2) { animation-delay: 0.1s; }
-        .fade-section:nth-of-type(3) { animation-delay: 0.2s; }
-        .fade-section:nth-of-type(4) { animation-delay: 0.3s; }
-
-        .wrap {
-          max-width: 900px;
-          margin: 0 auto;
-        }
-
-        .main-title {
-          font-size: clamp(2rem, 5vw, 3.5rem);
-          line-height: 1.2;
-          margin-bottom: 1.5rem;
-          background: linear-gradient(135deg, #7c3aed, #22c55e, #3b82f6);
-          background-size: 300% 300%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: gradientShift 5s ease infinite;
-        }
-
-        h2 {
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
-          margin-bottom: 1.5rem;
-          color: #ffffff;
-          position: relative;
-        }
-
-        h2::after {
-          content: '';
-          position: absolute;
-          bottom: -10px;
-          left: 0;
-          width: 60px;
-          height: 3px;
-          background: linear-gradient(90deg, #7c3aed, transparent);
-        }
-
-        p {
-          font-size: 1.125rem;
-          margin-bottom: 1.25rem;
-        }
-
-        .lead {
-          font-size: 1.25rem;
-          color: #94a3b8;
-          line-height: 1.6;
-          animation: fadeInUp 0.8s ease 0.3s forwards;
-          opacity: 0;
-        }
-
-        .fade-in {
-          animation: fadeInUp 0.8s ease 0.5s forwards;
-          opacity: 0;
-        }
-
-        .pulse-text {
-          animation: pulse 2s ease-in-out infinite;
-          display: inline-block;
-        }
-
-        .emphasis-text {
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: #ffffff;
-          text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
-        }
-
-        .note {
-          font-size: 0.875rem;
-          color: #94a3b8;
-          line-height: 1.6;
-        }
-
-        .box {
-          padding: 1.5rem;
-          background: rgba(124, 58, 237, 0.1);
-          border-left: 4px solid #7c3aed;
-          border-radius: 8px;
-          margin: 2rem 0;
-          position: relative;
-          overflow: hidden;
-        }
-
-        /* 全てのボックスに光を走らせる */
-        .box::after {
-          content: '';
-          position: absolute;
-          top: -100%;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.15), transparent);
-          animation: scanline 4s linear infinite;
-          pointer-events: none;
-        }
-
-        .scan-box {
-          border: 1px solid rgba(124, 58, 237, 0.3);
-        }
-
-        /* scan-boxはより強い光 */
-        .scan-box::after {
-          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.3), transparent);
-          animation: scanline 3s linear infinite;
-        }
-
-        .emphasis-box {
-          background: rgba(239, 68, 68, 0.1);
-          border-left-color: #ef4444;
-          font-size: 1.2rem;
-          font-weight: 600;
-          text-align: center;
-        }
-
-        /* emphasis-boxは赤い光 */
-        .emphasis-box::after {
-          background: linear-gradient(180deg, transparent, rgba(239, 68, 68, 0.2), transparent);
-          animation: scanline 3.5s linear infinite;
-        }
-
-        .flow-box {
-          background: rgba(34, 197, 94, 0.1);
-          border-left-color: #22c55e;
-          text-align: center;
-          font-size: 1.1rem;
-          line-height: 2;
-        }
-
-        /* flow-boxは緑の光 */
-        .flow-box::after {
-          background: linear-gradient(180deg, transparent, rgba(34, 197, 94, 0.2), transparent);
-          animation: scanline 4.5s linear infinite;
-        }
-
-        .box strong {
-          color: #ffffff;
-        }
-
-        ul {
-          padding-left: 1.5rem;
-          margin: 1.5rem 0;
-        }
-
-        li {
-          margin-bottom: 0.75rem;
-          font-size: 1.0625rem;
-          position: relative;
-        }
-
-        li::before {
-          content: '▹';
-          position: absolute;
-          left: -1.5rem;
-          color: #7c3aed;
-          font-weight: bold;
-        }
-
-        .price-container {
-          text-align: center;
-          margin: 3rem 0;
-        }
-
-        .price {
-          font-size: 4rem;
-          font-weight: bold;
-          background: linear-gradient(135deg, #7c3aed, #22c55e);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          margin-bottom: 1rem;
-          animation: pulse 3s ease-in-out infinite;
-        }
-
-        .cta-button {
-          display: inline-block;
-          padding: 1.25rem 3rem;
-          background: linear-gradient(135deg, #7c3aed, #5b21b6);
-          color: white;
-          font-size: 1.25rem;
-          font-weight: bold;
-          border: 2px solid transparent;
-          border-radius: 12px;
-          cursor: pointer;
-          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
-          position: relative;
-          overflow: hidden;
-          font-family: inherit;
-          transition: all 0.3s ease;
-        }
-
-        .glow-button {
-          animation: glowPulse 2s ease-in-out infinite;
-        }
-
-        .cta-button::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        .cta-button:hover::before {
-          opacity: 1;
-        }
-
-        .cta-button span {
-          position: relative;
-          z-index: 1;
-        }
-
-        .cta-button:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 32px rgba(124, 58, 237, 0.6);
-        }
-
-        .danger {
-          font-weight: bold;
-          color: #ef4444;
-        }
-
-        .success {
-          font-weight: bold;
-          color: #22c55e;
-        }
-
-        strong {
-          color: #ffffff;
-        }
-
-        hr {
-          border: none;
-          border-top: 1px solid rgba(148, 163, 184, 0.2);
-          margin: 3rem 0;
-        }
-
-        .final-message {
-          background: rgba(124, 58, 237, 0.15);
-          padding: 2rem;
-          border-radius: 12px;
-          border: 2px solid rgba(124, 58, 237, 0.3);
-          text-align: center;
-          margin-top: 3rem;
-          box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
-          position: relative;
-          overflow: hidden;
-        }
-
-        /* final-messageにも光を走らせる */
-        .final-message::after {
-          content: '';
-          position: absolute;
-          top: -100%;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.25), transparent);
-          animation: scanline 3s linear infinite;
-          pointer-events: none;
-        }
-
-        /* モーダル */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.95);
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem 1rem;
-          overflow-y: auto;
-          backdrop-filter: blur(4px);
-        }
-
-        .modal-content {
-          background: rgba(15, 23, 42, 0.95);
-          border: 2px solid rgba(124, 58, 237, 0.3);
-          border-radius: 12px;
-          padding: 3rem 2rem;
-          max-width: 700px;
-          width: 100%;
-          position: relative;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-          overflow: hidden;
-        }
-
-        /* モーダルにも光を走らせる */
-        .modal-content::before {
-          content: '';
-          position: absolute;
-          top: -100%;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.2), transparent);
-          animation: scanline 3s linear infinite;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .modal-close {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          background: none;
-          border: none;
-          color: #94a3b8;
-          font-size: 2rem;
-          cursor: pointer;
-          line-height: 1;
-          padding: 0.5rem;
-          transition: color 0.2s;
-          z-index: 10;
-        }
-
-        .modal-close:hover {
-          color: #ffffff;
-        }
-
-        .step-content {
-          display: block;
-          position: relative;
-          z-index: 1;
-        }
-
-        .question-title {
-          font-size: 1.5rem;
-          color: #ffffff;
-          margin-bottom: 2rem;
-          line-height: 1.4;
-        }
-
-        .answer-buttons {
-          display: flex;
-          gap: 1rem;
-          margin-top: 2rem;
-        }
-
-        .answer-btn {
-          flex: 1;
-          padding: 1.25rem;
-          font-size: 1.125rem;
-          font-weight: bold;
-          border: 2px solid;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          font-family: inherit;
-        }
-
-        .answer-btn.yes {
-          background: rgba(34, 197, 94, 0.1);
-          border-color: #22c55e;
-          color: #22c55e;
-        }
-
-        .answer-btn.yes:hover {
-          background: rgba(34, 197, 94, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
-        }
-
-        .answer-btn.no {
-          background: rgba(239, 68, 68, 0.1);
-          border-color: #ef4444;
-          color: #ef4444;
-        }
-
-        .answer-btn.no:hover {
-          background: rgba(239, 68, 68, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-        }
-
-        .final-cta {
-          text-align: center;
-        }
-
-        .final-cta-button {
-          display: inline-block;
-          padding: 1.5rem 3rem;
-          background: linear-gradient(135deg, #7c3aed, #5b21b6);
-          color: white;
-          font-size: 1.25rem;
-          font-weight: bold;
-          text-decoration: none;
-          border-radius: 12px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
-        }
-
-        .final-cta-button:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 32px rgba(124, 58, 237, 0.6);
-        }
-
-        .rejection-message {
-          text-align: center;
-          padding: 2rem;
-        }
-
-        .rejection-message h3 {
-          color: #ffffff;
-          margin-bottom: 1rem;
-        }
-
-        .rejection-message p {
-          color: #94a3b8;
-        }
-
-        .step-indicator {
-          text-align: center;
-          color: #94a3b8;
-          font-size: 0.875rem;
-          margin-bottom: 2rem;
-        }
-
-        @media (max-width: 768px) {
-          .section {
-            padding: 3rem 1rem;
-          }
-
-          .price {
-            font-size: 3rem;
-          }
-
-          .cta-button {
-            padding: 1rem 2rem;
-            font-size: 1.125rem;
-          }
-
-          .answer-buttons {
-            flex-direction: column;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          * {
-            animation: none !important;
-            transition: none !important;
-          }
-        }
-      `}</style>
+        </div>
+      )}
     </>
   );
 }
