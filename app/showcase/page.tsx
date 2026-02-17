@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef, useCallback, Children, isValidElement } from "react";
 
 /* ============================================================
