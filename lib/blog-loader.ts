@@ -1,218 +1,227 @@
-// lib/blog-loader.ts
+// lib/blog.ts
+// ブログ記事の読み込み・管理（ディレクトリスキップ対応）
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import readingTime from 'reading-time';
 
-export interface BlogPost {
+export interface Post {
   slug: string;
   title: string;
   date: string;
-  excerpt: string;
   category: string;
-  readingTime: string;
-  content?: string;
-  fileType: 'html' | 'mdx' | 'md';
+  excerpt: string;
+  content: string;
+  html: string;
+  readingTime?: string;
+  tags?: string[];
 }
 
-const contentDirectory = path.join(process.cwd(), 'content/blog');
-
 /**
- * HTMLファイルからメタデータを抽出
+ * 全てのブログ記事を取得
+ * ディレクトリは自動的にスキップされます
  */
-function extractHtmlMetadata(content: string): {
-  title: string;
-  date: string;
-  excerpt: string;
-  category: string;
-  readingTime: string;
-} | null {
-  // HTMLコメント内のメタデータを抽出
-  const metaRegex = /<!--\s*([\s\S]*?)\s*-->/;
-  const match = content.match(metaRegex);
+export function getAllPosts(): Post[] {
+  const contentDir = path.join(process.cwd(), 'content/blog');
   
-  if (!match) {
-    return null;
-  }
-
-  const metaText = match[1];
-  const lines = metaText.split('\n');
-  const metadata: Record<string, string> = {};
-
-  for (const line of lines) {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex > 0) {
-      const key = line.substring(0, colonIndex).trim();
-      const value = line.substring(colonIndex + 1).trim();
-      metadata[key] = value;
-    }
-  }
-
-  // テキストから読み取り時間を計算
-  const textContent = content.replace(/<[^>]+>/g, ''); // HTMLタグを除去
-  const readTime = readingTime(textContent);
-
-  return {
-    title: metadata.title || 'Untitled',
-    date: metadata.date || new Date().toISOString(),
-    excerpt: metadata.excerpt || '',
-    category: metadata.category || 'Uncategorized',
-    readingTime: metadata.readingTime || readTime.text,
-  };
-}
-
-/**
- * MDXファイルからメタデータを抽出
- */
-function extractMdxMetadata(content: string): {
-  title: string;
-  date: string;
-  excerpt: string;
-  category: string;
-  readingTime: string;
-} {
-  const { data, content: mdxContent } = matter(content);
-  const readTime = readingTime(mdxContent);
-
-  // クリーンな抜粋を生成
-  let cleaned = mdxContent.replace(/^import\s+.+from\s+['"].+['"]\s*$/gm, '');
-  cleaned = cleaned.replace(/<[^>]+>/g, '');
-  cleaned = cleaned.replace(/[#*`_\[\]]/g, '');
-  cleaned = cleaned.replace(/\n\s*\n/g, '\n');
-  cleaned = cleaned.trim();
-  
-  const excerpt = data.description || data.excerpt || 
-    (cleaned.length > 200 ? cleaned.slice(0, 200) + '...' : cleaned);
-
-  return {
-    title: data.title || 'Untitled',
-    date: data.date || new Date().toISOString(),
-    excerpt,
-    category: data.category || 'Uncategorized',
-    readingTime: data.readingTime || readTime.text,
-  };
-}
-
-/**
- * 全記事を取得（HTML、MDX、MD対応）
- */
-export function getAllPosts(): BlogPost[] {
-  if (!fs.existsSync(contentDirectory)) {
-    console.warn('content/blog directory does not exist');
+  if (!fs.existsSync(contentDir)) {
+    console.warn('⚠️  Blog content directory not found:', contentDir);
     return [];
   }
-
-  const fileNames = fs.readdirSync(contentDirectory);
   
-  const posts: BlogPost[] = [];
-
-  for (const fileName of fileNames) {
-    // 対応する拡張子のみ処理
-    if (!fileName.match(/\.(html|mdx|md)$/)) {
-      continue;
-    }
-
-    const slug = fileName.replace(/\.(html|mdx|md)$/, '');
-    const fullPath = path.join(contentDirectory, fileName);
-    
-    try {
-      const fileContents = fs.readFileSync(fullPath, 'utf8');
-      let metadata: ReturnType<typeof extractHtmlMetadata>;
-      let fileType: 'html' | 'mdx' | 'md';
-
-      if (fileName.endsWith('.html')) {
-        metadata = extractHtmlMetadata(fileContents);
-        fileType = 'html';
-      } else {
-        metadata = extractMdxMetadata(fileContents);
-        fileType = fileName.endsWith('.mdx') ? 'mdx' : 'md';
+  const files = fs.readdirSync(contentDir);
+  
+  const posts = files
+    .filter(file => {
+      // ===== ディレクトリをスキップ（重要） =====
+      const filePath = path.join(contentDir, file);
+      
+      try {
+        const stat = fs.statSync(filePath);
+        
+        // ディレクトリならスキップ
+        if (stat.isDirectory()) {
+          console.log(`⏭️  Skipping directory: ${file}`);
+          return false;
+        }
+      } catch (error) {
+        console.error(`Error reading file stats for ${file}:`, error);
+        return false;
       }
-
-      if (metadata) {
-        posts.push({
+      
+      // .html ファイルのみを対象
+      return file.endsWith('.html');
+    })
+    .map(file => {
+      try {
+        const slug = file.replace('.html', '');
+        const filePath = path.join(contentDir, file);
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        
+        // Frontmatter を抽出
+        const { data, content } = matter(fileContent);
+        
+        // HTMLコンテンツを抽出（<body>タグ内）
+        const htmlMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        const html = htmlMatch ? htmlMatch[1] : content;
+        
+        return {
           slug,
-          title: metadata.title,
-          date: metadata.date,
-          excerpt: metadata.excerpt,
-          category: metadata.category,
-          readingTime: metadata.readingTime,
-          fileType,
-        });
+          title: data.title || '',
+          date: data.date || new Date().toISOString(),
+          category: data.category || '',
+          excerpt: data.excerpt || '',
+          content: html,
+          html: html,
+          readingTime: data.readingTime,
+          tags: data.tags || [],
+        };
+      } catch (error) {
+        console.error(`Error processing file ${file}:`, error);
+        return null;
       }
-    } catch (error) {
-      console.error(`Failed to load post: ${fileName}`, error);
-    }
-  }
-
-  // 日付降順でソート
-  posts.sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-    return dateB - dateA;
-  });
-
+    })
+    .filter((post): post is Post => post !== null)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  console.log(`✅ Loaded ${posts.length} blog posts`);
   return posts;
 }
 
 /**
- * 個別記事取得（slug指定）
+ * 特定のスラッグのブログ記事を取得
  */
-export function getPostBySlug(slug: string): BlogPost | null {
+export function getPost(slug: string): Post | null {
   try {
-    // HTML, MDX, MDの順で探す
-    const extensions = ['html', 'mdx', 'md'];
+    const filePath = path.join(process.cwd(), 'content/blog', `${slug}.html`);
     
-    for (const ext of extensions) {
-      const fullPath = path.join(contentDirectory, `${slug}.${ext}`);
-      
-      if (fs.existsSync(fullPath)) {
-        const fileContents = fs.readFileSync(fullPath, 'utf8');
-        let metadata: ReturnType<typeof extractHtmlMetadata>;
-        let fileType: 'html' | 'mdx' | 'md';
-
-        if (ext === 'html') {
-          metadata = extractHtmlMetadata(fileContents);
-          fileType = 'html';
-        } else {
-          metadata = extractMdxMetadata(fileContents);
-          fileType = ext === 'mdx' ? 'mdx' : 'md';
-        }
-
-        if (metadata) {
-          return {
-            slug,
-            title: metadata.title,
-            date: metadata.date,
-            excerpt: metadata.excerpt,
-            category: metadata.category,
-            readingTime: metadata.readingTime,
-            content: fileContents,
-            fileType,
-          };
-        }
-      }
+    // ファイルの存在チェック
+    if (!fs.existsSync(filePath)) {
+      console.warn(`⚠️  Post not found: ${slug}`);
+      return null;
     }
-
-    return null;
+    
+    // ===== ディレクトリチェック（重要） =====
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      console.warn(`⏭️  Skipping directory: ${slug}`);
+      return null;
+    }
+    
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const { data, content } = matter(fileContent);
+    
+    // HTMLコンテンツを抽出
+    const htmlMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const html = htmlMatch ? htmlMatch[1] : content;
+    
+    return {
+      slug,
+      title: data.title || '',
+      date: data.date || new Date().toISOString(),
+      category: data.category || '',
+      excerpt: data.excerpt || '',
+      content: html,
+      html: html,
+      readingTime: data.readingTime,
+      tags: data.tags || [],
+    };
   } catch (error) {
-    console.error(`Failed to load post: ${slug}`, error);
+    console.error(`❌ getPost failed for slug: ${slug}`, error);
     return null;
   }
 }
 
 /**
- * カテゴリ別記事取得
+ * カテゴリ別に記事を取得
  */
-export function getPostsByCategory(category: string): BlogPost[] {
+export function getPostsByCategory(category: string): Post[] {
   const allPosts = getAllPosts();
   return allPosts.filter(post => post.category === category);
 }
 
 /**
- * 全カテゴリ取得（重複なし）
+ * タグ別に記事を取得
+ */
+export function getPostsByTag(tag: string): Post[] {
+  const allPosts = getAllPosts();
+  return allPosts.filter(post => post.tags && post.tags.includes(tag));
+}
+
+/**
+ * 全カテゴリを取得
  */
 export function getAllCategories(): string[] {
   const allPosts = getAllPosts();
-  const categories = allPosts.map(post => post.category);
-  return Array.from(new Set(categories));
+  const categories = new Set(allPosts.map(post => post.category).filter(Boolean));
+  return Array.from(categories);
+}
+
+/**
+ * 全タグを取得
+ */
+export function getAllTags(): string[] {
+  const allPosts = getAllPosts();
+  const tags = new Set(
+    allPosts.flatMap(post => post.tags || [])
+  );
+  return Array.from(tags);
+}
+
+/**
+ * 最新N件の記事を取得
+ */
+export function getLatestPosts(limit: number = 5): Post[] {
+  const allPosts = getAllPosts();
+  return allPosts.slice(0, limit);
+}
+
+/**
+ * 関連記事を取得（同じカテゴリまたはタグ）
+ */
+export function getRelatedPosts(currentSlug: string, limit: number = 3): Post[] {
+  const currentPost = getPost(currentSlug);
+  if (!currentPost) return [];
+  
+  const allPosts = getAllPosts().filter(post => post.slug !== currentSlug);
+  
+  // カテゴリとタグでスコアリング
+  const scoredPosts = allPosts.map(post => {
+    let score = 0;
+    
+    // 同じカテゴリなら +10
+    if (post.category === currentPost.category) {
+      score += 10;
+    }
+    
+    // 共通のタグがあれば +5 per tag
+    const commonTags = (post.tags || []).filter(tag => 
+      (currentPost.tags || []).includes(tag)
+    );
+    score += commonTags.length * 5;
+    
+    return { post, score };
+  });
+  
+  // スコア順にソート
+  return scoredPosts
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(item => item.post);
+}
+
+/**
+ * 記事を検索（タイトル・概要・本文）
+ */
+export function searchPosts(query: string): Post[] {
+  const allPosts = getAllPosts();
+  const lowerQuery = query.toLowerCase();
+  
+  return allPosts.filter(post => {
+    return (
+      post.title.toLowerCase().includes(lowerQuery) ||
+      post.excerpt.toLowerCase().includes(lowerQuery) ||
+      post.content.toLowerCase().includes(lowerQuery) ||
+      (post.tags || []).some(tag => tag.toLowerCase().includes(lowerQuery))
+    );
+  });
 }
