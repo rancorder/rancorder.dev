@@ -1,19 +1,29 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Children, isValidElement } from "react";
+import { useState, useEffect, useRef, useCallback, ReactNode } from "react";
+
+/* ============================================================
+   TYPES
+   ============================================================ */
+interface Particle {
+  x: number; y: number; vx: number; vy: number;
+  size: number; color: string; life: number;
+  r: number; rv: number;
+}
 
 /* ============================================================
    UTILITIES
    ============================================================ */
 const GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#_';
-function randomChar() { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
+function randomChar(): string { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
 
 const NEIGHBORS: Record<string, string> = { a:'sqwze',s:'adwxze',d:'sfexc',f:'dgrvb',g:'fhtbn',h:'gjynm',j:'hkum',k:'jlio',l:'kop',e:'wrsd',r:'etdf',t:'rygh',y:'tuhj',u:'yijk',i:'uojk',o:'iplk',p:'ol',w:'qes',q:'wa' };
-function mistakeChar(ch: string) { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
+function mistakeChar(ch: string): string { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
 
-function playTone(freq, type='sine', dur=0.25, vol=0.15) {
+function playTone(freq: number, type: OscillatorType = 'sine', dur: number = 0.25, vol: number = 0.15): void {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
@@ -23,16 +33,16 @@ function playTone(freq, type='sine', dur=0.25, vol=0.15) {
   } catch(_) {}
 }
 
-function burstCanvas(canvas, x, y, count=40) {
+function burstCanvas(canvas: HTMLCanvasElement, x: number, y: number, count: number = 40): void {
   const ctx = canvas.getContext('2d'); if (!ctx) return;
   const colors = ['#7c3aed','#a78bfa','#00ff88','#f59e0b','#ec4899','#60a5fa','#fff'];
-  const particles = Array.from({length: count}, () => {
+  const particles: Particle[] = Array.from({length: count}, () => {
     const angle = Math.random()*Math.PI*2, speed = 3+Math.random()*7;
     return { x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed-2,
       size: 4+Math.random()*7, color: colors[Math.floor(Math.random()*colors.length)],
       life: 1, r: Math.random()*Math.PI*2, rv: (Math.random()-.5)*.3 };
   });
-  let raf;
+  let raf: number;
   const draw = () => {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     let alive = false;
@@ -51,9 +61,9 @@ function burstCanvas(canvas, x, y, count=40) {
 /* ============================================================
    HOOKS
    ============================================================ */
-function useInView(threshold=0.15) {
+function useInView(threshold: number = 0.15): [React.RefObject<HTMLDivElement>, boolean] {
   const [visible, setVisible] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if(e.isIntersecting) { setVisible(true); obs.disconnect(); }}, {threshold});
     if (ref.current) obs.observe(ref.current);
@@ -65,11 +75,18 @@ function useInView(threshold=0.15) {
 /* ============================================================
    GLITCH TEXT
    ============================================================ */
-function GlitchText({ children, intensity=1, className='', style={} }) {
+interface GlitchTextProps {
+  children: ReactNode;
+  intensity?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+function GlitchText({ children, intensity=1, className='', style={} }: GlitchTextProps) {
   const text = String(children);
   const [displayed, setDisplayed] = useState(text);
   const [glitching, setGlitching] = useState(false);
-  const rafRef = useRef(null);
+  const rafRef = useRef<number | null>(null);
 
   const trigger = useCallback(() => {
     if (glitching) return;
@@ -79,10 +96,10 @@ function GlitchText({ children, intensity=1, className='', style={} }) {
       frame++;
       const t = frame/total;
       if (t < 0.55) {
-        setDisplayed(text.split('').map(c => c!==' '&&Math.random()<0.45*intensity ? randomChar() : c).join(''));
+        setDisplayed(text.split('').map((c: string) => c!==' '&&Math.random()<0.45*intensity ? randomChar() : c).join(''));
       } else {
         const idx = Math.floor(((t-0.55)/0.45)*text.length);
-        setDisplayed(text.split('').map((c,i) => i<=idx ? c : c!==' '&&Math.random()<0.2 ? randomChar() : c).join(''));
+        setDisplayed(text.split('').map((c: string, i: number) => i<=idx ? c : c!==' '&&Math.random()<0.2 ? randomChar() : c).join(''));
       }
       if (frame < total) rafRef.current = requestAnimationFrame(tick);
       else { setDisplayed(text); setGlitching(false); }
@@ -108,15 +125,22 @@ function GlitchText({ children, intensity=1, className='', style={} }) {
 /* ============================================================
    TYPEWRITER
    ============================================================ */
-function Typewriter({ children, speed=50, mistakeRate=0.06, startDelay=200 }) {
+interface TypewriterProps {
+  children: ReactNode;
+  speed?: number;
+  mistakeRate?: number;
+  startDelay?: number;
+}
+
+function Typewriter({ children, speed=50, mistakeRate=0.06, startDelay=200 }: TypewriterProps) {
   const text = String(children);
   const [displayed, setDisplayed] = useState('');
   const [cursor, setCursor] = useState(true);
   const [done, setDone] = useState(false);
   const [ref, visible] = useInView(0.3);
-  const timerRef = useRef(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { const id = setInterval(() => setCursor(v=>!v), 530); return () => clearInterval(id); }, []);
+  useEffect(() => { const id = setInterval(() => setCursor((v: boolean) => !v), 530); return () => clearInterval(id); }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -155,10 +179,20 @@ function Typewriter({ children, speed=50, mistakeRate=0.06, startDelay=200 }) {
 /* ============================================================
    COUNTER UP (Verlet spring)
    ============================================================ */
-function CounterUp({ value, suffix='', prefix='', decimals=0, label, stiffness=0.07, damping=0.72 }) {
+interface CounterUpProps {
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  decimals?: number;
+  label?: string;
+  stiffness?: number;
+  damping?: number;
+}
+
+function CounterUp({ value, suffix='', prefix='', decimals=0, label, stiffness=0.07, damping=0.72 }: CounterUpProps) {
   const [display, setDisplay] = useState(0);
   const [ref, visible] = useInView(0.3);
-  const rafRef = useRef(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -196,28 +230,32 @@ function CounterUp({ value, suffix='', prefix='', decimals=0, label, stiffness=0
 /* ============================================================
    INTERACTIVE CHECKLIST
    ============================================================ */
-function InteractiveChecklist({ items }) {
-  const [checked, setChecked] = useState(new Set());
-  const [ripple, setRipple] = useState(null);
-  const [done, setDone] = useState(false);
-  const canvasRef = useRef(null);
-  const itemRefs = useRef([]);
+interface InteractiveChecklistProps {
+  items: string[];
+}
 
-  const toggle = (i) => {
+function InteractiveChecklist({ items }: InteractiveChecklistProps) {
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [ripple, setRipple] = useState<number | null>(null);
+  const [done, setDone] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const toggle = (i: number) => {
     setChecked(prev => {
       const next = new Set(prev);
       const adding = !next.has(i);
       adding ? next.add(i) : next.delete(i);
       setRipple(i); setTimeout(()=>setRipple(null),500);
       if (adding) {
-        playTone(adding ? 440 : 300, 'sine', adding ? .25 : .18, adding ? .12 : .08);
-        if (adding) setTimeout(()=>playTone(660,'sine',.2,.1),130);
+        playTone(440, 'sine', .25, .12);
+        setTimeout(()=>playTone(660,'sine',.2,.1),130);
         if (next.size===items.length) {
           setTimeout(()=>{
             const c=canvasRef.current;
             if(c) burstCanvas(c, c.width/2, c.height/2, 100);
-            [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
-              setTimeout(()=>playTone(f,'sine',.35,.15),i*90);
+            ([523.25,659.25,783.99,1046.5] as number[]).forEach((f: number, idx: number)=>{
+              setTimeout(()=>playTone(f,'sine',.35,.15),idx*90);
             });
             setDone(true);
           },200);
@@ -238,10 +276,10 @@ function InteractiveChecklist({ items }) {
         </div>
         <span style={{fontSize:'.72rem',fontWeight:700,color:done?'#00ff88':'rgba(255,255,255,.35)',fontVariantNumeric:'tabular-nums'}}>{pct}%</span>
       </div>
-      {items.map((item, i) => {
+      {items.map((item: string, i: number) => {
         const isChecked = checked.has(i);
         return (
-          <div key={i} ref={el=>itemRefs.current[i]=el} onClick={()=>toggle(i)} style={{
+          <div key={i} ref={(el: HTMLDivElement | null) => { itemRefs.current[i]=el; }} onClick={()=>toggle(i)} style={{
             display:'flex',alignItems:'center',gap:'.85rem',padding:'.85rem 1.25rem',
             cursor:'pointer',background:isChecked?'rgba(0,255,136,.05)':'transparent',
             borderBottom:i<items.length-1?'1px solid rgba(255,255,255,.04)':'none',
@@ -267,22 +305,31 @@ function InteractiveChecklist({ items }) {
 /* ============================================================
    QUIZ BLOCK
    ============================================================ */
-function QuizBlock({ question, options, answer, hint }) {
-  const [phase, setPhase] = useState('idle');
-  const [selected, setSelected] = useState(null);
-  const [showHint, setShowHint] = useState(false);
-  const canvasRef = useRef(null);
+type QuizPhase = 'idle' | 'correct' | 'wrong';
 
-  const choose = (opt) => {
+interface QuizBlockProps {
+  question: string;
+  options: string[];
+  answer: string;
+  hint?: string;
+}
+
+function QuizBlock({ question, options, answer, hint }: QuizBlockProps) {
+  const [phase, setPhase] = useState<QuizPhase>('idle');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const choose = (opt: string) => {
     if (phase!=='idle') return;
     setSelected(opt);
     if (opt===answer) {
       setPhase('correct');
-      [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',.35,.15),i*90));
+      ([523.25,659.25,783.99,1046.5] as number[]).forEach((f: number, i: number)=>setTimeout(()=>playTone(f,'sine',.35,.15),i*90));
       setTimeout(()=>{ const c=canvasRef.current; if(c) burstCanvas(c,c.width/2,c.height/2,70); },100);
     } else {
       setPhase('wrong');
-      [300,240].forEach((f,i)=>setTimeout(()=>playTone(f,'sawtooth',.25,.1),i*150));
+      ([300,240] as number[]).forEach((f: number, i: number)=>setTimeout(()=>playTone(f,'sawtooth',.25,.1),i*150));
     }
   };
 
@@ -294,7 +341,7 @@ function QuizBlock({ question, options, answer, hint }) {
         <span style={{fontSize:'.95rem',fontWeight:600,color:'rgba(255,255,255,.9)'}}>{question}</span>
       </div>
       <div style={{padding:'.75rem 1rem',display:'flex',flexDirection:'column',gap:'.5rem'}}>
-        {options.map((opt,i) => {
+        {options.map((opt: string, i: number) => {
           const isSel = selected===opt, isAns = opt===answer, rev = phase!=='idle';
           let bg='rgba(255,255,255,.04)',border='rgba(255,255,255,.1)',color='rgba(255,255,255,.8)';
           if(rev&&isAns){bg='rgba(0,255,136,.12)';border='rgba(0,255,136,.4)';color='#00ff88';}
@@ -322,12 +369,21 @@ function QuizBlock({ question, options, answer, hint }) {
 /* ============================================================
    TIMELINE
    ============================================================ */
-function TimelineStep({ date, title, body, color='#a78bfa', isLast=false, delay=0 }) {
+interface TimelineStepProps {
+  date: string;
+  title: string;
+  body: string;
+  color?: string;
+  isLast?: boolean;
+  delay?: number;
+}
+
+function TimelineStep({ date, title, body, color='#a78bfa', isLast=false, delay=0 }: TimelineStepProps) {
   const [dotScale, setDotScale] = useState(0);
   const [lineP, setLineP] = useState(0);
   const [contentV, setContentV] = useState(false);
   const [ref, visible] = useInView(0.2);
-  const rafRef = useRef(null);
+  const rafRef = useRef<number | null>(null);
   const LINE_H = 90;
 
   useEffect(() => {
@@ -376,21 +432,26 @@ function TimelineStep({ date, title, body, color='#a78bfa', isLast=false, delay=
 }
 
 /* ============================================================
-   SCAN FADE (simplified FadeIn demo)
+   SCAN REVEAL
    ============================================================ */
-function ScanReveal({ children, delay=0 }) {
-  const [phase, setPhase] = useState('hidden');
+interface ScanRevealProps {
+  children: ReactNode;
+  delay?: number;
+}
+
+function ScanReveal({ children, delay=0 }: ScanRevealProps) {
+  const [phase, setPhase] = useState<'hidden'|'scanning'|'visible'>('hidden');
   const [scanPct, setScanPct] = useState(0);
   const [ref, visible] = useInView(0.1);
-  const rafRef = useRef(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     setTimeout(() => {
       setPhase('scanning');
-      let start=null;
+      let start: number | null = null;
       const dur = 500;
-      const tick = (ts) => {
+      const tick = (ts: number) => {
         if(!start) start=ts;
         const p = Math.min((ts-start)/dur,1);
         setScanPct(p*100);
@@ -405,7 +466,7 @@ function ScanReveal({ children, delay=0 }) {
   return (
     <div ref={ref} style={{position:'relative',opacity:phase==='hidden'?0:1,transition:'opacity 60ms'}}>
       {phase==='scanning'&&<div style={{position:'absolute',top:`${scanPct}%`,left:'-4px',right:'-4px',height:'2px',background:'linear-gradient(90deg,transparent,rgba(124,58,237,.7),rgba(0,255,136,1),rgba(124,58,237,.7),transparent)',boxShadow:'0 0 16px 4px rgba(0,255,136,.4)',zIndex:10,pointerEvents:'none'}}/>}
-      <div style={{opacity:phase==='visible'?1:phase==='scanning'?.7:0,transform:phase==='visible'?'translateY(0) rotateX(0)':'translateY(20px) rotateX(8deg)',filter:phase==='visible'?'blur(0)':'blur(3px)',transition:`all 600ms cubic-bezier(.16,1,.3,1)`,perspective:'800px'}}>
+      <div style={{opacity:phase==='visible'?1:phase==='scanning'?.7:0,transform:phase==='visible'?'translateY(0) rotateX(0)':'translateY(20px) rotateX(8deg)',filter:phase==='visible'?'blur(0)':'blur(3px)',transition:'all 600ms cubic-bezier(.16,1,.3,1)',perspective:'800px'}}>
         {children}
       </div>
     </div>
@@ -416,8 +477,6 @@ function ScanReveal({ children, delay=0 }) {
    MAIN SHOWCASE
    ============================================================ */
 export default function Showcase() {
-  const [activeSection, setActiveSection] = useState(0);
-
   return (
     <div style={{
       minHeight:'100vh',background:'#080810',color:'#fff',
@@ -432,8 +491,6 @@ export default function Showcase() {
         ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 2px; }
         @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-        @keyframes scanH { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes gridMove { from{transform:translateY(0)} to{transform:translateY(40px)} }
         .mono { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
         button { font-family: inherit; }
@@ -447,8 +504,6 @@ export default function Showcase() {
 
       {/* ── HERO ── */}
       <section style={{position:'relative',zIndex:1,minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 clamp(1.5rem,5vw,4rem)',maxWidth:'1100px',margin:'0 auto'}}>
-
-        {/* eyebrow */}
         <ScanReveal delay={200}>
           <div className="mono" style={{fontSize:'.72rem',letterSpacing:'.2em',color:'rgba(0,255,136,.7)',textTransform:'uppercase',marginBottom:'1.5rem',display:'flex',alignItems:'center',gap:'.75rem'}}>
             <span style={{display:'inline-block',width:'24px',height:'1px',background:'rgba(0,255,136,.5)'}}/>
@@ -456,17 +511,13 @@ export default function Showcase() {
             <span style={{display:'inline-block',width:'24px',height:'1px',background:'rgba(0,255,136,.5)'}}/>
           </div>
         </ScanReveal>
-
-        {/* headline */}
         <ScanReveal delay={400}>
           <h1 style={{fontSize:'clamp(2.8rem,8vw,6rem)',fontWeight:800,lineHeight:.95,letterSpacing:'-.03em',marginBottom:'2rem'}}>
             <GlitchText intensity={1.2}>HTML</GlitchText>
             <span style={{display:'block',color:'rgba(255,255,255,.25)',fontStyle:'italic',fontWeight:400,fontSize:'clamp(1.4rem,4vw,2.8rem)',letterSpacing:'-.01em',marginTop:'.3rem'}}>is not the destination.</span>
-            <span style={{display:'block',background:'linear-gradient(135deg,#7c3aed,#a78bfa,#00ff88)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>It's the input.</span>
+            <span style={{display:'block',background:'linear-gradient(135deg,#7c3aed,#a78bfa,#00ff88)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>It&apos;s the input.</span>
           </h1>
         </ScanReveal>
-
-        {/* sub */}
         <ScanReveal delay={700}>
           <p style={{fontSize:'clamp(1rem,2.5vw,1.25rem)',color:'rgba(255,255,255,.5)',lineHeight:1.7,maxWidth:'580px',marginBottom:'3rem'}}>
             <Typewriter speed={35} mistakeRate={0.05} startDelay={1200}>
@@ -474,8 +525,6 @@ export default function Showcase() {
             </Typewriter>
           </p>
         </ScanReveal>
-
-        {/* stats */}
         <ScanReveal delay={1000}>
           <div style={{display:'flex',flexWrap:'wrap',gap:'1rem',marginBottom:'4rem'}}>
             <CounterUp value={13} suffix=" tags" label="Custom" stiffness={0.05} damping={0.68}/>
@@ -484,8 +533,6 @@ export default function Showcase() {
             <CounterUp value={120} suffix="粒" label="confetti" stiffness={0.04} damping={0.65}/>
           </div>
         </ScanReveal>
-
-        {/* scroll cue */}
         <div style={{display:'flex',alignItems:'center',gap:'.75rem',color:'rgba(255,255,255,.25)',fontSize:'.78rem',letterSpacing:'.1em',fontFamily:"'JetBrains Mono',monospace"}}>
           <span style={{animation:'pulse 2s infinite'}}>↓</span> SCROLL TO EXPLORE
         </div>
@@ -499,13 +546,12 @@ export default function Showcase() {
             3層の<span style={{color:'#a78bfa'}}>完全分離</span>
           </h2>
         </ScanReveal>
-
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'1px',borderRadius:'16px',overflow:'hidden',border:'1px solid rgba(255,255,255,.06)'}}>
-          {[
+          {([
             {layer:'01', label:'CONTENT', file:'content/blog/*.html', desc:'構造の宣言。Reactを知らなくていい。HTMLを書くだけ。', color:'#6366f1'},
             {layer:'02', label:'TRANSFORM', file:'blog-renderer.tsx', desc:'cheerioでパース。カスタムタグをReact Componentに変換。クライアントには存在しない。', color:'#a78bfa'},
             {layer:'03', label:'EXPERIENCE', file:'FadeIn / Checklist / ...', desc:'スキャンライン、confetti、Web Audio、物理バネ。コンテンツ作者が知らない演出が全記事に展開される。', color:'#00ff88'},
-          ].map(({layer,label,file,desc,color},i) => (
+          ] as {layer:string;label:string;file:string;desc:string;color:string}[]).map(({layer,label,file,desc,color},i) => (
             <ScanReveal key={i} delay={i*150}>
               <div style={{padding:'2rem',background:'rgba(255,255,255,.02)',height:'100%',borderRight:i<2?'1px solid rgba(255,255,255,.06)':'none'}}>
                 <div className="mono" style={{fontSize:'.6rem',letterSpacing:'.15em',color:'rgba(255,255,255,.2)',marginBottom:'.5rem'}}>{layer}</div>
@@ -527,10 +573,7 @@ export default function Showcase() {
           </h2>
           <p style={{color:'rgba(255,255,255,.4)',fontSize:'.95rem',marginBottom:'3.5rem'}}>HTMLに1タグ書くだけで、これが全記事に展開される。</p>
         </ScanReveal>
-
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:'1.5rem'}}>
-
-          {/* Checklist */}
           <ScanReveal delay={100}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
@@ -541,25 +584,16 @@ export default function Showcase() {
               <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>Canvas confetti 28粒 + Web Audio<br/>全完了: 120粒 + アルペジオ</div>
             </div>
           </ScanReveal>
-
-          {/* Quiz */}
           <ScanReveal delay={200}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
                 <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(124,58,237,.7)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;quiz-block&gt;</div>
                 <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>ブログ記事がアプリになる</div>
               </div>
-              <QuizBlock
-                question="BlogRendererの実行場所は？"
-                options={['ブラウザ', 'サーバー', 'Cloudflare Edge', 'どこでも']}
-                answer="サーバー"
-                hint="クライアントにcheerioは存在しない"
-              />
+              <QuizBlock question="BlogRendererの実行場所は？" options={['ブラウザ','サーバー','Cloudflare Edge','どこでも']} answer="サーバー" hint="クライアントにcheerioは存在しない"/>
               <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>正解: 上昇アルペジオ + confetti<br/>不正解: sawtooth降下音</div>
             </div>
           </ScanReveal>
-
-          {/* GlitchText demo */}
           <ScanReveal delay={300}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
@@ -567,18 +601,12 @@ export default function Showcase() {
                 <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>クリックで即座に崩壊する</div>
               </div>
               <div style={{padding:'2.5rem 1.5rem',background:'rgba(0,0,0,.4)',borderRadius:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,.06)'}}>
-                <div style={{fontSize:'clamp(1.8rem,5vw,2.8rem)',lineHeight:1.1}}>
-                  <GlitchText intensity={1.5}>SYSTEM BREACH</GlitchText>
-                </div>
-                <div style={{marginTop:'1.5rem',fontSize:'1.1rem',opacity:.6}}>
-                  <GlitchText intensity={.8}>ERROR_404</GlitchText>
-                </div>
+                <div style={{fontSize:'clamp(1.8rem,5vw,2.8rem)',lineHeight:1.1}}><GlitchText intensity={1.5}>SYSTEM BREACH</GlitchText></div>
+                <div style={{marginTop:'1.5rem',fontSize:'1.1rem',opacity:.6}}><GlitchText intensity={.8}>ERROR_404</GlitchText></div>
               </div>
               <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>RGBチャンネル分離 + ランダム文字置換<br/>3〜7秒で自動発動。クリックでも発動。</div>
             </div>
           </ScanReveal>
-
-          {/* Timeline */}
           <ScanReveal delay={400}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
@@ -593,8 +621,6 @@ export default function Showcase() {
               <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>stroke-dashoffset アニメーション<br/>ドット→ライン→コンテンツの順に出現</div>
             </div>
           </ScanReveal>
-
-          {/* Typewriter demo */}
           <ScanReveal delay={500}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
@@ -609,8 +635,6 @@ export default function Showcase() {
               <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>隣接キーテーブルでリアルなミス<br/>バックスペースで消して打ち直す</div>
             </div>
           </ScanReveal>
-
-          {/* CounterUp demo */}
           <ScanReveal delay={600}>
             <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
               <div>
@@ -640,7 +664,7 @@ export default function Showcase() {
         <ScanReveal delay={200}>
           <div style={{borderRadius:'14px',background:'rgba(0,0,0,.6)',border:'1px solid rgba(255,255,255,.08)',overflow:'hidden'}}>
             <div style={{padding:'.6rem 1rem',borderBottom:'1px solid rgba(255,255,255,.06)',display:'flex',gap:'.4rem',alignItems:'center'}}>
-              {['#ff5f56','#ffbd2e','#27c93f'].map(c=><div key={c} style={{width:'10px',height:'10px',borderRadius:'50%',background:c}}/>)}
+              {(['#ff5f56','#ffbd2e','#27c93f'] as string[]).map((c: string)=><div key={c} style={{width:'10px',height:'10px',borderRadius:'50%',background:c}}/>)}
               <span className="mono" style={{fontSize:'.72rem',color:'rgba(255,255,255,.25)',marginLeft:'.5rem'}}>2026-02-17-blog-system.html</span>
             </div>
             <pre className="mono" style={{padding:'1.5rem',fontSize:'.8rem',lineHeight:1.8,color:'rgba(255,255,255,.6)',overflow:'auto',margin:0}}>{`<fade-in delay="0">
@@ -653,11 +677,7 @@ export default function Showcase() {
   <li>confettiは120粒爆散する</li>
 </interactive-checklist>
 
-<quiz-block
-  question="BlogRendererの実行場所は？"
-  answer="サーバー"
-  hint="クライアントにcheerioは存在しない"
->
+<quiz-block question="BlogRendererの実行場所は？" answer="サーバー">
   <li>ブラウザ</li>
   <li>サーバー</li>
 </quiz-block>
@@ -680,7 +700,7 @@ export default function Showcase() {
           <div className="mono" style={{fontSize:'.72rem',color:'rgba(255,255,255,.3)'}}>HTML → React AST Generator</div>
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:'.35rem',alignItems:'flex-end'}}>
-          {['Next.js 14','React 18','cheerio','Canvas 2D','Web Audio API'].map(t=>(
+          {(['Next.js 14','React 18','cheerio','Canvas 2D','Web Audio API'] as string[]).map((t: string)=>(
             <span key={t} className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.25)',letterSpacing:'.05em'}}>{t}</span>
           ))}
         </div>
