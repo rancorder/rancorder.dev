@@ -21,7 +21,6 @@ export function BlogRenderer({ html }: BlogRendererProps) {
   try {
     const $ = load(html, {
       xmlMode: false,
-      decodeEntities: true,
     });
 
     // <body>の中身のみ抽出（<html>, <head>を除外）
