@@ -378,9 +378,7 @@ export default function LandingPage() {
     },
   ];
 
-  return (
-    <>
-      <style>{`
+  const globalCss = `
         @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -607,7 +605,11 @@ export default function LandingPage() {
           }
           h2 { font-size: 1.8rem !important; }
         }
-      `}</style>
+  `;
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: globalCss }} />
 
       {/* ── MATRIX BACKGROUND ── */}
       <MatrixRain />
@@ -1059,6 +1061,8 @@ export default function LandingPage() {
                 [ESC]
               </button>
             </div>
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
 
               {/* STEP 0: intro */}
               {step === 0 && (
