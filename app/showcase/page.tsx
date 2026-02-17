@@ -9,7 +9,7 @@ const GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#_';
 function randomChar() { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
 
 const NEIGHBORS = { a:'sqwze',s:'adwxze',d:'sfexc',f:'dgrvb',g:'fhtbn',h:'gjynm',j:'hkum',k:'jlio',l:'kop',e:'wrsd',r:'etdf',t:'rygh',y:'tuhj',u:'yijk',i:'uojk',o:'iplk',p:'ol',w:'qes',q:'wa' };
-function mistakeChar(ch) { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
+function mistakeChar(ch: string) { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
 
 function playTone(freq, type='sine', dur=0.25, vol=0.15) {
   try {
