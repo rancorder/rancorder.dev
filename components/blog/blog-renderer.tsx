@@ -1,4 +1,5 @@
 // components/blog/blog-renderer.tsx
+import React from 'react';
 import { load } from 'cheerio';
 import { FadeIn } from './FadeIn';
 import { CalloutBox } from './CalloutBox';
@@ -21,7 +22,7 @@ export function BlogRenderer({ html }: BlogRendererProps) {
   try {
     const $ = load(html, {
       xmlMode: false,
-      decodeEntities: true,
+      // decodeEntities は cheerio の型定義に存在しないため指定しない
     });
 
     // <body>の中身のみ抽出（<html>, <head>を除外）
@@ -40,7 +41,7 @@ export function BlogRenderer({ html }: BlogRendererProps) {
     console.error('BlogRenderer: Parse failed, using fallback', error);
     // フォールバック：パース失敗時は従来の方法
     return (
-      <div 
+      <div
         className="blog-content-wrapper"
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -54,7 +55,7 @@ export function BlogRenderer({ html }: BlogRendererProps) {
 function parseNode(node: any, $: any): React.ReactNode[] {
   const children: React.ReactNode[] = [];
 
-  node.contents().each((_index: number, element: any) => {
+  node.contents().each((index: number, element: any) => {
     // テキストノード
     if (element.type === 'text') {
       const text = $(element).text();
@@ -70,11 +71,10 @@ function parseNode(node: any, $: any): React.ReactNode[] {
       const attrs = element.attribs || {};
       const childNodes = parseNode($(element), $);
 
-      // カスタム要素を React コンポーネントに変換
       switch (tagName) {
         case 'fade-in':
           children.push(
-            <FadeIn key={_index} delay={parseFloat(attrs.delay) || 0}>
+            <FadeIn key={index} delay={parseFloat(attrs.delay) || 0}>
               {childNodes}
             </FadeIn>
           );
@@ -82,9 +82,9 @@ function parseNode(node: any, $: any): React.ReactNode[] {
 
         case 'callout-box':
           children.push(
-            <CalloutBox 
-              key={_index}
-              type={attrs.type as any || 'info'}
+            <CalloutBox
+              key={index}
+              type={(attrs.type as any) || 'info'}
               title={attrs.title}
             >
               {childNodes}
@@ -92,20 +92,21 @@ function parseNode(node: any, $: any): React.ReactNode[] {
           );
           break;
 
-        case 'code-block':
+        case 'code-block': {
           const codeText = $(element).text();
           children.push(
-            <CodeBlock 
-              key={_index}
+            <CodeBlock
+              key={index}
               language={attrs.language || 'javascript'}
               code={codeText}
             />
           );
           break;
+        }
 
         case 'interactive-checklist':
           children.push(
-            <InteractiveChecklist key={_index}>
+            <InteractiveChecklist key={index}>
               {childNodes}
             </InteractiveChecklist>
           );
@@ -114,7 +115,7 @@ function parseNode(node: any, $: any): React.ReactNode[] {
         case 'comparison-card':
           children.push(
             <ComparisonCard
-              key={_index}
+              key={index}
               title={attrs.title}
               good={attrs.good}
               bad={attrs.bad}
@@ -125,9 +126,9 @@ function parseNode(node: any, $: any): React.ReactNode[] {
         case 'progress-bar':
           children.push(
             <ProgressBar
-              key={_index}
-              value={parseInt(attrs.value) || 0}
-              max={parseInt(attrs.max) || 100}
+              key={index}
+              value={parseInt(attrs.value, 10) || 0}
+              max={parseInt(attrs.max, 10) || 100}
               label={attrs.label}
             />
           );
@@ -135,7 +136,7 @@ function parseNode(node: any, $: any): React.ReactNode[] {
 
         case 'accordion-item':
           children.push(
-            <AccordionItem key={_index} title={attrs.title}>
+            <AccordionItem key={index} title={attrs.title}>
               {childNodes}
             </AccordionItem>
           );
@@ -143,8 +144,8 @@ function parseNode(node: any, $: any): React.ReactNode[] {
 
         case 'tool-tip':
           children.push(
-            <ToolTip 
-              key={_index}
+            <ToolTip
+              key={index}
               text={attrs.text}
               position={attrs.position as any}
             >
@@ -156,7 +157,7 @@ function parseNode(node: any, $: any): React.ReactNode[] {
         // 通常のHTML要素
         default:
           children.push(
-            createElement(tagName, attrs, childNodes, _index)
+            createElement(tagName, attrs, childNodes, index)
           );
       }
     }
@@ -178,23 +179,16 @@ function createElement(
 
   // 属性を変換
   Object.entries(attrs).forEach(([name, value]) => {
-    // classをclassNameに変換
     if (name === 'class') {
       props.className = value;
-    } 
-    // aria-*, data-* はそのまま
-    else if (name.startsWith('aria-') || name.startsWith('data-')) {
+    } else if (name.startsWith('aria-') || name.startsWith('data-')) {
       props[name] = value;
-    }
-    // その他の属性
-    else {
+    } else {
       props[name] = value;
     }
   });
 
-  // 子要素
   props.children = children.length > 0 ? children : undefined;
 
-  // React.createElement を使って要素を作成
-  return require('react').createElement(tagName, props);
+  return React.createElement(tagName, props);
 }
