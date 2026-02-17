@@ -80,7 +80,7 @@ export function getAllPosts(): Post[] {
         return null;
       }
     })
-    .filter((post): post is Post => post !== null)
+    .filter(post => post !== null)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   console.log(`✅ Loaded ${posts.length} blog posts`);
