@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boids - 群れシミュレーション</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+canvas { position:fixed; top:0; left:0; }
+#info {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  color:rgba(255,255,255,0.5); font:11px monospace; letter-spacing:.2em;
+  pointer-events:none; text-align:center;
+}
+#controls {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; z-index:10;
+}
+.btn {
+  padding:6px 14px; background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.3); color:rgba(255,255,255,0.7);
+  cursor:pointer; font:11px monospace; letter-spacing:.1em;
+  transition:all .2s;
+}
+.btn:hover, .btn.active {
+  border-color:rgba(255,255,255,0.8); color:#fff;
+  background:rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info">BOIDS SIMULATION — 3 RULES: ALIGNMENT · COHESION · SEPARATION</div>
+<div id="controls">
+  <button class="btn active" onclick="setMode(0)">FISH</button>
+  <button class="btn" onclick="setMode(1)">BIRDS</button>
+  <button class="btn" onclick="setMode(2)">FIREFLIES</button>
+</div>
+<script>
+(function(){
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var W=800, H=600, T=0, mode=0;
+
+var boids = [];
+var BOID_COUNT = 120;
+var mouseX = W/2, mouseY = H/2;
+
+function resize(){
+  W = canvas.width  = window.innerWidth  || 800;
+  H = canvas.height = window.innerHeight || 600;
+}
+window.addEventListener('resize', resize);
+canvas.addEventListener('mousemove', function(e){ mouseX=e.clientX; mouseY=e.clientY; });
+resize();
+
+window.setMode = function(m){
+  mode = m;
+  document.querySelectorAll('.btn').forEach(function(b,i){ b.classList.toggle('active', i===m); });
+  initBoids();
+};
+
+function rnd(a,b){ return a+Math.random()*(b-a); }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+
+class Boid {
+  constructor(x,y){
+    this.x = x;
+    this.y = y;
+    this.vx = rnd(-2,2);
+    this.vy = rnd(-2,2);
+    this.hue = rnd(0,360);
+    this.size = mode===0 ? rnd(3,7) : mode===1 ? rnd(4,8) : rnd(2,5);
+  }
+  
+  update(){
+    var neighbors = this.getNeighbors(80);
+    
+    if(neighbors.length > 0){
+      this.align(neighbors);
+      this.cohesion(neighbors);
+      this.separation(neighbors);
+    }
+    
+    // Avoid edges
+    this.avoidEdges();
+    
+    // Mouse attraction (slight)
+    if(mode===2){ // Fireflies attracted to cursor
+      var dx = mouseX - this.x, dy = mouseY - this.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist > 0 && dist < 200){
+        this.vx += (dx/dist) * 0.05;
+        this.vy += (dy/dist) * 0.05;
+      }
+    }
+    
+    // Speed limits
+    var maxSpeed = mode===0 ? 4 : mode===1 ? 5 : 2.5;
+    var speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+    if(speed > maxSpeed){
+      this.vx = (this.vx/speed) * maxSpeed;
+      this.vy = (this.vy/speed) * maxSpeed;
+    }
+    
+    this.x += this.vx;
+    this.y += this.vy;
+    
+    // Wrap around
+    if(this.x < 0) this.x = W;
+    if(this.x > W) this.x = 0;
+    if(this.y < 0) this.y = H;
+    if(this.y > H) this.y = 0;
+  }
+  
+  getNeighbors(radius){
+    var neighbors = [];
+    for(var i=0; i<boids.length; i++){
+      if(boids[i] === this) continue;
+      var dx = boids[i].x - this.x;
+      var dy = boids[i].y - this.y;
+      var dist = dx*dx + dy*dy;
+      if(dist < radius*radius){
+        neighbors.push(boids[i]);
+      }
+    }
+    return neighbors;
+  }
+  
+  // Rule 1: Alignment - steer towards average heading
+  align(neighbors){
+    var avgVx = 0, avgVy = 0;
+    for(var i=0; i<neighbors.length; i++){
+      avgVx += neighbors[i].vx;
+      avgVy += neighbors[i].vy;
+    }
+    avgVx /= neighbors.length;
+    avgVy /= neighbors.length;
+    
+    var factor = 0.05;
+    this.vx += (avgVx - this.vx) * factor;
+    this.vy += (avgVy - this.vy) * factor;
+  }
+  
+  // Rule 2: Cohesion - steer towards center of mass
+  cohesion(neighbors){
+    var avgX = 0, avgY = 0;
+    for(var i=0; i<neighbors.length; i++){
+      avgX += neighbors[i].x;
+      avgY += neighbors[i].y;
+    }
+    avgX /= neighbors.length;
+    avgY /= neighbors.length;
+    
+    var factor = 0.005;
+    this.vx += (avgX - this.x) * factor;
+    this.vy += (avgY - this.y) * factor;
+  }
+  
+  // Rule 3: Separation - avoid crowding
+  separation(neighbors){
+    var moveX = 0, moveY = 0;
+    for(var i=0; i<neighbors.length; i++){
+      var dx = this.x - neighbors[i].x;
+      var dy = this.y - neighbors[i].y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < 25){
+        moveX += dx/dist;
+        moveY += dy/dist;
+      }
+    }
+    var factor = 0.1;
+    this.vx += moveX * factor;
+    this.vy += moveY * factor;
+  }
+  
+  avoidEdges(){
+    var margin = 50, turnFactor = 0.3;
+    if(this.x < margin) this.vx += turnFactor;
+    if(this.x > W-margin) this.vx -= turnFactor;
+    if(this.y < margin) this.vy += turnFactor;
+    if(this.y > H-margin) this.vy -= turnFactor;
+  }
+  
+  draw(){
+    var angle = Math.atan2(this.vy, this.vx);
+    
+    if(mode === 0){ // Fish
+      this.drawFish(angle);
+    } else if(mode === 1){ // Birds
+      this.drawBird(angle);
+    } else { // Fireflies
+      this.drawFirefly();
+    }
+  }
+  
+  drawFish(angle){
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(angle);
+    
+    // Body gradient
+    var grad = ctx.createLinearGradient(-this.size, 0, this.size, 0);
+    grad.addColorStop(0, 'hsl('+(this.hue+T*0.2)+',70%,45%)');
+    grad.addColorStop(1, 'hsl('+(this.hue+T*0.2)+',70%,65%)');
+    
+    // Body
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.size*1.5, this.size*0.7, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Tail
+    ctx.fillStyle = 'hsla('+(this.hue+T*0.2)+',70%,50%,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(-this.size*1.5, 0);
+    ctx.lineTo(-this.size*2.5, -this.size*0.8);
+    ctx.lineTo(-this.size*2.5, this.size*0.8);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Eye
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.arc(this.size*0.5, 0, this.size*0.2, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.restore();
+  }
+  
+  drawBird(angle){
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(angle);
+    
+    var wingFlap = Math.sin(T*0.15 + this.x*0.01) * 0.3;
+    
+    // Body
+    ctx.fillStyle = 'hsl('+(this.hue+T*0.3)+',60%,30%)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, this.size*0.8, this.size*0.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Wings
+    ctx.strokeStyle = 'hsl('+(this.hue+T*0.3)+',60%,25%)';
+    ctx.lineWidth = this.size*0.3;
+    ctx.lineCap = 'round';
+    
+    // Left wing
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-this.size*0.5, -this.size*(1.5+wingFlap), -this.size*2, -this.size*(1+wingFlap));
+    ctx.stroke();
+    
+    // Right wing
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-this.size*0.5, this.size*(1.5+wingFlap), -this.size*2, this.size*(1+wingFlap));
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+  
+  drawFirefly(){
+    // Glow
+    var glow = 0.5 + 0.5*Math.sin(T*0.08 + this.x*0.02);
+    var grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size*4);
+    grad.addColorStop(0, 'hsla('+(this.hue+T*0.5)+',100%,70%,'+(glow*0.6)+')');
+    grad.addColorStop(0.5,'hsla('+(this.hue+T*0.5)+',100%,60%,'+(glow*0.2)+')');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size*4, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Core
+    ctx.fillStyle = 'hsl('+(this.hue+T*0.5)+',100%,80%)';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size*0.8, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function initBoids(){
+  boids = [];
+  var count = mode===2 ? 80 : BOID_COUNT;
+  for(var i=0; i<count; i++){
+    boids.push(new Boid(rnd(0,W), rnd(0,H)));
+  }
+}
+
+function drawBackground(){
+  if(mode === 0){ // Underwater
+    var grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, '#001a33');
+    grad.addColorStop(1, '#002244');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // Light rays
+    ctx.globalAlpha = 0.03;
+    for(var i=0; i<5; i++){
+      var x = W*(0.1+i*0.2);
+      var grad2 = ctx.createLinearGradient(x,0,x+50,H);
+      grad2.addColorStop(0, 'rgba(100,180,255,0.3)');
+      grad2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad2;
+      ctx.fillRect(x,0,60,H);
+    }
+    ctx.globalAlpha = 1;
+    
+  } else if(mode === 1){ // Sky
+    var grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, '#87CEEB');
+    grad.addColorStop(0.5,'#B0E0E6');
+    grad.addColorStop(1, '#E0F6FF');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // Clouds
+    ctx.globalAlpha = 0.15;
+    for(var i=0; i<8; i++){
+      var cx = W*(i*0.15 + Math.sin(T*0.002+i)*0.05);
+      var cy = H*(0.2 + i*0.08);
+      var r  = W*0.12;
+      var cgrad = ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+      cgrad.addColorStop(0, 'rgba(255,255,255,0.8)');
+      cgrad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = cgrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    
+  } else { // Night (fireflies)
+    var grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, '#0a0a1a');
+    grad.addColorStop(1, '#050510');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    for(var i=0; i<60; i++){
+      var sx = (i*37)%W, sy = (i*71)%H;
+      var twinkle = 0.5+0.5*Math.sin(T*0.02+i);
+      ctx.globalAlpha = twinkle*0.7;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.8, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  
+  // Fade overlay for motion blur
+  ctx.fillStyle = mode===0 ? 'rgba(0,26,51,0.08)' : mode===1 ? 'rgba(135,206,235,0.1)' : 'rgba(5,5,16,0.15)';
+  ctx.fillRect(0,0,W,H);
+}
+
+function loop(){
+  drawBackground();
+  
+  for(var i=0; i<boids.length; i++){
+    boids[i].update();
+    boids[i].draw();
+  }
+  
+  T++;
+  requestAnimationFrame(loop);
+}
+
+initBoids();
+loop();
+})();
+</script>
+</body>
+</html>
