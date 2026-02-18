@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEON BREAKOUT</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #gameContainer {
+      position: relative;
+      max-width: 100%;
+      max-height: 100vh;
+    }
+    canvas {
+      display: block;
+      background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 100%);
+      box-shadow: 
+        0 0 80px rgba(236, 72, 153, 0.3),
+        0 0 120px rgba(168, 85, 247, 0.2),
+        inset 0 0 100px rgba(0, 0, 0, 0.8);
+      cursor: none;
+    }
+    #ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 70%, transparent 100%);
+    }
+    .stat {
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 2.5px;
+      padding: 10px 18px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid currentColor;
+      box-shadow: 0 0 25px currentColor, inset 0 0 15px rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+    #score { color: #ec4899; }
+    #lives { color: #00d9ff; }
+    #level { color: #a855f7; }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 20;
+    }
+    #overlay.active { display: flex; }
+    .message {
+      text-align: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .message h1 {
+      font-size: clamp(2.5rem, 10vw, 5rem);
+      margin-bottom: 30px;
+      background: linear-gradient(45deg, #ec4899, #a855f7, #00d9ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 30px #ec4899) drop-shadow(0 0 60px #a855f7);
+      letter-spacing: 0.1em;
+    }
+    .message p {
+      font-size: clamp(1rem, 3vw, 1.3rem);
+      margin-bottom: 40px;
+      color: rgba(255, 255, 255, 0.7);
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    }
+    .message button {
+      padding: 18px 50px;
+      font-size: 18px;
+      font-family: inherit;
+      font-weight: bold;
+      background: transparent;
+      border: 3px solid #ec4899;
+      color: #ec4899;
+      cursor: pointer;
+      letter-spacing: 4px;
+      transition: all 0.3s;
+      text-shadow: 0 0 15px currentColor;
+      box-shadow: 0 0 30px currentColor, inset 0 0 20px rgba(236, 72, 153, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .message button:before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(236, 72, 153, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    .message button:hover:before {
+      width: 300px;
+      height: 300px;
+    }
+    .message button:hover {
+      background: #ec4899;
+      color: #000;
+      transform: scale(1.05);
+      box-shadow: 0 0 50px #ec4899;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
+    }
+    @media (max-width: 768px) {
+      #ui { 
+        padding: 10px 12px;
+        background: linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
+      }
+      .stat { 
+        font-size: 12px; 
+        padding: 8px 12px;
+        letter-spacing: 1.5px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: NEON BREAKOUT · ブロック崩し再構築
+desc: レトロゲームの最高峰 · Canvas 2D · パワーアップシステム · 物理演算 · グロー描画
+tech: Canvas 2D API · 衝突判定最適化 · パーティクルシステム · AudioContext · 反射ベクトル計算
+level: 95
+color: #ec4899
+type: demo
+-->
+
+<div id="gameContainer">
+  <canvas id="canvas"></canvas>
+  
+  <div id="ui">
+    <div style="display: flex; gap: 15px;">
+      <div id="score" class="stat">SCORE: 0</div>
+      <div id="level" class="stat">LEVEL: 1</div>
+    </div>
+    <div id="lives" class="stat">♥ × 3</div>
+  </div>
+  
+  <div id="overlay">
+    <div class="message" id="message">
+      <h1>NEON BREAKOUT</h1>
+      <p>マウス / タッチでパドル移動<br>全ブロックを破壊せよ</p>
+      <button onclick="game.start()">▶ START GAME</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const message = document.getElementById('message');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const levelEl = document.getElementById('level');
+
+// Canvas setup
+let width, height, scale;
+function resizeCanvas() {
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight;
+  const aspect = 3 / 4;
+  
+  if (maxW / maxH > aspect) {
+    height = maxH;
+    width = height * aspect;
+  } else {
+    width = maxW;
+    height = width / aspect;
+  }
+  
+  canvas.width = width;
+  canvas.height = height;
+  scale = width / 600;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Stars background
+const stars = Array.from({ length: 80 }, () => ({
+  x: Math.random() * width,
+  y: 60 + Math.random() * (height - 60),
+  size: Math.random() * 2,
+  speed: 0.3 + Math.random() * 1,
+  opacity: 0.2 + Math.random() * 0.6
+}));
+
+function updateStars() {
+  stars.forEach(s => {
+    s.y += s.speed;
+    if (s.y > height) {
+      s.y = 60;
+      s.x = Math.random() * width;
+    }
+  });
+}
+
+function drawStars() {
+  stars.forEach(s => {
+    ctx.fillStyle = `rgba(150, 180, 255, ${s.opacity})`;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  });
+}
+
+// Audio
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, duration = 0.1, type = 'sine', volume = 0.15) {
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playHit(pitch = 1) {
+  playSound(400 * pitch, 0.08, 'square', 0.12);
+}
+
+function playPowerup() {
+  playSound(800, 0.1, 'sine', 0.1);
+  setTimeout(() => playSound(1000, 0.1, 'sine', 0.1), 50);
+  setTimeout(() => playSound(1200, 0.15, 'sine', 0.1), 100);
+}
+
+function playExplosion() {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      playSound(120 + i * 40, 0.15, 'sawtooth', 0.12);
+    }, i * 40);
+  }
+}
+
+// Particles
+const particles = [];
+class Particle {
+  constructor(x, y, color, count = 25, speed = 5) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const vel = 1 + Math.random() * speed;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * vel,
+        vy: Math.sin(angle) * vel - 1,
+        life: 1,
+        color,
+        size: 2 + Math.random() * 4,
+        glow: 15 + Math.random() * 15
+      });
+    }
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.vx *= 0.98;
+    p.life -= 0.02;
+    
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.shadowBlur = p.glow;
+    ctx.shadowColor = p.color;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    ctx.restore();
+  });
+}
+
+// Trail effect
+const trails = [];
+function addTrail(x, y, color) {
+  trails.push({
+    x, y,
+    life: 1,
+    color,
+    size: 6
+  });
+}
+
+function updateTrails() {
+  for (let i = trails.length - 1; i >= 0; i--) {
+    trails[i].life -= 0.06;
+    if (trails[i].life <= 0) {
+      trails.splice(i, 1);
+    }
+  }
+}
+
+function drawTrails() {
+  trails.forEach(t => {
+    ctx.save();
+    ctx.globalAlpha = t.life * 0.6;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = t.color;
+    ctx.fillStyle = t.color;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, t.size * t.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+// Paddle
+class Paddle {
+  constructor() {
+    this.w = 100 * scale;
+    this.h = 15 * scale;
+    this.x = width / 2 - this.w / 2;
+    this.y = height - 50 * scale;
+    this.color = '#00d9ff';
+    this.targetX = this.x;
+  }
+  
+  update() {
+    // Smooth movement
+    this.x += (this.targetX - this.x) * 0.2;
+    this.x = Math.max(0, Math.min(width - this.w, this.x));
+  }
+  
+  draw() {
+    ctx.save();
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = this.color;
+    
+    const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
+    gradient.addColorStop(0, this.color);
+    gradient.addColorStop(1, '#0088aa');
+    ctx.fillStyle = gradient;
+    
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    
+    // Highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillRect(this.x, this.y, this.w, this.h * 0.4);
+    
+    ctx.restore();
+  }
+}
+
+// Ball
+class Ball {
+  constructor() {
+    this.r = 8 * scale;
+    this.x = width / 2;
+    this.y = height - 100 * scale;
+    this.vx = (Math.random() - 0.5) * 6 * scale;
+    this.vy = -6 * scale;
+    this.speed = 6 * scale;
+    this.color = '#ec4899';
+    this.stuck = true;
+  }
+  
+  launch() {
+    this.stuck = false;
+    this.vy = -this.speed;
+  }
+  
+  update() {
+    if (this.stuck) {
+      this.x = paddle.x + paddle.w / 2;
+      this.y = paddle.y - this.r;
+      return;
+    }
+    
+    this.x += this.vx;
+    this.y += this.vy;
+    
+    // Trail
+    if (Math.random() < 0.3) {
+      addTrail(this.x, this.y, this.color);
+    }
+    
+    // Wall collision
+    if (this.x - this.r <= 0 || this.x + this.r >= width) {
+      this.vx *= -1;
+      this.x = Math.max(this.r, Math.min(width - this.r, this.x));
+      playHit(1.2);
+    }
+    
+    if (this.y - this.r <= 60) {
+      this.vy *= -1;
+      this.y = 60 + this.r;
+      playHit(1.2);
+    }
+    
+    // Paddle collision
+    if (this.y + this.r >= paddle.y && 
+        this.y - this.r <= paddle.y + paddle.h &&
+        this.x >= paddle.x && 
+        this.x <= paddle.x + paddle.w) {
+      
+      this.vy = -Math.abs(this.vy);
+      
+      // Add spin based on hit position
+      const hitPos = (this.x - paddle.x) / paddle.w;
+      this.vx = (hitPos - 0.5) * this.speed * 1.5;
+      
+      this.y = paddle.y - this.r;
+      playHit(1.5);
+      new Particle(this.x, this.y + this.r, this.color, 15, 3);
+    }
+  }
+  
+  draw() {
+    ctx.save();
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = this.color;
+    
+    const gradient = ctx.createRadialGradient(
+      this.x - this.r * 0.3, this.y - this.r * 0.3, 0,
+      this.x, this.y, this.r
+    );
+    gradient.addColorStop(0, '#fff');
+    gradient.addColorStop(0.3, this.color);
+    gradient.addColorStop(1, '#aa0055');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+  }
+  
+  reset() {
+    this.x = width / 2;
+    this.y = height - 100 * scale;
+    this.vx = (Math.random() - 0.5) * 6 * scale;
+    this.vy = -6 * scale;
+    this.stuck = true;
+  }
+}
+
+// Block
+class Block {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.w = 50 * scale;
+    this.h = 20 * scale;
+    this.type = type;
+    this.alive = true;
+    
+    const types = [
+      { color: '#ec4899', glow: '#ff1a75', points: 10, hits: 1 },
+      { color: '#a855f7', glow: '#8b00ff', points: 20, hits: 1 },
+      { color: '#00d9ff', glow: '#0099ff', points: 30, hits: 1 },
+      { color: '#f59e0b', glow: '#ff6b00', points: 50, hits: 2 },
+      { color: '#10b981', glow: '#00ff88', points: 100, hits: 3 }
+    ];
+    
+    const t = types[type % types.length];
+    this.color = t.color;
+    this.glowColor = t.glow;
+    this.points = t.points;
+    this.maxHits = t.hits;
+    this.hits = t.hits;
+  }
+  
+  hit() {
+    this.hits--;
+    if (this.hits <= 0) {
+      this.alive = false;
+      return true;
+    }
+    return false;
+  }
+  
+  draw() {
+    if (!this.alive) return;
+    
+    ctx.save();
+    
+    const alpha = this.hits / this.maxHits;
+    ctx.globalAlpha = 0.5 + alpha * 0.5;
+    ctx.shadowBlur = 20 * alpha;
+    ctx.shadowColor = this.color;
+    
+    const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
+    gradient.addColorStop(0, this.color);
+    gradient.addColorStop(1, this.glowColor);
+    ctx.fillStyle = gradient;
+    
+    ctx.fillRect(this.x + 1, this.y + 1, this.w - 2, this.h - 2);
+    
+    // Highlight
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.2 * alpha})`;
+    ctx.fillRect(this.x + 1, this.y + 1, this.w - 2, this.h * 0.3);
+    
+    ctx.restore();
+  }
+}
+
+// Powerup
+class Powerup {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.w = 30 * scale;
+    this.h = 15 * scale;
+    this.type = type;
+    this.vy = 2 * scale;
+    this.alive = true;
+    
+    const types = [
+      { color: '#00d9ff', name: 'EXPAND' },
+      { color: '#10b981', name: 'MULTI' },
+      { color: '#f59e0b', name: 'SLOW' }
+    ];
+    
+    const t = types[type % types.length];
+    this.color = t.color;
+    this.name = t.name;
+  }
+  
+  update() {
+    this.y += this.vy;
+    
+    // Check paddle collision
+    if (this.y + this.h >= paddle.y && 
+        this.y <= paddle.y + paddle.h &&
+        this.x + this.w >= paddle.x && 
+        this.x <= paddle.x + paddle.w) {
+      this.activate();
+      this.alive = false;
+    }
+    
+    if (this.y > height) {
+      this.alive = false;
+    }
+  }
+  
+  activate() {
+    playPowerup();
+    new Particle(this.x + this.w/2, this.y + this.h/2, this.color, 30, 6);
+    
+    if (this.name === 'EXPAND') {
+      paddle.w = Math.min(150 * scale, paddle.w * 1.5);
+    } else if (this.name === 'MULTI') {
+      // Add extra balls
+      for (let i = 0; i < 2; i++) {
+        const newBall = new Ball();
+        newBall.x = ball.x;
+        newBall.y = ball.y;
+        newBall.vx = (Math.random() - 0.5) * 8 * scale;
+        newBall.vy = -6 * scale;
+        newBall.stuck = false;
+        balls.push(newBall);
+      }
+    } else if (this.name === 'SLOW') {
+      ball.speed *= 0.7;
+      ball.vx *= 0.7;
+      ball.vy *= 0.7;
+    }
+  }
+  
+  draw() {
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    
+    ctx.fillStyle = '#000';
+    ctx.font = `${8 * scale}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.name[0], this.x + this.w/2, this.y + this.h/2);
+    
+    ctx.restore();
+  }
+}
+
+// Game state
+const game = {
+  state: 'menu',
+  score: 0,
+  lives: 3,
+  level: 1,
+  
+  start() {
+    this.state = 'playing';
+    this.score = 0;
+    this.lives = 3;
+    this.level = 1;
+    overlay.classList.remove('active');
+    this.init();
+  },
+  
+  init() {
+    paddle = new Paddle();
+    ball = new Ball();
+    balls = [ball];
+    blocks = [];
+    powerups = [];
+    
+    this.createBlocks();
+    this.updateUI();
+  },
+  
+  createBlocks() {
+    const rows = 5 + Math.floor(this.level / 3);
+    const cols = 9;
+    const blockW = 50 * scale;
+    const blockH = 20 * scale;
+    const spacing = 4 * scale;
+    const startX = (width - (cols * (blockW + spacing) - spacing)) / 2;
+    const startY = 120 * scale;
+    
+    for (let row = 0; row < Math.min(rows, 8); row++) {
+      for (let col = 0; col < cols; col++) {
+        const type = Math.min(4, Math.floor(row / 2) + Math.floor(this.level / 4));
+        blocks.push(new Block(
+          startX + col * (blockW + spacing),
+          startY + row * (blockH + spacing),
+          type
+        ));
+      }
+    }
+  },
+  
+  nextLevel() {
+    this.level++;
+    this.init();
+    playSound(1000, 0.2);
+    playSound(1200, 0.2);
+  },
+  
+  loseLife() {
+    this.lives--;
+    this.updateUI();
+    
+    if (this.lives <= 0) {
+      this.gameOver();
+    } else {
+      ball.reset();
+      balls = [ball];
+      playExplosion();
+    }
+  },
+  
+  gameOver() {
+    this.state = 'gameover';
+    message.innerHTML = `
+      <h1>GAME OVER</h1>
+      <p>FINAL SCORE: ${this.score}<br>LEVEL REACHED: ${this.level}</p>
+      <button onclick="game.start()">⟳ RETRY</button>
+    `;
+    overlay.classList.add('active');
+    playExplosion();
+  },
+  
+  updateUI() {
+    scoreEl.textContent = `SCORE: ${this.score}`;
+    livesEl.textContent = `♥ × ${this.lives}`;
+    levelEl.textContent = `LEVEL: ${this.level}`;
+  }
+};
+
+// Game variables
+let paddle, ball;
+let balls = [];
+let blocks = [];
+let powerups = [];
+let mouseX = 0;
+
+// Input
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  paddle.targetX = mouseX - paddle.w / 2;
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  mouseX = touch.clientX - rect.left;
+  paddle.targetX = mouseX - paddle.w / 2;
+});
+
+canvas.addEventListener('click', () => {
+  if (game.state === 'playing' && ball.stuck) {
+    ball.launch();
+  }
+});
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (game.state === 'playing' && ball.stuck) {
+    ball.launch();
+  }
+});
+
+// Collision
+function checkBallBlockCollision(ball, block) {
+  if (!block.alive) return false;
+  
+  const ballLeft = ball.x - ball.r;
+  const ballRight = ball.x + ball.r;
+  const ballTop = ball.y - ball.r;
+  const ballBottom = ball.y + ball.r;
+  
+  if (ballRight < block.x || ballLeft > block.x + block.w ||
+      ballBottom < block.y || ballTop > block.y + block.h) {
+    return false;
+  }
+  
+  // Determine collision side
+  const overlapLeft = ballRight - block.x;
+  const overlapRight = (block.x + block.w) - ballLeft;
+  const overlapTop = ballBottom - block.y;
+  const overlapBottom = (block.y + block.h) - ballTop;
+  
+  const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+  
+  if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+    ball.vx *= -1;
+  } else {
+    ball.vy *= -1;
+  }
+  
+  return true;
+}
+
+// Main loop
+function gameLoop() {
+  // Clear with fade
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.fillRect(0, 0, width, height);
+  
+  // Stars
+  updateStars();
+  drawStars();
+  
+  if (game.state !== 'playing') {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  
+  // Update
+  paddle.update();
+  
+  balls.forEach(b => b.update());
+  
+  // Ball out of bounds
+  for (let i = balls.length - 1; i >= 0; i--) {
+    if (balls[i].y - balls[i].r > height) {
+      balls.splice(i, 1);
+    }
+  }
+  
+  if (balls.length === 0) {
+    game.loseLife();
+  }
+  
+  // Ball vs Block collision
+  balls.forEach(ball => {
+    blocks.forEach(block => {
+      if (checkBallBlockCollision(ball, block)) {
+        if (block.hit()) {
+          game.score += block.points;
+          game.updateUI();
+          new Particle(block.x + block.w/2, block.y + block.h/2, block.color, 35, 5);
+          playHit(0.8 + Math.random() * 0.4);
+          
+          // Random powerup drop
+          if (Math.random() < 0.15) {
+            powerups.push(new Powerup(
+              block.x + block.w/2 - 15 * scale,
+              block.y + block.h/2,
+              Math.floor(Math.random() * 3)
+            ));
+          }
+        } else {
+          playHit(1.0);
+        }
+      }
+    });
+  });
+  
+  // Powerups
+  powerups.forEach(p => p.update());
+  powerups = powerups.filter(p => p.alive);
+  
+  // Win condition
+  if (blocks.every(b => !b.alive)) {
+    game.nextLevel();
+  }
+  
+  // Update effects
+  updateParticles();
+  updateTrails();
+  
+  // Draw
+  blocks.forEach(b => b.draw());
+  drawTrails();
+  paddle.draw();
+  balls.forEach(b => b.draw());
+  powerups.forEach(p => p.draw());
+  drawParticles();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+// Start
+overlay.classList.add('active');
+requestAnimationFrame(gameLoop);
+</script>
+
+</body>
+</html>
