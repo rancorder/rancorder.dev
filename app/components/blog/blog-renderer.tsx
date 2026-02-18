@@ -1,134 +1,27 @@
 // components/blog/blog-renderer.tsx
-// Server Component - HTML文字列をReact Element Treeに変換
+"use client";
 
-import { load } from 'cheerio';
-import React from 'react';
-import {
-  FadeIn,
-  CalloutBox,
-  CodeBlock,
-  InteractiveChecklist,
-  ComparisonCard,
-  ProgressBar,
-  AccordionItem,
-  ToolTip,
-  GlitchText,
-  QuizBlock,
-  Typewriter,
-  CounterUp,
-  TimelineItem,
-} from './index';
-
-// Props定義 - Server Component → Client Component 制約準拠
-export interface BlogRendererProps {
-  content: string;  // HTMLコンテンツ文字列（JSONシリアライズ可能）
-}
-
-// カスタムタグとReactコンポーネントのマッピング
-const COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
-  'fade-in': FadeIn,
-  'callout-box': CalloutBox,
-  'code-block': CodeBlock,
-  'interactive-checklist': InteractiveChecklist,
-  'comparison-card': ComparisonCard,
-  'progress-bar': ProgressBar,
-  'accordion-item': AccordionItem,
-  'tool-tip': ToolTip,
-  'glitch-text': GlitchText,
-  'quiz-block': QuizBlock,
-  'typewriter': Typewriter,
-  'counter-up': CounterUp,
-  'timeline-item': TimelineItem,
+export type BlogRendererProps = {
+  content: string;
 };
 
-// 属性値の型変換（文字列 → 適切な型）
-function parseAttrValue(key: string, value: string): any {
-  // 数値型のprops
-  if (['delay', 'duration', 'value', 'max', 'target', 'speed'].includes(key)) {
-    const num = Number(value);
-    return isNaN(num) ? value : num;
-  }
-  // 配列型のprops（JSON文字列）
-  if (['items', 'options'].includes(key)) {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  }
-  // ブール型のprops
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  
-  return value;
-}
-
-// cheerioノードをReact Elementに変換（再帰）
-function nodeToReact(node: any, index: number): React.ReactNode {
-  // テキストノード
-  if (node.type === 'text') {
-    return node.data;
-  }
-
-  // 要素ノード
-  if (node.type === 'tag') {
-    const tagName = node.name;
-    const attrs: Record<string, any> = {};
-    const children: React.ReactNode[] = [];
-
-    // 属性を変換
-    if (node.attribs) {
-      Object.entries(node.attribs).forEach(([key, value]) => {
-        attrs[key] = parseAttrValue(key, value as string);
-      });
-    }
-
-    // 子要素を再帰的に変換
-    if (node.children && node.children.length > 0) {
-      node.children.forEach((child: any, i: number) => {
-        const childNode = nodeToReact(child, i);
-        if (childNode !== null && childNode !== undefined) {
-          children.push(childNode);
-        }
-      });
-    }
-
-    // カスタムタグの場合、対応するReactコンポーネントを返す
-    if (COMPONENT_MAP[tagName]) {
-      const Component = COMPONENT_MAP[tagName];
-      return <Component key={index} {...attrs}>{children}</Component>;
-    }
-
-    // 通常のHTMLタグの場合、React.createElementで生成
-    return React.createElement(
-      tagName,
-      { key: index, ...attrs },
-      children.length > 0 ? children : null
-    );
-  }
-
-  return null;
-}
-
-// メインコンポーネント
 export function BlogRenderer({ content }: BlogRendererProps) {
-  try {
-    // cheerioでHTMLをパース
-    const $ = load(content);
-    const bodyChildren = $('body').children().toArray();
-
-    // 各子要素をReact Elementに変換
-    const elements = bodyChildren.map((node, index) => nodeToReact(node, index));
-
-    return <>{elements}</>;
-  } catch (error) {
-    // パース失敗時のフォールバック
-    console.error('BlogRenderer parse error:', error);
-    return (
-      <div
-        dangerouslySetInnerHTML={{ __html: content }}
-        style={{ color: 'rgba(255,255,255,0.7)' }}
-      />
-    );
-  }
+  return (
+    <article 
+      className="prose prose-invert prose-cyan max-w-none
+        prose-headings:font-mono prose-headings:text-white
+        prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-6
+        prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-4
+        prose-p:text-cyan-100/80 prose-p:leading-relaxed prose-p:mb-6
+        prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:text-cyan-300
+        prose-strong:text-white prose-strong:font-bold
+        prose-code:text-cyan-300 prose-code:bg-cyan-950/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+        prose-pre:bg-black/60 prose-pre:border prose-pre:border-cyan-500/20
+        prose-blockquote:border-l-4 prose-blockquote:border-cyan-500/50 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-cyan-100/70
+        prose-ul:text-cyan-100/80 prose-ol:text-cyan-100/80
+        prose-li:my-2
+        prose-img:rounded prose-img:border prose-img:border-cyan-500/20"
+      dangerouslySetInnerHTML={{ __html: content }} 
+    />
+  );
 }
