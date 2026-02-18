@@ -1,84 +1,94 @@
 'use client';
 
-import { useState } from 'react';
-import TokyoNightCanvas from '@/components/TokyoNightCanvas';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-export default function Home() {
-  const [contactOpen, setContactOpen] = useState(false);
+export default function BlogIndex() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const works = [
-    {
-      title: '富士山噴火',
-      desc: 'Canvas 2D · 600粒子 · 物理演算',
-      tech: 'Particle System · Verlet Integration',
-      demo: '/demos/fuji-eruption.html',
-      type: 'demo',
-    },
-    {
-      title: '東京夜景',
-      desc: '4レイヤー · 動的生成 · 光源処理',
-      tech: 'Procedural Generation · Real-time',
-      demo: '/demos/tokyo-night.html',
-      type: 'demo',
-    },
-    {
-      title: '数学アート',
-      desc: '反応拡散系 · Mandelbrot · Voronoi',
-      tech: '4 Algorithms · Interactive',
-      demo: '/demos/math-art.html',
-      type: 'demo',
-    },
-    {
-      title: '水面タッチ',
-      desc: 'リアルタイム流体 · 波紋伝播',
-      tech: 'Fluid Simulation · Wave Equation',
-      demo: '/demos/water-ripple.html',
-      type: 'demo',
-    },
-    {
-      title: 'Boids - 群れ',
-      desc: '3ルール · 自律エージェント',
-      tech: 'Alignment · Cohesion · Separation',
-      demo: '/demos/boids.html',
-      type: 'demo',
-    },
-    {
-      title: 'テトリス',
-      desc: '完全実装 · 遊べる',
-      tech: 'Game Loop · State Management',
-      demo: '/demos/tetris.html',
-      type: 'play',
-    },
-  ];
+  useEffect(() => {
+    // 実際は API Route から取得 or Server Component で取得
+    // 例: fetch('/api/blog/posts').then(res => res.json()).then(setPosts)
+    
+    // 仮のダミーデータ
+    setPosts([
+      {
+        slug: '2026-02-17-freedom-removal',
+        title: '買わない自由を奪う仕組みを作った',
+        date: '2026-02-17',
+        tags: ['Web開発', 'UI/UX', 'マーケティング'],
+        excerpt: 'Webサイトを作る仕事を長くやっていると、だいたい同じ光景に行き着く。最初はやる気がある。構成を考える。技術を選ぶ。でも、途中から変わる。誰もメンテナンスしなくなる。',
+        readTime: '8分',
+      },
+      {
+        slug: '2026-02-16-reservation-system',
+        title: '予約システムは「壊れ方」を先に決めたほうがうまくいく',
+        date: '2026-02-16',
+        tags: ['システム設計', 'バックエンド'],
+        excerpt: '予約システムは、最初だいたいこう始まる。空いている・予約できる・完了する。PoCとしては十分。デモも通る。問題は、その先にある。ダブルブッキング、キャンセル、変更。',
+        readTime: '6分',
+      },
+      {
+        slug: '2026-02-15-decision-not-to-proceed',
+        title: '進めない判断が、いちばん難しい',
+        date: '2026-02-15',
+        tags: ['プロジェクト管理', '意思決定'],
+        excerpt: 'このnoteは、何かを前に進めるためのものではありません。「進めない方がいいかもしれない」という判断を、安全に考えるためのメモです。',
+        readTime: '5分',
+      },
+      {
+        slug: '2026-02-14-react-state-management',
+        title: 'Reactの状態管理で迷ったら、まず useState だけで作れ',
+        date: '2026-02-14',
+        tags: ['React', 'フロントエンド'],
+        excerpt: 'Redux、MobX、Zustand、Jotai、Recoil... 選択肢が多すぎて最初から悩む。でも、最初から複雑なツールを入れると、だいたい後悔する。',
+        readTime: '7分',
+      },
+      {
+        slug: '2026-02-13-canvas-performance',
+        title: 'Canvas で 1000 個の粒子を 60fps で動かす方法',
+        date: '2026-02-13',
+        tags: ['Canvas', 'パフォーマンス', 'JavaScript'],
+        excerpt: 'Canvas 2D API は遅い、と言われる。確かに、何も考えずに描画すると30fpsも出ない。でも、ちょっとした工夫で60fpsは余裕で出る。',
+        readTime: '10分',
+      },
+      {
+        slug: '2026-02-12-api-design-principles',
+        title: 'APIを設計するとき、最初に決めるべき3つのこと',
+        date: '2026-02-12',
+        tags: ['API設計', 'バックエンド'],
+        excerpt: 'REST、GraphQL、gRPC... 技術選定の前に決めることがある。「誰が使うか」「何を保証するか」「どう壊すか」。',
+        readTime: '6分',
+      },
+    ]);
+  }, []);
+
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
-    <>
-      {/* Tokyo Night Background */}
-      <TokyoNightCanvas />
-
-      {/* Header Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-cyan-500/20">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-cyan-950/20 to-gray-950">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-black/40 backdrop-blur-md border-b border-cyan-500/20">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-          {/* Logo */}
-          <a href="/" className="text-xl md:text-2xl font-bold text-white font-mono hover:text-cyan-300 transition-colors">
+          <Link href="/" className="text-xl md:text-2xl font-bold text-white font-mono hover:text-cyan-300 transition-colors">
             rancorder
-          </a>
+          </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="/blog" className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide">
+            <Link href="/" className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide">
+              HOME
+            </Link>
+            <Link href="/blog" className="text-cyan-300 font-mono tracking-wide">
               BLOG
-            </a>
-            <button
-              onClick={() => setContactOpen(true)}
-              className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide"
-            >
-              CONTACT
-            </button>
+            </Link>
           </nav>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden text-cyan-400 text-2xl"
@@ -87,259 +97,125 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <nav className="md:hidden bg-black/95 border-t border-cyan-500/20">
-            <a
-              href="/blog"
-              className="block px-4 py-3 text-cyan-100 hover:bg-cyan-500/10 transition-colors font-mono"
-            >
+            <Link href="/" className="block px-4 py-3 text-cyan-100 hover:bg-cyan-500/10 transition-colors font-mono">
+              HOME
+            </Link>
+            <Link href="/blog" className="block px-4 py-3 text-cyan-300 bg-cyan-500/10 font-mono">
               BLOG
-            </a>
-            <button
-              onClick={() => { setContactOpen(true); setMenuOpen(false); }}
-              className="block w-full text-left px-4 py-3 text-cyan-100 hover:bg-cyan-500/10 transition-colors font-mono"
-            >
-              CONTACT
-            </button>
+            </Link>
           </nav>
         )}
       </header>
 
-      {/* Fixed CTA Button */}
-      <button
-        onClick={() => setContactOpen(true)}
-        className="fixed bottom-6 right-6 z-50 px-6 py-3 bg-cyan-500/90 hover:bg-cyan-400 text-black font-mono font-bold tracking-wider transition-all duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-300/50 shadow-lg shadow-cyan-500/50 md:bottom-8 md:right-8 md:px-8 md:py-4 text-sm md:text-base"
-      >
-        相談する
-      </button>
+      {/* Hero */}
+      <section className="py-16 md:py-24 px-4 md:px-8 border-b border-cyan-500/10">
+        <div className="max-w-5xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 font-mono tracking-tight">
+            BLOG
+          </h1>
+          <p className="text-lg md:text-xl text-cyan-100/70 mb-8 md:mb-12 leading-relaxed max-w-2xl mx-auto">
+            Web開発、システム設計、技術選定について。<br className="hidden md:block" />
+            現場で得た知見をまとめています。
+          </p>
 
-      {/* Main Content */}
-      <main className="relative z-10">
-        {/* HERO */}
-        <section className="min-h-screen flex items-center justify-center px-4 md:px-8">
-          <div className="text-center max-w-4xl">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 md:mb-6 text-white tracking-tight">
-              rancorder
-            </h1>
-            <p className="text-lg md:text-2xl lg:text-3xl text-cyan-100/80 font-mono tracking-wide leading-relaxed">
-              Webシステムを作る。<br className="md:hidden" />
-              思想を実装に変える。
-            </p>
+          {/* Search */}
+          <div className="max-w-2xl mx-auto">
+            <input
+              type="text"
+              placeholder="記事を検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-black/50 border border-cyan-500/30 px-4 md:px-6 py-3 md:py-4 text-white font-mono focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-cyan-100/40 text-sm md:text-base"
+            />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* SHOWCASE */}
-        <section className="min-h-screen py-16 md:py-24 px-4 md:px-8 bg-black/40 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 md:mb-16 text-center font-mono tracking-wider">
-              SHOWCASE
-            </h2>
-            
+      {/* Posts Grid */}
+      <section className="py-12 md:py-20 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          {filteredPosts.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-cyan-100/50 text-lg font-mono">記事が見つかりませんでした</p>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {works.map((work, i) => (
-                <a
+              {filteredPosts.map((post, i) => (
+                <Link
                   key={i}
-                  href={work.demo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative bg-gradient-to-br from-cyan-950/50 to-blue-950/50 border border-cyan-500/30 hover:border-cyan-400/60 transition-all duration-300 overflow-hidden backdrop-blur-sm hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/30"
+                  href={`/blog/${post.slug}`}
+                  className="group block bg-gradient-to-br from-black/60 to-cyan-950/30 border border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 overflow-hidden hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/20"
                 >
-                  {/* Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/10 group-hover:via-cyan-500/5 group-hover:to-transparent transition-all duration-500" />
-                  
-                  <div className="relative p-6 md:p-8">
+                  <div className="p-6 md:p-8">
+                    {/* Meta */}
+                    <div className="flex items-center justify-between mb-4">
+                      <time className="text-xs md:text-sm text-cyan-400/60 font-mono">
+                        {post.date}
+                      </time>
+                      <span className="text-xs md:text-sm text-cyan-100/50 font-mono">
+                        {post.readTime}
+                      </span>
+                    </div>
+
                     {/* Title */}
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-2 md:mb-3 font-mono group-hover:text-cyan-300 transition-colors">
-                      {work.title}
-                    </h3>
-                    
-                    {/* Description */}
-                    <p className="text-cyan-100/70 text-sm md:text-base mb-3 md:mb-4 leading-relaxed">
-                      {work.desc}
+                    <h2 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4 group-hover:text-cyan-300 transition-colors leading-tight line-clamp-2">
+                      {post.title}
+                    </h2>
+
+                    {/* Excerpt */}
+                    <p className="text-sm md:text-base text-cyan-100/60 mb-4 md:mb-6 line-clamp-3 leading-relaxed">
+                      {post.excerpt}
                     </p>
-                    
-                    {/* Tech Stack */}
-                    <p className="text-xs md:text-sm text-cyan-400/60 font-mono mb-4 md:mb-6">
-                      {work.tech}
-                    </p>
-                    
-                    {/* CTA */}
-                    <div className="inline-flex items-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors font-mono text-sm md:text-base font-bold">
-                      {work.type === 'play' ? '▶ PLAY' : '▶ DEMO'}
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.tags.map((tag: string, j: number) => (
+                        <span
+                          key={j}
+                          className="text-xs px-2 py-1 bg-cyan-500/10 text-cyan-400/80 border border-cyan-500/20 font-mono"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Read More */}
+                    <div className="inline-flex items-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors font-mono text-sm font-bold">
+                      READ MORE
                       <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                   </div>
-                  
-                  {/* Corner Decorations */}
-                  <div className="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 border-t-2 border-r-2 border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors" />
-                  <div className="absolute bottom-0 left-0 w-16 h-16 md:w-20 md:h-20 border-b-2 border-l-2 border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors" />
-                </a>
+
+                  {/* Decorative Corner */}
+                  <div className="absolute top-0 right-0 w-12 h-12 md:w-16 md:h-16 border-t border-r border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors" />
+                </Link>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* BLOG */}
-        <section className="min-h-screen py-16 md:py-24 px-4 md:px-8 bg-gradient-to-b from-black/40 via-black/60 to-black/60 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 md:mb-16 text-center font-mono tracking-wider">
-              BLOG
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
-              {/* Note: これは仮のデータ。実際は /content/blog/ から動的に取得 */}
-              {[
-                {
-                  slug: '2026-02-17-freedom-removal',
-                  title: '買わない自由を奪う仕組みを作った',
-                  date: '2026-02-17',
-                  excerpt: 'Webサイトを作る仕事を長くやっていると、だいたい同じ光景に行き着く。最初はやる気がある。構成を考える。技術を選ぶ。',
-                },
-                {
-                  slug: '2026-02-16-reservation-system',
-                  title: '予約システムは「壊れ方」を先に決めたほうがうまくいく',
-                  date: '2026-02-16',
-                  excerpt: '予約システムは、最初だいたいこう始まる。空いている・予約できる・完了する。PoCとしては十分。デモも通る。問題は、その先にある。',
-                },
-                {
-                  slug: '2026-02-15-decision-not-to-proceed',
-                  title: '進めない判断が、いちばん難しい',
-                  date: '2026-02-15',
-                  excerpt: 'このnoteは、何かを前に進めるためのものではありません。「進めない方がいいかもしれない」という判断を、安全に考えるためのメモです。',
-                },
-              ].map((post, i) => (
-                <a
-                  key={i}
-                  href={`/blog/${post.slug}`}
-                  className="group block bg-gradient-to-br from-black/60 to-cyan-950/30 border border-cyan-500/20 hover:border-cyan-400/50 transition-all duration-300 p-6 md:p-8 hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/20"
-                >
-                  <time className="block text-xs md:text-sm text-cyan-400/60 font-mono mb-3">
-                    {post.date}
-                  </time>
-                  
-                  <h3 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4 group-hover:text-cyan-300 transition-colors leading-tight">
-                    {post.title}
-                  </h3>
-                  
-                  <p className="text-sm md:text-base text-cyan-100/60 line-clamp-3 mb-4">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="inline-flex items-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors font-mono text-sm font-bold">
-                    READ MORE
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-
-            {/* View All Button */}
-            <div className="text-center">
-              <a
-                href="/blog"
-                className="inline-block px-8 md:px-12 py-3 md:py-4 bg-transparent border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-500/10 text-cyan-300 hover:text-white font-mono font-bold tracking-wider transition-all duration-200 text-sm md:text-base"
-              >
-                すべての記事を見る
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* CONTACT */}
-        <section className="min-h-[50vh] py-16 md:py-24 px-4 md:px-8 bg-black/60 backdrop-blur-md">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 md:mb-12 font-mono tracking-wider">
-              CONTACT
-            </h2>
-            
-            <div className="space-y-4 md:space-y-6 mb-8 md:mb-12">
-              <a
-                href="mailto:hello@rancorder.dev"
-                className="block text-lg md:text-2xl text-cyan-400 hover:text-cyan-300 transition-colors font-mono"
-              >
-                hello@rancorder.dev
-              </a>
-              
-              <a
-                href="https://github.com/rancorder"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-lg md:text-2xl text-cyan-400 hover:text-cyan-300 transition-colors font-mono"
-              >
-                github.com/rancorder
-              </a>
-            </div>
-            
-            <button
-              onClick={() => setContactOpen(true)}
-              className="px-8 md:px-12 py-3 md:py-4 bg-cyan-500/90 hover:bg-cyan-400 text-black font-mono font-bold tracking-wider transition-all duration-200 hover:scale-105 border border-cyan-300/50 shadow-lg shadow-cyan-500/50 text-sm md:text-base"
-            >
-              問い合わせフォーム
-            </button>
-          </div>
-        </section>
-      </main>
-
-      {/* Contact Modal */}
-      {contactOpen && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8"
-          onClick={() => setContactOpen(false)}
-        >
-          <div
-            className="bg-gradient-to-br from-cyan-950/90 to-blue-950/90 border-2 border-cyan-500/50 p-6 md:p-10 max-w-2xl w-full relative shadow-2xl shadow-cyan-500/20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setContactOpen(false)}
-              className="absolute top-4 right-4 text-cyan-400 hover:text-white text-2xl md:text-3xl font-mono transition-colors"
-            >
-              ×
-            </button>
-            
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 font-mono">
-              問い合わせ
-            </h3>
-            
-            <form className="space-y-4 md:space-y-6">
-              <div>
-                <label className="block text-cyan-300 mb-2 font-mono text-sm md:text-base">名前</label>
-                <input
-                  type="text"
-                  className="w-full bg-black/50 border border-cyan-500/30 px-4 py-2 md:py-3 text-white font-mono focus:outline-none focus:border-cyan-400 transition-colors text-sm md:text-base"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-cyan-300 mb-2 font-mono text-sm md:text-base">メール</label>
-                <input
-                  type="email"
-                  className="w-full bg-black/50 border border-cyan-500/30 px-4 py-2 md:py-3 text-white font-mono focus:outline-none focus:border-cyan-400 transition-colors text-sm md:text-base"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-cyan-300 mb-2 font-mono text-sm md:text-base">メッセージ</label>
-                <textarea
-                  rows={5}
-                  className="w-full bg-black/50 border border-cyan-500/30 px-4 py-2 md:py-3 text-white font-mono focus:outline-none focus:border-cyan-400 transition-colors resize-none text-sm md:text-base"
-                  required
-                />
-              </div>
-              
-              <button
-                type="submit"
-                className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold tracking-wider py-3 md:py-4 transition-colors text-sm md:text-base"
-              >
-                送信
-              </button>
-            </form>
-          </div>
+          )}
         </div>
-      )}
-    </>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-cyan-500/10 py-12 md:py-16 px-4 md:px-8 bg-black/40">
+        <div className="max-w-7xl mx-auto text-center">
+          <Link href="/" className="inline-block text-2xl md:text-3xl font-bold text-white font-mono hover:text-cyan-300 transition-colors mb-6">
+            rancorder
+          </Link>
+          <div className="flex items-center justify-center gap-6 md:gap-8 mb-8">
+            <a href="mailto:hello@rancorder.dev" className="text-cyan-400 hover:text-cyan-300 transition-colors font-mono text-sm md:text-base">
+              EMAIL
+            </a>
+            <a href="https://github.com/rancorder" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 transition-colors font-mono text-sm md:text-base">
+              GITHUB
+            </a>
+          </div>
+          <p className="text-cyan-100/40 text-xs md:text-sm font-mono">
+            © 2026 rancorder. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }
