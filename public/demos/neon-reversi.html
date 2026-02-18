@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>REVERSI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      max-width: 600px;
+      padding: 10px;
+    }
+    #info {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+    }
+    .stat {
+      flex: 1;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 12px;
+      background: rgba(0,0,0,0.8);
+      border: 2px solid #fff;
+      border-radius: 8px;
+      text-align: center;
+      color: #fff;
+    }
+    canvas {
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      aspect-ratio: 1;
+      background: #0a0a0a;
+      border: 3px solid #a855f7;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #menu {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    #menu.hide { display: none; }
+    .msg {
+      text-align: center;
+      padding: 30px;
+      max-width: 90vw;
+    }
+    .msg h1 {
+      font-size: 3rem;
+      color: #a855f7;
+      margin-bottom: 20px;
+    }
+    .msg p {
+      font-size: 1.1rem;
+      color: #fff;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+    .diffs {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      width: 100%;
+      max-width: 300px;
+    }
+    .diffs button {
+      padding: 15px;
+      font-size: 18px;
+      width: 100%;
+      font-family: monospace;
+      font-weight: bold;
+      background: rgba(168,85,247,0.3);
+      border: 3px solid #a855f7;
+      color: #a855f7;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .diffs button:active {
+      background: rgba(168,85,247,0.7);
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+
+<div id="game">
+  <div id="info">
+    <div class="stat" id="s1">黒: 2</div>
+    <div class="stat" id="s2">白: 2</div>
+  </div>
+  <canvas id="c"></canvas>
+</div>
+
+<div id="menu">
+  <div class="msg">
+    <h1>REVERSI</h1>
+    <p>オセロ対戦<br><br>難易度を選択</p>
+    <div class="diffs">
+      <button id="b1">EASY</button>
+      <button id="b2">NORMAL</button>
+      <button id="b3">HARD</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  try {
+    var c = document.getElementById('c');
+    var ctx = c.getContext('2d');
+    var s1 = document.getElementById('s1');
+    var s2 = document.getElementById('s2');
+    var menu = document.getElementById('menu');
+    
+    var W = 600;
+    var H = 600;
+    var cell = 75;
+    
+    c.width = W;
+    c.height = H;
+    
+    var board = [];
+    var turn = 1;
+    var playing = false;
+    var diff = 1;
+    
+    function init() {
+      board = [];
+      for (var i = 0; i < 8; i++) {
+        board[i] = [];
+        for (var j = 0; j < 8; j++) {
+          board[i][j] = 0;
+        }
+      }
+      board[3][3] = -1;
+      board[3][4] = 1;
+      board[4][3] = 1;
+      board[4][4] = -1;
+    }
+    
+    function canPut(r, c, p) {
+      try {
+        if (board[r][c] !== 0) return false;
+        
+        var dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        
+        for (var d = 0; d < 8; d++) {
+          var dr = dirs[d][0];
+          var dc = dirs[d][1];
+          var rr = r + dr;
+          var cc = c + dc;
+          var ok = false;
+          
+          while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) {
+            if (board[rr][cc] === 0) break;
+            if (board[rr][cc] === p) {
+              if (ok) return true;
+              break;
+            }
+            ok = true;
+            rr += dr;
+            cc += dc;
+          }
+        }
+        return false;
+      } catch(e) {
+        return false;
+      }
+    }
+    
+    function put(r, c, p) {
+      try {
+        if (!canPut(r, c, p)) return false;
+        
+        board[r][c] = p;
+        var dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        
+        for (var d = 0; d < 8; d++) {
+          var dr = dirs[d][0];
+          var dc = dirs[d][1];
+          var rr = r + dr;
+          var cc = c + dc;
+          var temp = [];
+          
+          while (rr >= 0 && rr < 8 && cc >= 0 && cc < 8) {
+            if (board[rr][cc] === 0) break;
+            if (board[rr][cc] === p) {
+              for (var t = 0; t < temp.length; t++) {
+                board[temp[t][0]][temp[t][1]] = p;
+              }
+              break;
+            }
+            temp.push([rr, cc]);
+            rr += dr;
+            cc += dc;
+          }
+        }
+        return true;
+      } catch(e) {
+        return false;
+      }
+    }
+    
+    function getMoves(p) {
+      try {
+        var moves = [];
+        for (var i = 0; i < 8; i++) {
+          for (var j = 0; j < 8; j++) {
+            if (canPut(i, j, p)) {
+              moves.push([i, j]);
+            }
+          }
+        }
+        return moves;
+      } catch(e) {
+        return [];
+      }
+    }
+    
+    function cpu() {
+      try {
+        var moves = getMoves(-1);
+        if (moves.length === 0) {
+          turn = 1;
+          var pm = getMoves(1);
+          if (pm.length === 0) {
+            end();
+          }
+          return;
+        }
+        
+        var best = moves[0];
+        if (diff === 0) {
+          best = moves[Math.floor(Math.random() * moves.length)];
+        } else {
+          var weights = [
+            [100,-20,10,5,5,10,-20,100],
+            [-20,-50,-2,-2,-2,-2,-50,-20],
+            [10,-2,-1,-1,-1,-1,-2,10],
+            [5,-2,-1,-1,-1,-1,-2,5],
+            [5,-2,-1,-1,-1,-1,-2,5],
+            [10,-2,-1,-1,-1,-1,-2,10],
+            [-20,-50,-2,-2,-2,-2,-50,-20],
+            [100,-20,10,5,5,10,-20,100]
+          ];
+          
+          var bestScore = -999999;
+          for (var i = 0; i < moves.length; i++) {
+            var score = weights[moves[i][0]][moves[i][1]];
+            if (score > bestScore) {
+              bestScore = score;
+              best = moves[i];
+            }
+          }
+        }
+        
+        put(best[0], best[1], -1);
+        turn = 1;
+        
+        var pm = getMoves(1);
+        if (pm.length === 0) {
+          turn = -1;
+          var cm = getMoves(-1);
+          if (cm.length === 0) {
+            end();
+          } else {
+            setTimeout(cpu, 500);
+          }
+        }
+        
+        update();
+      } catch(e) {}
+    }
+    
+    function count() {
+      try {
+        var b = 0;
+        var w = 0;
+        for (var i = 0; i < 8; i++) {
+          for (var j = 0; j < 8; j++) {
+            if (board[i][j] === 1) b++;
+            else if (board[i][j] === -1) w++;
+          }
+        }
+        return [b, w];
+      } catch(e) {
+        return [0, 0];
+      }
+    }
+    
+    function update() {
+      try {
+        var cnt = count();
+        s1.textContent = '黒: ' + cnt[0];
+        s2.textContent = '白: ' + cnt[1];
+      } catch(e) {}
+    }
+    
+    function end() {
+      try {
+        playing = false;
+        var cnt = count();
+        var h1 = menu.querySelector('h1');
+        var p = menu.querySelector('p');
+        
+        if (cnt[0] > cnt[1]) {
+          h1.textContent = 'YOU WIN!';
+        } else if (cnt[1] > cnt[0]) {
+          h1.textContent = 'CPU WINS!';
+        } else {
+          h1.textContent = 'DRAW!';
+        }
+        
+        p.innerHTML = 'FINAL<br><br>黒: ' + cnt[0] + '<br>白: ' + cnt[1];
+        menu.className = '';
+      } catch(e) {}
+    }
+    
+    function draw() {
+      try {
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, W, H);
+        
+        ctx.strokeStyle = 'rgba(168,85,247,0.3)';
+        ctx.lineWidth = 2;
+        for (var i = 0; i <= 8; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * cell, 0);
+          ctx.lineTo(i * cell, H);
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.moveTo(0, i * cell);
+          ctx.lineTo(W, i * cell);
+          ctx.stroke();
+        }
+        
+        if (turn === 1 && playing) {
+          for (var i = 0; i < 8; i++) {
+            for (var j = 0; j < 8; j++) {
+              if (canPut(i, j, 1)) {
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath();
+                ctx.arc(j * cell + cell/2, i * cell + cell/2, cell * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+        }
+        
+        for (var i = 0; i < 8; i++) {
+          for (var j = 0; j < 8; j++) {
+            if (board[i][j] !== 0) {
+              ctx.fillStyle = board[i][j] === 1 ? '#fff' : '#00d9ff';
+              ctx.beginPath();
+              ctx.arc(j * cell + cell/2, i * cell + cell/2, cell * 0.35, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+        
+        requestAnimationFrame(draw);
+      } catch(e) {}
+    }
+    
+    function handleClick(x, y) {
+      try {
+        if (!playing || turn !== 1) return;
+        
+        var col = Math.floor(x / cell);
+        var row = Math.floor(y / cell);
+        
+        if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+          if (put(row, col, 1)) {
+            turn = -1;
+            update();
+            setTimeout(cpu, 500);
+          }
+        }
+      } catch(e) {}
+    }
+    
+    c.onclick = function(e) {
+      var rect = c.getBoundingClientRect();
+      var x = (e.clientX - rect.left) * (W / rect.width);
+      var y = (e.clientY - rect.top) * (H / rect.height);
+      handleClick(x, y);
+    };
+    
+    c.ontouchstart = function(e) {
+      e.preventDefault();
+      var rect = c.getBoundingClientRect();
+      var touch = e.touches[0];
+      var x = (touch.clientX - rect.left) * (W / rect.width);
+      var y = (touch.clientY - rect.top) * (H / rect.height);
+      handleClick(x, y);
+    };
+    
+    document.getElementById('b1').onclick = function() {
+      diff = 0;
+      init();
+      turn = 1;
+      playing = true;
+      menu.className = 'hide';
+      update();
+    };
+    
+    document.getElementById('b2').onclick = function() {
+      diff = 1;
+      init();
+      turn = 1;
+      playing = true;
+      menu.className = 'hide';
+      update();
+    };
+    
+    document.getElementById('b3').onclick = function() {
+      diff = 2;
+      init();
+      turn = 1;
+      playing = true;
+      menu.className = 'hide';
+      update();
+    };
+    
+    init();
+    draw();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+})();
+</script>
+
+</body>
+</html>
