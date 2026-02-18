@@ -56,7 +56,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       readTime={metadata.readTime}
       tags={metadata.tags}
     >
-      <BlogRenderer htmlContent={htmlContent} />
+      <BlogRenderer content={htmlContent} />
     </BlogLayout>
   );
 }
