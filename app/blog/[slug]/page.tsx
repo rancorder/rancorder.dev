@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { notFound } from 'next/navigation';
-import BlogRenderer from '@/components/blog/blog-renderer';
+import { BlogRenderer } from '@/components/blog/blog-renderer';
 import BlogLayout from '@/components/BlogLayout';
 
 interface BlogPostPageProps {
