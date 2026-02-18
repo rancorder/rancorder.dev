@@ -1,3 +1,4 @@
+// app/blog/[slug]/page.tsx
 import fs from 'fs';
 import path from 'path';
 import { notFound } from 'next/navigation';
@@ -10,7 +11,6 @@ interface BlogPostPageProps {
   };
 }
 
-// 記事メタデータの型
 interface PostMetadata {
   title: string;
   date: string;
@@ -18,7 +18,6 @@ interface PostMetadata {
   tags?: string[];
 }
 
-// メタデータを抽出する関数
 function extractMetadata(html: string): PostMetadata {
   const titleMatch = html.match(/<title>(.*?)<\/title>/);
   const dateMatch = html.match(/<time[^>]*datetime="([^"]+)"/);
@@ -38,15 +37,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const contentDir = path.join(process.cwd(), 'content', 'blog');
   const filePath = path.join(contentDir, `${slug}.html`);
 
-  // ファイルが存在しない場合は404
   if (!fs.existsSync(filePath)) {
     notFound();
   }
 
-  // HTMLを読み込む
   const htmlContent = fs.readFileSync(filePath, 'utf-8');
-
-  // メタデータを抽出
   const metadata = extractMetadata(htmlContent);
 
   return (
@@ -61,11 +56,9 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   );
 }
 
-// 静的生成のためのパスを生成
 export async function generateStaticParams() {
   const contentDir = path.join(process.cwd(), 'content', 'blog');
   
-  // ディレクトリが存在しない場合は空配列を返す
   if (!fs.existsSync(contentDir)) {
     return [];
   }
