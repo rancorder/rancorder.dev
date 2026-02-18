@@ -5,7 +5,6 @@ import TokyoNightCanvas from '@/components/TokyoNightCanvas';
 
 export default function Home() {
   const [contactOpen, setContactOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const works = [
     {
@@ -60,28 +59,10 @@ export default function Home() {
           <a href="/" className="text-xl md:text-2xl font-bold text-white font-mono hover:text-cyan-300 transition-colors">
             rancorder
           </a>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="/blog" className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide">
-              BLOG
-            </a>
-            <button onClick={() => setContactOpen(true)} className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide">
-              CONTACT
-            </button>
-          </nav>
-          <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-cyan-400 text-2xl">
-            {menuOpen ? '×' : '☰'}
+          <button onClick={() => setContactOpen(true)} className="text-cyan-100 hover:text-cyan-300 transition-colors font-mono tracking-wide">
+            CONTACT
           </button>
         </div>
-        {menuOpen && (
-          <nav className="md:hidden bg-black/95 border-t border-cyan-500/20">
-            <a href="/blog" className="block px-4 py-3 text-cyan-100 hover:bg-cyan-500/10 transition-colors font-mono">
-              BLOG
-            </a>
-            <button onClick={() => { setContactOpen(true); setMenuOpen(false); }} className="block w-full text-left px-4 py-3 text-cyan-100 hover:bg-cyan-500/10 transition-colors font-mono">
-              CONTACT
-            </button>
-          </nav>
-        )}
       </header>
       <button onClick={() => setContactOpen(true)} className="fixed bottom-6 right-6 z-50 px-6 py-3 bg-cyan-500/90 hover:bg-cyan-400 text-black font-mono font-bold tracking-wider transition-all duration-200 hover:scale-105 backdrop-blur-sm border border-cyan-300/50 shadow-lg shadow-cyan-500/50 md:bottom-8 md:right-8 md:px-8 md:py-4 text-sm md:text-base">
         相談する
@@ -129,18 +110,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="min-h-screen py-16 md:py-24 px-4 md:px-8 bg-gradient-to-b from-black/40 via-black/60 to-black/60 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 md:mb-16 text-center font-mono tracking-wider">
-              BLOG
-            </h2>
-            <div className="text-center">
-              <a href="/blog" className="inline-block px-8 md:px-12 py-3 md:py-4 bg-transparent border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-cyan-500/10 text-cyan-300 hover:text-white font-mono font-bold tracking-wider transition-all duration-200 text-sm md:text-base">
-                すべての記事を見る
-              </a>
-            </div>
-          </div>
-        </section>
         <section className="min-h-[50vh] py-16 md:py-24 px-4 md:px-8 bg-black/60 backdrop-blur-md">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 md:mb-12 font-mono tracking-wider">
@@ -152,6 +121,9 @@ export default function Home() {
               </a>
               <a href="https://github.com/rancorder" target="_blank" rel="noopener noreferrer" className="block text-lg md:text-2xl text-cyan-400 hover:text-cyan-300 transition-colors font-mono">
                 github.com/rancorder
+              </a>
+              <a href="https://note.com/rancorder" target="_blank" rel="noopener noreferrer" className="block text-lg md:text-2xl text-cyan-400 hover:text-cyan-300 transition-colors font-mono">
+                note.com/rancorder
               </a>
             </div>
             <button onClick={() => setContactOpen(true)} className="px-8 md:px-12 py-3 md:py-4 bg-cyan-500/90 hover:bg-cyan-400 text-black font-mono font-bold tracking-wider transition-all duration-200 hover:scale-105 border border-cyan-300/50 shadow-lg shadow-cyan-500/50 text-sm md:text-base">
