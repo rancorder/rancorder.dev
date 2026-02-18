@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テトリス</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#0a0a0a; font-family:monospace; }
+#game {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  display:flex; gap:30px; align-items:flex-start;
+}
+canvas { border:2px solid rgba(255,255,255,0.2); background:#000; box-shadow:0 0 40px rgba(0,255,255,0.3); }
+#sidebar {
+  color:rgba(255,255,255,0.8); width:180px;
+}
+#sidebar h3 {
+  font-size:14px; letter-spacing:.2em; margin-bottom:10px;
+  color:rgba(0,255,255,0.9); text-transform:uppercase;
+}
+#score, #level, #lines { font-size:24px; color:#0ff; margin-bottom:20px; }
+#next-canvas { border:1px solid rgba(255,255,255,0.2); margin-bottom:20px; background:#000; }
+#controls {
+  font-size:11px; line-height:1.8; color:rgba(255,255,255,0.5);
+  border-top:1px solid rgba(255,255,255,0.1); padding-top:15px; margin-top:15px;
+}
+#controls div { margin-bottom:5px; }
+#gameover {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.95); border:2px solid #0ff; padding:30px 50px;
+  text-align:center; display:none; z-index:10;
+}
+#gameover h2 { font-size:32px; color:#0ff; margin-bottom:15px; letter-spacing:.3em; }
+#gameover p { color:rgba(255,255,255,0.7); margin-bottom:20px; font-size:14px; }
+#restart {
+  padding:10px 30px; background:#0ff; color:#000; border:none;
+  font:14px monospace; cursor:pointer; letter-spacing:.15em; font-weight:bold;
+  transition:all .2s;
+}
+#restart:hover { background:#fff; transform:scale(1.05); }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="c" width="300" height="600"></canvas>
+  <div id="sidebar">
+    <h3>Score</h3>
+    <div id="score">0</div>
+    <h3>Level</h3>
+    <div id="level">1</div>
+    <h3>Lines</h3>
+    <div id="lines">0</div>
+    <h3>Next</h3>
+    <canvas id="next-canvas" width="100" height="100"></canvas>
+    <div id="controls">
+      <div>← → Move</div>
+      <div>↓ Soft Drop</div>
+      <div>SPACE Hard Drop</div>
+      <div>↑ or Z Rotate</div>
+      <div>P Pause</div>
+    </div>
+  </div>
+</div>
+<div id="gameover">
+  <h2>GAME OVER</h2>
+  <p id="final-score"></p>
+  <button id="restart">RESTART</button>
+</div>
+<script>
+(function(){
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var nextCanvas = document.getElementById('next-canvas');
+var nextCtx = nextCanvas.getContext('2d');
+
+var COLS = 10, ROWS = 20, BLOCK = 30;
+var board, current, next, score, level, lines, gameOver, paused;
+var dropTimer, dropInterval;
+
+var SHAPES = {
+  I: [[1,1,1,1]], // cyan
+  O: [[1,1],[1,1]], // yellow
+  T: [[0,1,0],[1,1,1]], // purple
+  S: [[0,1,1],[1,1,0]], // green
+  Z: [[1,1,0],[0,1,1]], // red
+  J: [[1,0,0],[1,1,1]], // blue
+  L: [[0,0,1],[1,1,1]], // orange
+};
+
+var COLORS = {
+  I: '#00ffff', O: '#ffff00', T: '#aa00ff', S: '#00ff00',
+  Z: '#ff0000', J: '#0000ff', L: '#ff8800',
+};
+
+function init(){
+  board = Array.from({length:ROWS}, ()=>Array(COLS).fill(0));
+  score = 0; level = 1; lines = 0; gameOver = false; paused = false;
+  updateUI();
+  spawnPiece();
+  spawnNext();
+  dropInterval = 1000;
+  startDrop();
+}
+
+function spawnPiece(){
+  if(next){
+    current = next;
+  } else {
+    var keys = Object.keys(SHAPES);
+    var type = keys[Math.floor(Math.random()*keys.length)];
+    current = { type:type, shape:JSON.parse(JSON.stringify(SHAPES[type])), x:3, y:0 };
+  }
+  spawnNext();
+  if(collides(current.x, current.y, current.shape)){
+    endGame();
+  }
+}
+
+function spawnNext(){
+  var keys = Object.keys(SHAPES);
+  var type = keys[Math.floor(Math.random()*keys.length)];
+  next = { type:type, shape:JSON.parse(JSON.stringify(SHAPES[type])), x:3, y:0 };
+  drawNext();
+}
+
+function collides(x, y, shape){
+  for(var r=0; r<shape.length; r++){
+    for(var c=0; c<shape[r].length; c++){
+      if(shape[r][c]){
+        var bx = x+c, by = y+r;
+        if(bx<0 || bx>=COLS || by>=ROWS) return true;
+        if(by>=0 && board[by][bx]) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function merge(){
+  for(var r=0; r<current.shape.length; r++){
+    for(var c=0; c<current.shape[r].length; c++){
+      if(current.shape[r][c]){
+        var bx = current.x+c, by = current.y+r;
+        if(by>=0) board[by][bx] = current.type;
+      }
+    }
+  }
+}
+
+function clearLines(){
+  var cleared = 0;
+  for(var r=ROWS-1; r>=0; r--){
+    if(board[r].every(function(cell){return cell!==0;})){
+      board.splice(r,1);
+      board.unshift(Array(COLS).fill(0));
+      cleared++;
+      r++; // re-check this row
+    }
+  }
+  if(cleared>0){
+    lines += cleared;
+    score += [0,100,300,500,800][cleared] * level;
+    var newLevel = Math.floor(lines/10)+1;
+    if(newLevel > level){
+      level = newLevel;
+      dropInterval = Math.max(100, 1000 - (level-1)*100);
+      startDrop(); // Restart timer with new speed
+    }
+    updateUI();
+  }
+}
+
+function rotate(){
+  var newShape = current.shape[0].map(function(_,i){
+    return current.shape.map(function(row){return row[i];}).reverse();
+  });
+  if(!collides(current.x, current.y, newShape)){
+    current.shape = newShape;
+  } else {
+    // Wall kick
+    if(!collides(current.x-1, current.y, newShape)){ current.x--; current.shape=newShape; }
+    else if(!collides(current.x+1, current.y, newShape)){ current.x++; current.shape=newShape; }
+  }
+}
+
+function moveLeft(){  if(!collides(current.x-1, current.y, current.shape)) current.x--; }
+function moveRight(){ if(!collides(current.x+1, current.y, current.shape)) current.x++; }
+
+function softDrop(){
+  if(!collides(current.x, current.y+1, current.shape)){
+    current.y++; score++;
+  } else {
+    merge(); clearLines(); spawnPiece();
+  }
+}
+
+function hardDrop(){
+  while(!collides(current.x, current.y+1, current.shape)){
+    current.y++; score+=2;
+  }
+  merge(); clearLines(); spawnPiece();
+}
+
+function startDrop(){
+  clearInterval(dropTimer);
+  dropTimer = setInterval(function(){
+    if(!gameOver && !paused) softDrop();
+  }, dropInterval);
+}
+
+function draw(){
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for(var r=0; r<=ROWS; r++){
+    ctx.beginPath(); ctx.moveTo(0,r*BLOCK); ctx.lineTo(COLS*BLOCK,r*BLOCK); ctx.stroke();
+  }
+  for(var c=0; c<=COLS; c++){
+    ctx.beginPath(); ctx.moveTo(c*BLOCK,0); ctx.lineTo(c*BLOCK,ROWS*BLOCK); ctx.stroke();
+  }
+  
+  // Board
+  for(var r=0; r<ROWS; r++){
+    for(var c=0; c<COLS; c++){
+      if(board[r][c]){
+        drawBlock(ctx, c*BLOCK, r*BLOCK, COLORS[board[r][c]]);
+      }
+    }
+  }
+  
+  // Current piece
+  if(current){
+    for(var r=0; r<current.shape.length; r++){
+      for(var c=0; c<current.shape[r].length; c++){
+        if(current.shape[r][c]){
+          drawBlock(ctx, (current.x+c)*BLOCK, (current.y+r)*BLOCK, COLORS[current.type]);
+        }
+      }
+    }
+  }
+  
+  // Ghost piece
+  if(current){
+    var ghostY = current.y;
+    while(!collides(current.x, ghostY+1, current.shape)) ghostY++;
+    ctx.globalAlpha = 0.15;
+    for(var r=0; r<current.shape.length; r++){
+      for(var c=0; c<current.shape[r].length; c++){
+        if(current.shape[r][c]){
+          drawBlock(ctx, (current.x+c)*BLOCK, (ghostY+r)*BLOCK, COLORS[current.type]);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawBlock(context, x, y, color){
+  context.fillStyle = color;
+  context.fillRect(x+1, y+1, BLOCK-2, BLOCK-2);
+  
+  // Highlight
+  context.fillStyle = 'rgba(255,255,255,0.3)';
+  context.fillRect(x+2, y+2, BLOCK-4, 4);
+  context.fillRect(x+2, y+2, 4, BLOCK-4);
+  
+  // Shadow
+  context.fillStyle = 'rgba(0,0,0,0.3)';
+  context.fillRect(x+BLOCK-6, y+6, 4, BLOCK-8);
+  context.fillRect(x+6, y+BLOCK-6, BLOCK-8, 4);
+}
+
+function drawNext(){
+  nextCtx.fillStyle = '#000';
+  nextCtx.fillRect(0,0,nextCanvas.width,nextCanvas.height);
+  
+  if(next){
+    var offsetX = (nextCanvas.width - next.shape[0].length*20)/2;
+    var offsetY = (nextCanvas.height - next.shape.length*20)/2;
+    for(var r=0; r<next.shape.length; r++){
+      for(var c=0; c<next.shape[r].length; c++){
+        if(next.shape[r][c]){
+          drawBlock(nextCtx, offsetX+c*20, offsetY+r*20-10, COLORS[next.type]);
+        }
+      }
+    }
+  }
+}
+
+function updateUI(){
+  document.getElementById('score').textContent = score;
+  document.getElementById('level').textContent = level;
+  document.getElementById('lines').textContent = lines;
+}
+
+function endGame(){
+  gameOver = true;
+  clearInterval(dropTimer);
+  document.getElementById('final-score').textContent = 'Final Score: '+score;
+  document.getElementById('gameover').style.display = 'block';
+}
+
+// Controls
+document.addEventListener('keydown', function(e){
+  if(gameOver) return;
+  
+  if(e.key === 'p' || e.key === 'P'){
+    paused = !paused;
+    e.preventDefault();
+    return;
+  }
+  
+  if(paused) return;
+  
+  if(e.key === 'ArrowLeft')  { moveLeft();  e.preventDefault(); }
+  if(e.key === 'ArrowRight') { moveRight(); e.preventDefault(); }
+  if(e.key === 'ArrowDown')  { softDrop();  e.preventDefault(); }
+  if(e.key === 'ArrowUp' || e.key === 'z' || e.key === 'Z') { rotate(); e.preventDefault(); }
+  if(e.key === ' ') { hardDrop(); e.preventDefault(); }
+});
+
+document.getElementById('restart').addEventListener('click', function(){
+  document.getElementById('gameover').style.display = 'none';
+  init();
+});
+
+// Game loop
+function loop(){
+  draw();
+  requestAnimationFrame(loop);
+}
+
+init();
+loop();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水面タッチ</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+canvas { position:fixed; top:0; left:0; cursor:crosshair; }
+#info {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  color:rgba(255,255,255,0.4); font:11px monospace; letter-spacing:.2em;
+  pointer-events:none; text-align:center;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info">CLICK OR DRAG TO CREATE RIPPLES</div>
+<script>
+(function(){
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var W=800, H=600, T=0;
+
+var GRID_SIZE = 4; // Lower = higher resolution, slower
+var DAMPING = 0.98;
+var SPREAD  = 0.5;
+
+var cols, rows;
+var current, previous, temp;
+var mouseDown = false, lastX = -1, lastY = -1;
+
+function resize(){
+  W = canvas.width  = window.innerWidth  || 800;
+  H = canvas.height = window.innerHeight || 600;
+  cols = Math.floor(W / GRID_SIZE);
+  rows = Math.floor(H / GRID_SIZE);
+  
+  // Initialize wave buffers
+  var size = cols * rows;
+  current  = new Float32Array(size);
+  previous = new Float32Array(size);
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// Mouse/Touch handlers
+canvas.addEventListener('mousedown', function(e){ mouseDown=true; ripple(e.clientX, e.clientY); });
+canvas.addEventListener('mousemove', function(e){ if(mouseDown) ripple(e.clientX, e.clientY); });
+canvas.addEventListener('mouseup',   function(){ mouseDown=false; });
+canvas.addEventListener('mouseleave',function(){ mouseDown=false; });
+
+canvas.addEventListener('touchstart', function(e){
+  e.preventDefault(); mouseDown=true;
+  ripple(e.touches[0].clientX, e.touches[0].clientY);
+}, {passive:false});
+
+canvas.addEventListener('touchmove', function(e){
+  e.preventDefault();
+  if(mouseDown) ripple(e.touches[0].clientX, e.touches[0].clientY);
+}, {passive:false});
+
+canvas.addEventListener('touchend', function(){ mouseDown=false; });
+
+function ripple(x, y){
+  var col = Math.floor(x / GRID_SIZE);
+  var row = Math.floor(y / GRID_SIZE);
+  
+  // Create splash in radius
+  var radius = 3;
+  for(var r=-radius; r<=radius; r++){
+    for(var c=-radius; c<=radius; c++){
+      if(r*r+c*c > radius*radius) continue;
+      var nc = col + c, nr = row + r;
+      if(nc<1 || nc>=cols-1 || nr<1 || nr>=rows-1) continue;
+      var idx = nr*cols + nc;
+      previous[idx] = 255; // Wave height
+    }
+  }
+}
+
+function updateWave(){
+  for(var r=1; r<rows-1; r++){
+    for(var c=1; c<cols-1; c++){
+      var idx = r*cols+c;
+      
+      // Average of neighbors
+      var sum = previous[idx-1] + previous[idx+1] +
+                previous[idx-cols] + previous[idx+cols];
+      
+      // Wave equation
+      current[idx] = (sum * 0.5 - current[idx]) * DAMPING;
+    }
+  }
+  
+  // Swap buffers
+  temp = previous; previous = current; current = temp;
+}
+
+function drawWave(){
+  // Base gradient (deep water)
+  var bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,   '#001a33');
+  bg.addColorStop(0.5, '#002244');
+  bg.addColorStop(1,   '#001122');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+  
+  // Draw wave as colored pixels
+  var imgData = ctx.createImageData(W, H);
+  var data = imgData.data;
+  
+  for(var r=0; r<rows; r++){
+    for(var c=0; c<cols; c++){
+      var idx = r*cols+c;
+      var wave = current[idx];
+      
+      // Map wave height to color
+      var brightness = Math.abs(wave);
+      var clamped = Math.min(brightness, 255);
+      
+      // Water color: cyan-blue with white highlights
+      var blue  = 100 + clamped * 0.4;
+      var green = 50  + clamped * 0.6;
+      var red   = clamped * 0.3;
+      
+      // Fill pixel block
+      for(var py=0; py<GRID_SIZE && r*GRID_SIZE+py<H; py++){
+        for(var px=0; px<GRID_SIZE && c*GRID_SIZE+px<W; px++){
+          var pidx = ((r*GRID_SIZE+py)*W + (c*GRID_SIZE+px))*4;
+          data[pidx  ] = red;
+          data[pidx+1] = green;
+          data[pidx+2] = blue;
+          data[pidx+3] = 255;
+        }
+      }
+    }
+  }
+  
+  ctx.putImageData(imgData, 0, 0);
+  
+  // Add shimmering highlights on wave peaks
+  ctx.globalAlpha = 0.15;
+  for(var r=1; r<rows-1; r++){
+    for(var c=1; c<cols-1; c++){
+      var idx = r*cols+c;
+      var wave = current[idx];
+      
+      if(wave > 20){ // Only bright peaks
+        var intensity = Math.min(wave / 255, 1);
+        var x = c * GRID_SIZE;
+        var y = r * GRID_SIZE;
+        
+        var grad = ctx.createRadialGradient(x,y,0, x,y, GRID_SIZE*3);
+        grad.addColorStop(0, 'rgba(255,255,255,'+(intensity*0.8)+')');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x-GRID_SIZE*2, y-GRID_SIZE*2, GRID_SIZE*4, GRID_SIZE*4);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  
+  // Caustics effect (light patterns on bottom)
+  drawCaustics();
+}
+
+function drawCaustics(){
+  ctx.globalAlpha = 0.08;
+  for(var i=0; i<8; i++){
+    var cx = W * (0.1 + i*0.12 + Math.sin(T*0.008+i)*0.05);
+    var cy = H * (0.6 + Math.cos(T*0.01+i*0.7)*0.15);
+    var r  = W * (0.08 + 0.04*Math.sin(T*0.012+i));
+    
+    var cgrad = ctx.createRadialGradient(cx,cy,0, cx,cy, r);
+    cgrad.addColorStop(0, 'rgba(150,220,255,0.5)');
+    cgrad.addColorStop(0.5,'rgba(100,180,220,0.3)');
+    cgrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cgrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Ambient ripples
+function ambientRipple(){
+  if(Math.random() < 0.02){
+    var x = Math.random() * W;
+    var y = Math.random() * H;
+    ripple(x, y);
+  }
+}
+
+function loop(){
+  updateWave();
+  drawWave();
+  ambientRipple();
+  T++;
+  requestAnimationFrame(loop);
+}
+
+// Initial ripples
+setTimeout(function(){ ripple(W*0.3, H*0.4); }, 500);
+setTimeout(function(){ ripple(W*0.7, H*0.6); }, 1200);
+
+loop();
+})();
+</script>
+</body>
+</html>

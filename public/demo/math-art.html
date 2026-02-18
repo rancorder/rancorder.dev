@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学アート</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:monospace; }
+canvas { position:fixed; top:0; left:0; }
+#ui {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; z-index:10;
+}
+.btn {
+  padding:8px 18px; background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.7);
+  cursor:pointer; font:12px monospace; letter-spacing:.1em;
+  transition:all .2s;
+}
+.btn:hover, .btn.active {
+  border-color:rgba(255,255,255,0.8); color:#fff;
+  background:rgba(255,255,255,0.1);
+}
+#label {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  color:rgba(255,255,255,0.4); font:11px monospace; letter-spacing:.2em;
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="label">CLICK TO INTERACT</div>
+<div id="ui">
+  <button class="btn active" onclick="setMode(0)">REACTION DIFFUSION</button>
+  <button class="btn"        onclick="setMode(1)">VORONOI</button>
+  <button class="btn"        onclick="setMode(2)">MANDELBROT</button>
+  <button class="btn"        onclick="setMode(3)">LISSAJOUS</button>
+</div>
+<script>
+(function(){
+var canvas = document.getElementById('c');
+var ctx    = canvas.getContext('2d');
+var W=800, H=600, T=0, mode=0, mouseX=0.5, mouseY=0.5;
+var rafId;
+
+function resize(){
+  W = canvas.width  = window.innerWidth  || 800;
+  H = canvas.height = window.innerHeight || 600;
+  initMode();
+}
+window.addEventListener('resize', resize);
+canvas.addEventListener('mousemove', function(e){ mouseX=e.clientX/W; mouseY=e.clientY/H; });
+canvas.addEventListener('click', function(e){ onClick(e.clientX, e.clientY); });
+canvas.addEventListener('touchmove', function(e){ e.preventDefault(); mouseX=e.touches[0].clientX/W; mouseY=e.touches[0].clientY/H; }, {passive:false});
+canvas.addEventListener('touchstart', function(e){ onClick(e.touches[0].clientX, e.touches[0].clientY); });
+
+function rnd(a,b){ return a+Math.random()*(b-a); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function hsl(h,s,l){ return 'hsl('+h+','+s+'%,'+l+'%)'; }
+
+window.setMode = function(m){
+  mode=m; T=0;
+  document.querySelectorAll('.btn').forEach(function(b,i){ b.classList.toggle('active',i===m); });
+  initMode();
+};
+
+function onClick(x,y){ if(mode===0) rdSplash(x,y); if(mode===1) voronoiClick(x,y); }
+
+/* ========================================
+   0. REACTION DIFFUSION (Gray-Scott model)
+   ======================================== */
+var rdW, rdH, rdA, rdB, rdNA, rdNB, rdImg;
+var RD_SCALE = 3;
+
+// Presets: [feed, kill]
+var rdPresets = [
+  [0.0545, 0.062],  // spots
+  [0.022,  0.051],  // coral
+  [0.035,  0.065],  // maze
+  [0.055,  0.058],  // bubbles
+];
+var rdPreset = 0;
+
+function initRD(){
+  rdW = Math.floor(W/RD_SCALE);
+  rdH = Math.floor(H/RD_SCALE);
+  var n = rdW*rdH;
+  rdA = new Float32Array(n); rdB = new Float32Array(n);
+  rdNA= new Float32Array(n); rdNB= new Float32Array(n);
+  // All A=1
+  for(var i=0;i<n;i++) rdA[i]=1.0;
+  // Seed center
+  var cx=Math.floor(rdW/2), cy=Math.floor(rdH/2), r=8;
+  for(var dy=-r;dy<=r;dy++){
+    for(var dx=-r;dx<=r;dx++){
+      if(dx*dx+dy*dy<r*r){
+        var idx=(cy+dy)*rdW+(cx+dx);
+        rdA[idx]=0.5+rnd(-0.1,0.1);
+        rdB[idx]=0.25+rnd(-0.1,0.1);
+      }
+    }
+  }
+  rdImg = ctx.createImageData(rdW, rdH);
+}
+
+function rdSplash(px,py){
+  var cx=Math.floor(px/RD_SCALE), cy=Math.floor(py/RD_SCALE), r=6;
+  for(var dy=-r;dy<=r;dy++){
+    for(var dx=-r;dx<=r;dx++){
+      if(dx*dx+dy*dy<r*r){
+        var x=clamp(cx+dx,0,rdW-1), y=clamp(cy+dy,0,rdH-1);
+        var idx=y*rdW+x;
+        rdA[idx]=0.5; rdB[idx]=0.25;
+      }
+    }
+  }
+}
+
+function stepRD(){
+  var p = rdPresets[rdPreset];
+  var feed=p[0], kill=p[1];
+  var dA=1.0, dB=0.5;
+
+  for(var y=1;y<rdH-1;y++){
+    for(var x=1;x<rdW-1;x++){
+      var i  = y*rdW+x;
+      var a  = rdA[i], b = rdB[i];
+      var lap_a = rdA[i-rdW]+rdA[i+rdW]+rdA[i-1]+rdA[i+1] - 4*a;
+      var lap_b = rdB[i-rdW]+rdB[i+rdW]+rdB[i-1]+rdB[i+1] - 4*b;
+      var react = a*b*b;
+      rdNA[i] = clamp(a + dA*lap_a - react + feed*(1-a), 0, 1);
+      rdNB[i] = clamp(b + dB*lap_b + react - (kill+feed)*b, 0, 1);
+    }
+  }
+  var tmp=rdA; rdA=rdNA; rdNA=tmp;
+  var tmp2=rdB; rdB=rdNB; rdNB=tmp2;
+}
+
+// Color palettes for RD
+var rdPalettes = [
+  function(t){ var v=clamp(t*3,0,1); return [Math.floor(v*20),Math.floor(v*180+20),Math.floor(v*255)]; },          // blue-cyan
+  function(t){ return [Math.floor(t*255*0.8),Math.floor(t*100),Math.floor(t*30+20)]; },                              // orange
+  function(t){ var v=1-t; return [Math.floor(v*10+t*200),Math.floor(v*80+t*255),Math.floor(v*50+t*180)]; },          // green
+  function(t){ return [Math.floor(t*200+55),Math.floor(t*50),Math.floor(t*200+55)]; },                               // purple
+];
+var rdPal = 0;
+
+function drawRD(){
+  // Step multiple times per frame for speed
+  for(var s=0;s<8;s++) stepRD();
+
+  var data=rdImg.data, pal=rdPalettes[rdPal];
+  for(var i=0;i<rdW*rdH;i++){
+    var v = clamp(rdA[i]-rdB[i], 0, 1);
+    var c = pal(v);
+    data[i*4  ]=c[0]; data[i*4+1]=c[1]; data[i*4+2]=c[2]; data[i*4+3]=255;
+  }
+  ctx.putImageData(rdImg,0,0);
+  // Scale up
+  ctx.drawImage(canvas, 0,0,rdW,rdH, 0,0,W,H);
+
+  // Palette / preset cycle
+  if(T%600===0){ rdPreset=(rdPreset+1)%rdPresets.length; rdPal=(rdPal+1)%rdPalettes.length; }
+  // Label
+  var labels=['SPOTS','CORAL','MAZE','BUBBLES'];
+  document.getElementById('label').textContent = 'GRAY-SCOTT: '+labels[rdPreset]+' — CLICK TO DISTURB';
+}
+
+/* ================================
+   1. VORONOI + Fortune's algorithm
+   ================================ */
+var voronoiPts=[], voronoiColors=[], voronoiVels=[];
+var VN = 28;
+
+function initVoronoi(){
+  voronoiPts=[]; voronoiColors=[]; voronoiVels=[];
+  for(var i=0;i<VN;i++){
+    voronoiPts.push([rnd(0,W),rnd(0,H)]);
+    voronoiColors.push([rnd(0,360),rnd(60,90),rnd(30,65)]);
+    voronoiVels.push([rnd(-0.8,0.8),rnd(-0.8,0.8)]);
+  }
+}
+function voronoiClick(x,y){
+  voronoiPts.push([x,y]); voronoiColors.push([rnd(0,360),rnd(70,90),rnd(40,65)]); voronoiVels.push([rnd(-1,1),rnd(-1,1)]);
+  if(voronoiPts.length>60){ voronoiPts.shift(); voronoiColors.shift(); voronoiVels.shift(); }
+}
+
+function drawVoronoi(){
+  // Update points
+  for(var i=0;i<voronoiPts.length;i++){
+    voronoiPts[i][0]+=voronoiVels[i][0]; voronoiPts[i][1]+=voronoiVels[i][1];
+    if(voronoiPts[i][0]<0||voronoiPts[i][0]>W) voronoiVels[i][0]*=-1;
+    if(voronoiPts[i][1]<0||voronoiPts[i][1]>H) voronoiVels[i][1]*=-1;
+    // Gentle wobble
+    voronoiVels[i][0]+=rnd(-0.02,0.02); voronoiVels[i][1]+=rnd(-0.02,0.02);
+    voronoiVels[i][0]=clamp(voronoiVels[i][0],-1.5,1.5); voronoiVels[i][1]=clamp(voronoiVels[i][1],-1.5,1.5);
+  }
+
+  // Pixel-scan voronoi
+  var img=ctx.createImageData(W,H);
+  var data=img.data;
+  var STEP=2; // every 2px for performance
+  for(var py=0;py<H;py+=STEP){
+    for(var px=0;px<W;px+=STEP){
+      var minD=1e9, minI=0, min2=1e9;
+      for(var i=0;i<voronoiPts.length;i++){
+        var dx=px-voronoiPts[i][0], dy=py-voronoiPts[i][1];
+        var d=dx*dx+dy*dy;
+        if(d<minD){ min2=minD; minD=d; minI=i; }
+        else if(d<min2) min2=d;
+      }
+      // Edge detection
+      var edge = Math.sqrt(min2)-Math.sqrt(minD);
+      var hue = voronoiColors[minI][0] + T*0.1;
+      var sat = voronoiColors[minI][1];
+      var lit = voronoiColors[minI][2];
+      // Darken at edges
+      var edgeFactor = clamp(edge/8,0,1);
+      var finalLit = lit * edgeFactor;
+      // HSL to RGB
+      var rgb = hslToRgb(hue/360, sat/100, finalLit/100);
+      for(var sy=0;sy<STEP&&py+sy<H;sy++){
+        for(var sx=0;sx<STEP&&px+sx<W;sx++){
+          var idx=((py+sy)*W+(px+sx))*4;
+          data[idx]=rgb[0]; data[idx+1]=rgb[1]; data[idx+2]=rgb[2]; data[idx+3]=255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img,0,0);
+
+  // Draw centers
+  for(var i=0;i<voronoiPts.length;i++){
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(voronoiPts[i][0],voronoiPts[i][1],2,0,Math.PI*2); ctx.fill();
+  }
+  document.getElementById('label').textContent='VORONOI DIAGRAM — CLICK TO ADD POINT';
+}
+
+function hslToRgb(h,s,l){
+  var r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    function hue2rgb(p,q,t){ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }
+    var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+}
+
+/* ============================
+   2. MANDELBROT ZOOM
+   ============================ */
+var mbZoom=1, mbCx=-0.5, mbCy=0, mbTarget={x:-0.7269,y:0.1889};
+var mbInteresting=[
+  {x:-0.7269,y:0.1889},
+  {x:-0.5251993,y:-0.5251993},
+  {x:0.3750001,y:0.2145},
+  {x:-1.25066,y:0.02012},
+  {x:-0.1592,y:1.0317},
+];
+var mbPt=0;
+var mbImg=null;
+var mbLastW=0, mbLastH=0;
+
+function initMandelbrot(){
+  mbZoom=0.8; mbCx=-0.5; mbCy=0;
+  mbPt=0; mbTarget=mbInteresting[0];
+  mbImg=null;
+}
+
+function drawMandelbrot(){
+  // Slowly zoom into target
+  mbZoom *= 1.008;
+  mbCx = lerp(mbCx, mbTarget.x, 0.004);
+  mbCy = lerp(mbCy, mbTarget.y, 0.004);
+
+  // Change target when zoomed deep
+  if(mbZoom>8000){ mbZoom=1; mbPt=(mbPt+1)%mbInteresting.length; mbTarget=mbInteresting[mbPt]; }
+
+  var maxIter = 80+Math.floor(Math.log(mbZoom)*10);
+  var scale   = 2.5/mbZoom;
+  var STEP    = 2;
+  var img     = ctx.createImageData(W,H);
+  var data    = img.data;
+
+  for(var py=0;py<H;py+=STEP){
+    for(var px=0;px<W;px+=STEP){
+      var cx = mbCx + (px-W/2)/W*scale*(W/H);
+      var cy = mbCy + (py-H/2)/H*scale;
+      var zx=0,zy=0,iter=0;
+      while(zx*zx+zy*zy<4 && iter<maxIter){
+        var tmp=zx*zx-zy*zy+cx;
+        zy=2*zx*zy+cy; zx=tmp; iter++;
+      }
+      var r=0,g=0,b=0;
+      if(iter<maxIter){
+        // Smooth coloring
+        var smooth = iter+1-Math.log(Math.log(Math.sqrt(zx*zx+zy*zy)))/Math.log(2);
+        var t = smooth/maxIter;
+        // Multi-color gradient
+        var h0 = (t*360+T*0.3)%360;
+        var rgb=hslToRgb(h0/360, 0.9, clamp(t*1.2,0.05,0.7));
+        r=rgb[0]; g=rgb[1]; b=rgb[2];
+      }
+      for(var sy=0;sy<STEP&&py+sy<H;sy++){
+        for(var sx=0;sx<STEP&&px+sx<W;sx++){
+          var idx=((py+sy)*W+(px+sx))*4;
+          data[idx]=r; data[idx+1]=g; data[idx+2]=b; data[idx+3]=255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img,0,0);
+  document.getElementById('label').textContent='MANDELBROT SET — ZOOM: '+Math.floor(mbZoom)+'x';
+}
+
+/* ============================
+   3. LISSAJOUS FIELD
+   ============================ */
+var lisTrails=[];
+var LIS_COUNT=8;
+
+function initLissajous(){
+  lisTrails=[];
+  for(var i=0;i<LIS_COUNT;i++){
+    lisTrails.push({
+      ax: rnd(0.2,0.48)*W, ay: rnd(0.2,0.48)*H,
+      fx: rnd(1,5), fy: rnd(1,5),
+      px: rnd(0,Math.PI*2), py: rnd(0,Math.PI*2),
+      hue: i/LIS_COUNT*360,
+      pts: [], maxPts: 600,
+    });
+  }
+}
+
+function drawLissajous(){
+  ctx.fillStyle='rgba(0,0,6,0.04)';
+  ctx.fillRect(0,0,W,H);
+
+  var cx=W/2, cy=H/2;
+  var speed = 0.008+mouseX*0.015;
+
+  for(var i=0;i<lisTrails.length;i++){
+    var l=lisTrails[i];
+    var t=T*speed;
+    var x=cx+l.ax*Math.sin(l.fx*t+l.px);
+    var y=cy+l.ay*Math.sin(l.fy*t+l.py);
+    l.pts.push([x,y]);
+    if(l.pts.length>l.maxPts) l.pts.shift();
+
+    if(l.pts.length<2) continue;
+    ctx.beginPath();
+    ctx.moveTo(l.pts[0][0],l.pts[0][1]);
+    for(var j=1;j<l.pts.length;j++){
+      ctx.lineTo(l.pts[j][0],l.pts[j][1]);
+    }
+    var age=l.pts.length/l.maxPts;
+    ctx.strokeStyle='hsla('+(l.hue+T*0.2)+'%,90%,65%,'+(age*0.6)+')';
+    ctx.lineWidth=0.8+mouseY;
+    ctx.stroke();
+
+    // Draw dot at current position
+    var grd=ctx.createRadialGradient(x,y,0,x,y,6);
+    grd.addColorStop(0,'hsla('+(l.hue+T*0.2)+',100%,80%,0.9)');
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+  }
+
+  // Frequency labels
+  document.getElementById('label').textContent='LISSAJOUS — MOVE MOUSE TO CHANGE SPEED';
+}
+
+/* ====================
+   INIT & LOOP
+   ==================== */
+function initMode(){
+  if(rafId) cancelAnimationFrame(rafId);
+  T=0;
+  ctx.clearRect(0,0,W,H);
+  if(mode===0) initRD();
+  if(mode===1) initVoronoi();
+  if(mode===2) initMandelbrot();
+  if(mode===3) initLissajous();
+  loop();
+}
+
+function loop(){
+  rafId=requestAnimationFrame(loop);
+  if(mode===0) drawRD();
+  else if(mode===1) drawVoronoi();
+  else if(mode===2) drawMandelbrot();
+  else if(mode===3) drawLissajous();
+  T++;
+}
+
+resize();
+})();
+</script>
+</body>
+</html>
