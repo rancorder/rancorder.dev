@@ -41,6 +41,11 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const stats = fs.statSync(filePath);
+  if (!stats.isFile()) {
+    notFound();
+  }
+
   const htmlContent = fs.readFileSync(filePath, 'utf-8');
   const metadata = extractMetadata(htmlContent);
 
@@ -63,11 +68,15 @@ export async function generateStaticParams() {
     return [];
   }
 
-  const files = fs.readdirSync(contentDir);
+  const entries = fs.readdirSync(contentDir, { withFileTypes: true });
   
-  return files
-    .filter(file => file.endsWith('.html'))
-    .map(file => ({
-      slug: file.replace('.html', ''),
+  return entries
+    .filter(entry => 
+      entry.isFile() && 
+      entry.name.endsWith('.html') && 
+      !entry.name.startsWith('_')
+    )
+    .map(entry => ({
+      slug: entry.name.replace('.html', ''),
     }));
 }
