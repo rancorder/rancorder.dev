@@ -1,3 +1,4 @@
+// components/TokyoNightCanvas.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -29,6 +30,7 @@ export default function TokyoNightCanvas() {
     function clamp(v: number, a: number, b: number) { return v < a ? a : v > b ? b : v; }
 
     function resize() {
+      if (!canvas) return;
       W = canvas.width = window.innerWidth || 800;
       H = canvas.height = window.innerHeight || 600;
       initScene();
@@ -102,6 +104,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawSky() {
+      if (!ctx) return;
       const ash = clamp(0.3 + 0.25 * Math.sin(T * 0.008), 0, 1);
       const g = ctx.createLinearGradient(0, 0, 0, H * 0.75);
       g.addColorStop(0, '#020510');
@@ -120,6 +123,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawStars() {
+      if (!ctx) return;
       for (const s of starData) {
         const tw = 0.3 + 0.7 * Math.sin(T * s.sp + s.ph);
         const horizonFade = clamp(1 - (s.y - 0.3) * 3, 0, 1);
@@ -133,6 +137,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawMoon() {
+      if (!ctx) return;
       const mx = W * 0.15, my = H * 0.10, mr = W * 0.018;
       const mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 5);
       mg.addColorStop(0, 'rgba(220,220,180,0.12)');
@@ -151,6 +156,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawFog() {
+      if (!ctx) return;
       const fy = H * 0.65;
       for (let i = 0; i < 5; i++) {
         const fi = i / 4;
@@ -167,6 +173,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawSkyTree() {
+      if (!ctx) return;
       const st = skyTree;
       const tx = st.x, by = st.baseY, th = st.h, bw = st.w;
       ctx.fillStyle = '#0a0a14';
@@ -221,6 +228,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawTokyoTower() {
+      if (!ctx) return;
       const tt = tokyoTower;
       const tx = tt.x, by = tt.baseY, th = tt.h, tw = tt.w;
       ctx.strokeStyle = '#2a1a08';
@@ -270,6 +278,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawBuildings(layer: number) {
+      if (!ctx) return;
       const lp = LAYERS[layer];
       const layerBuildings = buildings.filter(b => b.layer === layer);
 
@@ -345,6 +354,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawRoads() {
+      if (!ctx) return;
       for (let ri = 0; ri < roads.length; ri++) {
         const road = roads[ri];
         const ry = road.y;
@@ -416,6 +426,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawRiver() {
+      if (!ctx) return;
       const ry = H * 0.92, rh = H * 0.08;
       const rg = ctx.createLinearGradient(0, ry, 0, ry + rh);
       rg.addColorStop(0, '#03050f');
@@ -454,6 +465,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawRain() {
+      if (!ctx) return;
       ctx.strokeStyle = 'rgba(180,200,255,0.18)';
       ctx.lineWidth = 0.7;
       for (let i = 0; i < rainDrops.length; i++) {
@@ -471,6 +483,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawGround() {
+      if (!ctx) return;
       const gy = H * 0.89;
       const gg = ctx.createLinearGradient(0, gy, 0, H * 0.92);
       gg.addColorStop(0, '#0a080e');
@@ -490,6 +503,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawVignette() {
+      if (!ctx) return;
       const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.9);
       vg.addColorStop(0, 'rgba(0,0,0,0)');
       vg.addColorStop(1, 'rgba(0,0,0,0.82)');
@@ -498,6 +512,7 @@ export default function TokyoNightCanvas() {
     }
 
     function drawHaze() {
+      if (!ctx) return;
       const hg = ctx.createLinearGradient(0, H * 0.55, 0, H * 0.85);
       hg.addColorStop(0, 'rgba(10,8,25,0)');
       hg.addColorStop(0.5, 'rgba(20,15,40,0.15)');
@@ -507,6 +522,7 @@ export default function TokyoNightCanvas() {
     }
 
     function frame() {
+      if (!ctx) return;
       ctx.clearRect(0, 0, W, H);
       drawSky();
       drawStars();
