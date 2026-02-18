@@ -3,14 +3,28 @@
 import { useState, useEffect } from 'react';
 import TokyoNightCanvas from '@/components/TokyoNightCanvas';
 
+interface Demo {
+  title: string;
+  desc: string;
+  tech: string;
+  demo: string;
+  type: 'demo' | 'play';
+  level: number;
+  color: string;
+}
+
 export default function Home() {
   const [contactOpen, setContactOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [typedText, setTypedText] = useState('');
+  const [works, setWorks] = useState<Demo[]>([]);
+  const [loading, setLoading] = useState(true);
   const fullText = 'Webシステムを作る。思想を実装に変える。';
 
   useEffect(() => {
     setMounted(true);
+    
+    // タイピングアニメーション
     let index = 0;
     const timer = setInterval(() => {
       if (index < fullText.length) {
@@ -20,65 +34,21 @@ export default function Home() {
         clearInterval(timer);
       }
     }, 80);
+    
+    // デモ一覧を自動取得
+    fetch('/api/demos')
+      .then(res => res.json())
+      .then(data => {
+        setWorks(data.demos || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load demos:', err);
+        setLoading(false);
+      });
+    
     return () => clearInterval(timer);
   }, []);
-
-  const works = [
-    {
-      title: '富士山噴火',
-      desc: 'Canvas 2D · 600粒子 · 物理演算',
-      tech: 'Particle System · Verlet Integration',
-      demo: '/demos/fuji-eruption.html',
-      type: 'demo',
-      level: 95,
-      color: '#ff6b35',
-    },
-    {
-      title: '東京夜景',
-      desc: '4レイヤー · 動的生成 · 光源処理',
-      tech: 'Procedural Generation · Real-time',
-      demo: '/demos/tokyo-night.html',
-      type: 'demo',
-      level: 92,
-      color: '#00d9ff',
-    },
-    {
-      title: '数学アート',
-      desc: '反応拡散系 · Mandelbrot · Voronoi',
-      tech: '4 Algorithms · Interactive',
-      demo: '/demos/math-art.html',
-      type: 'demo',
-      level: 88,
-      color: '#a855f7',
-    },
-    {
-      title: '水面タッチ',
-      desc: 'リアルタイム流体 · 波紋伝播',
-      tech: 'Fluid Simulation · Wave Equation',
-      demo: '/demos/water-ripple.html',
-      type: 'demo',
-      level: 90,
-      color: '#06b6d4',
-    },
-    {
-      title: 'Boids - 群れ',
-      desc: '3ルール · 自律エージェント',
-      tech: 'Alignment · Cohesion · Separation',
-      demo: '/demos/boids.html',
-      type: 'demo',
-      level: 87,
-      color: '#10b981',
-    },
-    {
-      title: 'テトリス',
-      desc: '完全実装 · 遊べる',
-      tech: 'Game Loop · State Management',
-      demo: '/demos/tetris.html',
-      type: 'play',
-      level: 94,
-      color: '#f59e0b',
-    },
-  ];
 
   return (
     <>
@@ -115,7 +85,6 @@ export default function Home() {
         boxShadow: '0 0 20px rgba(6,182,212,0.3), inset 0 -2px 10px rgba(6,182,212,0.2)',
       }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between relative">
-          {/* ピクセルコーナー */}
           <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
           <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
           
@@ -179,90 +148,100 @@ export default function Home() {
                   &gt; SHOWCASE_
                 </h2>
               </div>
+              <p className="text-cyan-300/60 font-mono text-sm mt-4">
+                {loading ? 'LOADING...' : `${works.length} DEMOS DETECTED`}
+              </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {works.map((work, i) => (
-                <a key={i} href={work.demo} target="_blank" rel="noopener noreferrer" 
-                  className="group relative"
-                  style={{ animationDelay: `${i * 100}ms` }}>
-                  <div className="absolute -inset-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity blur" style={{
-                    background: `linear-gradient(45deg, ${work.color}, ${work.color}80)`,
-                  }} />
-                  
-                  <div className="relative bg-black/90 border-2 overflow-hidden" style={{
-                    borderColor: work.color,
-                    boxShadow: `0 0 20px ${work.color}40, inset 0 0 20px ${work.color}20`,
-                  }}>
-                    {/* ピクセルコーナー装飾 */}
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2" style={{ borderColor: work.color }} />
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2" style={{ borderColor: work.color }} />
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2" style={{ borderColor: work.color }} />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2" style={{ borderColor: work.color }} />
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-cyan-400 font-mono text-2xl animate-pulse">
+                  SCANNING DEMOS...
+                </div>
+              </div>
+            ) : works.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-cyan-400/60 font-mono text-xl">
+                  NO DEMOS FOUND
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {works.map((work, i) => (
+                  <a key={i} href={work.demo} target="_blank" rel="noopener noreferrer" 
+                    className="group relative"
+                    style={{ animationDelay: `${i * 100}ms` }}>
+                    <div className="absolute -inset-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity blur" style={{
+                      background: `linear-gradient(45deg, ${work.color}, ${work.color}80)`,
+                    }} />
                     
-                    {/* レベルバー */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-black/50">
-                      <div className="h-full transition-all duration-1000 group-hover:w-full" style={{
-                        width: `${work.level}%`,
-                        background: `linear-gradient(90deg, ${work.color}, ${work.color}80)`,
-                        boxShadow: `0 0 10px ${work.color}`,
-                      }} />
-                    </div>
-
-                    <div className="p-8">
-                      {/* タイトル */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-2xl font-bold font-mono group-hover:animate-glitch-fast" style={{
-                          color: work.color,
-                          textShadow: `0 0 10px ${work.color}`,
-                        }}>
-                          {work.title}
-                        </h3>
-                        <span className="text-xs font-mono px-2 py-1 border" style={{
-                          color: work.color,
-                          borderColor: work.color,
-                          boxShadow: `0 0 5px ${work.color}40`,
-                        }}>
-                          LV.{work.level}
-                        </span>
-                      </div>
+                    <div className="relative bg-black/90 border-2 overflow-hidden" style={{
+                      borderColor: work.color,
+                      boxShadow: `0 0 20px ${work.color}40, inset 0 0 20px ${work.color}20`,
+                    }}>
+                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2" style={{ borderColor: work.color }} />
+                      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2" style={{ borderColor: work.color }} />
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2" style={{ borderColor: work.color }} />
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2" style={{ borderColor: work.color }} />
                       
-                      {/* 説明 */}
-                      <p className="text-cyan-100/80 text-sm mb-3 leading-relaxed font-mono">
-                        {work.desc}
-                      </p>
-                      
-                      {/* 技術スタック */}
-                      <p className="text-xs text-cyan-400/60 font-mono mb-6 border-l-2 pl-2" style={{
-                        borderColor: work.color,
-                      }}>
-                        {work.tech}
-                      </p>
-                      
-                      {/* CTA */}
-                      <div className="relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{
-                          background: `linear-gradient(90deg, transparent, ${work.color}40, transparent)`,
-                          animation: 'slide 1.5s infinite',
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-black/50">
+                        <div className="h-full transition-all duration-1000 group-hover:w-full" style={{
+                          width: `${work.level}%`,
+                          background: `linear-gradient(90deg, ${work.color}, ${work.color}80)`,
+                          boxShadow: `0 0 10px ${work.color}`,
                         }} />
-                        <div className="relative flex items-center gap-2 text-sm font-bold font-mono group-hover:translate-x-2 transition-transform" style={{
-                          color: work.color,
+                      </div>
+
+                      <div className="p-8">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-2xl font-bold font-mono group-hover:animate-glitch-fast" style={{
+                            color: work.color,
+                            textShadow: `0 0 10px ${work.color}`,
+                          }}>
+                            {work.title}
+                          </h3>
+                          <span className="text-xs font-mono px-2 py-1 border" style={{
+                            color: work.color,
+                            borderColor: work.color,
+                            boxShadow: `0 0 5px ${work.color}40`,
+                          }}>
+                            LV.{work.level}
+                          </span>
+                        </div>
+                        
+                        <p className="text-cyan-100/80 text-sm mb-3 leading-relaxed font-mono">
+                          {work.desc}
+                        </p>
+                        
+                        <p className="text-xs text-cyan-400/60 font-mono mb-6 border-l-2 pl-2" style={{
+                          borderColor: work.color,
                         }}>
-                          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: work.color }} />
-                          {work.type === 'play' ? '▶ PLAY' : '▶ DEMO'}
-                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                          {work.tech}
+                        </p>
+                        
+                        <div className="relative overflow-hidden">
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{
+                            background: `linear-gradient(90deg, transparent, ${work.color}40, transparent)`,
+                            animation: 'slide 1.5s infinite',
+                          }} />
+                          <div className="relative flex items-center gap-2 text-sm font-bold font-mono group-hover:translate-x-2 transition-transform" style={{
+                            color: work.color,
+                          }}>
+                            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: work.color }} />
+                            {work.type === 'play' ? '▶ PLAY' : '▶ DEMO'}
+                            <span className="group-hover:translate-x-1 transition-transform">→</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* ホログラム風レイヤー */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" style={{
-                      background: `repeating-linear-gradient(0deg, ${work.color}20, ${work.color}20 2px, transparent 2px, transparent 4px)`,
-                    }} />
-                  </div>
-                </a>
-              ))}
-            </div>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" style={{
+                        background: `repeating-linear-gradient(0deg, ${work.color}20, ${work.color}20 2px, transparent 2px, transparent 4px)`,
+                      }} />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -317,7 +296,6 @@ export default function Home() {
             <div className="relative bg-black border-4 border-cyan-400 p-8" style={{
               boxShadow: '0 0 40px rgba(6,182,212,0.8), inset 0 0 40px rgba(6,182,212,0.2)',
             }}>
-              {/* ピクセルコーナー */}
               <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-cyan-400" />
               <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-cyan-400" />
               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-cyan-400" />
