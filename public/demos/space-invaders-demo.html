@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEON INVADERS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      color: #00d9ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #gameContainer {
+      position: relative;
+      max-width: 100%;
+      max-height: 100vh;
+    }
+    canvas {
+      display: block;
+      cursor: crosshair;
+      background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 100%);
+      box-shadow: 0 0 60px rgba(0, 217, 255, 0.2), 0 0 100px rgba(168, 85, 247, 0.1);
+    }
+    #ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .stat {
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+      letter-spacing: 2px;
+    }
+    #score { color: #00d9ff; }
+    #lives { color: #ec4899; }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 20;
+    }
+    #overlay.active { display: flex; }
+    .message {
+      text-align: center;
+      animation: glow 2s ease-in-out infinite;
+    }
+    .message h1 {
+      font-size: clamp(2rem, 8vw, 4rem);
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor;
+    }
+    .message p {
+      font-size: clamp(0.9rem, 3vw, 1.2rem);
+      margin-bottom: 30px;
+      opacity: 0.7;
+    }
+    .message button {
+      padding: 15px 40px;
+      font-size: 16px;
+      font-family: inherit;
+      font-weight: bold;
+      background: transparent;
+      border: 2px solid currentColor;
+      color: inherit;
+      cursor: pointer;
+      letter-spacing: 3px;
+      transition: all 0.3s;
+      text-shadow: 0 0 10px currentColor;
+      box-shadow: 0 0 20px currentColor;
+    }
+    .message button:hover {
+      background: currentColor;
+      color: #000;
+      transform: scale(1.05);
+    }
+    @keyframes glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @media (max-width: 768px) {
+      #ui { padding: 10px; }
+      .stat { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: NEON INVADERS · レトロゲーム再構築
+desc: スペースインベーダー風シューティング · Canvas 2D · パーティクルエフェクト · グロー描画
+tech: Canvas 2D API · 衝突判定 · 物理演算 · AudioContext
+level: 88
+color: #00d9ff
+type: demo
+-->
+
+<div id="gameContainer">
+  <canvas id="canvas"></canvas>
+  
+  <div id="ui">
+    <div id="score" class="stat">SCORE: 0</div>
+    <div id="lives" class="stat">❤ × 3</div>
+  </div>
+  
+  <div id="overlay">
+    <div class="message" id="message">
+      <h1>NEON INVADERS</h1>
+      <p>矢印キー / タップで移動<br>スペース / タップでショット</p>
+      <button onclick="game.start()">START GAME</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const message = document.getElementById('message');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+
+// Canvas setup
+let width, height, scale;
+function resizeCanvas() {
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight;
+  const aspect = 4 / 3;
+  
+  if (maxW / maxH > aspect) {
+    height = maxH;
+    width = height * aspect;
+  } else {
+    width = maxW;
+    height = width / aspect;
+  }
+  
+  canvas.width = width;
+  canvas.height = height;
+  scale = width / 800; // Base scale
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Audio
+function playSound(freq, duration = 0.1, type = 'square') {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+// Particles
+const particles = [];
+class Particle {
+  constructor(x, y, color, count = 20) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 4;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        color,
+        size: 2 + Math.random() * 3
+      });
+    }
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1; // Gravity
+    p.life -= 0.02;
+    
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = p.color;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    ctx.restore();
+  });
+}
+
+// Game objects
+class Player {
+  constructor() {
+    this.w = 30 * scale;
+    this.h = 20 * scale;
+    this.x = width / 2 - this.w / 2;
+    this.y = height - 80 * scale;
+    this.speed = 5 * scale;
+    this.color = '#00d9ff';
+  }
+  
+  move(dir) {
+    this.x += dir * this.speed;
+    this.x = Math.max(0, Math.min(width - this.w, this.x));
+  }
+  
+  shoot() {
+    bullets.push(new Bullet(this.x + this.w/2, this.y, -8 * scale, this.color));
+    playSound(400, 0.1);
+  }
+  
+  draw() {
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    ctx.fillStyle = this.color;
+    
+    // Ship body
+    ctx.beginPath();
+    ctx.moveTo(this.x + this.w/2, this.y);
+    ctx.lineTo(this.x, this.y + this.h);
+    ctx.lineTo(this.x + this.w, this.y + this.h);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.restore();
+  }
+}
+
+class Enemy {
+  constructor(x, y, row) {
+    this.w = 25 * scale;
+    this.h = 20 * scale;
+    this.x = x;
+    this.y = y;
+    this.row = row;
+    this.alive = true;
+    
+    // Color by row
+    const colors = ['#ec4899', '#a855f7', '#00d9ff'];
+    this.color = colors[row % 3];
+    this.points = (3 - row) * 10;
+  }
+  
+  draw() {
+    if (!this.alive) return;
+    
+    ctx.save();
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
+    ctx.fillStyle = this.color;
+    
+    // Simple invader shape
+    const cx = this.x + this.w/2;
+    const cy = this.y + this.h/2;
+    ctx.fillRect(this.x + this.w*0.2, this.y, this.w*0.6, this.h*0.3);
+    ctx.fillRect(this.x, this.y + this.h*0.3, this.w, this.h*0.4);
+    ctx.fillRect(this.x + this.w*0.1, this.y + this.h*0.7, this.w*0.3, this.h*0.3);
+    ctx.fillRect(this.x + this.w*0.6, this.y + this.h*0.7, this.w*0.3, this.h*0.3);
+    
+    ctx.restore();
+  }
+  
+  shoot() {
+    enemyBullets.push(new Bullet(this.x + this.w/2, this.y + this.h, 4 * scale, '#ff6b35'));
+  }
+}
+
+class Bullet {
+  constructor(x, y, vy, color) {
+    this.x = x;
+    this.y = y;
+    this.vy = vy;
+    this.w = 3 * scale;
+    this.h = 12 * scale;
+    this.color = color;
+  }
+  
+  update() {
+    this.y += this.vy;
+  }
+  
+  draw() {
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x - this.w/2, this.y - this.h/2, this.w, this.h);
+    ctx.restore();
+  }
+  
+  isOffScreen() {
+    return this.y < -20 || this.y > height + 20;
+  }
+}
+
+// Game state
+const game = {
+  state: 'menu', // menu, playing, gameover, win
+  score: 0,
+  lives: 3,
+  level: 1,
+  
+  start() {
+    this.state = 'playing';
+    this.score = 0;
+    this.lives = 3;
+    this.level = 1;
+    overlay.classList.remove('active');
+    this.init();
+  },
+  
+  init() {
+    player = new Player();
+    bullets = [];
+    enemyBullets = [];
+    enemies = [];
+    
+    // Create enemy grid
+    const rows = 4;
+    const cols = 8;
+    const spacing = 50 * scale;
+    const startX = (width - (cols - 1) * spacing) / 2;
+    const startY = 60 * scale;
+    
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        enemies.push(new Enemy(
+          startX + col * spacing,
+          startY + row * spacing,
+          row
+        ));
+      }
+    }
+    
+    enemyDir = 1;
+    enemySpeed = 1 * scale;
+    lastEnemyShot = 0;
+    
+    this.updateUI();
+  },
+  
+  gameOver() {
+    this.state = 'gameover';
+    message.innerHTML = `
+      <h1 style="color: #ec4899">GAME OVER</h1>
+      <p>FINAL SCORE: ${this.score}</p>
+      <button onclick="game.start()">RETRY</button>
+    `;
+    overlay.classList.add('active');
+    playSound(150, 0.5);
+  },
+  
+  win() {
+    this.state = 'win';
+    message.innerHTML = `
+      <h1 style="color: #00ff88">VICTORY!</h1>
+      <p>SCORE: ${this.score}</p>
+      <button onclick="game.start()">PLAY AGAIN</button>
+    `;
+    overlay.classList.add('active');
+    playSound(800, 0.3);
+    playSound(1000, 0.3);
+  },
+  
+  updateUI() {
+    scoreEl.textContent = `SCORE: ${this.score}`;
+    livesEl.textContent = `❤ × ${this.lives}`;
+  }
+};
+
+// Game variables
+let player;
+let bullets = [];
+let enemyBullets = [];
+let enemies = [];
+let enemyDir = 1;
+let enemySpeed = 1 * scale;
+let lastEnemyShot = 0;
+
+// Input
+const keys = {};
+let touchX = null;
+let touchStartX = null;
+
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === ' ' && game.state === 'playing') {
+    e.preventDefault();
+    player.shoot();
+  }
+});
+
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+});
+
+// Touch controls
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  touchStartX = touch.clientX - rect.left;
+  touchX = touchStartX;
+  
+  // Shoot on tap
+  if (game.state === 'playing') {
+    player.shoot();
+  }
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  touchX = touch.clientX - rect.left;
+});
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  touchX = null;
+  touchStartX = null;
+});
+
+// Mouse controls (for desktop)
+canvas.addEventListener('click', () => {
+  if (game.state === 'playing') {
+    player.shoot();
+  }
+});
+
+// Collision detection
+function checkCollision(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
+// Game loop
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const dt = timestamp - lastTime;
+  lastTime = timestamp;
+  
+  // Clear
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, width, height);
+  
+  if (game.state !== 'playing') {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  
+  // Update player
+  if (keys['ArrowLeft'] || keys['a']) player.move(-1);
+  if (keys['ArrowRight'] || keys['d']) player.move(1);
+  
+  // Touch movement
+  if (touchX !== null && touchStartX !== null) {
+    const diff = touchX - touchStartX;
+    if (Math.abs(diff) > 5) {
+      player.move(Math.sign(diff));
+      touchStartX = touchX;
+    }
+  }
+  
+  // Update bullets
+  bullets.forEach(b => b.update());
+  bullets = bullets.filter(b => !b.isOffScreen());
+  
+  enemyBullets.forEach(b => b.update());
+  enemyBullets = enemyBullets.filter(b => !b.isOffScreen());
+  
+  // Move enemies
+  let shouldMoveDown = false;
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    e.x += enemyDir * enemySpeed;
+    
+    if (e.x <= 0 || e.x + e.w >= width) {
+      shouldMoveDown = true;
+    }
+  });
+  
+  if (shouldMoveDown) {
+    enemyDir *= -1;
+    enemies.forEach(e => {
+      if (e.alive) e.y += 15 * scale;
+    });
+  }
+  
+  // Enemy shooting
+  if (timestamp - lastEnemyShot > 1000) {
+    const aliveEnemies = enemies.filter(e => e.alive);
+    if (aliveEnemies.length > 0) {
+      const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+      shooter.shoot();
+      lastEnemyShot = timestamp;
+      playSound(200, 0.1);
+    }
+  }
+  
+  // Bullet vs Enemy collision
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const bullet = bullets[i];
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const enemy = enemies[j];
+      if (!enemy.alive) continue;
+      
+      if (checkCollision(bullet, enemy)) {
+        enemy.alive = false;
+        bullets.splice(i, 1);
+        game.score += enemy.points;
+        game.updateUI();
+        new Particle(enemy.x + enemy.w/2, enemy.y + enemy.h/2, enemy.color, 30);
+        playSound(600, 0.15);
+        break;
+      }
+    }
+  }
+  
+  // Enemy bullet vs Player collision
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    const bullet = enemyBullets[i];
+    if (checkCollision(bullet, player)) {
+      enemyBullets.splice(i, 1);
+      game.lives--;
+      game.updateUI();
+      new Particle(player.x + player.w/2, player.y + player.h/2, player.color, 40);
+      playSound(150, 0.3);
+      
+      if (game.lives <= 0) {
+        game.gameOver();
+      }
+    }
+  }
+  
+  // Check win condition
+  if (enemies.every(e => !e.alive)) {
+    game.win();
+  }
+  
+  // Check game over (enemies reach bottom)
+  enemies.forEach(e => {
+    if (e.alive && e.y + e.h > player.y) {
+      game.gameOver();
+    }
+  });
+  
+  // Update particles
+  updateParticles();
+  
+  // Draw everything
+  player.draw();
+  enemies.forEach(e => e.draw());
+  bullets.forEach(b => b.draw());
+  enemyBullets.forEach(b => b.draw());
+  drawParticles();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+// Start
+overlay.classList.add('active');
+requestAnimationFrame(gameLoop);
+</script>
+
+</body>
+</html>
