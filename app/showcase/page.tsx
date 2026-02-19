@@ -73,7 +73,7 @@ function GodzillaEffect() {
     let animationId: number;
     let breathActive = false;
     let breathProgress = 0;
-    const particles = [];
+    const particles: Particle[] = [];
     
     // Godzilla position (bottom left)
     const godzilla = {
