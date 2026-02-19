@@ -70,7 +70,7 @@ function GodzillaEffect() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    let animationId;
+    let animationId: number;
     let breathActive = false;
     let breathProgress = 0;
     const particles = [];
