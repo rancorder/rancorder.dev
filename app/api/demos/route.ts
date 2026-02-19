@@ -1,89 +1,69 @@
-// app/api/demos/route.ts
+import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { NextResponse } from 'next/server';
 
-interface DemoMetadata {
+interface DemoMeta {
+  id: string;
   title: string;
   desc: string;
   tech: string;
-  demo: string;
-  type: 'demo' | 'play';
   level: number;
   color: string;
+  type: string;
+  filename: string;
+  demoUrl: string;
 }
-
-// HTMLからメタデータを抽出
-function extractMetadata(htmlContent: string, filename: string): Partial<DemoMetadata> {
-  const metaRegex = /<!--\s*DEMO_META\s*([\s\S]*?)\s*-->/;
-  const match = htmlContent.match(metaRegex);
-  
-  if (match) {
-    const metaContent = match[1];
-    const meta: any = {};
-    
-    metaContent.split('\n').forEach(line => {
-      const [key, ...valueParts] = line.split(':');
-      if (key && valueParts.length) {
-        const value = valueParts.join(':').trim();
-        meta[key.trim()] = value;
-      }
-    });
-    
-    return {
-      title: meta.title,
-      desc: meta.desc,
-      tech: meta.tech,
-      level: meta.level ? parseInt(meta.level) : undefined,
-      color: meta.color,
-      type: meta.type === 'play' ? 'play' : 'demo',
-    };
-  }
-  
-  return {};
-}
-
-// ファイル名からタイトル生成
-function generateTitle(filename: string): string {
-  return filename
-    .replace('.html', '')
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-// デフォルト値
-const defaultColors = ['#ff6b35', '#00d9ff', '#a855f7', '#06b6d4', '#10b981', '#f59e0b'];
 
 export async function GET() {
   try {
-    const demosDir = path.join(process.cwd(), 'public/demos');
+    const demosDir = path.join(process.cwd(), 'public', 'demos');
     
+    // Check if directory exists
     if (!fs.existsSync(demosDir)) {
       return NextResponse.json({ demos: [] });
     }
     
-    const files = fs.readdirSync(demosDir).filter(f => f.endsWith('.html'));
+    const files = fs.readdirSync(demosDir);
+    const htmlFiles = files.filter(file => file.endsWith('.html'));
     
-    const demos: DemoMetadata[] = files.map((file, index) => {
+    const demos: DemoMeta[] = [];
+    
+    for (const file of htmlFiles) {
       const filePath = path.join(demosDir, file);
-      const htmlContent = fs.readFileSync(filePath, 'utf-8');
-      const extracted = extractMetadata(htmlContent, file);
+      const content = fs.readFileSync(filePath, 'utf-8');
       
-      return {
-        title: extracted.title || generateTitle(file),
-        desc: extracted.desc || 'Interactive Canvas Demo',
-        tech: extracted.tech || 'JavaScript · Canvas 2D',
-        demo: `/demos/${file}`,
-        type: extracted.type || 'demo',
-        level: extracted.level || 85 + Math.floor(Math.random() * 10),
-        color: extracted.color || defaultColors[index % defaultColors.length],
-      };
-    });
+      // Extract DEMO_META comment
+      const metaMatch = content.match(/<!--\s*DEMO_META\s*([\s\S]*?)-->/);
+      
+      if (metaMatch) {
+        const metaContent = metaMatch[1];
+        
+        // Parse meta fields
+        const title = metaContent.match(/title:\s*(.+)/)?.[1]?.trim() || 'Unknown';
+        const desc = metaContent.match(/desc:\s*(.+)/)?.[1]?.trim() || '';
+        const tech = metaContent.match(/tech:\s*(.+)/)?.[1]?.trim() || '';
+        const levelStr = metaContent.match(/level:\s*(\d+)/)?.[1];
+        const level = levelStr ? parseInt(levelStr, 10) : 5;
+        const color = metaContent.match(/color:\s*(#[0-9a-fA-F]{6})/)?.[1] || '#a855f7';
+        const type = metaContent.match(/type:\s*(\w+)/)?.[1]?.trim() || 'demo';
+        
+        demos.push({
+          id: file.replace('.html', ''),
+          title,
+          desc,
+          tech,
+          level,
+          color,
+          type,
+          filename: file,
+          demoUrl: `/demos/${file}`
+        });
+      }
+    }
     
     return NextResponse.json({ demos });
   } catch (error) {
-    console.error('Error loading demos:', error);
-    return NextResponse.json({ demos: [] }, { status: 500 });
+    console.error('Error reading demos:', error);
+    return NextResponse.json({ demos: [] });
   }
 }
