@@ -116,15 +116,15 @@ function GodzillaEffect() {
         }
       
         draw(ctx: CanvasRenderingContext2D) {
-          ctx.save();
-          ctx.globalAlpha = this.life;
-          ctx.shadowBlur = 30;
-          ctx.fillStyle = this.color;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
+           ctx.save();
+           ctx.globalAlpha = this.life;
+           ctx.shadowBlur = 30;
+           ctx.fillStyle = this.color;
+           ctx.beginPath();
+           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+           ctx.fill();
+           ctx.restore();
+         }
       }
 
     
