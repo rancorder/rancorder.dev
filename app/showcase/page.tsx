@@ -1,29 +1,17 @@
-'use client';
-
-import { useState, useEffect, useRef, useCallback, ReactNode } from "react";
-
-/* ============================================================
-   TYPES
-   ============================================================ */
-interface Particle {
-  x: number; y: number; vx: number; vy: number;
-  size: number; color: string; life: number;
-  r: number; rv: number;
-}
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ============================================================
    UTILITIES
    ============================================================ */
 const GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#_';
-function randomChar(): string { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
+function randomChar() { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
 
-const NEIGHBORS: Record<string, string> = { a:'sqwze',s:'adwxze',d:'sfexc',f:'dgrvb',g:'fhtbn',h:'gjynm',j:'hkum',k:'jlio',l:'kop',e:'wrsd',r:'etdf',t:'rygh',y:'tuhj',u:'yijk',i:'uojk',o:'iplk',p:'ol',w:'qes',q:'wa' };
-function mistakeChar(ch: string): string { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
+const NEIGHBORS = { a:'sqwze',s:'adwxze',d:'sfexc',f:'dgrvb',g:'fhtbn',h:'gjynm',j:'hkum',k:'jlio',l:'kop',e:'wrsd',r:'etdf',t:'rygh',y:'tuhj',u:'yijk',i:'uojk',o:'iplk',p:'ol',w:'qes',q:'wa' };
+function mistakeChar(ch) { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
 
-function playTone(freq: number, type: OscillatorType = 'sine', dur: number = 0.25, vol: number = 0.15): void {
+function playTone(freq, type='sine', dur=0.25, vol=0.15) {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
@@ -33,60 +21,374 @@ function playTone(freq: number, type: OscillatorType = 'sine', dur: number = 0.2
   } catch(_) {}
 }
 
-function burstCanvas(canvas: HTMLCanvasElement, x: number, y: number, count: number = 40): void {
-  const ctx = canvas.getContext('2d'); if (!ctx) return;
-  const colors = ['#7c3aed','#a78bfa','#00ff88','#f59e0b','#ec4899','#60a5fa','#fff'];
-  const particles: Particle[] = Array.from({length: count}, () => {
-    const angle = Math.random()*Math.PI*2, speed = 3+Math.random()*7;
-    return { x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed-2,
-      size: 4+Math.random()*7, color: colors[Math.floor(Math.random()*colors.length)],
-      life: 1, r: Math.random()*Math.PI*2, rv: (Math.random()-.5)*.3 };
-  });
-  let raf: number;
-  const draw = () => {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    let alive = false;
-    for (const p of particles) {
-      p.vy += 0.18; p.x += p.vx; p.y += p.vy; p.vx *= .97; p.life -= .022; p.r += p.rv;
-      if (p.life > 0) { alive = true; ctx.save(); ctx.globalAlpha = p.life;
-        ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2); ctx.restore(); }
+/* ============================================================
+   GODZILLA FIRE BREATH EFFECT
+   ============================================================ */
+function GodzillaEffect() {
+  const canvasRef = useRef(null);
+  
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    let animationId;
+    let breathActive = false;
+    let breathProgress = 0;
+    const particles = [];
+    
+    // Godzilla position (bottom left)
+    const godzilla = {
+      x: 200,
+      y: window.innerHeight - 50,
+      headX: 280,
+      headY: window.innerHeight - 280,
+    };
+    
+    // Particle class
+    class Particle {
+      constructor(x, y) {
+        const angle = -0.2 + (Math.random() - 0.5) * 0.3;
+        const speed = 15 + Math.random() * 10;
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1;
+        this.size = 8 + Math.random() * 15;
+        this.color = Math.random() > 0.5 ? '#ff6b00' : '#ffdd00';
+      }
+      
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.98;
+        this.vy += 0.2;
+        this.life -= 0.015;
+        this.size *= 0.97;
+      }
+      
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
-    if (alive) raf = requestAnimationFrame(draw); else ctx.clearRect(0,0,canvas.width,canvas.height);
-  };
-  raf = requestAnimationFrame(draw);
-  setTimeout(() => { cancelAnimationFrame(raf); ctx.clearRect(0,0,canvas.width,canvas.height); }, 2500);
+    
+    function drawGodzilla() {
+      const scale = 1.5; // より大きく
+      const x = godzilla.x;
+      const y = godzilla.y;
+      
+      ctx.save();
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = '#00ff88';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0, 255, 136, 0.8)';
+      ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+      
+      // 簡単なシルエット描画
+      ctx.beginPath();
+      
+      // 尾の先端から開始
+      ctx.moveTo(x - 150 * scale, y - 20);
+      
+      // 尾
+      ctx.lineTo(x - 120 * scale, y - 60);
+      ctx.lineTo(x - 80 * scale, y - 100);
+      ctx.lineTo(x - 40 * scale, y - 120);
+      
+      // 背中（背びれの下）
+      ctx.lineTo(x, y - 130);
+      ctx.lineTo(x + 30 * scale, y - 150);
+      ctx.lineTo(x + 50 * scale, y - 170);
+      ctx.lineTo(x + 60 * scale, y - 180);
+      
+      // 首
+      ctx.lineTo(x + 70 * scale, y - 200);
+      ctx.lineTo(x + 80 * scale, y - 220);
+      
+      // 頭
+      ctx.lineTo(x + 100 * scale, y - 230);
+      ctx.lineTo(x + 130 * scale, y - 230);
+      ctx.lineTo(x + 140 * scale, y - 220);
+      
+      // 口
+      ctx.lineTo(x + 145 * scale, y - 210);
+      ctx.lineTo(x + 135 * scale, y - 200);
+      ctx.lineTo(x + 120 * scale, y - 205);
+      ctx.lineTo(x + 100 * scale, y - 210);
+      
+      // 首から胸
+      ctx.lineTo(x + 90 * scale, y - 190);
+      ctx.lineTo(x + 85 * scale, y - 160);
+      
+      // お腹
+      ctx.lineTo(x + 75 * scale, y - 120);
+      ctx.lineTo(x + 65 * scale, y - 80);
+      
+      // 前足
+      ctx.lineTo(x + 70 * scale, y - 50);
+      ctx.lineTo(x + 60 * scale, y);
+      ctx.lineTo(x + 40 * scale, y);
+      ctx.lineTo(x + 45 * scale, y - 70);
+      
+      // お腹下部
+      ctx.lineTo(x + 30 * scale, y - 90);
+      ctx.lineTo(x + 10 * scale, y - 80);
+      
+      // 後ろ足
+      ctx.lineTo(x, y - 50);
+      ctx.lineTo(x - 10 * scale, y);
+      ctx.lineTo(x - 30 * scale, y);
+      ctx.lineTo(x - 20 * scale, y - 30);
+      ctx.lineTo(x - 40 * scale, y - 40);
+      
+      // 尾の付け根
+      ctx.lineTo(x - 60 * scale, y - 30);
+      ctx.lineTo(x - 90 * scale, y - 10);
+      ctx.lineTo(x - 120 * scale, y);
+      
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // 背びれ（もっと目立つように）
+      const spikes = [
+        { x: -20, y: -120, w: 25, h: 45 },
+        { x: 10, y: -140, w: 30, h: 55 },
+        { x: 35, y: -160, w: 35, h: 60 },
+        { x: 55, y: -175, w: 30, h: 50 },
+        { x: 70, y: -190, w: 25, h: 40 },
+      ];
+      
+      spikes.forEach(spike => {
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.7)';
+        ctx.shadowBlur = 35;
+        ctx.shadowColor = '#00ff88';
+        ctx.beginPath();
+        ctx.moveTo(x + spike.x * scale, y + spike.y);
+        ctx.lineTo(x + (spike.x - spike.w * 0.4) * scale, y + spike.y - spike.h);
+        ctx.lineTo(x + (spike.x + spike.w * 0.4) * scale, y + spike.y - spike.h * 0.8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      });
+      
+      // 目（大きく）
+      ctx.fillStyle = breathActive ? '#ff0000' : '#ffff00';
+      ctx.shadowColor = breathActive ? '#ff0000' : '#ffff00';
+      ctx.shadowBlur = 25;
+      ctx.beginPath();
+      ctx.arc(x + 110 * scale, y - 220, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // 口が光る
+      if (breathActive) {
+        ctx.fillStyle = 'rgba(255, 100, 0, 0.8)';
+        ctx.shadowBlur = 50;
+        ctx.shadowColor = '#ff6b00';
+        ctx.beginPath();
+        ctx.arc(x + 135 * scale, y - 210, 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      ctx.restore();
+    }
+    
+    function drawBreath() {
+      if (!breathActive) return;
+      
+      const scale = 1.5;
+      const progress = breathProgress;
+      const startX = godzilla.x + 135 * scale;
+      const startY = godzilla.y - 210;
+      const endX = startX + 900 * progress;
+      const endY = startY - 100;
+      
+      // Main beam
+      ctx.save();
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      gradient.addColorStop(0.3, 'rgba(255, 200, 0, 0.8)');
+      gradient.addColorStop(0.6, 'rgba(255, 100, 0, 0.6)');
+      gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+      
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = '#ff6b00';
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 30 * progress;
+      ctx.lineCap = 'round';
+      
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY + (Math.sin(Date.now() * 0.01) * 10));
+      ctx.stroke();
+      
+      // Inner core
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = 10 * progress;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      
+      ctx.restore();
+      
+      // Spawn particles
+      if (progress > 0.3 && Math.random() < 0.3) {
+        const t = Math.random();
+        const px = startX + (endX - startX) * t;
+        const py = startY + (endY - startY) * t;
+        particles.push(new Particle(px, py));
+      }
+    }
+    
+    function animate() {
+      ctx.fillStyle = 'rgba(8, 8, 16, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      drawGodzilla();
+      drawBreath();
+      
+      // Update and draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        if (particles[i].life <= 0) {
+          particles.splice(i, 1);
+        } else {
+          particles[i].draw(ctx);
+        }
+      }
+      
+      // Breath animation
+      if (breathActive) {
+        breathProgress += 0.05;
+        if (breathProgress >= 1) {
+          breathProgress = 1;
+          setTimeout(() => {
+            breathActive = false;
+            breathProgress = 0;
+          }, 500);
+        }
+      }
+      
+      animationId = requestAnimationFrame(animate);
+    }
+    
+    // Trigger breath every 8-12 seconds
+    function scheduleBreath() {
+      setTimeout(() => {
+        if (!breathActive) {
+          breathActive = true;
+          breathProgress = 0;
+          playTone(150, 'sawtooth', 0.8, 0.1);
+          setTimeout(() => playTone(200, 'sawtooth', 0.5, 0.08), 200);
+        }
+        scheduleBreath();
+      }, 8000 + Math.random() * 4000);
+    }
+    
+    animate();
+    scheduleBreath();
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      godzilla.y = window.innerHeight - 50;
+      godzilla.headY = window.innerHeight - 280;
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.6,
+      }}
+    />
+  );
 }
 
 /* ============================================================
-   HOOKS
+   TAB BUTTON COMPONENT
    ============================================================ */
-function useInView(threshold: number = 0.15): [React.RefObject<HTMLDivElement>, boolean] {
-  const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if(e.isIntersecting) { setVisible(true); obs.disconnect(); }}, {threshold});
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, visible];
+function TabButton({ active, onClick, children, icon }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '1rem 1.75rem',
+        fontSize: '1rem',
+        fontWeight: active ? 800 : 600,
+        fontFamily: "'JetBrains Mono', monospace",
+        background: active ? 'rgba(124,58,237,0.2)' : 'transparent',
+        border: '2px solid',
+        borderColor: active ? '#7c3aed' : 'rgba(124,58,237,0.3)',
+        color: active ? '#a78bfa' : 'rgba(255,255,255,0.5)',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+        boxShadow: active ? '0 0 30px rgba(124,58,237,0.4), inset 0 0 20px rgba(124,58,237,0.1)' : 'none',
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        transform: active ? 'translateY(-2px)' : 'none',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.borderColor = 'rgba(124,58,237,0.6)';
+          e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.borderColor = 'rgba(124,58,237,0.3)';
+          e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+        }
+      }}
+    >
+      {icon && <span style={{ fontSize: '1.2rem' }}>{icon}</span>}
+      {children}
+    </button>
+  );
 }
 
 /* ============================================================
    GLITCH TEXT
    ============================================================ */
-interface GlitchTextProps {
-  children: ReactNode;
-  intensity?: number;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-function GlitchText({ children, intensity=1, className='', style={} }: GlitchTextProps) {
+function GlitchText({ children, intensity=1 }) {
   const text = String(children);
   const [displayed, setDisplayed] = useState(text);
   const [glitching, setGlitching] = useState(false);
-  const rafRef = useRef<number | null>(null);
+  const rafRef = useRef(null);
 
   const trigger = useCallback(() => {
     if (glitching) return;
@@ -96,10 +398,10 @@ function GlitchText({ children, intensity=1, className='', style={} }: GlitchTex
       frame++;
       const t = frame/total;
       if (t < 0.55) {
-        setDisplayed(text.split('').map((c: string) => c!==' '&&Math.random()<0.45*intensity ? randomChar() : c).join(''));
+        setDisplayed(text.split('').map(c => c!==' '&&Math.random()<0.45*intensity ? randomChar() : c).join(''));
       } else {
         const idx = Math.floor(((t-0.55)/0.45)*text.length);
-        setDisplayed(text.split('').map((c: string, i: number) => i<=idx ? c : c!==' '&&Math.random()<0.2 ? randomChar() : c).join(''));
+        setDisplayed(text.split('').map((c,i) => i<=idx ? c : c!==' '&&Math.random()<0.2 ? randomChar() : c).join(''));
       }
       if (frame < total) rafRef.current = requestAnimationFrame(tick);
       else { setDisplayed(text); setGlitching(false); }
@@ -113,598 +415,721 @@ function GlitchText({ children, intensity=1, className='', style={} }: GlitchTex
   }, [trigger]);
 
   return (
-    <span onClick={trigger} className={className} style={{
+    <span onClick={trigger} style={{
       fontFamily:"'Courier New',monospace", fontWeight:800, cursor:'pointer',
       color: glitching ? '#00ff88' : 'inherit',
       textShadow: glitching ? '2px 0 rgba(255,0,60,.6), -2px 0 rgba(0,255,136,.6), 0 0 20px rgba(0,255,136,.4)' : 'none',
-      transition: 'color .08s, text-shadow .08s', ...style
+      transition: 'color .08s, text-shadow .08s'
     }}>{displayed}</span>
   );
 }
 
 /* ============================================================
-   TYPEWRITER
+   ANIMATED DEMO CARD WITH PARTICLES
    ============================================================ */
-interface TypewriterProps {
-  children: ReactNode;
-  speed?: number;
-  mistakeRate?: number;
-  startDelay?: number;
-}
-
-function Typewriter({ children, speed=50, mistakeRate=0.06, startDelay=200 }: TypewriterProps) {
-  const text = String(children);
-  const [displayed, setDisplayed] = useState('');
-  const [cursor, setCursor] = useState(true);
-  const [done, setDone] = useState(false);
-  const [ref, visible] = useInView(0.3);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => { const id = setInterval(() => setCursor((v: boolean) => !v), 530); return () => clearInterval(id); }, []);
+function DemoCard({ title, description, category, color, difficulty, icon, tech, demoUrl }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const canvasRef = useRef(null);
+  const cardRef = useRef(null);
+  const animationRef = useRef(null);
 
   useEffect(() => {
-    if (!visible) return;
-    let i=0, current='', mistakeBuf='', recovering=false;
-    const next = () => {
-      if (recovering) {
-        current = current.slice(0,-1); mistakeBuf = mistakeBuf.slice(0,-1);
-        setDisplayed(current);
-        if (mistakeBuf.length===0) { recovering=false; timerRef.current=setTimeout(next, speed*(.8+Math.random()*.6)); }
-        else timerRef.current = setTimeout(next, speed*1.4);
-        return;
-      }
-      if (i>=text.length) { setDone(true); return; }
-      const ch = text[i];
-      if (ch!==' ' && Math.random()<mistakeRate) {
-        const w = mistakeChar(ch); current+=w; mistakeBuf+=w; setDisplayed(current);
-        timerRef.current = setTimeout(() => { recovering=true; next(); }, speed*(1.6+Math.random()));
-      } else {
-        current+=ch; setDisplayed(current); i++;
-        const pause = '。.！!'.includes(ch) ? speed*(4+Math.random()*3) : '、,'.includes(ch) ? speed*(2+Math.random()) : speed*(.6+Math.random()*.9);
-        timerRef.current = setTimeout(next, pause);
-      }
-    };
-    timerRef.current = setTimeout(next, startDelay);
-    return () => { if(timerRef.current) clearTimeout(timerRef.current); };
-  }, [visible]);
-
-  return (
-    <span ref={ref} style={{display:'inline'}}>
-      <span style={{fontFamily:"'Courier New',monospace"}}>{displayed}</span>
-      {!done && <span style={{display:'inline-block',width:'2px',height:'1em',background:'#00ff88',marginLeft:'2px',verticalAlign:'text-bottom',opacity:cursor?1:0,boxShadow:'0 0 8px rgba(0,255,136,.8)',transition:'opacity .08s'}}/>}
-    </span>
-  );
-}
-
-/* ============================================================
-   COUNTER UP (Verlet spring)
-   ============================================================ */
-interface CounterUpProps {
-  value: number;
-  suffix?: string;
-  prefix?: string;
-  decimals?: number;
-  label?: string;
-  stiffness?: number;
-  damping?: number;
-}
-
-function CounterUp({ value, suffix='', prefix='', decimals=0, label, stiffness=0.07, damping=0.72 }: CounterUpProps) {
-  const [display, setDisplay] = useState(0);
-  const [ref, visible] = useInView(0.3);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    let pos=0, vel=0;
-    const tick = () => {
-      const acc = stiffness*(value-pos); vel=vel*damping+acc; pos+=vel;
-      setDisplay(pos);
-      if (Math.abs(value-pos)<0.01 && Math.abs(vel)<0.01) { setDisplay(value); return; }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { if(rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [visible, value, stiffness, damping]);
-
-  const fmt = decimals>0 ? display.toFixed(decimals) : Math.round(display).toLocaleString();
-  const pct = Math.max(0, Math.min(1, display/value));
-
-  return (
-    <div ref={ref} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'.3rem',
-      padding:'1.4rem 1.8rem',borderRadius:'14px',
-      border:'1px solid rgba(124,58,237,.3)',
-      background:'rgba(124,58,237,.06)',
-      position:'relative',overflow:'hidden',minWidth:'110px'}}>
-      <div style={{position:'absolute',bottom:0,left:0,right:0,height:'3px',background:'rgba(255,255,255,.05)'}}>
-        <div style={{height:'100%',width:`${pct*100}%`,background:'linear-gradient(90deg,#7c3aed,#00ff88)',boxShadow:'0 0 10px rgba(0,255,136,.5)',transition:'none'}}/>
-      </div>
-      <span style={{fontSize:'2.4rem',fontWeight:800,fontVariantNumeric:'tabular-nums',letterSpacing:'-.04em',lineHeight:1,color:'#fff',fontFamily:"'Courier New',monospace"}}>
-        <span style={{fontSize:'1.2rem',opacity:.5}}>{prefix}</span>{fmt}<span style={{fontSize:'1.2rem',opacity:.5}}>{suffix}</span>
-      </span>
-      {label && <span style={{fontSize:'.68rem',fontWeight:700,letterSpacing:'.1em',color:'rgba(255,255,255,.35)',textTransform:'uppercase'}}>{label}</span>}
-    </div>
-  );
-}
-
-/* ============================================================
-   INTERACTIVE CHECKLIST
-   ============================================================ */
-interface InteractiveChecklistProps {
-  items: string[];
-}
-
-function InteractiveChecklist({ items }: InteractiveChecklistProps) {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
-  const [ripple, setRipple] = useState<number | null>(null);
-  const [done, setDone] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const toggle = (i: number) => {
-    setChecked(prev => {
-      const next = new Set(prev);
-      const adding = !next.has(i);
-      adding ? next.add(i) : next.delete(i);
-      setRipple(i); setTimeout(()=>setRipple(null),500);
-      if (adding) {
-        playTone(440, 'sine', .25, .12);
-        setTimeout(()=>playTone(660,'sine',.2,.1),130);
-        if (next.size===items.length) {
-          setTimeout(()=>{
-            const c=canvasRef.current;
-            if(c) burstCanvas(c, c.width/2, c.height/2, 100);
-            ([523.25,659.25,783.99,1046.5] as number[]).forEach((f: number, idx: number)=>{
-              setTimeout(()=>playTone(f,'sine',.35,.15),idx*90);
-            });
-            setDone(true);
-          },200);
+    if (!canvasRef.current || !cardRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = cardRef.current.getBoundingClientRect();
+    
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    let particles = [];
+    
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        p.life -= 0.02;
+        
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = p.life;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = color;
+          ctx.fillStyle = color;
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+          ctx.restore();
         }
-      } else { if(done) setDone(false); }
-      return next;
-    });
-  };
+      }
+      
+      animationRef.current = requestAnimationFrame(animate);
+    }
+    
+    animate();
+    
+    // Spawn particles on hover
+    const spawnParticles = () => {
+      for (let i = 0; i < 5; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          size: 3 + Math.random() * 5
+        });
+      }
+    };
+    
+    let interval;
+    if (isHovered) {
+      interval = setInterval(spawnParticles, 100);
+    }
+    
+    return () => {
+      clearInterval(interval);
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, [isHovered, color]);
 
-  const pct = items.length ? Math.round(checked.size/items.length*100) : 0;
-
-  return (
-    <div style={{position:'relative',borderRadius:'14px',border:`1px solid ${done?'rgba(0,255,136,.3)':'rgba(255,255,255,.08)'}`,background:done?'rgba(0,255,136,.05)':'rgba(255,255,255,.02)',transition:'all .5s ease',overflow:'hidden'}}>
-      <canvas ref={canvasRef} width={500} height={350} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:10}}/>
-      <div style={{padding:'1rem 1.25rem .75rem',borderBottom:'1px solid rgba(255,255,255,.06)',display:'flex',alignItems:'center',gap:'.75rem'}}>
-        <div style={{flex:1,height:'5px',borderRadius:'3px',background:'rgba(255,255,255,.07)',overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${pct}%`,borderRadius:'3px',background:done?'linear-gradient(90deg,#00ff88,#34d399)':'linear-gradient(90deg,#7c3aed,#a78bfa)',boxShadow:done?'0 0 10px rgba(0,255,136,.6)':'0 0 8px rgba(124,58,237,.5)',transition:'width .5s cubic-bezier(.16,1,.3,1),background .5s'}}/>
-        </div>
-        <span style={{fontSize:'.72rem',fontWeight:700,color:done?'#00ff88':'rgba(255,255,255,.35)',fontVariantNumeric:'tabular-nums'}}>{pct}%</span>
-      </div>
-      {items.map((item: string, i: number) => {
-        const isChecked = checked.has(i);
-        return (
-          <div key={i} ref={(el: HTMLDivElement | null) => { itemRefs.current[i]=el; }} onClick={()=>toggle(i)} style={{
-            display:'flex',alignItems:'center',gap:'.85rem',padding:'.85rem 1.25rem',
-            cursor:'pointer',background:isChecked?'rgba(0,255,136,.05)':'transparent',
-            borderBottom:i<items.length-1?'1px solid rgba(255,255,255,.04)':'none',
-            transform:ripple===i?'translateX(4px)':'translateX(0)',transition:'all .3s ease',position:'relative',overflow:'hidden'}}>
-            <span style={{flexShrink:0,width:'22px',height:'22px',borderRadius:'6px',
-              border:isChecked?'2px solid #00ff88':'2px solid rgba(255,255,255,.18)',
-              background:isChecked?'linear-gradient(135deg,#00cc66,#00ff88)':'transparent',
-              boxShadow:isChecked?'0 0 12px rgba(0,255,136,.5)':'none',
-              display:'flex',alignItems:'center',justifyContent:'center',
-              transition:'all .3s cubic-bezier(.16,1,.3,1)',transform:isChecked?'scale(1.1)':'scale(1)'}}>
-              {isChecked && <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><polyline points="2.5,7 5.5,10 10.5,3" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </span>
-            <span style={{fontSize:'.9rem',fontWeight:500,color:isChecked?'rgba(0,255,136,.5)':'rgba(255,255,255,.8)',textDecoration:isChecked?'line-through':'none',textDecorationColor:'rgba(0,255,136,.3)',transition:'all .35s ease'}}>{item}</span>
-            <span style={{marginLeft:'auto',fontSize:'.65rem',fontWeight:700,color:'rgba(255,255,255,.18)',fontVariantNumeric:'tabular-nums'}}>0{i+1}</span>
-          </div>
-        );
-      })}
-      {done && <div style={{padding:'.85rem 1.25rem',borderTop:'1px solid rgba(0,255,136,.2)',background:'rgba(0,255,136,.08)',color:'#00ff88',fontWeight:700,fontSize:'.82rem',letterSpacing:'.1em',textAlign:'center',textTransform:'uppercase',animation:'slideUp .4s cubic-bezier(.16,1,.3,1) forwards'}}>✦ STAGE CLEAR ✦</div>}
-    </div>
-  );
-}
-
-/* ============================================================
-   QUIZ BLOCK
-   ============================================================ */
-type QuizPhase = 'idle' | 'correct' | 'wrong';
-
-interface QuizBlockProps {
-  question: string;
-  options: string[];
-  answer: string;
-  hint?: string;
-}
-
-function QuizBlock({ question, options, answer, hint }: QuizBlockProps) {
-  const [phase, setPhase] = useState<QuizPhase>('idle');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const choose = (opt: string) => {
-    if (phase!=='idle') return;
-    setSelected(opt);
-    if (opt===answer) {
-      setPhase('correct');
-      ([523.25,659.25,783.99,1046.5] as number[]).forEach((f: number, i: number)=>setTimeout(()=>playTone(f,'sine',.35,.15),i*90));
-      setTimeout(()=>{ const c=canvasRef.current; if(c) burstCanvas(c,c.width/2,c.height/2,70); },100);
-    } else {
-      setPhase('wrong');
-      ([300,240] as number[]).forEach((f: number, i: number)=>setTimeout(()=>playTone(f,'sawtooth',.25,.1),i*150));
+  const handleClick = () => {
+    if (demoUrl) {
+      window.open(demoUrl, '_blank');
+      playTone(600, 'sine', 0.2, 0.1);
     }
   };
 
   return (
-    <div style={{position:'relative',borderRadius:'14px',border:`1px solid ${phase==='correct'?'rgba(0,255,136,.3)':phase==='wrong'?'rgba(239,68,68,.25)':'rgba(255,255,255,.08)'}`,background:phase==='correct'?'rgba(0,255,136,.05)':phase==='wrong'?'rgba(239,68,68,.05)':'rgba(255,255,255,.02)',transition:'all .4s ease',overflow:'hidden'}}>
-      <canvas ref={canvasRef} width={500} height={300} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:10}}/>
-      <div style={{padding:'1rem 1.25rem .75rem',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-        <span style={{fontSize:'.65rem',fontWeight:700,letterSpacing:'.12em',color:'rgba(124,58,237,.8)',textTransform:'uppercase',marginRight:'.75rem'}}>QUIZ</span>
-        <span style={{fontSize:'.95rem',fontWeight:600,color:'rgba(255,255,255,.9)'}}>{question}</span>
-      </div>
-      <div style={{padding:'.75rem 1rem',display:'flex',flexDirection:'column',gap:'.5rem'}}>
-        {options.map((opt: string, i: number) => {
-          const isSel = selected===opt, isAns = opt===answer, rev = phase!=='idle';
-          let bg='rgba(255,255,255,.04)',border='rgba(255,255,255,.1)',color='rgba(255,255,255,.8)';
-          if(rev&&isAns){bg='rgba(0,255,136,.12)';border='rgba(0,255,136,.4)';color='#00ff88';}
-          else if(rev&&isSel&&!isAns){bg='rgba(239,68,68,.12)';border='rgba(239,68,68,.35)';color='#f87171';}
-          return (
-            <button key={i} onClick={()=>choose(opt)} disabled={rev} style={{display:'flex',alignItems:'center',gap:'.7rem',padding:'.75rem 1rem',borderRadius:'9px',border:`1px solid ${border}`,background:bg,color,fontSize:'.88rem',fontWeight:500,cursor:rev?'default':'pointer',textAlign:'left',transition:'all .25s ease',transform:rev&&isAns?'scale(1.02)':'scale(1)'}}>
-              <span style={{flexShrink:0,width:'22px',height:'22px',borderRadius:'5px',border:`1px solid ${border}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem',fontWeight:700,color:'rgba(255,255,255,.35)'}}>{String.fromCharCode(65+i)}</span>
-              {opt}
-              {rev&&isAns&&<span style={{marginLeft:'auto'}}>✓</span>}
-              {rev&&isSel&&!isAns&&<span style={{marginLeft:'auto'}}>✗</span>}
-            </button>
-          );
-        })}
-      </div>
-      <div style={{padding:'.6rem 1.25rem 1rem',display:'flex',alignItems:'center',gap:'.75rem',minHeight:'40px'}}>
-        {phase==='idle'&&hint&&<button onClick={()=>setShowHint(!showHint)} style={{fontSize:'.72rem',color:'rgba(124,58,237,.6)',background:'none',border:'none',cursor:'pointer',padding:0}}>{showHint?'▲ hide hint':'▼ show hint'}</button>}
-        {phase==='correct'&&<span style={{fontSize:'.82rem',color:'#00ff88',fontWeight:700}}>✦ CORRECT</span>}
-        {phase==='wrong'&&<><span style={{fontSize:'.82rem',color:'#f87171',fontWeight:700}}>✗ WRONG</span><button onClick={()=>{setPhase('idle');setSelected(null);setShowHint(false);}} style={{marginLeft:'auto',fontSize:'.72rem',fontWeight:600,color:'rgba(255,255,255,.5)',background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:'6px',padding:'.3rem .8rem',cursor:'pointer'}}>retry</button></>}
-      </div>
-      {showHint&&phase==='idle'&&<div style={{margin:'0 1rem 1rem',padding:'.75rem',borderRadius:'8px',background:'rgba(124,58,237,.1)',border:'1px solid rgba(124,58,237,.2)',fontSize:'.82rem',color:'rgba(167,139,250,.8)'}}>💡 {hint}</div>}
-    </div>
-  );
-}
+    <div
+      ref={cardRef}
+      onClick={handleClick}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        playTone(440 + Math.random() * 200, 'sine', 0.1, 0.08);
+      }}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        position: 'relative',
+        padding: '2rem',
+        background: isHovered ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)',
+        border: `2px solid ${color}`,
+        borderRadius: '16px',
+        boxShadow: isHovered 
+          ? `0 20px 60px ${color}88, 0 0 40px ${color}66, inset 0 0 30px ${color}22`
+          : `0 0 30px ${color}33`,
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transform: isHovered 
+          ? 'translateY(-10px) scale(1.02) rotateX(2deg)' 
+          : 'translateY(0) scale(1) rotateX(0deg)',
+        transformStyle: 'preserve-3d',
+        perspective: '1000px',
+        cursor: demoUrl ? 'pointer' : 'default',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Particle Canvas */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      />
 
-/* ============================================================
-   TIMELINE
-   ============================================================ */
-interface TimelineStepProps {
-  date: string;
-  title: string;
-  body: string;
-  color?: string;
-  isLast?: boolean;
-  delay?: number;
-}
+      {/* Scan Line Effect */}
+      {isHovered && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+            boxShadow: `0 0 20px ${color}`,
+            animation: 'scanDown 2s linear infinite',
+            zIndex: 2,
+          }}
+        />
+      )}
 
-function TimelineStep({ date, title, body, color='#a78bfa', isLast=false, delay=0 }: TimelineStepProps) {
-  const [dotScale, setDotScale] = useState(0);
-  const [lineP, setLineP] = useState(0);
-  const [contentV, setContentV] = useState(false);
-  const [ref, visible] = useInView(0.2);
-  const rafRef = useRef<number | null>(null);
-  const LINE_H = 90;
+      {/* Glow Pulse */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-50%',
+          right: '-50%',
+          bottom: '-50%',
+          background: `radial-gradient(circle, ${color}22 0%, transparent 70%)`,
+          opacity: isHovered ? 1 : 0,
+          animation: isHovered ? 'pulse 2s ease-in-out infinite' : 'none',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
-  useEffect(() => {
-    if (!visible) return;
-    setTimeout(() => {
-      let df=0;
-      const animDot = () => {
-        df++;
-        const t=df/20;
-        setDotScale(Math.min(t*1.8,1)+(t>.5?Math.sin((t-.5)*Math.PI*3)*.12*(1-t):0));
-        if(df<20) rafRef.current=requestAnimationFrame(animDot);
-        else { setDotScale(1); if(!isLast) setTimeout(animLine,60); else setContentV(true); }
-      };
-      let lf=0;
-      const animLine = () => {
-        lf++;
-        const t=lf/35;
-        const e = t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-        setLineP(e);
-        if(lf<35) rafRef.current=requestAnimationFrame(animLine);
-        else { setLineP(1); setContentV(true); }
-      };
-      requestAnimationFrame(animDot);
-    }, delay);
-    return () => { if(rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [visible]);
-
-  return (
-    <div ref={ref} style={{display:'flex',gap:0}}>
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:'36px',paddingTop:'2px'}}>
-        <div style={{width:'13px',height:'13px',borderRadius:'50%',background:color,boxShadow:`0 0 ${14*dotScale}px ${color}`,transform:`scale(${dotScale})`,transition:'box-shadow .2s',flexShrink:0,position:'relative',zIndex:2}}>
-          <div style={{position:'absolute',inset:'3px',borderRadius:'50%',background:'rgba(255,255,255,.6)'}}/>
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 3 }}>
+        {/* Category Badge */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.75rem',
+          color: color,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          marginBottom: '0.75rem',
+          fontFamily: "'JetBrains Mono', monospace",
+          padding: '0.4rem 0.8rem',
+          background: `${color}22`,
+          borderRadius: '6px',
+          border: `1px solid ${color}66`,
+          boxShadow: isHovered ? `0 0 15px ${color}66` : 'none',
+          transition: 'all 0.3s',
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+          {category}
         </div>
-        {!isLast && <svg width="2" height={LINE_H} style={{flexShrink:0}}>
-          <line x1="1" y1="0" x2="1" y2={LINE_H} stroke="rgba(255,255,255,.06)" strokeWidth="2"/>
-          <line x1="1" y1="0" x2="1" y2={LINE_H} stroke={color} strokeWidth="2" strokeDasharray={LINE_H} strokeDashoffset={LINE_H*(1-lineP)} style={{filter:`drop-shadow(0 0 4px ${color})`}}/>
-        </svg>}
+
+        {/* Title with Glitch */}
+        <h3 style={{
+          fontSize: '1.5rem',
+          marginBottom: '0.75rem',
+          color: '#fff',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          textShadow: isHovered ? `0 0 20px ${color}, 2px 0 ${color}44, -2px 0 ${color}44` : 'none',
+          transition: 'all 0.2s',
+          animation: isHovered ? 'glitchText 0.3s ease-in-out infinite' : 'none',
+        }}>
+          {title}
+        </h3>
+
+        {/* Description */}
+        <p style={{
+          color: 'rgba(255,255,255,0.6)',
+          lineHeight: 1.6,
+          marginBottom: '1rem',
+          transition: 'color 0.3s',
+        }}>
+          {description}
+        </p>
+
+        {/* Tech Stack */}
+        {tech && (
+          <div style={{
+            fontSize: '0.7rem',
+            color: 'rgba(255,255,255,0.4)',
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: '1rem',
+            padding: '0.5rem 0.75rem',
+            background: 'rgba(0,0,0,0.3)',
+            borderRadius: '6px',
+            borderLeft: `3px solid ${color}`,
+          }}>
+            {tech}
+          </div>
+        )}
+
+        {/* Difficulty Bar */}
+        {difficulty && (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.5rem',
+              fontSize: '0.75rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              color: 'rgba(255,255,255,0.5)',
+            }}>
+              <span>DIFFICULTY</span>
+              <span style={{ color: color, fontWeight: 'bold' }}>
+                LV.{difficulty}
+              </span>
+            </div>
+            <div style={{
+              height: '6px',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '3px',
+              overflow: 'hidden',
+              position: 'relative',
+            }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${(difficulty / 10) * 100}%`,
+                  background: `linear-gradient(90deg, ${color}, ${color}88)`,
+                  boxShadow: `0 0 10px ${color}`,
+                  borderRadius: '3px',
+                  transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                  animation: isHovered ? 'slideIn 0.6s ease-out' : 'none',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Button */}
+        {demoUrl && (
+          <div
+            style={{
+              marginTop: '1.5rem',
+              padding: '0.75rem 1.5rem',
+              background: `${color}22`,
+              border: `2px solid ${color}`,
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 'bold',
+              color: color,
+              letterSpacing: '0.1em',
+              transition: 'all 0.3s',
+              boxShadow: isHovered ? `0 0 25px ${color}88, inset 0 0 15px ${color}33` : 'none',
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+            }}
+          >
+            ▶ {category === 'game' ? 'PLAY NOW' : 'VIEW DEMO'}
+          </div>
+        )}
+        {!demoUrl && (
+          <div
+            style={{
+              marginTop: '1.5rem',
+              padding: '0.75rem 1.5rem',
+              background: 'rgba(255,255,255,0.05)',
+              border: '2px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 'bold',
+              color: 'rgba(255,255,255,0.3)',
+              letterSpacing: '0.1em',
+            }}
+          >
+            ✨ HTML TAG COMPONENT
+          </div>
+        )}
       </div>
-      <div style={{flex:1,paddingLeft:'.85rem',paddingBottom:isLast?'.5rem':'2rem',opacity:contentV?1:0,transform:contentV?'translateX(0)':'translateX(-8px)',transition:'opacity .4s ease, transform .45s cubic-bezier(.16,1,.3,1)'}}>
-        <div style={{fontSize:'.65rem',fontWeight:700,letterSpacing:'.1em',color,textTransform:'uppercase',marginBottom:'.15rem',opacity:.8}}>{date}</div>
-        <div style={{fontSize:'.95rem',fontWeight:700,color:'rgba(255,255,255,.9)',marginBottom:'.3rem'}}>{title}</div>
-        <div style={{fontSize:'.85rem',color:'rgba(255,255,255,.5)',lineHeight:1.6}}>{body}</div>
-      </div>
+
+      <style>{`
+        @keyframes scanDown {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        @keyframes glitchText {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-2px); }
+          40% { transform: translateX(2px); }
+          60% { transform: translateX(-1px); }
+          80% { transform: translateX(1px); }
+        }
+        @keyframes slideIn {
+          from { width: 0%; }
+        }
+      `}</style>
     </div>
   );
 }
 
 /* ============================================================
-   SCAN REVEAL
-   ============================================================ */
-interface ScanRevealProps {
-  children: ReactNode;
-  delay?: number;
-}
-
-function ScanReveal({ children, delay=0 }: ScanRevealProps) {
-  const [phase, setPhase] = useState<'hidden'|'scanning'|'visible'>('hidden');
-  const [scanPct, setScanPct] = useState(0);
-  const [ref, visible] = useInView(0.1);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    setTimeout(() => {
-      setPhase('scanning');
-      let start: number | null = null;
-      const dur = 500;
-      const tick = (ts: number) => {
-        if(!start) start=ts;
-        const p = Math.min((ts-start)/dur,1);
-        setScanPct(p*100);
-        if(p<1) rafRef.current=requestAnimationFrame(tick);
-        else setPhase('visible');
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    }, delay);
-    return () => { if(rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [visible]);
-
-  return (
-    <div ref={ref} style={{position:'relative',opacity:phase==='hidden'?0:1,transition:'opacity 60ms'}}>
-      {phase==='scanning'&&<div style={{position:'absolute',top:`${scanPct}%`,left:'-4px',right:'-4px',height:'2px',background:'linear-gradient(90deg,transparent,rgba(124,58,237,.7),rgba(0,255,136,1),rgba(124,58,237,.7),transparent)',boxShadow:'0 0 16px 4px rgba(0,255,136,.4)',zIndex:10,pointerEvents:'none'}}/>}
-      <div style={{opacity:phase==='visible'?1:phase==='scanning'?.7:0,transform:phase==='visible'?'translateY(0) rotateX(0)':'translateY(20px) rotateX(8deg)',filter:phase==='visible'?'blur(0)':'blur(3px)',transition:'all 600ms cubic-bezier(.16,1,.3,1)',perspective:'800px'}}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   MAIN SHOWCASE
+   MAIN SHOWCASE WITH TABS
    ============================================================ */
 export default function Showcase() {
+  const [activeTab, setActiveTab] = useState('all');
+
+  // 実際のデモデータ
+  const demos = [
+    // VISUAL EFFECTS (HTMLタグとして使用可能)
+    {
+      id: 'glitch-text',
+      title: 'GlitchText',
+      description: 'クリックで即座に崩壊するテキストエフェクト。RGB色収差と文字置換でサイバー感を演出。',
+      category: 'effect',
+      color: '#00ff88',
+      difficulty: 7,
+      icon: '✨',
+      tech: 'React Hooks · requestAnimationFrame · RGB Split'
+    },
+    {
+      id: 'scan-reveal',
+      title: 'ScanReveal',
+      description: 'スキャンライン付きフェードイン。要素が画面に入るとスキャン開始。',
+      category: 'effect',
+      color: '#7c3aed',
+      difficulty: 6,
+      icon: '📡',
+      tech: 'IntersectionObserver · CSS Animation · 3D Transform'
+    },
+    {
+      id: 'typewriter',
+      title: 'Typewriter',
+      description: 'タイプミスして打ち直すリアルなタイプライター。隣接キーでミス再現。',
+      category: 'effect',
+      color: '#00d9ff',
+      difficulty: 8,
+      icon: '⌨️',
+      tech: 'Keyboard Layout · Backspace Logic · Timing Control'
+    },
+    {
+      id: 'counter-up',
+      title: 'CounterUp',
+      description: '目標値を超えてから戻る物理カウンター。Verlet積分による滑らかな動き。',
+      category: 'effect',
+      color: '#a855f7',
+      difficulty: 7,
+      icon: '🔢',
+      tech: 'Verlet Integration · Spring Physics · Damping'
+    },
+    {
+      id: 'timeline',
+      title: 'Timeline',
+      description: 'SVGラインが自走して繋がるタイムライン。stroke-dashoffsetアニメーション。',
+      category: 'effect',
+      color: '#ec4899',
+      difficulty: 9,
+      icon: '📊',
+      tech: 'SVG Path · stroke-dashoffset · Staggered Animation'
+    },
+    
+    // GAMES (スタンドアロンHTMLデモ)
+    {
+      id: 'neon-tetris',
+      title: 'NEON TETRIS',
+      description: 'モバイル完全対応のテトリス。タッチコントロール、レベルシステム、ライン消去エフェクト。',
+      category: 'game',
+      color: '#a855f7',
+      difficulty: 8,
+      icon: '🎮',
+      tech: 'Canvas 2D · Collision Detection · Touch Events',
+      demoUrl: '/demos/neon-tetris.html'
+    },
+    {
+      id: 'neon-sudoku',
+      title: 'NEON SUDOKU',
+      description: '10段階難易度のAI数独。バックトラック法で盤面生成、ヒント機能付き。',
+      category: 'game',
+      color: '#a855f7',
+      difficulty: 10,
+      icon: '🧩',
+      tech: 'Backtracking Algorithm · Validation · Hint System',
+      demoUrl: '/demos/neon-sudoku.html'
+    },
+    {
+      id: 'neon-invaders',
+      title: 'NEON INVADERS',
+      description: 'スペースインベーダー風シューティング。ウェーブシステム、シールド、パワーアップ。',
+      category: 'game',
+      color: '#00d9ff',
+      difficulty: 9,
+      icon: '👾',
+      tech: 'Sprite Animation · Collision · Wave System',
+      demoUrl: '/demos/space-invaders-ultra.html'
+    },
+    {
+      id: 'neon-breakout',
+      title: 'NEON BREAKOUT',
+      description: 'ブロック崩し。パワーアップ3種、マルチボール、物理演算ボール。',
+      category: 'game',
+      color: '#ec4899',
+      difficulty: 7,
+      icon: '🎯',
+      tech: 'Physics Simulation · Powerups · Particle Effects',
+      demoUrl: '/demos/neon-breakout.html'
+    },
+    {
+      id: 'neon-baseball',
+      title: 'NEON BASEBALL',
+      description: 'タイミング勝負の野球盤。CPU対戦、3段階難易度、9イニング制。',
+      category: 'game',
+      color: '#10b981',
+      difficulty: 8,
+      icon: '⚾',
+      tech: 'Timing System · AI Opponent · Trajectory Calculation',
+      demoUrl: '/demos/neon-baseball.html'
+    },
+    {
+      id: 'neon-reversi',
+      title: 'NEON REVERSI',
+      description: '3段階AI搭載オセロ。位置評価関数、先読みアルゴリズム。',
+      category: 'game',
+      color: '#a855f7',
+      difficulty: 9,
+      icon: '⚫',
+      tech: 'Minimax Algorithm · Position Evaluation · AI',
+      demoUrl: '/demos/neon-reversi.html'
+    },
+  ];
+
+  // フィルタリング
+  const filteredDemos = demos.filter(demo => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'effects') return demo.category === 'effect';
+    if (activeTab === 'games') return demo.category === 'game';
+    return true;
+  });
+
   return (
     <div style={{
-      minHeight:'100vh',background:'#080810',color:'#fff',
+      minHeight:'100vh',
+      background:'#080810',
+      color:'#fff',
       fontFamily:"'Georgia','Times New Roman',serif",
       overflowX:'hidden',
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #080810; }
         ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 2px; }
-        @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
-        @keyframes gridMove { from{transform:translateY(0)} to{transform:translateY(40px)} }
-        .mono { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
-        button { font-family: inherit; }
       `}</style>
 
-      {/* ── GRID BACKGROUND ── */}
+      {/* GRID BACKGROUND */}
       <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:0,overflow:'hidden'}}>
-        <div style={{position:'absolute',inset:'-40px',backgroundImage:'linear-gradient(rgba(124,58,237,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.07) 1px,transparent 1px)',backgroundSize:'40px 40px',animation:'gridMove 8s linear infinite'}}/>
-        <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse 80% 60% at 20% 20%,rgba(124,58,237,.12),transparent),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,255,136,.06),transparent)'}}/>
+        <div style={{
+          position:'absolute',
+          inset:'-40px',
+          backgroundImage:'linear-gradient(rgba(124,58,237,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.07) 1px,transparent 1px)',
+          backgroundSize:'40px 40px',
+        }}/>
+        <div style={{
+          position:'absolute',
+          inset:0,
+          background:'radial-gradient(ellipse 80% 60% at 20% 20%,rgba(124,58,237,.12),transparent),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,255,136,.06),transparent)'
+        }}/>
       </div>
 
-      {/* ── HERO ── */}
-      <section style={{position:'relative',zIndex:1,minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 clamp(1.5rem,5vw,4rem)',maxWidth:'1100px',margin:'0 auto'}}>
-        <ScanReveal delay={200}>
-          <div className="mono" style={{fontSize:'.72rem',letterSpacing:'.2em',color:'rgba(0,255,136,.7)',textTransform:'uppercase',marginBottom:'1.5rem',display:'flex',alignItems:'center',gap:'.75rem'}}>
-            <span style={{display:'inline-block',width:'24px',height:'1px',background:'rgba(0,255,136,.5)'}}/>
-            HTMLをReact ASTに変換するブログエンジン
-            <span style={{display:'inline-block',width:'24px',height:'1px',background:'rgba(0,255,136,.5)'}}/>
+      {/* GODZILLA FIRE BREATH */}
+      <GodzillaEffect />
+
+      {/* HERO */}
+      <section style={{
+        position:'relative',
+        zIndex:1,
+        minHeight:'100vh',
+        display:'flex',
+        flexDirection:'column',
+        justifyContent:'center',
+        padding:'0 clamp(1.5rem,5vw,4rem)',
+        maxWidth:'1100px',
+        margin:'0 auto'
+      }}>
+        <h1 style={{
+          fontSize:'clamp(2.8rem,8vw,6rem)',
+          fontWeight:800,
+          lineHeight:.95,
+          letterSpacing:'-.03em',
+          marginBottom:'2rem'
+        }}>
+          <GlitchText intensity={1.2}>HTML</GlitchText>
+          <span style={{
+            display:'block',
+            color:'rgba(255,255,255,.25)',
+            fontStyle:'italic',
+            fontWeight:400,
+            fontSize:'clamp(1.4rem,4vw,2.8rem)',
+            letterSpacing:'-.01em',
+            marginTop:'.3rem'
+          }}>
+            is not the destination.
+          </span>
+          <span style={{
+            display:'block',
+            background:'linear-gradient(135deg,#7c3aed,#a78bfa,#00ff88)',
+            WebkitBackgroundClip:'text',
+            WebkitTextFillColor:'transparent',
+            backgroundClip:'text'
+          }}>
+            It's the input.
+          </span>
+        </h1>
+
+        <p style={{
+          fontSize:'clamp(1rem,2.5vw,1.25rem)',
+          color:'rgba(255,255,255,.5)',
+          lineHeight:1.7,
+          maxWidth:'580px',
+          marginBottom:'3rem'
+        }}>
+          コンテンツと体験を完全に分離したブログシステム。HTMLを書くだけで、全記事にゲーミングUIが宿る。
+        </p>
+      </section>
+
+      {/* SHOWCASE SECTION WITH TABS */}
+      <section style={{
+        position:'relative',
+        zIndex:1,
+        padding:'6rem clamp(1.5rem,5vw,4rem)',
+        maxWidth:'1100px',
+        margin:'0 auto'
+      }}>
+        {/* Section Header */}
+        <div style={{ marginBottom: '3rem' }}>
+          <div style={{
+            fontSize:'.65rem',
+            letterSpacing:'.2em',
+            color:'rgba(124,58,237,.7)',
+            textTransform:'uppercase',
+            marginBottom:'1rem',
+            fontFamily:"'JetBrains Mono',monospace"
+          }}>
+            // Interactive Showcase
           </div>
-        </ScanReveal>
-        <ScanReveal delay={400}>
-          <h1 style={{fontSize:'clamp(2.8rem,8vw,6rem)',fontWeight:800,lineHeight:.95,letterSpacing:'-.03em',marginBottom:'2rem'}}>
-            <GlitchText intensity={1.2}>HTML</GlitchText>
-            <span style={{display:'block',color:'rgba(255,255,255,.25)',fontStyle:'italic',fontWeight:400,fontSize:'clamp(1.4rem,4vw,2.8rem)',letterSpacing:'-.01em',marginTop:'.3rem'}}>is not the destination.</span>
-            <span style={{display:'block',background:'linear-gradient(135deg,#7c3aed,#a78bfa,#00ff88)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>It&apos;s the input.</span>
-          </h1>
-        </ScanReveal>
-        <ScanReveal delay={700}>
-          <p style={{fontSize:'clamp(1rem,2.5vw,1.25rem)',color:'rgba(255,255,255,.5)',lineHeight:1.7,maxWidth:'580px',marginBottom:'3rem'}}>
-            <Typewriter speed={35} mistakeRate={0.05} startDelay={1200}>
-              コンテンツと体験を完全に分離したブログシステム。HTMLを書くだけで、全記事にゲームUIが宿る。
-            </Typewriter>
+          <h2 style={{
+            fontSize:'clamp(1.8rem,4vw,3rem)',
+            fontWeight:700,
+            letterSpacing:'-.03em',
+            marginBottom:'2rem',
+            lineHeight:1.1
+          }}>
+            <span style={{color:'#a78bfa'}}>ビジュアルエフェクト</span> と <span style={{color:'#00ff88'}}>ゲーム</span>
+          </h2>
+          <p style={{
+            color:'rgba(255,255,255,.4)',
+            fontSize:'.95rem',
+            marginBottom:'3rem',
+            maxWidth: '700px',
+            lineHeight: 1.7
+          }}>
+            HTMLタグとして記事に埋め込めるエフェクトコンポーネントと、
+            Canvas 2Dで作られたスタンドアロンゲームデモ。
+            すべてクリック・タップで操作可能。
           </p>
-        </ScanReveal>
-        <ScanReveal delay={1000}>
-          <div style={{display:'flex',flexWrap:'wrap',gap:'1rem',marginBottom:'4rem'}}>
-            <CounterUp value={13} suffix=" tags" label="Custom" stiffness={0.05} damping={0.68}/>
-            <CounterUp value={0} suffix=" JS" label="HTML内" stiffness={0.09} damping={0.75}/>
-            <CounterUp value={100} suffix="%" label="SSR対応" stiffness={0.06} damping={0.7}/>
-            <CounterUp value={120} suffix="粒" label="confetti" stiffness={0.04} damping={0.65}/>
-          </div>
-        </ScanReveal>
-        <div style={{display:'flex',alignItems:'center',gap:'.75rem',color:'rgba(255,255,255,.25)',fontSize:'.78rem',letterSpacing:'.1em',fontFamily:"'JetBrains Mono',monospace"}}>
-          <span style={{animation:'pulse 2s infinite'}}>↓</span> SCROLL TO EXPLORE
         </div>
-      </section>
 
-      {/* ── ARCHITECTURE ── */}
-      <section style={{position:'relative',zIndex:1,padding:'6rem clamp(1.5rem,5vw,4rem)',maxWidth:'1100px',margin:'0 auto'}}>
-        <ScanReveal>
-          <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.2em',color:'rgba(124,58,237,.7)',textTransform:'uppercase',marginBottom:'1rem'}}>// Architecture</div>
-          <h2 style={{fontSize:'clamp(1.8rem,4vw,3rem)',fontWeight:700,letterSpacing:'-.03em',marginBottom:'3rem',lineHeight:1.1}}>
-            3層の<span style={{color:'#a78bfa'}}>完全分離</span>
-          </h2>
-        </ScanReveal>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:'1px',borderRadius:'16px',overflow:'hidden',border:'1px solid rgba(255,255,255,.06)'}}>
-          {([
-            {layer:'01', label:'CONTENT', file:'content/blog/*.html', desc:'構造の宣言。Reactを知らなくていい。HTMLを書くだけ。', color:'#6366f1'},
-            {layer:'02', label:'TRANSFORM', file:'blog-renderer.tsx', desc:'cheerioでパース。カスタムタグをReact Componentに変換。クライアントには存在しない。', color:'#a78bfa'},
-            {layer:'03', label:'EXPERIENCE', file:'FadeIn / Checklist / ...', desc:'スキャンライン、confetti、Web Audio、物理バネ。コンテンツ作者が知らない演出が全記事に展開される。', color:'#00ff88'},
-          ] as {layer:string;label:string;file:string;desc:string;color:string}[]).map(({layer,label,file,desc,color},i) => (
-            <ScanReveal key={i} delay={i*150}>
-              <div style={{padding:'2rem',background:'rgba(255,255,255,.02)',height:'100%',borderRight:i<2?'1px solid rgba(255,255,255,.06)':'none'}}>
-                <div className="mono" style={{fontSize:'.6rem',letterSpacing:'.15em',color:'rgba(255,255,255,.2)',marginBottom:'.5rem'}}>{layer}</div>
-                <div style={{fontSize:'.75rem',fontWeight:700,letterSpacing:'.12em',color,textTransform:'uppercase',marginBottom:'.75rem'}}>{label}</div>
-                <div className="mono" style={{fontSize:'.78rem',color:'rgba(255,255,255,.35)',padding:'.4rem .6rem',background:'rgba(0,0,0,.3)',borderRadius:'6px',marginBottom:'1rem',border:'1px solid rgba(255,255,255,.06)'}}>{file}</div>
-                <p style={{fontSize:'.88rem',color:'rgba(255,255,255,.55)',lineHeight:1.65}}>{desc}</p>
-              </div>
-            </ScanReveal>
+        {/* TAB BUTTONS */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '3rem',
+          flexWrap: 'wrap',
+          padding: '1rem',
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: '16px',
+          border: '1px solid rgba(124,58,237,0.2)',
+        }}>
+          <TabButton
+            active={activeTab === 'all'}
+            onClick={() => {
+              setActiveTab('all');
+              playTone(400, 'sine', 0.1);
+            }}
+            icon="🎯"
+          >
+            All
+          </TabButton>
+          <TabButton
+            active={activeTab === 'effects'}
+            onClick={() => {
+              setActiveTab('effects');
+              playTone(500, 'sine', 0.1);
+            }}
+            icon="✨"
+          >
+            Effects
+          </TabButton>
+          <TabButton
+            active={activeTab === 'games'}
+            onClick={() => {
+              setActiveTab('games');
+              playTone(600, 'sine', 0.1);
+            }}
+            icon="🎮"
+          >
+            Games
+          </TabButton>
+        </div>
+
+        {/* DEMO GRID */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+          gap: '2rem',
+        }}>
+          {filteredDemos.map((demo, index) => (
+            <div
+              key={demo.id}
+              style={{
+                animation: `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`,
+              }}
+            >
+              <DemoCard {...demo} />
+            </div>
           ))}
         </div>
-      </section>
 
-      {/* ── DEMOS ── */}
-      <section style={{position:'relative',zIndex:1,padding:'4rem clamp(1.5rem,5vw,4rem)',maxWidth:'1100px',margin:'0 auto'}}>
-        <ScanReveal>
-          <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.2em',color:'rgba(0,255,136,.7)',textTransform:'uppercase',marginBottom:'1rem'}}>// Live Demos</div>
-          <h2 style={{fontSize:'clamp(1.8rem,4vw,3rem)',fontWeight:700,letterSpacing:'-.03em',marginBottom:.5,lineHeight:1.1}}>
-            全部、<GlitchText intensity={.8} style={{color:'#00ff88'}}>動いている</GlitchText>
-          </h2>
-          <p style={{color:'rgba(255,255,255,.4)',fontSize:'.95rem',marginBottom:'3.5rem'}}>HTMLに1タグ書くだけで、これが全記事に展開される。</p>
-        </ScanReveal>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:'1.5rem'}}>
-          <ScanReveal delay={100}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(0,255,136,.6)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;interactive-checklist&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>チェックするたびに爆発する</div>
-              </div>
-              <InteractiveChecklist items={['BlogRenderer はサーバー専用','FadeIn のdelayは秒単位','全完了でSTAGE CLEARが出る','confettiは120粒爆散する']}/>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>Canvas confetti 28粒 + Web Audio<br/>全完了: 120粒 + アルペジオ</div>
-            </div>
-          </ScanReveal>
-          <ScanReveal delay={200}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(124,58,237,.7)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;quiz-block&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>ブログ記事がアプリになる</div>
-              </div>
-              <QuizBlock question="BlogRendererの実行場所は？" options={['ブラウザ','サーバー','Cloudflare Edge','どこでも']} answer="サーバー" hint="クライアントにcheerioは存在しない"/>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>正解: 上昇アルペジオ + confetti<br/>不正解: sawtooth降下音</div>
-            </div>
-          </ScanReveal>
-          <ScanReveal delay={300}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(0,255,136,.6)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;glitch-text&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>クリックで即座に崩壊する</div>
-              </div>
-              <div style={{padding:'2.5rem 1.5rem',background:'rgba(0,0,0,.4)',borderRadius:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,.06)'}}>
-                <div style={{fontSize:'clamp(1.8rem,5vw,2.8rem)',lineHeight:1.1}}><GlitchText intensity={1.5}>SYSTEM BREACH</GlitchText></div>
-                <div style={{marginTop:'1.5rem',fontSize:'1.1rem',opacity:.6}}><GlitchText intensity={.8}>ERROR_404</GlitchText></div>
-              </div>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>RGBチャンネル分離 + ランダム文字置換<br/>3〜7秒で自動発動。クリックでも発動。</div>
-            </div>
-          </ScanReveal>
-          <ScanReveal delay={400}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(167,139,250,.7)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;timeline-item&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>SVGラインが自走して繋がる</div>
-              </div>
-              <div style={{padding:'.5rem 0'}}>
-                <TimelineStep date="Before" title="Web Components時代" body="ブラウザのDOMに依存。クライアント遷移で壊れる。" color="#6366f1" delay={200}/>
-                <TimelineStep date="React化" title="BlogRenderer実装" body="HTMLをcheerioでパース。全コンポーネントをReact管理下に。" color="#a78bfa" delay={400}/>
-                <TimelineStep date="Now" title="ゲームUIへの進化" body="confetti、Web Audio、物理バネ。HTMLタグ1行で展開。" color="#00ff88" isLast delay={600}/>
-              </div>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>stroke-dashoffset アニメーション<br/>ドット→ライン→コンテンツの順に出現</div>
-            </div>
-          </ScanReveal>
-          <ScanReveal delay={500}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(0,255,136,.6)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;typewriter&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>タイプミスして打ち直す</div>
-              </div>
-              <div style={{padding:'1.5rem',background:'rgba(0,0,0,.4)',borderRadius:'10px',border:'1px solid rgba(255,255,255,.06)',minHeight:'100px'}}>
-                <p style={{fontSize:'1rem',lineHeight:1.7,color:'rgba(255,255,255,.75)'}}>
-                  <Typewriter speed={60} mistakeRate={0.09} startDelay={500}>このシステムでは、HTMLに書かれた1行のタグが、知らないうちに複雑な体験へと変換される。</Typewriter>
-                </p>
-              </div>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>隣接キーテーブルでリアルなミス<br/>バックスペースで消して打ち直す</div>
-            </div>
-          </ScanReveal>
-          <ScanReveal delay={600}>
-            <div style={{borderRadius:'16px',border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.02)',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div>
-                <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.15em',color:'rgba(124,58,237,.7)',textTransform:'uppercase',marginBottom:'.3rem'}}>&lt;counter-up&gt;</div>
-                <div style={{fontSize:'1rem',fontWeight:600,color:'rgba(255,255,255,.8)'}}>目標値を超えてから戻る</div>
-              </div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:'.75rem',justifyContent:'center',padding:'1rem 0'}}>
-                <CounterUp value={98} suffix="%" label="Lighthouse" stiffness={0.04} damping={0.65}/>
-                <CounterUp value={2.71} decimals={2} label="Euler's e" stiffness={0.035} damping={0.6}/>
-                <CounterUp value={1337} suffix=" ms" label="build time" stiffness={0.05} damping={0.68}/>
-              </div>
-              <div className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.2)',lineHeight:1.6}}>Verlet バネ積分<br/>stiffness / damping で物理を制御</div>
-            </div>
-          </ScanReveal>
-        </div>
-      </section>
-
-      {/* ── THE HTML ── */}
-      <section style={{position:'relative',zIndex:1,padding:'6rem clamp(1.5rem,5vw,4rem)',maxWidth:'1100px',margin:'0 auto'}}>
-        <ScanReveal>
-          <div className="mono" style={{fontSize:'.65rem',letterSpacing:'.2em',color:'rgba(124,58,237,.7)',textTransform:'uppercase',marginBottom:'1rem'}}>// The punchline</div>
-          <h2 style={{fontSize:'clamp(1.8rem,4vw,3rem)',fontWeight:700,letterSpacing:'-.03em',marginBottom:'1rem',lineHeight:1.1}}>
-            これを作ったHTMLは<br/><span style={{color:'#a78bfa'}}>こう書いた。</span>
-          </h2>
-          <p style={{color:'rgba(255,255,255,.4)',fontSize:'.95rem',marginBottom:'2.5rem'}}>このデモ全体が、1枚のHTMLファイルから生成されている。</p>
-        </ScanReveal>
-        <ScanReveal delay={200}>
-          <div style={{borderRadius:'14px',background:'rgba(0,0,0,.6)',border:'1px solid rgba(255,255,255,.08)',overflow:'hidden'}}>
-            <div style={{padding:'.6rem 1rem',borderBottom:'1px solid rgba(255,255,255,.06)',display:'flex',gap:'.4rem',alignItems:'center'}}>
-              {(['#ff5f56','#ffbd2e','#27c93f'] as string[]).map((c: string)=><div key={c} style={{width:'10px',height:'10px',borderRadius:'50%',background:c}}/>)}
-              <span className="mono" style={{fontSize:'.72rem',color:'rgba(255,255,255,.25)',marginLeft:'.5rem'}}>2026-02-17-blog-system.html</span>
-            </div>
-            <pre className="mono" style={{padding:'1.5rem',fontSize:'.8rem',lineHeight:1.8,color:'rgba(255,255,255,.6)',overflow:'auto',margin:0}}>{`<fade-in delay="0">
-  <h1><glitch-text>HTML is not the destination.</glitch-text></h1>
-  <p><typewriter speed="35">コンテンツと体験を完全に分離したシステム。</typewriter></p>
-</fade-in>
-
-<interactive-checklist>
-  <li>BlogRenderer はサーバー専用</li>
-  <li>confettiは120粒爆散する</li>
-</interactive-checklist>
-
-<quiz-block question="BlogRendererの実行場所は？" answer="サーバー">
-  <li>ブラウザ</li>
-  <li>サーバー</li>
-</quiz-block>
-
-<counter-up value="98" suffix="%" label="Lighthouse" stiffness="0.04" />
-
-<timeline-item date="Now" title="ゲームUIへの進化" color="#00ff88" last="true">
-  HTMLタグ1行で全記事に展開される。
-</timeline-item>`}</pre>
+        {/* Count Display */}
+        <div style={{
+          marginTop: '3rem',
+          padding: '1.5rem',
+          background: 'rgba(124,58,237,0.1)',
+          border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: '12px',
+          textAlign: 'center',
+          fontFamily: "'JetBrains Mono', monospace",
+          color: '#a78bfa'
+        }}>
+          <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.7 }}>
+            {activeTab === 'all' && 'すべてのデモ'}
+            {activeTab === 'effects' && 'HTMLタグエフェクト'}
+            {activeTab === 'games' && 'ゲームデモ'}
           </div>
-        </ScanReveal>
+          <strong style={{ fontSize: '2rem', color: '#fff', display: 'block' }}>
+            {filteredDemos.length}
+          </strong>
+          <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.5 }}>
+            / {demos.length} total
+          </div>
+        </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer style={{position:'relative',zIndex:1,padding:'4rem clamp(1.5rem,5vw,4rem)',borderTop:'1px solid rgba(255,255,255,.06)',maxWidth:'1100px',margin:'0 auto',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'1.5rem'}}>
-        <div>
-          <div style={{fontSize:'1.1rem',fontWeight:700,letterSpacing:'-.02em',marginBottom:'.25rem'}}>
-            <GlitchText intensity={.6}>rancorder.dev</GlitchText>
-          </div>
-          <div className="mono" style={{fontSize:'.72rem',color:'rgba(255,255,255,.3)'}}>HTML → React AST Generator</div>
-        </div>
-        <div style={{display:'flex',flexDirection:'column',gap:'.35rem',alignItems:'flex-end'}}>
-          {(['Next.js 14','React 18','cheerio','Canvas 2D','Web Audio API'] as string[]).map((t: string)=>(
-            <span key={t} className="mono" style={{fontSize:'.68rem',color:'rgba(255,255,255,.25)',letterSpacing:'.05em'}}>{t}</span>
-          ))}
-        </div>
-      </footer>
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
