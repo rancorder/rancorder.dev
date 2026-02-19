@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOOM Canvas 2D</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#000;
+  overflow:hidden;
+  font-family:monospace;
+  cursor:none;
+}
+#canvas {
+  display:block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+#hud {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:80px;
+  background:linear-gradient(0deg, rgba(20,20,20,0.95), rgba(10,10,10,0.8));
+  border-top:2px solid #ff0000;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 30px;
+  color:#fff;
+  font-size:14px;
+  z-index:10;
+}
+.hud-item {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.hud-label {
+  color:#888;
+  font-size:10px;
+  letter-spacing:1px;
+}
+.hud-value {
+  font-size:24px;
+  font-weight:bold;
+}
+.health { color:#00ff00; }
+.armor { color:#00aaff; }
+.ammo { color:#ffaa00; }
+#crosshair {
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:20px;
+  height:20px;
+  pointer-events:none;
+  z-index:5;
+}
+#crosshair::before,
+#crosshair::after {
+  content:'';
+  position:absolute;
+  background:#ff0000;
+}
+#crosshair::before {
+  left:50%;
+  top:0;
+  width:2px;
+  height:100%;
+  transform:translateX(-50%);
+}
+#crosshair::after {
+  top:50%;
+  left:0;
+  height:2px;
+  width:100%;
+  transform:translateY(-50%);
+}
+#minimap {
+  position:fixed;
+  top:20px;
+  right:20px;
+  width:150px;
+  height:150px;
+  border:2px solid #00ff00;
+  background:rgba(0,0,0,0.7);
+  z-index:10;
+}
+#info {
+  position:fixed;
+  top:20px;
+  left:20px;
+  color:#0f0;
+  font-size:11px;
+  z-index:10;
+  text-shadow:0 0 5px #0f0;
+}
+#helpBtn {
+  position:fixed;
+  top:20px;
+  left:20px;
+  padding:10px 20px;
+  background:rgba(255,0,0,0.3);
+  border:2px solid #ff0000;
+  color:#ff0000;
+  border-radius:8px;
+  cursor:pointer;
+  font-family:monospace;
+  font-weight:bold;
+  font-size:14px;
+  z-index:10;
+  transition:all 0.3s;
+  text-shadow:0 0 10px #ff0000;
+}
+#helpBtn:hover {
+  background:rgba(255,0,0,0.6);
+  box-shadow:0 0 20px #ff0000;
+  transform:scale(1.05);
+}
+#helpPanel {
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:90%;
+  max-width:600px;
+  background:rgba(10,10,20,0.98);
+  border:3px solid #ff0000;
+  border-radius:15px;
+  padding:30px;
+  z-index:100;
+  display:none;
+  box-shadow:0 0 50px rgba(255,0,0,0.5);
+}
+#helpPanel.show {
+  display:block;
+  animation:fadeInScale 0.3s ease-out;
+}
+@keyframes fadeInScale {
+  from { opacity:0; transform:translate(-50%,-50%) scale(0.9); }
+  to { opacity:1; transform:translate(-50%,-50%) scale(1); }
+}
+#helpPanel h2 {
+  color:#ff0000;
+  font-size:24px;
+  margin-bottom:20px;
+  text-align:center;
+  text-shadow:0 0 15px #ff0000;
+  letter-spacing:2px;
+}
+#helpPanel .section {
+  margin-bottom:20px;
+}
+#helpPanel .section-title {
+  color:#ffaa00;
+  font-size:16px;
+  margin-bottom:10px;
+  font-weight:bold;
+  text-shadow:0 0 8px #ffaa00;
+}
+#helpPanel .controls {
+  display:grid;
+  grid-template-columns:120px 1fr;
+  gap:8px;
+  margin-left:10px;
+}
+#helpPanel .key {
+  color:#00ff00;
+  font-weight:bold;
+  text-shadow:0 0 5px #00ff00;
+}
+#helpPanel .desc {
+  color:#ccc;
+}
+#closeHelp {
+  position:absolute;
+  top:15px;
+  right:15px;
+  width:30px;
+  height:30px;
+  background:rgba(255,0,0,0.3);
+  border:2px solid #ff0000;
+  border-radius:50%;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#ff0000;
+  font-size:18px;
+  font-weight:bold;
+  transition:all 0.3s;
+}
+#closeHelp:hover {
+  background:rgba(255,0,0,0.8);
+  transform:rotate(90deg);
+}
+#overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  z-index:99;
+  display:none;
+}
+#overlay.show {
+  display:block;
+}
+.tip {
+  color:#888;
+  font-size:12px;
+  font-style:italic;
+  margin-top:20px;
+  padding-top:15px;
+  border-top:1px solid #333;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: DOOM IN CANVAS 2D
+desc: レイキャスティングで実現する疑似3Dシューティング。WebGLなし、Canvas 2Dのみで実装
+tech: Ray Casting · Texture Mapping · Sprite Rendering · Collision Detection · Web Audio
+level: 100
+color: #ff0000
+type: game
+-->
+
+<canvas id="canvas"></canvas>
+<div id="crosshair"></div>
+
+<div id="hud">
+  <div class="hud-item">
+    <div class="hud-label">HEALTH</div>
+    <div class="hud-value health" id="health">100</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">ARMOR</div>
+    <div class="hud-value armor" id="armor">50</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">AMMO</div>
+    <div class="hud-value ammo" id="ammo">200</div>
+  </div>
+</div>
+
+<canvas id="minimap"></canvas>
+
+<button id="helpBtn">❓ 遊び方</button>
+
+<div id="overlay"></div>
+<div id="helpPanel">
+  <div id="closeHelp">✕</div>
+  <h2>🎮 DOOM IN CANVAS 2D</h2>
+  
+  <div class="section">
+    <div class="section-title">📋 操作方法</div>
+    <div class="controls">
+      <div class="key">W / ↑</div>
+      <div class="desc">前進</div>
+      
+      <div class="key">S / ↓</div>
+      <div class="desc">後退</div>
+      
+      <div class="key">A</div>
+      <div class="desc">左ストレイフ / 左回転</div>
+      
+      <div class="key">D</div>
+      <div class="desc">右ストレイフ / 右回転</div>
+      
+      <div class="key">MOUSE</div>
+      <div class="desc">視点回転（クリックでロック）</div>
+      
+      <div class="key">CLICK / SPACE</div>
+      <div class="desc">射撃</div>
+      
+      <div class="key">ESC</div>
+      <div class="desc">マウスロック解除</div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">🎯 ゲームの目的</div>
+    <div class="desc" style="margin-left:10px;">
+      ・赤い敵を全て倒せ！<br>
+      ・弾薬と体力に注意<br>
+      ・ミニマップで敵の位置を確認
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="section-title">💡 ヒント</div>
+    <div class="desc" style="margin-left:10px;">
+      ・遠くの敵は暗く見える<br>
+      ・弾は直進するので正確に狙おう<br>
+      ・敵は1発25ダメージ、4発で倒せる
+    </div>
+  </div>
+  
+  <div class="tip">
+    クリックでゲーム開始 - Canvas 2Dのみで実装された3Dゲーム
+  </div>
+</div>
+
+<div id="info">
+  WASD: Move<br>
+  MOUSE: Look<br>
+  CLICK: Shoot<br>
+  ESC: Toggle Controls
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mmCtx = minimap.getContext('2d');
+
+let W = canvas.width = window.innerWidth;
+let H = canvas.height = window.innerHeight - 80;
+
+// ======= GAME STATE =======
+const player = {
+  x: 3.5,
+  y: 3.5,
+  dir: 0,
+  health: 100,
+  armor: 50,
+  ammo: 200,
+};
+
+const keys = {};
+let mouseX = 0;
+let shooting = false;
+let shootFrame = 0;
+let controlsLocked = false;
+
+// ======= MAP =======
+// 0 = empty, 1-4 = different wall types
+const MAP = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,2,0,0,0,0,0,0,0,3,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,2,2,2,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,2,0,2,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,2,0,2,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,3,0,0,0,0,0,0,0,0,0,4,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,4,0,0,0,3,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+const GRID_SIZE = 1;
+const MAP_WIDTH = MAP[0].length;
+const MAP_HEIGHT = MAP.length;
+
+// ======= ENEMIES =======
+const enemies = [
+  { x: 8.5, y: 8.5, health: 100, dead: false },
+  { x: 12.5, y: 3.5, health: 100, dead: false },
+  { x: 6.5, y: 12.5, health: 100, dead: false },
+];
+
+// ======= TEXTURES (Procedural) =======
+const TEXTURE_SIZE = 64;
+const textures = {};
+
+function generateTexture(id, color1, color2) {
+  const canvas = document.createElement('canvas');
+  canvas.width = TEXTURE_SIZE;
+  canvas.height = TEXTURE_SIZE;
+  const ctx = canvas.getContext('2d');
+  
+  // Brick pattern
+  for (let y = 0; y < TEXTURE_SIZE; y++) {
+    for (let x = 0; x < TEXTURE_SIZE; x++) {
+      const isBrick = (Math.floor(y / 8) % 2 === 0) 
+        ? (x % 16 < 15) 
+        : ((x + 8) % 16 < 15);
+      
+      ctx.fillStyle = isBrick ? color1 : color2;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  
+  textures[id] = canvas;
+}
+
+generateTexture(1, '#888', '#666'); // Gray brick
+generateTexture(2, '#8b4513', '#654321'); // Brown brick
+generateTexture(3, '#2f4f2f', '#1a2f1a'); // Dark green
+generateTexture(4, '#8b0000', '#5f0000'); // Dark red
+
+// ======= SPRITE GENERATION =======
+function generateEnemySprite() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  
+  // Enemy silhouette
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(20, 10, 24, 40); // Body
+  ctx.fillRect(15, 15, 34, 10); // Arms
+  ctx.fillRect(24, 50, 7, 14); // Left leg
+  ctx.fillRect(33, 50, 7, 14); // Right leg
+  
+  // Eyes
+  ctx.fillStyle = '#ffff00';
+  ctx.fillRect(26, 15, 4, 4);
+  ctx.fillRect(34, 15, 4, 4);
+  
+  return canvas;
+}
+
+const enemySprite = generateEnemySprite();
+
+// ======= AUDIO =======
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(freq, duration, type = 'square') {
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function shootSound() {
+  playSound(150, 0.1, 'sawtooth');
+  setTimeout(() => playSound(100, 0.05, 'square'), 50);
+}
+
+function hitSound() {
+  playSound(300, 0.05, 'sawtooth');
+}
+
+function deathSound() {
+  playSound(200, 0.3, 'sawtooth');
+  setTimeout(() => playSound(100, 0.3, 'square'), 100);
+}
+
+// ======= RAY CASTING =======
+function castRay(rayAngle) {
+  const rayDirX = Math.cos(rayAngle);
+  const rayDirY = Math.sin(rayAngle);
+  
+  let rayX = player.x;
+  let rayY = player.y;
+  
+  const deltaDistX = Math.abs(1 / rayDirX);
+  const deltaDistY = Math.abs(1 / rayDirY);
+  
+  let mapX = Math.floor(rayX);
+  let mapY = Math.floor(rayY);
+  
+  let stepX = rayDirX < 0 ? -1 : 1;
+  let stepY = rayDirY < 0 ? -1 : 1;
+  
+  let sideDistX = rayDirX < 0 
+    ? (rayX - mapX) * deltaDistX 
+    : (mapX + 1.0 - rayX) * deltaDistX;
+  let sideDistY = rayDirY < 0 
+    ? (rayY - mapY) * deltaDistY 
+    : (mapY + 1.0 - rayY) * deltaDistY;
+  
+  let hit = 0;
+  let side;
+  let distance;
+  
+  // DDA Algorithm
+  while (!hit) {
+    if (sideDistX < sideDistY) {
+      sideDistX += deltaDistX;
+      mapX += stepX;
+      side = 0;
+    } else {
+      sideDistY += deltaDistY;
+      mapY += stepY;
+      side = 1;
+    }
+    
+    if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) break;
+    if (MAP[mapY][mapX] > 0) hit = MAP[mapY][mapX];
+  }
+  
+  if (!hit) return { distance: Infinity, wallType: 0 };
+  
+  // Calculate distance
+  if (side === 0) {
+    distance = (mapX - rayX + (1 - stepX) / 2) / rayDirX;
+  } else {
+    distance = (mapY - rayY + (1 - stepY) / 2) / rayDirY;
+  }
+  
+  // Calculate wall X coordinate for texture
+  let wallX;
+  if (side === 0) {
+    wallX = rayY + distance * rayDirY;
+  } else {
+    wallX = rayX + distance * rayDirX;
+  }
+  wallX -= Math.floor(wallX);
+  
+  return { 
+    distance, 
+    wallType: hit, 
+    side, 
+    wallX,
+    mapX,
+    mapY,
+  };
+}
+
+// ======= RENDERING =======
+function render() {
+  // Clear sky and floor
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H / 2);
+  ctx.fillStyle = '#0f0f1e';
+  ctx.fillRect(0, H / 2, W, H / 2);
+  
+  const FOV = Math.PI / 3;
+  const NUM_RAYS = W;
+  const rayAngleStep = FOV / NUM_RAYS;
+  
+  const rayDistances = [];
+  
+  // Cast rays for walls
+  for (let i = 0; i < NUM_RAYS; i++) {
+    const rayAngle = player.dir - FOV / 2 + rayAngleStep * i;
+    const hit = castRay(rayAngle);
+    
+    rayDistances.push(hit.distance);
+    
+    if (hit.distance === Infinity) continue;
+    
+    // Correct fish-eye effect
+    const correctedDist = hit.distance * Math.cos(rayAngle - player.dir);
+    
+    // Calculate wall height
+    const wallHeight = (GRID_SIZE / correctedDist) * (H / 2);
+    const wallTop = (H / 2) - wallHeight / 2;
+    const wallBottom = wallTop + wallHeight;
+    
+    // Lighting based on distance and side
+    let darkness = Math.min(correctedDist / 8, 1);
+    if (hit.side === 1) darkness *= 1.2;
+    darkness = Math.max(0, Math.min(1, darkness));
+    
+    // Draw textured wall
+    if (textures[hit.wallType]) {
+      const texX = Math.floor(hit.wallX * TEXTURE_SIZE);
+      
+      ctx.save();
+      ctx.globalAlpha = 1 - darkness;
+      
+      ctx.drawImage(
+        textures[hit.wallType],
+        texX, 0, 1, TEXTURE_SIZE,
+        i, wallTop, 1, wallHeight
+      );
+      
+      ctx.restore();
+    }
+  }
+  
+  // Render sprites (enemies)
+  enemies.forEach(enemy => {
+    if (enemy.dead) return;
+    
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    // Check if in front of player
+    const angle = Math.atan2(dy, dx) - player.dir;
+    let normalizedAngle = angle;
+    while (normalizedAngle > Math.PI) normalizedAngle -= 2 * Math.PI;
+    while (normalizedAngle < -Math.PI) normalizedAngle += 2 * Math.PI;
+    
+    if (Math.abs(normalizedAngle) > FOV / 2 + 0.3) return;
+    
+    // Calculate screen position
+    const screenX = (normalizedAngle / FOV + 0.5) * W;
+    
+    // Calculate sprite size
+    const spriteHeight = (GRID_SIZE / dist) * (H / 2);
+    const spriteWidth = spriteHeight;
+    
+    const spriteTop = (H / 2) - spriteHeight / 2;
+    const spriteLeft = screenX - spriteWidth / 2;
+    
+    // Depth-based alpha
+    const alpha = Math.max(0, 1 - dist / 10);
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(enemySprite, spriteLeft, spriteTop, spriteWidth, spriteHeight);
+    ctx.restore();
+  });
+  
+  // Draw weapon (bottom center)
+  if (shooting && shootFrame < 5) {
+    ctx.fillStyle = shootFrame % 2 === 0 ? '#ffff00' : '#ff8800';
+    const gunX = W / 2;
+    const gunY = H - 100 + shootFrame * 5;
+    
+    ctx.fillRect(gunX - 30, gunY, 60, 80);
+    ctx.fillRect(gunX - 10, gunY - 20, 20, 20);
+    
+    // Muzzle flash
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(gunX - 5, gunY - 30, 10, 10);
+    
+    shootFrame++;
+  }
+}
+
+// ======= MINIMAP =======
+function renderMinimap() {
+  const scale = minimap.width / MAP_WIDTH;
+  
+  mmCtx.fillStyle = '#000';
+  mmCtx.fillRect(0, 0, minimap.width, minimap.height);
+  
+  // Draw map
+  for (let y = 0; y < MAP_HEIGHT; y++) {
+    for (let x = 0; x < MAP_WIDTH; x++) {
+      if (MAP[y][x] > 0) {
+        mmCtx.fillStyle = '#444';
+        mmCtx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+  }
+  
+  // Draw enemies
+  enemies.forEach(enemy => {
+    if (enemy.dead) return;
+    mmCtx.fillStyle = '#ff0000';
+    mmCtx.fillRect(enemy.x * scale - 2, enemy.y * scale - 2, 4, 4);
+  });
+  
+  // Draw player
+  mmCtx.fillStyle = '#00ff00';
+  mmCtx.fillRect(player.x * scale - 3, player.y * scale - 3, 6, 6);
+  
+  // Draw direction
+  const dirLen = 10;
+  mmCtx.strokeStyle = '#00ff00';
+  mmCtx.lineWidth = 2;
+  mmCtx.beginPath();
+  mmCtx.moveTo(player.x * scale, player.y * scale);
+  mmCtx.lineTo(
+    player.x * scale + Math.cos(player.dir) * dirLen,
+    player.y * scale + Math.sin(player.dir) * dirLen
+  );
+  mmCtx.stroke();
+}
+
+// ======= UPDATE =======
+function update() {
+  const moveSpeed = 0.05;
+  const rotSpeed = 0.05;
+  
+  // Rotation
+  if (keys['ArrowLeft'] || keys['a']) player.dir -= rotSpeed;
+  if (keys['ArrowRight'] || keys['d']) player.dir += rotSpeed;
+  
+  // Movement
+  let newX = player.x;
+  let newY = player.y;
+  
+  if (keys['w'] || keys['ArrowUp']) {
+    newX += Math.cos(player.dir) * moveSpeed;
+    newY += Math.sin(player.dir) * moveSpeed;
+  }
+  if (keys['s'] || keys['ArrowDown']) {
+    newX -= Math.cos(player.dir) * moveSpeed;
+    newY -= Math.sin(player.dir) * moveSpeed;
+  }
+  
+  // Strafe
+  if (keys['a'] && !keys['ArrowLeft']) {
+    newX += Math.cos(player.dir - Math.PI/2) * moveSpeed;
+    newY += Math.sin(player.dir - Math.PI/2) * moveSpeed;
+  }
+  if (keys['d'] && !keys['ArrowRight']) {
+    newX += Math.cos(player.dir + Math.PI/2) * moveSpeed;
+    newY += Math.sin(player.dir + Math.PI/2) * moveSpeed;
+  }
+  
+  // Collision detection
+  const mapX = Math.floor(newX);
+  const mapY = Math.floor(newY);
+  
+  if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+    if (MAP[mapY][mapX] === 0) {
+      player.x = newX;
+      player.y = newY;
+    }
+  }
+  
+  // Mouse look
+  if (controlsLocked && Math.abs(mouseX) > 0.001) {
+    player.dir += mouseX * 0.002;
+    mouseX *= 0.8; // Smooth deceleration
+  }
+}
+
+// ======= SHOOTING =======
+function shoot() {
+  if (player.ammo <= 0) return;
+  
+  player.ammo--;
+  shooting = true;
+  shootFrame = 0;
+  shootSound();
+  
+  // Ray cast to check hit
+  const hit = castRay(player.dir);
+  
+  if (hit.distance < 10) {
+    // Check if hit enemy
+    enemies.forEach(enemy => {
+      if (enemy.dead) return;
+      
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      
+      const angleDiff = Math.abs(angle - player.dir);
+      
+      if (dist < hit.distance + 0.5 && angleDiff < 0.2) {
+        enemy.health -= 25;
+        hitSound();
+        
+        if (enemy.health <= 0) {
+          enemy.dead = true;
+          deathSound();
+        }
+      }
+    });
+  }
+  
+  updateHUD();
+  setTimeout(() => { shooting = false; }, 200);
+}
+
+// ======= HUD UPDATE =======
+function updateHUD() {
+  document.getElementById('health').textContent = player.health;
+  document.getElementById('armor').textContent = player.armor;
+  document.getElementById('ammo').textContent = player.ammo;
+}
+
+// ======= GAME LOOP =======
+function gameLoop() {
+  update();
+  render();
+  renderMinimap();
+  requestAnimationFrame(gameLoop);
+}
+
+// ======= EVENT LISTENERS =======
+window.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+  
+  if (e.key === 'Escape') {
+    controlsLocked = false;
+    document.exitPointerLock();
+  }
+  if (e.key === ' ') {
+    shoot();
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+canvas.addEventListener('click', () => {
+  if (!controlsLocked) {
+    canvas.requestPointerLock();
+  } else {
+    shoot();
+  }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  controlsLocked = document.pointerLockElement === canvas;
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (controlsLocked) {
+    mouseX = e.movementX;
+  }
+});
+
+window.addEventListener('resize', () => {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight - 80;
+});
+
+// ======= HELP PANEL =======
+const helpBtn = document.getElementById('helpBtn');
+const helpPanel = document.getElementById('helpPanel');
+const overlay = document.getElementById('overlay');
+const closeHelp = document.getElementById('closeHelp');
+
+function showHelp() {
+  helpPanel.classList.add('show');
+  overlay.classList.add('show');
+}
+
+function hideHelp() {
+  helpPanel.classList.remove('show');
+  overlay.classList.remove('show');
+}
+
+helpBtn.addEventListener('click', showHelp);
+closeHelp.addEventListener('click', hideHelp);
+overlay.addEventListener('click', hideHelp);
+
+// ESCキーでも閉じる
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && helpPanel.classList.contains('show')) {
+    hideHelp();
+    e.stopPropagation();
+  }
+});
+
+// ======= START =======
+updateHUD();
+gameLoop();
+</script>
+
+</body>
+</html>
