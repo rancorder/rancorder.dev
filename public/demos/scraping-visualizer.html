@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WEB SCRAPER LIVE</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@700;900&display=swap');
+
+    :root {
+      --bg: #050510;
+      --panel: #080820;
+      --border: #1a1a4a;
+      --cyan: #00d9ff;
+      --green: #00ff88;
+      --purple: #a855f7;
+      --yellow: #ffd700;
+      --red: #ff4466;
+      --dim: #2a2a5a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: #c0c0e0;
+      font-family: 'JetBrains Mono', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── HEADER ─── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+    #header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      color: var(--cyan);
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--cyan);
+      white-space: nowrap;
+    }
+    #status-bar {
+      display: flex;
+      gap: 12px;
+      font-size: 10px;
+      flex-wrap: wrap;
+    }
+    .stat { color: var(--dim); white-space: nowrap; }
+    .stat span { color: var(--green); font-weight: 600; }
+    #round-badge {
+      background: var(--purple);
+      color: white;
+      font-size: 10px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    /* ─── MAIN LAYOUT ─── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      gap: 0;
+    }
+
+    /* ─── LEFT: CODE PANEL ─── */
+    #code-panel {
+      width: 310px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: #040410;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #code-header {
+      padding: 8px 12px;
+      font-size: 10px;
+      color: var(--purple);
+      letter-spacing: 2px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      white-space: nowrap;
+    }
+    #code-body {
+      flex: 1;
+      padding: 12px 8px;
+      overflow: hidden;
+      font-size: 12px;
+      line-height: 1.9;
+    }
+    .code-line {
+      display: flex;
+      border-radius: 3px;
+      transition: background 0.15s;
+      padding: 0 6px;
+      white-space: nowrap;
+    }
+    .code-line.active {
+      background: rgba(0, 217, 255, 0.1);
+      box-shadow: inset 2px 0 0 var(--cyan);
+    }
+    .code-line.done { opacity: 0.4; }
+    .ln { color: var(--dim); width: 22px; flex-shrink: 0; user-select: none; font-size: 10px; padding-top: 1px; }
+    .kw { color: var(--purple); }
+    .fn { color: var(--cyan); }
+    .str { color: var(--green); }
+    .cm { color: #445; }
+    .var { color: #e0c0ff; }
+    .op { color: var(--yellow); }
+    .num { color: var(--yellow); }
+
+    /* cursor blink */
+    .cursor { display: inline-block; width: 7px; height: 13px; background: var(--cyan); vertical-align: middle; animation: blink 0.8s step-end infinite; margin-left: 2px; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ─── RIGHT: MAIN CONTENT ─── */
+    #right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ─── TOP: FAKE EC SITE ─── */
+    #ec-panel {
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      background: #0a0a1e;
+    }
+    #ec-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #0d0d25;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .dot-r { background: #ff5f56; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #27c93f; }
+    #url-bar {
+      flex: 1;
+      background: #0a0a20;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: #8888bb;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    #url-bar span { color: var(--green); }
+
+    #ec-body {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      overflow: hidden;
+      height: calc(100% - 34px);
+    }
+
+    .product-card {
+      background: #0d0d28;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px;
+      font-size: 10px;
+      position: relative;
+      transition: all 0.2s;
+      min-width: 0;
+    }
+    .product-card.scanning {
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(0,217,255,0.3), inset 0 0 20px rgba(0,217,255,0.05);
+    }
+    .product-card.scraped {
+      border-color: var(--green);
+      box-shadow: 0 0 8px rgba(0,255,136,0.2);
+      opacity: 0.6;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 44px;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .card-name {
+      color: #d0d0f0;
+      font-size: 8.5px;
+      margin-bottom: 3px;
+      line-height: 1.3;
+      font-weight: 600;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .card-price {
+      color: var(--yellow);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .card-stock {
+      font-size: 8px;
+      margin-top: 2px;
+    }
+    .in-stock { color: var(--green); }
+    .low-stock { color: var(--yellow); }
+    .out-stock { color: var(--red); }
+
+    /* HTML tag overlays while scanning */
+    .tag-overlay {
+      position: absolute;
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      border-radius: 2px;
+      padding: 1px 3px;
+    }
+    .product-card.scanning .tag-overlay { opacity: 1; }
+    .tag-top { top: -1px; left: 2px; color: var(--cyan); background: rgba(0,217,255,0.15); }
+    .tag-bot { bottom: -1px; right: 2px; color: var(--cyan); background: rgba(0,217,255,0.15); }
+
+    /* Scan beam */
+    #scan-beam {
+      position: absolute;
+      top: 34px;
+      left: 0;
+      width: 3px;
+      height: calc(100% - 34px);
+      background: linear-gradient(to bottom, transparent, var(--cyan), transparent);
+      box-shadow: 0 0 20px var(--cyan);
+      opacity: 0;
+      transition: left 0.4s ease, opacity 0.3s;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ─── BOTTOM: EXTRACTED DATA ─── */
+    #data-panel {
+      height: 175px;
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #050515;
+    }
+    #data-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+
+    /* ─── MOBILE: CODE PANEL AS TOP STRIP ─── */
+    @media (max-width: 700px) {
+      body { height: 100dvh; }
+
+      #header { padding: 6px 12px; }
+      #header h1 { font-size: 11px; letter-spacing: 1px; }
+      #status-bar { gap: 8px; font-size: 9px; }
+      /* hide speed stat on smallest screens */
+      .stat-speed { display: none; }
+
+      /* Main becomes vertical */
+      #main { flex-direction: column; }
+
+      /* Code panel becomes horizontal scrolling strip at top */
+      #code-panel {
+        width: 100%;
+        height: 80px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex-direction: column;
+      }
+      #code-header { padding: 4px 10px; font-size: 9px; }
+      #code-body {
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        display: flex;
+        align-items: flex-start;
+        padding: 6px;
+        flex-direction: row;
+        gap: 0;
+        font-size: 10px;
+        line-height: 1.7;
+        flex: 1;
+      }
+      /* On mobile: show code lines as horizontal sequence */
+      #code-body { flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+      #code-body::-webkit-scrollbar { height: 3px; width: 3px; }
+      #code-body::-webkit-scrollbar-track { background: #0a0a20; }
+      #code-body::-webkit-scrollbar-thumb { background: var(--dim); }
+      .code-line { white-space: nowrap; font-size: 10px; line-height: 1.6; }
+
+      /* EC body: 2 columns */
+      #ec-body {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        padding: 8px;
+        overflow-y: auto;
+        height: auto;
+      }
+
+      /* Show only 6 cards on mobile (JS handles this) */
+
+      .card-img { height: 36px; font-size: 18px; }
+      .card-name { font-size: 9px; }
+      .card-price { font-size: 10px; }
+      .card-stock { font-size: 8px; }
+
+      /* tag overlays too big on mobile */
+      .tag-overlay { display: none; }
+
+      /* Data panel: taller on mobile since code is compressed */
+      #data-panel { height: 160px; }
+      #data-header { padding: 4px 10px; }
+      #data-title { font-size: 9px; }
+      #data-count { font-size: 9px; }
+
+      /* Table: horizontal scroll, hide selector */
+      #data-table-wrap { overflow-x: auto; }
+      table { min-width: 320px; }
+      .td-selector { display: none; }
+      thead th:last-child { display: none; }
+      tbody td { padding: 4px 8px; font-size: 10px; }
+
+      #toast { bottom: 10px; right: 10px; font-size: 10px; padding: 6px 12px; }
+    }
+
+    /* ─── TABLET: 3-col grid ─── */
+    @media (min-width: 701px) and (max-width: 1000px) {
+      #code-panel { width: 260px; }
+      #code-body { font-size: 11px; line-height: 1.8; }
+      #ec-body { grid-template-columns: repeat(3, 1fr); }
+    }
+    #data-title {
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 2px;
+    }
+    #data-count {
+      font-size: 10px;
+      color: var(--dim);
+    }
+    #data-count span { color: var(--yellow); }
+
+    #data-table-wrap {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    #data-table-wrap::-webkit-scrollbar { width: 4px; }
+    #data-table-wrap::-webkit-scrollbar-track { background: #0a0a20; }
+    #data-table-wrap::-webkit-scrollbar-thumb { background: var(--dim); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #080818;
+      color: var(--dim);
+      text-align: left;
+      padding: 5px 12px;
+      font-size: 9px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid #0d0d25;
+      animation: rowIn 0.3s ease;
+    }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-10px); background: rgba(0,255,136,0.1); }
+      to { opacity: 1; transform: translateX(0); background: transparent; }
+    }
+    tbody td { padding: 5px 12px; }
+    .td-idx { color: var(--dim); font-size: 9px; }
+    .td-name { color: #d0d0f0; }
+    .td-price { color: var(--yellow); font-weight: 700; }
+    .td-stock-in { color: var(--green); }
+    .td-stock-low { color: var(--yellow); }
+    .td-stock-out { color: var(--red); }
+    .td-selector { color: var(--purple); font-size: 9px; }
+
+    /* ─── TOAST ─── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--panel);
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 11px;
+      box-shadow: 0 0 20px rgba(0,255,136,0.3);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: WEB SCRAPER LIVE
+desc: Pythonスクレイピングをビジュアルで体験
+tech: BeautifulSoup · CSS Selectors · Real-time
+level: 78
+color: #00d9ff
+type: demo
+-->
+
+<!-- HEADER -->
+<div id="header">
+  <h1>⚡ WEB SCRAPER LIVE</h1>
+  <div id="status-bar">
+    <div class="stat">抽出済: <span id="stat-count">0</span> 件</div>
+    <div class="stat stat-speed">速度: <span id="stat-speed">0</span> items/s</div>
+    <div class="stat">ラウンド: <span id="stat-round">1</span></div>
+  </div>
+  <div id="round-badge">AUTO LOOP</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT: CODE -->
+  <div id="code-panel">
+    <div id="code-header">▸ scraper.py</div>
+    <div id="code-body">
+      <div class="code-line" id="cl0"><span class="ln">1</span><span class="kw">import</span> requests</div>
+      <div class="code-line" id="cl1"><span class="ln">2</span><span class="kw">from</span> bs4 <span class="kw">import</span> BeautifulSoup</div>
+      <div class="code-line" id="cl2"><span class="ln">3</span><span class="kw">import</span> pandas <span class="kw">as</span> pd</div>
+      <div class="code-line" id="cl3"><span class="ln">4</span></div>
+      <div class="code-line" id="cl4"><span class="ln">5</span><span class="cm"># ターゲットURL</span></div>
+      <div class="code-line" id="cl5"><span class="ln">6</span><span class="var">url</span> <span class="op">=</span> <span class="str">"https://shop.example.jp"</span></div>
+      <div class="code-line" id="cl6"><span class="ln">7</span><span class="var">res</span> <span class="op">=</span> requests.<span class="fn">get</span>(url)</div>
+      <div class="code-line" id="cl7"><span class="ln">8</span><span class="var">soup</span> <span class="op">=</span> <span class="fn">BeautifulSoup</span>(</div>
+      <div class="code-line" id="cl8"><span class="ln">9</span>&nbsp;&nbsp;&nbsp;&nbsp;res.text, <span class="str">"html.parser"</span>)</div>
+      <div class="code-line" id="cl9"><span class="ln">10</span></div>
+      <div class="code-line" id="cl10"><span class="ln">11</span><span class="cm"># 商品カードを全取得</span></div>
+      <div class="code-line" id="cl11"><span class="ln">12</span><span class="var">cards</span> <span class="op">=</span> soup.<span class="fn">find_all</span>(</div>
+      <div class="code-line" id="cl12"><span class="ln">13</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"div"</span>, class_=<span class="str">"product-card"</span>)</div>
+      <div class="code-line" id="cl13"><span class="ln">14</span></div>
+      <div class="code-line" id="cl14"><span class="ln">15</span><span class="var">items</span> <span class="op">=</span> []</div>
+      <div class="code-line" id="cl15"><span class="ln">16</span><span class="kw">for</span> <span class="var">card</span> <span class="kw">in</span> <span class="var">cards</span>:</div>
+      <div class="code-line" id="cl16"><span class="ln">17</span>&nbsp;&nbsp;<span class="var">name</span> <span class="op">=</span> card.<span class="fn">find</span>(</div>
+      <div class="code-line" id="cl17"><span class="ln">18</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">".card-name"</span>).<span class="fn">text</span></div>
+      <div class="code-line" id="cl18"><span class="ln">19</span>&nbsp;&nbsp;<span class="var">price</span> <span class="op">=</span> card.<span class="fn">find</span>(</div>
+      <div class="code-line" id="cl19"><span class="ln">20</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">".card-price"</span>).<span class="fn">text</span></div>
+      <div class="code-line" id="cl20"><span class="ln">21</span>&nbsp;&nbsp;<span class="var">stock</span> <span class="op">=</span> card.<span class="fn">find</span>(</div>
+      <div class="code-line" id="cl21"><span class="ln">22</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">".card-stock"</span>).<span class="fn">text</span></div>
+      <div class="code-line" id="cl22"><span class="ln">23</span>&nbsp;&nbsp;items.<span class="fn">append</span>({</div>
+      <div class="code-line" id="cl23"><span class="ln">24</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"name"</span>: <span class="var">name</span>,</div>
+      <div class="code-line" id="cl24"><span class="ln">25</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"price"</span>: <span class="var">price</span>,</div>
+      <div class="code-line" id="cl25"><span class="ln">26</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"stock"</span>: <span class="var">stock</span>})</div>
+      <div class="code-line" id="cl26"><span class="ln">27</span></div>
+      <div class="code-line" id="cl27"><span class="ln">28</span><span class="cm"># DataFrameに変換</span></div>
+      <div class="code-line" id="cl28"><span class="ln">29</span><span class="var">df</span> <span class="op">=</span> pd.<span class="fn">DataFrame</span>(items)</div>
+      <div class="code-line" id="cl29"><span class="ln">30</span>df.<span class="fn">to_csv</span>(<span class="str">"result.csv"</span>)</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right">
+
+    <!-- TOP: EC SITE -->
+    <div id="ec-panel">
+      <div id="ec-header">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div id="url-bar">https://<span>shop.example.jp</span>/products?page=1</div>
+      </div>
+      <div id="ec-body"></div>
+      <div id="scan-beam"></div>
+    </div>
+
+    <!-- BOTTOM: EXTRACTED DATA -->
+    <div id="data-panel">
+      <div id="data-header">
+        <div id="data-title">▸ items[] — 抽出データ</div>
+        <div id="data-count">合計: <span id="total-count">0</span> 件</div>
+      </div>
+      <div id="data-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>PRODUCT NAME</th>
+              <th>PRICE</th>
+              <th>STOCK</th>
+              <th>SELECTOR</th>
+            </tr>
+          </thead>
+          <tbody id="data-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast">✅ CSV保存完了 → result.csv</div>
+
+<script>
+// ─── PRODUCT DATA ───
+const EMOJIS = ['📱','💻','🎧','⌚','📷','🎮','🖥','🖨','💡','🔋','🎵','📡','🖱','⌨️','📺'];
+const ADJECTIVES = ['プレミアム','ネオン','ウルトラ','スマート','ミラー','プロ','ターボ','ハイブリッド','ステルス','デジタル'];
+const NOUNS = ['ヘッドフォン','スピーカー','充電器','ケーブル','マウス','キーボード','カメラ','タブレット','スマートウォッチ','イヤホン','プロジェクター','ルーター','SSDドライブ','ゲームパッド','Webカメラ'];
+
+function randItem() {
+  const adj = ADJECTIVES[Math.floor(Math.random()*ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random()*NOUNS.length)];
+  const price = (Math.floor(Math.random()*290)+10)*100;
+  const stockNum = Math.floor(Math.random()*50);
+  const stockLabel = stockNum === 0 ? '在庫なし' : stockNum <= 5 ? `残り${stockNum}点` : `在庫${stockNum}点`;
+  const stockClass = stockNum === 0 ? 'out-stock' : stockNum <= 5 ? 'low-stock' : 'in-stock';
+  const emoji = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+  const hue = Math.floor(Math.random()*360);
+  return { name: `${adj}${noun}`, price, stockLabel, stockClass, emoji, hue };
+}
+
+// ─── STATE ───
+let products = [];
+let round = 1;
+let totalScraped = 0;
+let currentCardIdx = -1;
+let codeStep = 0;
+let scrapeSpeed = 0;
+let speedSamples = [];
+
+// ─── BUILD EC SITE ───
+function buildECSite() {
+  const isMobile = window.innerWidth <= 700;
+  const count = isMobile ? 6 : 10;
+  products = Array.from({length: count}, randItem);
+  const body = document.getElementById('ec-body');
+  body.innerHTML = '';
+  products.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.id = `card-${i}`;
+    card.innerHTML = `
+      <span class="tag-overlay tag-top">&lt;div class="product-card"&gt;</span>
+      <div class="card-img" style="background:hsla(${p.hue},80%,15%,1)">${p.emoji}</div>
+      <div class="card-name">${p.name}</div>
+      <div class="card-price">¥${p.price.toLocaleString()}</div>
+      <div class="card-stock ${p.stockClass}">${p.stockLabel}</div>
+      <span class="tag-overlay tag-bot">&lt;/div&gt;</span>
+    `;
+    body.appendChild(card);
+  });
+}
+
+// ─── CODE HIGHLIGHT ───
+const CODE_STEPS = [
+  [0,1,2],     // imports
+  [4,5],       // url
+  [6],         // requests.get
+  [7,8],       // BeautifulSoup
+  [10,11,12],  // find_all
+  [14,15],     // items = [], for card
+  [16,17],     // name
+  [18,19],     // price
+  [20,21],     // stock
+  [22,23,24,25], // append
+  [27,28,29],  // to_csv
+];
+
+function highlightCode(stepIdx) {
+  document.querySelectorAll('.code-line').forEach(el => {
+    el.classList.remove('active', 'done');
+  });
+  // Mark previous steps as done
+  const flatDone = CODE_STEPS.slice(0, stepIdx).flat();
+  flatDone.forEach(i => document.getElementById(`cl${i}`)?.classList.add('done'));
+  // Mark current as active
+  const active = CODE_STEPS[stepIdx] || [];
+  active.forEach(i => {
+    const el = document.getElementById(`cl${i}`);
+    if (el) {
+      el.classList.add('active');
+      // Mobile: scroll active line into view
+      if (window.innerWidth <= 700) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  });
+}
+
+// ─── SCRAPING ANIMATION ───
+let scrapeLoop = null;
+let codeLoop = null;
+
+function startScraping() {
+  buildECSite();
+  currentCardIdx = 0;
+  codeStep = 0;
+  document.getElementById('data-body').innerHTML = '';
+  document.getElementById('stat-count').textContent = '0';
+  document.getElementById('stat-round').textContent = round;
+
+  highlightCode(0); // imports
+
+  // Code steps: run first 4 code steps during setup
+  let setupStep = 0;
+  const setupSteps = [1, 2, 3, 4]; // indices into CODE_STEPS
+  const codeTimer = setInterval(() => {
+    if (setupStep < setupSteps.length) {
+      highlightCode(setupSteps[setupStep]);
+      setupStep++;
+    } else {
+      clearInterval(codeTimer);
+      runCardLoop();
+    }
+  }, 350);
+}
+
+function runCardLoop() {
+  if (currentCardIdx >= products.length) {
+    // Done
+    finishRound();
+    return;
+  }
+
+  const p = products[currentCardIdx];
+  const card = document.getElementById(`card-${currentCardIdx}`);
+
+  // Beam position
+  const beam = document.getElementById('scan-beam');
+  const ecBody = document.getElementById('ec-body');
+  const rect = card.getBoundingClientRect();
+  const ecRect = ecBody.getBoundingClientRect();
+  const relLeft = rect.left - ecRect.left + rect.width / 2;
+  beam.style.left = relLeft + 'px';
+  beam.style.opacity = '1';
+
+  // Highlight card
+  card.classList.add('scanning');
+
+  // Code: for loop start
+  highlightCode(5);
+
+  // Extract name
+  setTimeout(() => {
+    highlightCode(6); // name
+    // blink name element
+    card.querySelector('.card-name').style.color = 'var(--cyan)';
+  }, 200);
+
+  setTimeout(() => {
+    highlightCode(7); // price
+    card.querySelector('.card-price').style.textShadow = '0 0 8px var(--yellow)';
+  }, 450);
+
+  setTimeout(() => {
+    highlightCode(8); // stock
+    card.querySelector('.card-stock').style.textShadow = '0 0 8px var(--green)';
+  }, 700);
+
+  setTimeout(() => {
+    highlightCode(9); // append
+  }, 900);
+
+  setTimeout(() => {
+    // Done with this card
+    card.classList.remove('scanning');
+    card.classList.add('scraped');
+    card.querySelector('.card-name').style.color = '';
+    card.querySelector('.card-price').style.textShadow = '';
+    card.querySelector('.card-stock').style.textShadow = '';
+
+    // Add to table
+    addRow(currentCardIdx + 1, p);
+    totalScraped++;
+    document.getElementById('stat-count').textContent = totalScraped;
+
+    // Speed calc
+    speedSamples.push(Date.now());
+    if (speedSamples.length > 3) speedSamples.shift();
+    if (speedSamples.length > 1) {
+      const elapsed = (speedSamples[speedSamples.length-1] - speedSamples[0]) / 1000;
+      scrapeSpeed = ((speedSamples.length-1) / elapsed).toFixed(1);
+      document.getElementById('stat-speed').textContent = scrapeSpeed;
+    }
+
+    currentCardIdx++;
+    setTimeout(runCardLoop, 150);
+  }, 1100);
+}
+
+function finishRound() {
+  highlightCode(10); // to_csv
+  document.getElementById('scan-beam').style.opacity = '0';
+
+  const toast = document.getElementById('toast');
+  toast.textContent = `✅ Round ${round} 完了 — ${products.length}件を保存 → result_r${round}.csv`;
+  toast.classList.add('show');
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    round++;
+    setTimeout(startScraping, 1200);
+  }, 2500);
+}
+
+function addRow(idx, p) {
+  const tbody = document.getElementById('data-body');
+  const tr = document.createElement('tr');
+  const stockClass = p.stockClass === 'in-stock' ? 'td-stock-in' : p.stockClass === 'low-stock' ? 'td-stock-low' : 'td-stock-out';
+  tr.innerHTML = `
+    <td class="td-idx">${idx}</td>
+    <td class="td-name">${p.emoji} ${p.name}</td>
+    <td class="td-price">¥${p.price.toLocaleString()}</td>
+    <td class="${stockClass}">${p.stockLabel}</td>
+    <td class="td-selector">.card-name / .card-price / .card-stock</td>
+  `;
+  tbody.appendChild(tr);
+  document.getElementById('total-count').textContent = idx;
+
+  // Auto scroll
+  const wrap = document.getElementById('data-table-wrap');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+// ─── START ───
+startScraping();
+</script>
+
+</body>
+</html>
