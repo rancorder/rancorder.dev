@@ -1090,8 +1090,8 @@ export default function ShowcasePage(): React.ReactElement {
           }}>
             <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.7 }}>
               {activeTab === 'all'     && 'すべてのデモ'}
-              {activeTab === 'effects' && 'HTMLタグエフェクト'}
               {activeTab === 'games'   && 'ゲームデモ'}
+           　 {activeTab === 'effects' && 'HTMLタグエフェクト'}
             </div>
             <strong style={{ fontSize: '2rem', color: '#fff', display: 'block' }}>
               {filteredDemos.length}
