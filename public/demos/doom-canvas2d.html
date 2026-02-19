@@ -333,6 +333,10 @@ type: game
     <div class="hud-label">AMMO</div>
     <div class="hud-value ammo" id="ammo">200</div>
   </div>
+  <div class="hud-item">
+    <div class="hud-label">KILLS</div>
+    <div class="hud-value" style="color:#ff0000;" id="kills">0</div>
+  </div>
 </div>
 
 <canvas id="minimap"></canvas>
@@ -387,18 +391,21 @@ type: game
   <div class="section">
     <div class="section-title">🎯 ゲームの目的</div>
     <div class="desc" style="margin-left:10px;">
-      ・赤い敵を全て倒せ！<br>
-      ・弾薬と体力に注意<br>
-      ・ミニマップで敵の位置を確認
+      ・できるだけ多くの敵を倒せ！<br>
+      ・敵は3秒ごとに増援が来る（最大6体）<br>
+      ・敵は追跡＆射撃してくる<br>
+      ・体力が0になるとゲームオーバー
     </div>
   </div>
   
   <div class="section">
     <div class="section-title">💡 ヒント</div>
     <div class="desc" style="margin-left:10px;">
-      ・遠くの敵は暗く見える<br>
-      ・弾は直進するので正確に狙おう<br>
-      ・敵は1発25ダメージ、4発で倒せる
+      ・敵は近づくと追いかけてくる<br>
+      ・敵の射撃は壁で遮れる<br>
+      ・防具があればダメージ半減<br>
+      ・敵は1発25ダメージ、4発で倒せる<br>
+      ・動き続けて敵の攻撃を避けろ！
     </div>
   </div>
   
@@ -475,10 +482,23 @@ const MAP_HEIGHT = MAP.length;
 
 // ======= ENEMIES =======
 const enemies = [
-  { x: 8.5, y: 8.5, health: 100, dead: false },
-  { x: 12.5, y: 3.5, health: 100, dead: false },
-  { x: 6.5, y: 12.5, health: 100, dead: false },
+  { x: 8.5, y: 8.5, health: 100, dead: false, shootCooldown: 0, lastShot: 0 },
+  { x: 12.5, y: 3.5, health: 100, dead: false, shootCooldown: 0, lastShot: 0 },
+  { x: 6.5, y: 12.5, health: 100, dead: false, shootCooldown: 0, lastShot: 0 },
 ];
+
+const ENEMY_SPAWN_POINTS = [
+  { x: 8.5, y: 8.5 },
+  { x: 12.5, y: 3.5 },
+  { x: 6.5, y: 12.5 },
+  { x: 4.5, y: 4.5 },
+  { x: 11.5, y: 11.5 },
+  { x: 3.5, y: 11.5 },
+];
+
+let enemySpawnTimer = 0;
+let enemiesKilled = 0;
+let gameTime = 0;
 
 // ======= TEXTURES (Procedural) =======
 const TEXTURE_SIZE = 64;
@@ -790,6 +810,16 @@ function renderMinimap() {
 
 // ======= UPDATE =======
 function update() {
+  gameTime++;
+  
+  // Update enemies AI
+  updateEnemies();
+  
+  // Spawn new enemies
+  if (gameTime % 180 === 0) { // Every 3 seconds
+    spawnEnemy();
+  }
+  
   // Mobile controls have priority
   if (joystickActive) {
     updateMobileControls();
@@ -842,6 +872,140 @@ function update() {
     player.dir += mouseX * 0.002;
     mouseX *= 0.8; // Smooth deceleration
   }
+  
+  // Check game over
+  if (player.health <= 0) {
+    alert('GAME OVER! Enemies killed: ' + enemiesKilled);
+    location.reload();
+  }
+}
+
+// ======= ENEMY AI =======
+function updateEnemies() {
+  enemies.forEach(enemy => {
+    if (enemy.dead) return;
+    
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    // Chase player if within range
+    if (dist < 8 && dist > 1.5) {
+      const moveSpeed = 0.02;
+      const angle = Math.atan2(dy, dx);
+      
+      let newX = enemy.x + Math.cos(angle) * moveSpeed;
+      let newY = enemy.y + Math.sin(angle) * moveSpeed;
+      
+      // Check collision
+      const mapX = Math.floor(newX);
+      const mapY = Math.floor(newY);
+      
+      if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+        if (MAP[mapY][mapX] === 0) {
+          enemy.x = newX;
+          enemy.y = newY;
+        }
+      }
+    }
+    
+    // Shoot at player
+    if (dist < 10) {
+      enemy.shootCooldown++;
+      
+      if (enemy.shootCooldown > 60) { // Shoot every 1 second
+        const angle = Math.atan2(dy, dx);
+        const angleDiff = Math.abs(angle - Math.atan2(player.y - enemy.y, player.x - enemy.x));
+        
+        if (angleDiff < 0.3) { // Accurate enough
+          enemyShoot(enemy);
+          enemy.shootCooldown = 0;
+        }
+      }
+    }
+  });
+}
+
+function enemyShoot(enemy) {
+  playSound(180, 0.1, 'square');
+  
+  // Check if hit player (simplified ray cast)
+  const dx = player.x - enemy.x;
+  const dy = player.y - enemy.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  
+  // Check if line of sight is clear
+  const steps = Math.floor(dist * 2);
+  let blocked = false;
+  
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const checkX = Math.floor(enemy.x + dx * t);
+    const checkY = Math.floor(enemy.y + dy * t);
+    
+    if (checkX >= 0 && checkX < MAP_WIDTH && checkY >= 0 && checkY < MAP_HEIGHT) {
+      if (MAP[checkY][checkX] > 0) {
+        blocked = true;
+        break;
+      }
+    }
+  }
+  
+  // Hit player if not blocked
+  if (!blocked && dist < 10) {
+    const damage = Math.max(5, 20 - Math.floor(dist * 2));
+    damagePlayer(damage);
+  }
+}
+
+function damagePlayer(damage) {
+  if (player.armor > 0) {
+    const armorAbsorb = Math.min(player.armor, Math.floor(damage * 0.5));
+    player.armor -= armorAbsorb;
+    damage -= armorAbsorb;
+  }
+  
+  player.health -= damage;
+  player.health = Math.max(0, player.health);
+  
+  playSound(250, 0.1, 'sawtooth');
+  updateHUD();
+  
+  // Red flash effect
+  ctx.fillStyle = 'rgba(255,0,0,0.3)';
+  ctx.fillRect(0, 0, W, H);
+}
+
+function spawnEnemy() {
+  // Count alive enemies
+  const aliveCount = enemies.filter(e => !e.dead).length;
+  
+  if (aliveCount >= 6) return; // Max 6 enemies
+  
+  // Find random spawn point away from player
+  let attempts = 0;
+  let spawnPoint;
+  
+  while (attempts < 10) {
+    spawnPoint = ENEMY_SPAWN_POINTS[Math.floor(Math.random() * ENEMY_SPAWN_POINTS.length)];
+    const dx = spawnPoint.x - player.x;
+    const dy = spawnPoint.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > 5) break; // Far enough
+    attempts++;
+  }
+  
+  if (spawnPoint) {
+    enemies.push({
+      x: spawnPoint.x,
+      y: spawnPoint.y,
+      health: 100,
+      dead: false,
+      shootCooldown: 0,
+      lastShot: 0,
+    });
+  }
 }
 
 // ======= SHOOTING =======
@@ -872,8 +1036,9 @@ function shoot() {
         enemy.health -= 25;
         hitSound();
         
-        if (enemy.health <= 0) {
+        if (enemy.health <= 0 && !enemy.dead) {
           enemy.dead = true;
+          enemiesKilled++;
           deathSound();
         }
       }
@@ -889,6 +1054,7 @@ function updateHUD() {
   document.getElementById('health').textContent = player.health;
   document.getElementById('armor').textContent = player.armor;
   document.getElementById('ammo').textContent = player.ammo;
+  document.getElementById('kills').textContent = enemiesKilled;
 }
 
 // ======= GAME LOOP =======
