@@ -85,7 +85,12 @@ function GodzillaEffect() {
     
     // Particle class
     class Particle {
-      constructor(x, y) {
+        x: number;
+        y: number;
+        vx: number;
+        vy: number;
+   
+        constructor(x: number, y: number) 
         const angle = -0.2 + (Math.random() - 0.5) * 0.3;
         const speed = 15 + Math.random() * 10;
         this.x = x;
