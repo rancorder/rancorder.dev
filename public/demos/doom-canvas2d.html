@@ -217,6 +217,93 @@ body {
   border-top:1px solid #333;
   text-align:center;
 }
+
+/* ======= MOBILE CONTROLS ======= */
+#mobileControls {
+  position:fixed;
+  bottom:100px;
+  left:0;
+  right:0;
+  display:none;
+  z-index:20;
+  pointer-events:none;
+}
+#mobileControls.show {
+  display:block;
+}
+#joystick {
+  position:absolute;
+  left:30px;
+  bottom:20px;
+  width:120px;
+  height:120px;
+  background:rgba(255,255,255,0.1);
+  border:3px solid rgba(255,255,255,0.3);
+  border-radius:50%;
+  pointer-events:auto;
+}
+#joystickKnob {
+  position:absolute;
+  width:50px;
+  height:50px;
+  background:rgba(255,0,0,0.6);
+  border:3px solid #ff0000;
+  border-radius:50%;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 20px rgba(255,0,0,0.8);
+  transition:all 0.1s;
+}
+#shootBtn {
+  position:absolute;
+  right:30px;
+  bottom:20px;
+  width:80px;
+  height:80px;
+  background:rgba(255,0,0,0.4);
+  border:3px solid #ff0000;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px;
+  color:#ff0000;
+  pointer-events:auto;
+  box-shadow:0 0 30px rgba(255,0,0,0.5);
+  transition:all 0.2s;
+}
+#shootBtn:active {
+  background:rgba(255,0,0,0.8);
+  transform:scale(0.9);
+}
+#lookArea {
+  position:absolute;
+  top:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:50%;
+  height:80%;
+  pointer-events:auto;
+  opacity:0.3;
+  background:radial-gradient(circle, rgba(255,255,0,0.1), transparent);
+  border:1px dashed rgba(255,255,0,0.3);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:rgba(255,255,0,0.8);
+  font-size:12px;
+  text-shadow:0 0 5px rgba(255,255,0,0.8);
+}
+@media (max-width: 768px) {
+  #mobileControls {
+    display:block;
+  }
+  #info {
+    display:none;
+  }
+}
 </style>
 </head>
 <body>
@@ -284,6 +371,20 @@ type: game
   </div>
   
   <div class="section">
+    <div class="section-title">📱 スマホ操作</div>
+    <div class="controls">
+      <div class="key">左ジョイスティック</div>
+      <div class="desc">移動（全方向）</div>
+      
+      <div class="key">画面中央スワイプ</div>
+      <div class="desc">視点回転</div>
+      
+      <div class="key">右の🔫ボタン</div>
+      <div class="desc">射撃</div>
+    </div>
+  </div>
+  
+  <div class="section">
     <div class="section-title">🎯 ゲームの目的</div>
     <div class="desc" style="margin-left:10px;">
       ・赤い敵を全て倒せ！<br>
@@ -311,6 +412,15 @@ type: game
   MOUSE: Look<br>
   CLICK: Shoot<br>
   ESC: Toggle Controls
+</div>
+
+<!-- Mobile Controls -->
+<div id="mobileControls">
+  <div id="joystick">
+    <div id="joystickKnob"></div>
+  </div>
+  <div id="shootBtn">🔫</div>
+  <div id="lookArea">👆 SWIPE TO LOOK</div>
 </div>
 
 <script>
@@ -680,48 +790,54 @@ function renderMinimap() {
 
 // ======= UPDATE =======
 function update() {
-  const moveSpeed = 0.05;
-  const rotSpeed = 0.05;
-  
-  // Rotation
-  if (keys['ArrowLeft'] || keys['a']) player.dir -= rotSpeed;
-  if (keys['ArrowRight'] || keys['d']) player.dir += rotSpeed;
-  
-  // Movement
-  let newX = player.x;
-  let newY = player.y;
-  
-  if (keys['w'] || keys['ArrowUp']) {
-    newX += Math.cos(player.dir) * moveSpeed;
-    newY += Math.sin(player.dir) * moveSpeed;
-  }
-  if (keys['s'] || keys['ArrowDown']) {
-    newX -= Math.cos(player.dir) * moveSpeed;
-    newY -= Math.sin(player.dir) * moveSpeed;
-  }
-  
-  // Strafe
-  if (keys['a'] && !keys['ArrowLeft']) {
-    newX += Math.cos(player.dir - Math.PI/2) * moveSpeed;
-    newY += Math.sin(player.dir - Math.PI/2) * moveSpeed;
-  }
-  if (keys['d'] && !keys['ArrowRight']) {
-    newX += Math.cos(player.dir + Math.PI/2) * moveSpeed;
-    newY += Math.sin(player.dir + Math.PI/2) * moveSpeed;
-  }
-  
-  // Collision detection
-  const mapX = Math.floor(newX);
-  const mapY = Math.floor(newY);
-  
-  if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
-    if (MAP[mapY][mapX] === 0) {
-      player.x = newX;
-      player.y = newY;
+  // Mobile controls have priority
+  if (joystickActive) {
+    updateMobileControls();
+  } else {
+    // Keyboard controls
+    const moveSpeed = 0.05;
+    const rotSpeed = 0.05;
+    
+    // Rotation
+    if (keys['ArrowLeft'] || keys['a']) player.dir -= rotSpeed;
+    if (keys['ArrowRight'] || keys['d']) player.dir += rotSpeed;
+    
+    // Movement
+    let newX = player.x;
+    let newY = player.y;
+    
+    if (keys['w'] || keys['ArrowUp']) {
+      newX += Math.cos(player.dir) * moveSpeed;
+      newY += Math.sin(player.dir) * moveSpeed;
+    }
+    if (keys['s'] || keys['ArrowDown']) {
+      newX -= Math.cos(player.dir) * moveSpeed;
+      newY -= Math.sin(player.dir) * moveSpeed;
+    }
+    
+    // Strafe
+    if (keys['a'] && !keys['ArrowLeft']) {
+      newX += Math.cos(player.dir - Math.PI/2) * moveSpeed;
+      newY += Math.sin(player.dir - Math.PI/2) * moveSpeed;
+    }
+    if (keys['d'] && !keys['ArrowRight']) {
+      newX += Math.cos(player.dir + Math.PI/2) * moveSpeed;
+      newY += Math.sin(player.dir + Math.PI/2) * moveSpeed;
+    }
+    
+    // Collision detection
+    const mapX = Math.floor(newX);
+    const mapY = Math.floor(newY);
+    
+    if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+      if (MAP[mapY][mapX] === 0) {
+        player.x = newX;
+        player.y = newY;
+      }
     }
   }
   
-  // Mouse look
+  // Mouse look (PC only, when locked)
   if (controlsLocked && Math.abs(mouseX) > 0.001) {
     player.dir += mouseX * 0.002;
     mouseX *= 0.8; // Smooth deceleration
@@ -851,6 +967,133 @@ window.addEventListener('keydown', (e) => {
     e.stopPropagation();
   }
 });
+
+// ======= MOBILE CONTROLS =======
+const joystick = document.getElementById('joystick');
+const joystickKnob = document.getElementById('joystickKnob');
+const shootBtn = document.getElementById('shootBtn');
+const lookArea = document.getElementById('lookArea');
+
+let joystickActive = false;
+let joystickStartX = 0;
+let joystickStartY = 0;
+let joystickDeltaX = 0;
+let joystickDeltaY = 0;
+
+let lookTouchId = null;
+let lastLookX = 0;
+let lastLookY = 0;
+
+// Joystick (Movement)
+joystick.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  joystickActive = true;
+  const rect = joystick.getBoundingClientRect();
+  joystickStartX = rect.left + rect.width / 2;
+  joystickStartY = rect.top + rect.height / 2;
+}, {passive: false});
+
+joystick.addEventListener('touchmove', (e) => {
+  if (!joystickActive) return;
+  e.preventDefault();
+  
+  const touch = e.touches[0];
+  const dx = touch.clientX - joystickStartX;
+  const dy = touch.clientY - joystickStartY;
+  
+  // Limit to circle radius
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const maxDistance = 35;
+  
+  if (distance > maxDistance) {
+    joystickDeltaX = (dx / distance) * maxDistance;
+    joystickDeltaY = (dy / distance) * maxDistance;
+  } else {
+    joystickDeltaX = dx;
+    joystickDeltaY = dy;
+  }
+  
+  // Update knob position
+  joystickKnob.style.transform = `translate(calc(-50% + ${joystickDeltaX}px), calc(-50% + ${joystickDeltaY}px))`;
+}, {passive: false});
+
+joystick.addEventListener('touchend', () => {
+  joystickActive = false;
+  joystickDeltaX = 0;
+  joystickDeltaY = 0;
+  joystickKnob.style.transform = 'translate(-50%, -50%)';
+});
+
+// Shoot button
+shootBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  shoot();
+}, {passive: false});
+
+// Look area (Camera rotation)
+lookArea.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  lookTouchId = touch.identifier;
+  lastLookX = touch.clientX;
+  lastLookY = touch.clientY;
+}, {passive: false});
+
+lookArea.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  
+  for (let i = 0; i < e.touches.length; i++) {
+    if (e.touches[i].identifier === lookTouchId) {
+      const touch = e.touches[i];
+      const dx = touch.clientX - lastLookX;
+      
+      player.dir += dx * 0.005;
+      
+      lastLookX = touch.clientX;
+      lastLookY = touch.clientY;
+      break;
+    }
+  }
+}, {passive: false});
+
+lookArea.addEventListener('touchend', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    if (e.changedTouches[i].identifier === lookTouchId) {
+      lookTouchId = null;
+      break;
+    }
+  }
+});
+
+// Update movement based on joystick
+function updateMobileControls() {
+  if (!joystickActive) return;
+  
+  const moveSpeed = 0.05;
+  const angle = Math.atan2(joystickDeltaY, joystickDeltaX);
+  const strength = Math.min(1, Math.sqrt(joystickDeltaX * joystickDeltaX + joystickDeltaY * joystickDeltaY) / 35);
+  
+  // Forward/backward
+  const forwardComponent = -Math.cos(angle - Math.PI/2) * strength;
+  let newX = player.x + Math.cos(player.dir) * forwardComponent * moveSpeed;
+  let newY = player.y + Math.sin(player.dir) * forwardComponent * moveSpeed;
+  
+  // Strafe
+  const strafeComponent = Math.sin(angle - Math.PI/2) * strength;
+  newX += Math.cos(player.dir + Math.PI/2) * strafeComponent * moveSpeed;
+  newY += Math.sin(player.dir + Math.PI/2) * strafeComponent * moveSpeed;
+  
+  // Collision detection
+  const mapX = Math.floor(newX);
+  const mapY = Math.floor(newY);
+  
+  if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+    if (MAP[mapY][mapX] === 0) {
+      player.x = newX;
+      player.y = newY;
+    }
+  }
+}
 
 // ======= START =======
 updateHUD();
