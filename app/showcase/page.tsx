@@ -60,7 +60,7 @@ function playTone(freq: number, type: OscillatorType = 'sine', dur: number = 0.2
    GODZILLA FIRE BREATH EFFECT
    ============================================================ */
 function GodzillaEffect() {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   useEffect(() => {
     const canvas = canvasRef.current;
