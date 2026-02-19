@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>NEON NONOGRAM</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@700;900&display=swap');
+
+    :root {
+      --bg:#050510; --panel:#080820; --border:#1a1a4a;
+      --cyan:#00d9ff; --green:#00ff88; --purple:#a855f7;
+      --yellow:#ffd700; --red:#ff4466; --dim:#2a2a5a;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html,body{width:100%;min-height:100vh;}
+    body{
+      background:var(--bg);color:#c0c0e0;
+      font-family:'JetBrains Mono',monospace;
+      display:flex;flex-direction:column;align-items:center;
+      overflow-x:hidden;padding-bottom:24px;
+    }
+
+    /* HEADER */
+    #hdr{
+      width:100%;display:flex;align-items:center;justify-content:space-between;
+      padding:9px 20px;background:var(--panel);border-bottom:1px solid var(--border);
+    }
+    #hdr h1{font-family:'Orbitron',sans-serif;font-size:13px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 10px var(--cyan);}
+    #stats{display:flex;gap:18px;font-size:11px;}
+    .si{color:var(--dim);white-space:nowrap;}
+    .si b{color:var(--green);font-weight:600;font-style:normal;}
+
+    /* LEVEL BAR */
+    #lvls{
+      width:100%;display:flex;align-items:center;gap:4px;
+      padding:8px 16px;flex-wrap:wrap;justify-content:center;
+      background:var(--panel);border-bottom:1px solid var(--border);
+    }
+    .dl{font-size:9px;color:var(--dim);letter-spacing:1px;white-space:nowrap;padding:0 2px;}
+    .lb{
+      width:29px;height:29px;border:1px solid var(--border);background:none;color:var(--dim);
+      font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;border-radius:3px;
+      transition:all 0.15s;display:flex;align-items:center;justify-content:center;
+    }
+    .lb:hover{border-color:var(--cyan);color:var(--cyan);}
+    .lb.on{border-color:var(--purple);color:#fff;background:rgba(168,85,247,0.25);box-shadow:0 0 8px rgba(168,85,247,0.5);}
+
+    /* GAME AREA */
+    #game{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px;gap:14px;width:100%;overflow-x:auto;}
+
+    /* NONOGRAM GRID WRAPPER */
+    #nono{display:grid;grid-template:"cr cc" auto "rc gd" auto / auto auto;}
+    #nono-cr{grid-area:cr;}
+    #nono-cc{grid-area:cc;display:flex;}
+    #nono-rc{grid-area:rc;display:flex;flex-direction:column;}
+    #nono-gd{grid-area:gd;display:grid;border-top:2px solid #252550;border-left:2px solid #252550;}
+
+    /* CLUES */
+    .ccol{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;}
+    .crow{display:flex;justify-content:flex-end;align-items:center;}
+    .cn{display:flex;align-items:center;justify-content:center;color:#4a4a88;font-weight:700;line-height:1;transition:color 0.25s,text-shadow 0.25s;}
+    .cn.sat{color:var(--green);text-shadow:0 0 6px rgba(0,255,136,0.5);}
+
+    /* CELLS */
+    .cell{
+      border-right:1px solid #181835;border-bottom:1px solid #181835;
+      cursor:pointer;position:relative;transition:background 0.08s;
+      user-select:none;-webkit-tap-highlight-color:transparent;
+    }
+    .cell:hover:not(.f):not(.h){background:rgba(0,217,255,0.07);}
+    .cell.br{border-right:2px solid #252550!important;}
+    .cell.bb{border-bottom:2px solid #252550!important;}
+    .cell.f{background:var(--cyan);box-shadow:inset 0 0 6px rgba(0,217,255,0.3);}
+    .cell.h{background:rgba(168,85,247,0.55)!important;box-shadow:0 0 8px rgba(168,85,247,0.4);}
+    .cell.x::after{content:'✕';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--red);font-weight:700;line-height:1;}
+    .cell.err{background:rgba(255,68,102,0.55)!important;animation:errflash 0.22s 3;}
+    @keyframes errflash{0%,100%{opacity:1}50%{opacity:0.2}}
+    .cell.win{background:var(--green)!important;box-shadow:0 0 10px rgba(0,255,136,0.6);transition:background 0.2s,box-shadow 0.2s;}
+
+    /* CONTROLS */
+    #ctrls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+    .cb{
+      padding:8px 15px;border:1px solid var(--border);background:var(--panel);color:#6666aa;
+      font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;
+      transition:all 0.15s;letter-spacing:1px;
+    }
+    .cb:hover{border-color:var(--cyan);color:var(--cyan);}
+    .cb.p{border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.08);}
+    .cb.y{border-color:var(--yellow);color:var(--yellow);}
+    .cb:disabled{opacity:0.28;cursor:not-allowed;}
+
+    /* LEGEND */
+    #leg{font-size:10px;color:var(--dim);text-align:center;line-height:1.9;}
+
+    /* WIN OVERLAY */
+    #wov{display:none;position:fixed;inset:0;background:rgba(5,5,16,0.93);align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:14px;}
+    #wov.show{display:flex;}
+    #wov h2{font-family:'Orbitron',sans-serif;font-size:26px;color:var(--green);text-shadow:0 0 30px var(--green);animation:glow 1.2s ease-in-out infinite;}
+    @keyframes glow{0%,100%{text-shadow:0 0 20px var(--green)}50%{text-shadow:0 0 55px var(--green),0 0 90px var(--green)}}
+    #wbody{color:var(--dim);font-size:13px;text-align:center;line-height:2.6;}
+    #wbody em{color:var(--cyan);font-style:normal;font-weight:600;}
+
+    /* LOADING */
+    #ldov{display:none;position:fixed;inset:0;background:rgba(5,5,16,0.92);align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:14px;}
+    #ldov.show{display:flex;}
+    .spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:sp 0.7s linear infinite;}
+    @keyframes sp{to{transform:rotate(360deg);}}
+    #ldtxt{font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:11px;letter-spacing:3px;}
+
+    /* MOBILE */
+    @media(max-width:480px){
+      #hdr{padding:7px 12px;}
+      #hdr h1{font-size:11px;letter-spacing:1px;}
+      #stats{gap:10px;font-size:10px;}
+      #lvls{padding:7px 10px;gap:3px;}
+      .lb{width:25px;height:25px;font-size:11px;}
+      #game{padding:10px 8px;gap:10px;}
+      .cb{padding:7px 11px;font-size:10px;}
+      #leg{font-size:9px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: NEON NONOGRAM
+desc: レベル1〜10・ヒント3回付きの本格ロジックパズル
+tech: Constraint Propagation · Backtracking · Line Solver
+level: 95
+color: #a855f7
+type: game
+-->
+
+<div id="hdr">
+  <h1>⬛ NEON NONOGRAM</h1>
+  <div id="stats">
+    <div class="si">TIME&nbsp;<b id="s-t">00:00</b></div>
+    <div class="si">MOVES&nbsp;<b id="s-m">0</b></div>
+    <div class="si">L<b id="s-l">1</b></div>
+  </div>
+</div>
+
+<div id="lvls">
+  <span class="dl">EASY</span>
+  <button class="lb on" onclick="selLv(1)">1</button>
+  <button class="lb" onclick="selLv(2)">2</button>
+  <span class="dl">MED</span>
+  <button class="lb" onclick="selLv(3)">3</button>
+  <button class="lb" onclick="selLv(4)">4</button>
+  <span class="dl">HARD</span>
+  <button class="lb" onclick="selLv(5)">5</button>
+  <button class="lb" onclick="selLv(6)">6</button>
+  <span class="dl">EXP</span>
+  <button class="lb" onclick="selLv(7)">7</button>
+  <button class="lb" onclick="selLv(8)">8</button>
+  <span class="dl">MST</span>
+  <button class="lb" onclick="selLv(9)">9</button>
+  <button class="lb" onclick="selLv(10)">10</button>
+</div>
+
+<div id="game">
+  <div id="nono">
+    <div id="nono-cr"></div>
+    <div id="nono-cc"></div>
+    <div id="nono-rc"></div>
+    <div id="nono-gd"></div>
+  </div>
+  <div id="ctrls">
+    <button class="cb" onclick="newGame()">▶ NEW GAME</button>
+    <button class="cb y" id="hbtn" onclick="doHint()">💡 HINT (3)</button>
+    <button class="cb p" onclick="doCheck()">✓ CHECK</button>
+    <button class="cb" onclick="doReset()">↺ RESET</button>
+  </div>
+  <div id="leg">
+    クリック: 塗り &nbsp;|&nbsp; 右クリック: × マーク &nbsp;|&nbsp; ドラッグ: 連続入力<br>
+    行/列が揃うと <span style="color:var(--green)">緑</span> &nbsp;|&nbsp; ヒントは残り3回
+  </div>
+</div>
+
+<div id="wov">
+  <h2>🎉 COMPLETE!</h2>
+  <div id="wbody"></div>
+  <button class="cb p" onclick="closeWin();newGame()">▶ NEXT PUZZLE</button>
+  <button class="cb" onclick="closeWin()">✕ CLOSE</button>
+</div>
+
+<div id="ldov">
+  <div class="spin"></div>
+  <div id="ldtxt">GENERATING...</div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+// LINE SOLVER — constraint propagation
+// ══════════════════════════════════════════
+
+function clueOf(line) {
+  const r=[]; let c=0;
+  for(const v of line){if(v)c++;else if(c){r.push(c);c=0;}}
+  if(c)r.push(c);
+  return r.length?r:[0];
+}
+function clueEq(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
+
+// All valid placements for clue on a line (cells: -1=?, 0=empty, 1=filled)
+function lineSols(cells,clue){
+  const n=cells.length;
+  const blks=(clue.length===1&&clue[0]===0)?[]:clue;
+  const out=[];
+  if(!blks.length){
+    if(!cells.some(v=>v===1))out.push(new Array(n).fill(0));
+    return out;
+  }
+  function go(pos,bi,cur){
+    if(out.length>600)return;
+    if(bi===blks.length){
+      for(let i=pos;i<n;i++)if(cells[i]===1)return;
+      out.push(cur.concat(new Array(n-pos).fill(0)));
+      return;
+    }
+    const b=blks[bi];
+    const minNeed=blks.slice(bi).reduce((a,v)=>a+v,0)+(blks.length-bi-1);
+    for(let s=pos;s+minNeed<=n;s++){
+      // Can we skip from pos to s?
+      let skip=true;
+      for(let i=pos;i<s;i++){if(cells[i]===1){skip=false;break;}}
+      if(!skip)break;
+      const e=s+b;
+      // Can we place block [s,e)?
+      let fit=true;
+      for(let i=s;i<e;i++){if(cells[i]===0){fit=false;break;}}
+      if(!fit)continue;
+      if(bi<blks.length-1){
+        if(e>=n||cells[e]===1)continue;
+        go(e+1,bi+1,cur.concat(new Array(s-pos).fill(0),new Array(b).fill(1),[0]));
+      }else{
+        go(e,bi+1,cur.concat(new Array(s-pos).fill(0),new Array(b).fill(1)));
+      }
+    }
+  }
+  go(0,0,[]);
+  return out;
+}
+
+function constrainLine(cells,clue){
+  const sols=lineSols(cells,clue);
+  if(!sols.length)return null;
+  const res=[...cells];
+  for(let i=0;i<cells.length;i++){
+    if(cells[i]!==-1)continue;
+    if(sols.every(s=>s[i]===1))res[i]=1;
+    else if(sols.every(s=>s[i]===0))res[i]=0;
+  }
+  return res;
+}
+
+function propagate(g,rc,cc,n){
+  let ch=true;
+  while(ch){
+    ch=false;
+    for(let r=0;r<n;r++){
+      const res=constrainLine(g[r],rc[r]);
+      if(!res)return false;
+      for(let c=0;c<n;c++){
+        if(res[c]!==-1&&g[r][c]===-1){g[r][c]=res[c];ch=true;}
+      }
+    }
+    for(let c=0;c<n;c++){
+      const col=g.map(r=>r[c]);
+      const res=constrainLine(col,cc[c]);
+      if(!res)return false;
+      for(let r=0;r<n;r++){
+        if(res[r]!==-1&&g[r][c]===-1){g[r][c]=res[r];ch=true;}
+      }
+    }
+  }
+  return true;
+}
+
+function isLineSolvable(rc,cc,n){
+  const g=Array.from({length:n},()=>new Array(n).fill(-1));
+  if(!propagate(g,rc,cc,n))return false;
+  return g.every(r=>r.every(v=>v!==-1));
+}
+
+function countSols(rc,cc,n,max){
+  let cnt=0,steps=0;
+  function solve(g){
+    if(cnt>=max||steps>60000)return;
+    steps++;
+    if(!propagate(g,rc,cc,n))return;
+    if(g.every(r=>r.every(v=>v!==-1))){cnt++;return;}
+    let br=-1,bc=-1;
+    OUTER:for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(g[r][c]===-1){br=r;bc=c;break OUTER;}
+    for(const v of[0,1]){
+      if(cnt>=max)break;
+      const cg=g.map(r=>[...r]);
+      cg[br][bc]=v;
+      solve(cg);
+    }
+  }
+  solve(Array.from({length:n},()=>new Array(n).fill(-1)));
+  return cnt;
+}
+
+// ══════════════════════════════════════════
+// PUZZLE GENERATION
+// ══════════════════════════════════════════
+
+const LCFG={
+  1:{n:5,d:0.50},  2:{n:5,d:0.65},
+  3:{n:8,d:0.48},  4:{n:8,d:0.58},
+  5:{n:10,d:0.46}, 6:{n:10,d:0.55},
+  7:{n:12,d:0.45}, 8:{n:12,d:0.54},
+  9:{n:15,d:0.43}, 10:{n:15,d:0.52},
+};
+
+function genPuzzle(lv){
+  const{n,d}=LCFG[lv];
+  for(let att=0;att<500;att++){
+    const sol=Array.from({length:n},()=>Array.from({length:n},()=>Math.random()<d?1:0));
+    if(!sol.every(r=>r.some(v=>v)))continue;
+    if(!Array.from({length:n},(_,c)=>sol.some(r=>r[c])).every(Boolean))continue;
+    const rc=sol.map(r=>clueOf(r));
+    const cc=Array.from({length:n},(_,c)=>clueOf(sol.map(r=>r[c])));
+    if(isLineSolvable(rc,cc,n)||countSols(rc,cc,n,2)===1)
+      return{sol,rc,cc,n};
+  }
+  // fallback: just return last attempt
+  const sol=Array.from({length:n},()=>Array.from({length:n},()=>Math.random()<d?1:0));
+  const rc=sol.map(r=>clueOf(r));
+  const cc=Array.from({length:n},(_,c)=>clueOf(sol.map(r=>r[c])));
+  return{sol,rc,cc,n};
+}
+
+// ══════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════
+
+let G={sol:[],rc:[],cc:[],n:0,board:[],hints:3,moves:0,lv:1,time:0,timer:null,started:false,dragVal:-1,dragMode:0};
+
+// ══════════════════════════════════════════
+// CELL SIZE — responsive
+// ══════════════════════════════════════════
+
+function csz(n){
+  const w=window.innerWidth;
+  if(w<=380) return n<=5?36:n<=8?28:n<=10?23:n<=12?19:15;
+  if(w<=600) return n<=5?42:n<=8?33:n<=10?27:n<=12?23:19;
+  return n<=5?46:n<=8?40:n<=10?34:n<=12?30:25;
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+
+function render(){
+  const{n,rc,cc,board}=G;
+  const cs=csz(n);
+  const clueFontSize=Math.max(8,Math.min(13,cs*0.42));
+  const clueW=Math.max(16,Math.floor(cs*0.85));
+
+  // max rows in column clues
+  const hdrH=cc.reduce((m,c)=>Math.max(m,c.length),0);
+  const maxRC=rc.reduce((m,c)=>Math.max(m,c.length),0);
+
+  // Corner spacer
+  const cr=document.getElementById('nono-cr');
+  cr.style.cssText=`width:${clueW*maxRC+4}px;height:${hdrH*cs+4}px;`;
+
+  // Column clues
+  const elCC=document.getElementById('nono-cc');
+  elCC.innerHTML='';
+  cc.forEach((clue,ci)=>{
+    const col=document.createElement('div');
+    col.className='ccol';
+    col.style.cssText=`width:${cs}px;height:${hdrH*cs+2}px;`;
+    const pad=hdrH-clue.length;
+    for(let i=0;i<pad;i++){
+      const sp=document.createElement('div');
+      sp.className='cn';
+      sp.style.cssText=`width:${cs}px;height:${cs}px;font-size:${clueFontSize}px;`;
+      col.appendChild(sp);
+    }
+    clue.forEach(v=>{
+      const sp=document.createElement('div');
+      sp.className='cn';sp.dataset.ci=ci;
+      sp.style.cssText=`width:${cs}px;height:${cs}px;font-size:${clueFontSize}px;`;
+      sp.textContent=v===0?'·':v;
+      col.appendChild(sp);
+    });
+    elCC.appendChild(col);
+  });
+
+  // Row clues
+  const elRC=document.getElementById('nono-rc');
+  elRC.innerHTML='';
+  rc.forEach((clue,ri)=>{
+    const row=document.createElement('div');
+    row.className='crow';
+    row.style.cssText=`height:${cs}px;width:${maxRC*clueW+4}px;`;
+    const pad=maxRC-clue.length;
+    for(let i=0;i<pad;i++){
+      const sp=document.createElement('div');
+      sp.className='cn';
+      sp.style.cssText=`width:${clueW}px;height:${cs}px;font-size:${clueFontSize}px;`;
+      row.appendChild(sp);
+    }
+    clue.forEach(v=>{
+      const sp=document.createElement('div');
+      sp.className='cn';sp.dataset.ri=ri;
+      sp.style.cssText=`width:${clueW}px;height:${cs}px;font-size:${clueFontSize}px;`;
+      sp.textContent=v===0?'·':v;
+      row.appendChild(sp);
+    });
+    elRC.appendChild(row);
+  });
+
+  // Grid
+  const gd=document.getElementById('nono-gd');
+  gd.innerHTML='';
+  gd.style.cssText=`grid-template-columns:repeat(${n},${cs}px);grid-template-rows:repeat(${n},${cs}px);width:${n*cs}px;`;
+
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.dataset.r=r;cell.dataset.c=c;
+      cell.style.cssText=`width:${cs}px;height:${cs}px;font-size:${Math.max(9,cs*0.45)}px;`;
+      if((c+1)%5===0&&c<n-1)cell.classList.add('br');
+      if((r+1)%5===0&&r<n-1)cell.classList.add('bb');
+      applyCell(cell,board[r][c]);
+      cell.addEventListener('mousedown',onMDown);
+      cell.addEventListener('mouseenter',onMEnter);
+      cell.addEventListener('contextmenu',e=>{e.preventDefault();toggle(r,c,2);});
+      // Touch support
+      let lt=null;
+      cell.addEventListener('touchstart',e=>{
+        lt=setTimeout(()=>{lt=null;toggle(r,c,2);},400);
+        e.preventDefault();
+      },{passive:false});
+      cell.addEventListener('touchend',e=>{
+        if(lt!==null){clearTimeout(lt);lt=null;toggle(r,c,1);}
+        e.preventDefault();
+      },{passive:false});
+      cell.addEventListener('touchmove',e=>{
+        if(lt!==null){clearTimeout(lt);lt=null;}
+        const t=e.touches[0];
+        const el=document.elementFromPoint(t.clientX,t.clientY);
+        if(el&&el.classList.contains('cell')){
+          const tr=+el.dataset.r,tc=+el.dataset.c;
+          if(G.dragMode===1)toggle(tr,tc,1);
+        }
+        e.preventDefault();
+      },{passive:false});
+      gd.appendChild(cell);
+    }
+  }
+  updateClueColors();
+}
+
+function applyCell(el,v){
+  el.classList.remove('f','x','h','err','win');
+  if(v===1)el.classList.add('f');
+  else if(v===2)el.classList.add('x');
+}
+function cellEl(r,c){return document.querySelector(`#nono-gd .cell[data-r="${r}"][data-c="${c}"]`);}
+
+// ══════════════════════════════════════════
+// MOUSE INTERACTION
+// ══════════════════════════════════════════
+
+document.addEventListener('mouseup',()=>{G.dragVal=-1;G.dragMode=0;});
+
+function onMDown(e){
+  if(e.button===2)return;
+  const r=+e.currentTarget.dataset.r,c=+e.currentTarget.dataset.c;
+  const cur=G.board[r][c];
+  G.dragVal=cur===1?0:1;G.dragMode=1;
+  toggle(r,c,G.dragVal);
+}
+function onMEnter(e){
+  if(G.dragMode!==1)return;
+  const r=+e.currentTarget.dataset.r,c=+e.currentTarget.dataset.c;
+  toggle(r,c,G.dragVal);
+}
+
+function toggle(r,c,v){
+  if(!G.started)startTimer();
+  const cur=G.board[r][c];
+  const nv=(cur===v)?0:v;
+  G.board[r][c]=nv;G.moves++;
+  document.getElementById('s-m').textContent=G.moves;
+  const el=cellEl(r,c);
+  if(el)applyCell(el,nv);
+  updateClueColors();
+  checkWin();
+}
+
+// ══════════════════════════════════════════
+// CLUE SATISFACTION
+// ══════════════════════════════════════════
+
+function rowFilled(r){return G.board[r].map(v=>v===1?1:0);}
+function colFilled(c){return G.board.map(r=>r[c]===1?1:0);}
+
+function updateClueColors(){
+  const{n,rc,cc}=G;
+  rc.forEach((clue,ri)=>{
+    const sat=clueEq(clueOf(rowFilled(ri)),clue);
+    document.querySelectorAll(`#nono-rc .cn[data-ri="${ri}"]`).forEach(el=>el.classList.toggle('sat',sat));
+  });
+  cc.forEach((clue,ci)=>{
+    const sat=clueEq(clueOf(colFilled(ci)),clue);
+    document.querySelectorAll(`#nono-cc .cn[data-ci="${ci}"]`).forEach(el=>el.classList.toggle('sat',sat));
+  });
+}
+
+// ══════════════════════════════════════════
+// WIN
+// ══════════════════════════════════════════
+
+function checkWin(){
+  const{n,sol,board}=G;
+  for(let r=0;r<n;r++)
+    for(let c=0;c<n;c++)
+      if((board[r][c]===1?1:0)!==sol[r][c])return;
+  stopTimer();
+  winAnim();
+}
+
+function winAnim(){
+  const{n}=G;
+  const delay=Math.max(18,Math.floor(800/(n*n/4)));
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      const el=cellEl(r,c);
+      if(!el)continue;
+      setTimeout(()=>{
+        el.classList.remove('f','x','h','err');
+        el.classList.add('win');
+      },(r+c)*delay);
+    }
+  }
+  setTimeout(showWin,(n-1+n-1)*delay+500);
+}
+
+function showWin(){
+  const m=Math.floor(G.time/60),s=G.time%60;
+  document.getElementById('wbody').innerHTML=
+    `クリアタイム&nbsp;<em>${pad2(m)}:${pad2(s)}</em><br>`+
+    `手数&nbsp;<em>${G.moves}</em><br>`+
+    `レベル&nbsp;<em>${G.lv} / 10</em>`;
+  document.getElementById('wov').classList.add('show');
+}
+function closeWin(){document.getElementById('wov').classList.remove('show');}
+
+// ══════════════════════════════════════════
+// HINT
+// ══════════════════════════════════════════
+
+function doHint(){
+  if(G.hints<=0)return;
+  const cands=[];
+  for(let r=0;r<G.n;r++)
+    for(let c=0;c<G.n;c++){
+      const bv=G.board[r][c]===1?1:0;
+      if(bv!==G.sol[r][c])cands.push([r,c]);
+    }
+  if(!cands.length)return;
+  const[r,c]=cands[Math.floor(Math.random()*cands.length)];
+  G.board[r][c]=G.sol[r][c]===1?1:0;
+  const el=cellEl(r,c);
+  if(el){
+    applyCell(el,G.board[r][c]);
+    el.classList.add('h');
+    setTimeout(()=>el.classList.remove('h'),1400);
+  }
+  G.hints--;
+  document.getElementById('hbtn').textContent=`💡 HINT (${G.hints})`;
+  if(G.hints===0)document.getElementById('hbtn').disabled=true;
+  if(!G.started)startTimer();
+  G.moves++;document.getElementById('s-m').textContent=G.moves;
+  updateClueColors();checkWin();
+}
+
+// ══════════════════════════════════════════
+// CHECK
+// ══════════════════════════════════════════
+
+function doCheck(){
+  const{n,sol,board}=G;
+  let err=0;
+  for(let r=0;r<n;r++)
+    for(let c=0;c<n;c++){
+      if((board[r][c]===1?1:0)!==sol[r][c]){
+        err++;
+        const el=cellEl(r,c);
+        if(el){el.classList.add('err');setTimeout(()=>el.classList.remove('err'),700);}
+      }
+    }
+  if(!err)checkWin();
+}
+
+// ══════════════════════════════════════════
+// RESET / NEW GAME
+// ══════════════════════════════════════════
+
+function doReset(){
+  G.board=G.sol.map(r=>r.map(()=>0));
+  G.moves=0;G.time=0;G.started=false;
+  stopTimer();
+  document.getElementById('s-m').textContent='0';
+  document.getElementById('s-t').textContent='00:00';
+  G.hints=3;
+  document.getElementById('hbtn').textContent='💡 HINT (3)';
+  document.getElementById('hbtn').disabled=false;
+  render();
+}
+
+function selLv(lv){
+  G.lv=lv;
+  document.querySelectorAll('.lb').forEach((b,i)=>b.classList.toggle('on',i+1===lv));
+  document.getElementById('s-l').textContent=lv;
+  newGame();
+}
+
+function newGame(){
+  closeWin();stopTimer();
+  G.hints=3;G.moves=0;G.time=0;G.started=false;
+  document.getElementById('s-m').textContent='0';
+  document.getElementById('s-t').textContent='00:00';
+  document.getElementById('hbtn').textContent='💡 HINT (3)';
+  document.getElementById('hbtn').disabled=false;
+  showLoading(true);
+  setTimeout(()=>{
+    const pz=genPuzzle(G.lv);
+    G.sol=pz.sol;G.rc=pz.rc;G.cc=pz.cc;G.n=pz.n;
+    G.board=pz.sol.map(r=>r.map(()=>0));
+    render();
+    showLoading(false);
+  },30);
+}
+
+// ══════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════
+
+function startTimer(){
+  G.started=true;
+  G.timer=setInterval(()=>{G.time++;document.getElementById('s-t').textContent=fmtTime(G.time);},1000);
+}
+function stopTimer(){if(G.timer){clearInterval(G.timer);G.timer=null;}}
+function fmtTime(s){return pad2(Math.floor(s/60))+':'+pad2(s%60);}
+function pad2(n){return String(n).padStart(2,'0');}
+function showLoading(v){document.getElementById('ldov').classList.toggle('show',v);}
+
+window.addEventListener('resize',()=>{if(G.n)render();});
+
+// START
+G.lv=1;
+newGame();
+</script>
+</body>
+</html>
