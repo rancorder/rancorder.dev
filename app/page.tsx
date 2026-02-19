@@ -340,6 +340,7 @@ function GodzillaEffect(): React.ReactElement {
   return (
     <canvas
       ref={canvasRef}
+      className="godzilla-canvas"
       style={{
         position: 'fixed',
         top: 0,
@@ -380,9 +381,10 @@ function TabButton({ active, onClick, children, icon }: TabButtonProps): React.R
           e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
         }
       }}
+      className="tab-btn"
       style={{
-        padding: '1rem 1.75rem',
-        fontSize: '1rem',
+        padding: '0.875rem 1.5rem',
+        fontSize: '0.9rem',
         fontWeight: active ? 800 : 600,
         fontFamily: "'JetBrains Mono', monospace",
         background: active ? 'rgba(124,58,237,0.2)' : 'transparent',
@@ -599,11 +601,7 @@ function DemoCard({
           ? `0 20px 60px ${color}88, 0 0 40px ${color}66, inset 0 0 30px ${color}22`
           : `0 0 30px ${color}33`,
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        transform: isHovered
-          ? 'translateY(-10px) scale(1.02) rotateX(2deg)'
-          : 'translateY(0) scale(1) rotateX(0deg)',
-        transformStyle: 'preserve-3d',
-        perspective: '1000px',
+        transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
         cursor: demoUrl ? 'pointer' : 'default',
         overflow: 'hidden',
       }}
@@ -804,60 +802,8 @@ function DemoCard({
    ※ demoUrl は public/demos/ の実ファイル名と完全一致させること
    ============================================================ */
 const DEMOS: DemoData[] = [
-  // ── VISUAL EFFECTS (HTMLタグコンポーネント) ──────────────
-  {
-    id: 'glitch-text',
-    title: 'GlitchText',
-    description: 'クリックで即座に崩壊するテキストエフェクト。RGB色収差と文字置換でサイバー感を演出。',
-    category: 'effect',
-    color: '#00ff88',
-    difficulty: 7,
-    icon: '✨',
-    tech: 'React Hooks · requestAnimationFrame · RGB Split',
-  },
-  {
-    id: 'scan-reveal',
-    title: 'ScanReveal',
-    description: 'スキャンライン付きフェードイン。要素が画面に入るとスキャン開始。',
-    category: 'effect',
-    color: '#7c3aed',
-    difficulty: 6,
-    icon: '📡',
-    tech: 'IntersectionObserver · CSS Animation · 3D Transform',
-  },
-  {
-    id: 'typewriter',
-    title: 'Typewriter',
-    description: 'タイプミスして打ち直すリアルなタイプライター。隣接キーでミス再現。',
-    category: 'effect',
-    color: '#00d9ff',
-    difficulty: 8,
-    icon: '⌨️',
-    tech: 'Keyboard Layout · Backspace Logic · Timing Control',
-  },
-  {
-    id: 'counter-up',
-    title: 'CounterUp',
-    description: '目標値を超えてから戻る物理カウンター。Verlet積分による滑らかな動き。',
-    category: 'effect',
-    color: '#a855f7',
-    difficulty: 7,
-    icon: '🔢',
-    tech: 'Verlet Integration · Spring Physics · Damping',
-  },
-  {
-    id: 'timeline',
-    title: 'Timeline',
-    description: 'SVGラインが自走して繋がるタイムライン。stroke-dashoffsetアニメーション。',
-    category: 'effect',
-    color: '#ec4899',
-    difficulty: 9,
-    icon: '📊',
-    tech: 'SVG Path · stroke-dashoffset · Staggered Animation',
-  },
+  // ── public/demos/ のHTMLファイル（全件） ───────────
 
-  // ── GAMES (public/demos/ のスタンドアロンHTML) ───────────
-  // ⚠️ demoUrl はリポジトリの実ファイル名と完全一致させること
   {
     id: 'neon-tetris',
     title: 'NEON TETRIS',
@@ -995,7 +941,51 @@ export default function ShowcasePage(): React.ReactElement {
         ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 2px; }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px) scale(0.95); }
-          to   { opacity: 1; transform: translateY(0)  scale(1); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .demo-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+          gap: 1.5rem;
+        }
+        .tab-bar {
+          display: flex;
+          gap: 0.75rem;
+          margin-bottom: 2rem;
+          padding: 0.75rem;
+          background: rgba(0,0,0,0.3);
+          border-radius: 16px;
+          border: 1px solid rgba(124,58,237,0.2);
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .hero-section {
+          position: relative;
+          z-index: 1;
+          min-height: 100svh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: 5rem clamp(1rem,5vw,4rem) 3rem;
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .showcase-section {
+          position: relative;
+          z-index: 1;
+          padding: 4rem clamp(1rem,4vw,4rem);
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        @media (max-width: 479px) {
+          .godzilla-canvas { opacity: 0.2; }
+          .demo-grid { gap: 0.875rem; }
+        }
+        @media (max-width: 640px) {
+          .showcase-section { padding: 3rem 1rem; }
+          .hero-section { padding: 4rem 1rem 2rem; }
         }
       `}</style>
 
@@ -1021,17 +1011,7 @@ export default function ShowcasePage(): React.ReactElement {
       <GodzillaEffect />
 
       {/* HERO */}
-      <section style={{
-        position: 'relative',
-        zIndex: 1,
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '0 clamp(1.5rem,5vw,4rem)',
-        maxWidth: '1100px',
-        margin: '0 auto',
-      }}>
+      <section className="hero-section">
         <h1 style={{
           fontSize: 'clamp(2.8rem,8vw,6rem)',
           fontWeight: 800,
@@ -1074,13 +1054,7 @@ export default function ShowcasePage(): React.ReactElement {
       </section>
 
       {/* SHOWCASE SECTION */}
-      <section style={{
-        position: 'relative',
-        zIndex: 1,
-        padding: '6rem clamp(1.5rem,5vw,4rem)',
-        maxWidth: '1100px',
-        margin: '0 auto',
-      }}>
+      <section className="showcase-section">
         {/* Section Header */}
         <div style={{ marginBottom: '3rem' }}>
           <div style={{
@@ -1118,27 +1092,14 @@ export default function ShowcasePage(): React.ReactElement {
         </div>
 
         {/* TAB BUTTONS */}
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          marginBottom: '3rem',
-          flexWrap: 'wrap',
-          padding: '1rem',
-          background: 'rgba(0,0,0,0.3)',
-          borderRadius: '16px',
-          border: '1px solid rgba(124,58,237,0.2)',
-        }}>
+        <div className="tab-bar">
           <TabButton active={activeTab === 'all'}     onClick={() => handleTabChange('all',     400)} icon="🎯">All</TabButton>
           <TabButton active={activeTab === 'effects'} onClick={() => handleTabChange('effects', 500)} icon="✨">Effects</TabButton>
           <TabButton active={activeTab === 'games'}   onClick={() => handleTabChange('games',   600)} icon="🎮">Games</TabButton>
         </div>
 
         {/* DEMO GRID */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: '2rem',
-        }}>
+        <div className="demo-grid">
           {filteredDemos.map((demo, index) => (
             <div
               key={demo.id}
