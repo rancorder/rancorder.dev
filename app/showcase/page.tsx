@@ -114,21 +114,19 @@ function GodzillaEffect() {
           this.vy *= 0.98;
           this.life -= 0.02;
         }
+      
+        draw(ctx: CanvasRenderingContext2D) {
+          ctx.save();
+          ctx.globalAlpha = this.life;
+          ctx.shadowBlur = 30;
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       }
 
-      
-      draw(ctx) {
-        ctx.save();
-        ctx.globalAlpha = this.life;
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = this.color;
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
     
     function drawGodzilla() {
       const scale = 1.5; // より大きく
