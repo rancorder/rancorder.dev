@@ -8,18 +8,51 @@ import { useState, useEffect, useRef, useCallback } from "react";
 const GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#_';
 function randomChar() { return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]; }
 
-const NEIGHBORS = { a:'sqwze',s:'adwxze',d:'sfexc',f:'dgrvb',g:'fhtbn',h:'gjynm',j:'hkum',k:'jlio',l:'kop',e:'wrsd',r:'etdf',t:'rygh',y:'tuhj',u:'yijk',i:'uojk',o:'iplk',p:'ol',w:'qes',q:'wa' };
-function mistakeChar(ch) { const n = NEIGHBORS[ch.toLowerCase()]; return n ? n[Math.floor(Math.random()*n.length)] : ch; }
+const NEIGHBORS = { 
+  a:'sqwze',
+  s:'adwxze',
+  d:'sfexc',
+  f:'dgrvb',
+  g:'fhtbn',
+  h:'gjynm',
+  j:'hkum',
+  k:'jlio',
+  l:'kop',
+  e:'wrsd',
+  r:'etdf',
+  t:'rygh',
+  y:'tuhj',
+  u:'yijk',
+  i:'uojk',
+  o:'iplk',
+  p:'ol',
+  w:'qes',
+  q:'wa'
+} as const;
 
-function playTone(freq, type='sine', dur=0.25, vol=0.15) {
+type NeighborKey = keyof typeof NEIGHBORS;
+
+function mistakeChar(ch: string): string {
+  const lower = ch.toLowerCase();
+  if (!(lower in NEIGHBORS)) return ch;
+  
+  const n = NEIGHBORS[lower as NeighborKey];
+  return n[Math.floor(Math.random() * n.length)];
+}
+
+function playTone(freq: number, type: OscillatorType = 'sine', dur: number = 0.25, vol: number = 0.15): void {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator(); 
+    const gain = ctx.createGain();
+    osc.connect(gain); 
+    gain.connect(ctx.destination);
+    osc.type = type; 
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
     gain.gain.setValueAtTime(vol, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+    osc.start(ctx.currentTime); 
+    osc.stop(ctx.currentTime + dur);
   } catch(_) {}
 }
 
@@ -338,9 +371,48 @@ function GodzillaEffect() {
 }
 
 /* ============================================================
+   TYPES
+   ============================================================ */
+interface TabButtonProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  icon?: string;
+}
+
+interface GlitchTextProps {
+  children: React.ReactNode;
+  intensity?: number;
+}
+
+interface DemoCardProps {
+  title: string;
+  description: string;
+  category: 'effect' | 'game';
+  color: string;
+  difficulty?: number;
+  icon: string;
+  tech?: string;
+  demoUrl?: string;
+}
+
+interface DemoData extends DemoCardProps {
+  id: string;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+}
+
+/* ============================================================
    TAB BUTTON COMPONENT
    ============================================================ */
-function TabButton({ active, onClick, children, icon }) {
+function TabButton({ active, onClick, children, icon }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -386,7 +458,7 @@ function TabButton({ active, onClick, children, icon }) {
 /* ============================================================
    GLITCH TEXT
    ============================================================ */
-function GlitchText({ children, intensity=1 }) {
+function GlitchText({ children, intensity = 1 }: GlitchTextProps) {
   const text = String(children);
   const [displayed, setDisplayed] = useState(text);
   const [glitching, setGlitching] = useState(false);
@@ -429,24 +501,25 @@ function GlitchText({ children, intensity=1 }) {
 /* ============================================================
    ANIMATED DEMO CARD WITH PARTICLES
    ============================================================ */
-function DemoCard({ title, description, category, color, difficulty, icon, tech, demoUrl }) {
+function DemoCard({ title, description, category, color, difficulty, icon, tech, demoUrl }: DemoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [particles, setParticles] = useState([]);
-  const canvasRef = useRef(null);
-  const cardRef = useRef(null);
-  const animationRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current || !cardRef.current) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
     const rect = cardRef.current.getBoundingClientRect();
     
     canvas.width = rect.width;
     canvas.height = rect.height;
     
-    let particles = [];
+    let particles: Particle[] = [];
     
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -494,14 +567,16 @@ function DemoCard({ title, description, category, color, difficulty, icon, tech,
       }
     };
     
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
     if (isHovered) {
       interval = setInterval(spawnParticles, 100);
     }
     
     return () => {
-      clearInterval(interval);
-      cancelAnimationFrame(animationRef.current);
+      if (interval) clearInterval(interval);
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, [isHovered, color]);
 
@@ -762,10 +837,10 @@ function DemoCard({ title, description, category, color, difficulty, icon, tech,
    MAIN SHOWCASE WITH TABS
    ============================================================ */
 export default function Showcase() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'effects' | 'games'>('all');
 
   // 実際のデモデータ
-  const demos = [
+  const demos: DemoData[] = [
     // VISUAL EFFECTS (HTMLタグとして使用可能)
     {
       id: 'glitch-text',
@@ -888,7 +963,7 @@ export default function Showcase() {
   ];
 
   // フィルタリング
-  const filteredDemos = demos.filter(demo => {
+  const filteredDemos = demos.filter((demo): demo is DemoData => {
     if (activeTab === 'all') return true;
     if (activeTab === 'effects') return demo.category === 'effect';
     if (activeTab === 'games') return demo.category === 'game';
