@@ -108,8 +108,16 @@ function GodzillaEffect(): React.ReactElement {
     let breathTimeout = 0;
     const particles: FireParticle[] = [];
 
+    // Responsive: scale down on narrow screens
+    function getGodzillaParams(): { x: number; scale: number } {
+      const w = window.innerWidth;
+      if (w < 480) return { x: Math.round(w * 0.28), scale: w / 480 };
+      if (w < 768) return { x: Math.round(w * 0.25), scale: 0.9 + (w - 480) / 3000 };
+      return { x: 200, scale: 1.5 };
+    }
+
     const godzilla = {
-      x: 200,
+      x: getGodzillaParams().x,
       y: window.innerHeight - 50,
     };
 
@@ -127,7 +135,7 @@ function GodzillaEffect(): React.ReactElement {
     }
 
     function drawGodzilla(): void {
-      const scale = 1.5;
+      const scale = getGodzillaParams().scale;
       const x = godzilla.x;
       const y = godzilla.y;
 
@@ -221,7 +229,7 @@ function GodzillaEffect(): React.ReactElement {
     function drawBreath(): void {
       if (!breathActive) return;
 
-      const scale = 1.5;
+      const scale = getGodzillaParams().scale;
       const startX = godzilla.x + 135 * scale;
       const startY = godzilla.y - 210;
       const endX = startX + 900 * breathProgress;
@@ -326,6 +334,7 @@ function GodzillaEffect(): React.ReactElement {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       godzilla.y = window.innerHeight - 50;
+      godzilla.x = getGodzillaParams().x;
     };
 
     window.addEventListener('resize', handleResize);
@@ -980,7 +989,6 @@ export default function ShowcasePage(): React.ReactElement {
           margin: 0 auto;
         }
         @media (max-width: 479px) {
-          .godzilla-canvas { opacity: 0.2; }
           .demo-grid { gap: 0.875rem; }
         }
         @media (max-width: 640px) {
