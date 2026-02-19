@@ -93,7 +93,7 @@ function GodzillaEffect(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = canvasRef.current as HTMLCanvasElement;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -510,8 +510,8 @@ function DemoCard({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const card = cardRef.current;
+    const canvas = canvasRef.current as HTMLCanvasElement;
+    const card = cardRef.current as HTMLDivElement;
     if (!canvas || !card) return;
 
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
