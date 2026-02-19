@@ -83,24 +83,31 @@ function GodzillaEffect() {
       headY: window.innerHeight - 280,
     };
     
-    // Particle class
-    class Particle {
+   　// Particle class
+   　class Particle {
         x: number;
         y: number;
         vx: number;
         vy: number;
-   
-        constructor(x: number, y: number) 
-        const angle = -0.2 + (Math.random() - 0.5) * 0.3;
-        const speed = 15 + Math.random() * 10;
-        this.x = x;
-        this.y = y;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.life = 1;
-        this.size = 8 + Math.random() * 15;
-        this.color = Math.random() > 0.5 ? '#ff6b00' : '#ffdd00';
+        life: number;
+        size: number;
+        color: string;
+      
+        constructor(x: number, y: number) {
+          const angle = -0.2 + (Math.random() - 0.5) * 0.3;
+          const speed = 15 + Math.random() * 10;
+      
+          this.x = x;
+          this.y = y;
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+      
+          this.life = 1;
+          this.size = 8 + Math.random() * 15;
+          this.color = Math.random() > 0.5 ? '#ff6b00' : '#ffdd00';
+        }
       }
+
       
       update() {
         this.x += this.vx;
