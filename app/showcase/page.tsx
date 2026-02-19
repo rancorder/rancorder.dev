@@ -106,17 +106,16 @@ function GodzillaEffect() {
           this.size = 8 + Math.random() * 15;
           this.color = Math.random() > 0.5 ? '#ff6b00' : '#ffdd00';
         }
+      
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vx *= 0.98;
+          this.vy *= 0.98;
+          this.life -= 0.02;
+        }
       }
 
-      
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vx *= 0.98;
-        this.vy += 0.2;
-        this.life -= 0.015;
-        this.size *= 0.97;
-      }
       
       draw(ctx) {
         ctx.save();
