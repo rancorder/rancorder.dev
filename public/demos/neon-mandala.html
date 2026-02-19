@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>NEON MANDALA CREATOR</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      touch-action: none;
+    }
+    #toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: rgba(0,0,0,0.9);
+      border-bottom: 2px solid #a855f7;
+      flex-wrap: wrap;
+      gap: 10px;
+      z-index: 10;
+    }
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    label {
+      color: #a855f7;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    select, input[type="range"] {
+      background: rgba(168,85,247,0.2);
+      border: 2px solid #a855f7;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    input[type="color"] {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #a855f7;
+      border-radius: 5px;
+      cursor: pointer;
+      background: transparent;
+    }
+    input[type="range"] {
+      width: 100px;
+    }
+    button {
+      padding: 8px 15px;
+      background: rgba(168,85,247,0.3);
+      border: 2px solid #a855f7;
+      color: #a855f7;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 12px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: rgba(168,85,247,0.6);
+      box-shadow: 0 0 20px #a855f7;
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background: #0a0a0a;
+    }
+    canvas {
+      cursor: crosshair;
+      box-shadow: 0 0 40px rgba(168,85,247,0.5);
+    }
+    #info {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      color: rgba(168,85,247,0.7);
+      font-size: 11px;
+      text-align: right;
+      pointer-events: none;
+    }
+    @media (max-width: 768px) {
+      #toolbar {
+        font-size: 10px;
+      }
+      label {
+        font-size: 10px;
+      }
+      button {
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+      input[type="color"] {
+        width: 30px;
+        height: 30px;
+      }
+      input[type="range"] {
+        width: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: NEON MANDALA CREATOR
+desc: 対称図形描画ツール · 2-12軸対称 · カラー選択 · PNG保存 · リアルタイムグロー
+tech: Canvas 2D API · Symmetry Algorithm · Touch Events · Image Export
+level: 95
+color: #a855f7
+type: demo
+-->
+
+<div id="toolbar">
+  <div class="tool-group">
+    <label>軸:</label>
+    <select id="symmetry">
+      <option value="2">2軸</option>
+      <option value="4">4軸</option>
+      <option value="6" selected>6軸</option>
+      <option value="8">8軸</option>
+      <option value="12">12軸</option>
+    </select>
+  </div>
+  
+  <div class="tool-group">
+    <label>カラー:</label>
+    <input type="color" id="color" value="#a855f7">
+  </div>
+  
+  <div class="tool-group">
+    <label>サイズ:</label>
+    <input type="range" id="size" min="1" max="30" value="5">
+    <span id="size-val" style="color:#a855f7;font-weight:bold;width:30px;">5</span>
+  </div>
+  
+  <div class="tool-group">
+    <button id="clear">🗑️ CLEAR</button>
+    <button id="save">💾 SAVE PNG</button>
+  </div>
+</div>
+
+<div id="canvas-container">
+  <canvas id="canvas"></canvas>
+  <div id="info">
+    NEON MANDALA<br>
+    ドラッグして描画
+  </div>
+</div>
+
+<script>
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var symmetrySelect = document.getElementById('symmetry');
+var colorInput = document.getElementById('color');
+var sizeInput = document.getElementById('size');
+var sizeVal = document.getElementById('size-val');
+var clearBtn = document.getElementById('clear');
+var saveBtn = document.getElementById('save');
+
+var W, H, centerX, centerY;
+var drawing = false;
+var lastX = 0;
+var lastY = 0;
+var symmetryCount = 6;
+var brushSize = 5;
+var brushColor = '#a855f7';
+
+function resize() {
+  var size = Math.min(window.innerWidth - 40, window.innerHeight - 120, 800);
+  canvas.width = size;
+  canvas.height = size;
+  W = size;
+  H = size;
+  centerX = W / 2;
+  centerY = H / 2;
+  
+  // Clear to black
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+}
+
+resize();
+window.onresize = resize;
+
+symmetrySelect.onchange = function() {
+  symmetryCount = parseInt(this.value);
+};
+
+colorInput.oninput = function() {
+  brushColor = this.value;
+};
+
+sizeInput.oninput = function() {
+  brushSize = parseInt(this.value);
+  sizeVal.textContent = brushSize;
+};
+
+clearBtn.onclick = function() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+};
+
+saveBtn.onclick = function() {
+  var link = document.createElement('a');
+  link.download = 'mandala-' + Date.now() + '.png';
+  link.href = canvas.toDataURL();
+  link.click();
+};
+
+function drawSymmetry(x, y, lastX, lastY) {
+  var dx = x - centerX;
+  var dy = y - centerY;
+  var ldx = lastX - centerX;
+  var ldy = lastY - centerY;
+  
+  var angle = Math.atan2(dy, dx);
+  var lastAngle = Math.atan2(ldy, ldx);
+  var radius = Math.sqrt(dx * dx + dy * dy);
+  var lastRadius = Math.sqrt(ldx * ldx + ldy * ldy);
+  
+  ctx.strokeStyle = brushColor;
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = brushColor;
+  
+  var angleStep = (Math.PI * 2) / symmetryCount;
+  
+  for (var i = 0; i < symmetryCount; i++) {
+    var a = angle + angleStep * i;
+    var la = lastAngle + angleStep * i;
+    
+    var nx = centerX + Math.cos(a) * radius;
+    var ny = centerY + Math.sin(a) * radius;
+    var lnx = centerX + Math.cos(la) * lastRadius;
+    var lny = centerY + Math.sin(la) * lastRadius;
+    
+    ctx.beginPath();
+    ctx.moveTo(lnx, lny);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+    
+    // Mirror reflection
+    var mirrorA = -a + angleStep * i;
+    var mirrorLA = -la + angleStep * i;
+    
+    var mx = centerX + Math.cos(mirrorA) * radius;
+    var my = centerY + Math.sin(mirrorA) * radius;
+    var lmx = centerX + Math.cos(mirrorLA) * lastRadius;
+    var lmy = centerY + Math.sin(mirrorLA) * lastRadius;
+    
+    ctx.beginPath();
+    ctx.moveTo(lmx, lmy);
+    ctx.lineTo(mx, my);
+    ctx.stroke();
+  }
+}
+
+function getPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = W / rect.width;
+  var scaleY = H / rect.height;
+  
+  if (e.touches) {
+    return {
+      x: (e.touches[0].clientX - rect.left) * scaleX,
+      y: (e.touches[0].clientY - rect.top) * scaleY
+    };
+  } else {
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+}
+
+function startDrawing(e) {
+  e.preventDefault();
+  drawing = true;
+  var pos = getPos(e);
+  lastX = pos.x;
+  lastY = pos.y;
+}
+
+function draw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  
+  var pos = getPos(e);
+  drawSymmetry(pos.x, pos.y, lastX, lastY);
+  lastX = pos.x;
+  lastY = pos.y;
+}
+
+function stopDrawing(e) {
+  if (drawing) {
+    e.preventDefault();
+    drawing = false;
+  }
+}
+
+// Mouse events
+canvas.onmousedown = startDrawing;
+canvas.onmousemove = draw;
+canvas.onmouseup = stopDrawing;
+canvas.onmouseleave = stopDrawing;
+
+// Touch events
+canvas.ontouchstart = startDrawing;
+canvas.ontouchmove = draw;
+canvas.ontouchend = stopDrawing;
+canvas.ontouchcancel = stopDrawing;
+
+// Welcome pattern
+setTimeout(function() {
+  var steps = 60;
+  var radius = W * 0.3;
+  brushSize = 3;
+  brushColor = '#a855f7';
+  
+  for (var i = 0; i < steps; i++) {
+    var angle = (i / steps) * Math.PI * 2;
+    var x = centerX + Math.cos(angle) * radius;
+    var y = centerY + Math.sin(angle) * radius;
+    
+    if (i > 0) {
+      var lastAngle = ((i - 1) / steps) * Math.PI * 2;
+      var lx = centerX + Math.cos(lastAngle) * radius;
+      var ly = centerY + Math.sin(lastAngle) * radius;
+      drawSymmetry(x, y, lx, ly);
+    }
+  }
+  
+  brushSize = parseInt(sizeInput.value);
+  brushColor = colorInput.value;
+}, 100);
+
+</script>
+
+</body>
+</html>
