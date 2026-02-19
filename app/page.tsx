@@ -807,122 +807,60 @@ function DemoCard({
 }
 
 /* ============================================================
-   DEMO DATA
-   ※ demoUrl は public/demos/ の実ファイル名と完全一致させること
-   ============================================================ */
-const DEMOS: DemoData[] = [
-  // ── public/demos/ のHTMLファイル（全件） ───────────
-
-  {
-    id: 'neon-tetris',
-    title: 'NEON TETRIS',
-    description: 'モバイル完全対応のテトリス。タッチコントロール、レベルシステム、ライン消去エフェクト。',
-    category: 'game',
-    color: '#a855f7',
-    difficulty: 8,
-    icon: '🎮',
-    tech: 'Canvas 2D · Collision Detection · Touch Events',
-    // リポジトリ上のファイル名: "neon-tetris 2.html"
-    demoUrl: '/demos/neon-tetris%202.html',
-  },
-  {
-    id: 'neon-invaders',
-    title: 'NEON INVADERS',
-    description: 'スペースインベーダー風シューティング。ウェーブシステム、シールド、パワーアップ。',
-    category: 'game',
-    color: '#00d9ff',
-    difficulty: 9,
-    icon: '👾',
-    tech: 'Sprite Animation · Collision · Wave System',
-    // リポジトリ上のファイル名: "space-invaders-demo.html"
-    demoUrl: '/demos/space-invaders-demo.html',
-  },
-  {
-    id: 'neon-breakout',
-    title: 'NEON BREAKOUT',
-    description: 'ブロック崩し。パワーアップ3種、マルチボール、物理演算ボール。',
-    category: 'game',
-    color: '#ec4899',
-    difficulty: 7,
-    icon: '🎯',
-    tech: 'Physics Simulation · Powerups · Particle Effects',
-    demoUrl: '/demos/neon-breakout.html',
-  },
-  {
-    id: 'neon-reversi',
-    title: 'NEON REVERSI',
-    description: '3段階AI搭載オセロ。位置評価関数、先読みアルゴリズム。',
-    category: 'game',
-    color: '#a855f7',
-    difficulty: 9,
-    icon: '⚫',
-    tech: 'Minimax Algorithm · Position Evaluation · AI',
-    demoUrl: '/demos/neon-reversi.html',
-  },
-  {
-    id: 'boids',
-    title: 'BOIDS',
-    description: '群れ行動シミュレーション。分離・整列・結合の3ルールで自律的な群れを形成。',
-    category: 'effect',
-    color: '#00ff88',
-    difficulty: 8,
-    icon: '🐟',
-    tech: 'Flocking Algorithm · Spatial Hashing · Canvas 2D',
-    demoUrl: '/demos/boids.html',
-  },
-  {
-    id: 'fuji-eruption',
-    title: 'FUJI ERUPTION',
-    description: '富士山噴火シミュレーション。溶岩、噴煙、パーティクルの物理演算。',
-    category: 'effect',
-    color: '#ff6b00',
-    difficulty: 8,
-    icon: '🌋',
-    tech: 'Particle Physics · Lava Simulation · Canvas 2D',
-    demoUrl: '/demos/fuji-eruption.html',
-  },
-  {
-    id: 'math-art',
-    title: 'MATH ART',
-    description: '数学的アルゴリズムで生成する幾何学アート。パラメータを変化させて無限のパターンを生成。',
-    category: 'effect',
-    color: '#00d9ff',
-    difficulty: 7,
-    icon: '🔷',
-    tech: 'Parametric Curves · Trigonometry · Generative Art',
-    demoUrl: '/demos/math-art.html',
-  },
-  {
-    id: 'tokyo-night',
-    title: 'TOKYO NIGHT',
-    description: '東京の夜景をCanvas 2Dで描画。ネオンサイン、雨、反射を表現。',
-    category: 'effect',
-    color: '#ec4899',
-    difficulty: 7,
-    icon: '🌃',
-    tech: 'Procedural Generation · Rain Physics · Neon Glow',
-    demoUrl: '/demos/tokyo-night.html',
-  },
-  {
-    id: 'water-ripple',
-    title: 'WATER RIPPLE',
-    description: '水面の波紋シミュレーション。クリックで波を発生、干渉・反射を再現。',
-    category: 'effect',
-    color: '#7c3aed',
-    difficulty: 6,
-    icon: '💧',
-    tech: 'Wave Equation · Height Map · Canvas 2D',
-    demoUrl: '/demos/water-ripple.html',
-  },
-];
-
-/* ============================================================
    MAIN SHOWCASE PAGE
    ============================================================ */
 export default function ShowcasePage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<TabId>('all');
+  const [demos, setDemos] = useState<DemoData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredDemos = DEMOS.filter((demo) => {
+  useEffect(() => {
+    fetch('/api/demos')
+      .then((res) => res.json())
+      .then((data) => {
+        const transformed: DemoData[] = data.demos.map((demo: any) => {
+          const isGame = demo.filename.includes('neon-') || 
+                        demo.filename.includes('space-') ||
+                        demo.type === 'game';
+          
+          const iconMap: Record<string, string> = {
+            'TETRIS': '🎮', 'SUDOKU': '🧩', 'INVADERS': '👾',
+            'BREAKOUT': '🎯', 'BASEBALL': '⚾', 'REVERSI': '⚫',
+            'MANDALA': '🎨', 'ERUPTION': '🌋', 'NIGHT': '🌃',
+            'RIPPLE': '💧', 'MATH': '🔷',
+          };
+          
+          let icon = isGame ? '🎮' : '✨';
+          for (const [key, value] of Object.entries(iconMap)) {
+            if (demo.title.toUpperCase().includes(key)) {
+              icon = value;
+              break;
+            }
+          }
+          
+          return {
+            id: demo.id,
+            title: demo.title,
+            description: demo.desc,
+            category: isGame ? 'game' : 'effect',
+            color: demo.color,
+            difficulty: demo.level,
+            icon,
+            tech: demo.tech,
+            demoUrl: demo.demoUrl,
+          };
+        });
+        
+        setDemos(transformed);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Failed to load demos:', error);
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredDemos = demos.filter((demo) => {
     if (activeTab === 'all') return true;
     if (activeTab === 'effects') return demo.category === 'effect';
     if (activeTab === 'games') return demo.category === 'game';
@@ -1107,40 +1045,62 @@ export default function ShowcasePage(): React.ReactElement {
         </div>
 
         {/* DEMO GRID */}
-        <div className="demo-grid">
-          {filteredDemos.map((demo, index) => (
-            <div
-              key={demo.id}
-              style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.08}s backwards` }}
-            >
-              <DemoCard {...demo} />
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '4rem',
+            color: 'rgba(255,255,255,0.5)',
+            fontFamily: "'JetBrains Mono', monospace"
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚡</div>
+            Loading demos...
+          </div>
+        ) : demos.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '4rem',
+            color: 'rgba(255,255,255,0.5)'
+          }}>
+            No demos found in /public/demos/
+          </div>
+        ) : (
+          <div className="demo-grid">
+            {filteredDemos.map((demo, index) => (
+              <div
+                key={demo.id}
+                style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.08}s backwards` }}
+              >
+                <DemoCard {...demo} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Count Display */}
-        <div style={{
-          marginTop: '3rem',
-          padding: '1.5rem',
-          background: 'rgba(124,58,237,0.1)',
-          border: '1px solid rgba(124,58,237,0.3)',
-          borderRadius: '12px',
-          textAlign: 'center',
-          fontFamily: "'JetBrains Mono', monospace",
-          color: '#a78bfa',
-        }}>
-          <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.7 }}>
-            {activeTab === 'all'     && 'すべてのデモ'}
-            {activeTab === 'effects' && 'HTMLタグエフェクト'}
-            {activeTab === 'games'   && 'ゲームデモ'}
+        {!loading && demos.length > 0 && (
+          <div style={{
+            marginTop: '3rem',
+            padding: '1.5rem',
+            background: 'rgba(124,58,237,0.1)',
+            border: '1px solid rgba(124,58,237,0.3)',
+            borderRadius: '12px',
+            textAlign: 'center',
+            fontFamily: "'JetBrains Mono', monospace",
+            color: '#a78bfa',
+          }}>
+            <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.7 }}>
+              {activeTab === 'all'     && 'すべてのデモ'}
+              {activeTab === 'effects' && 'HTMLタグエフェクト'}
+              {activeTab === 'games'   && 'ゲームデモ'}
+            </div>
+            <strong style={{ fontSize: '2rem', color: '#fff', display: 'block' }}>
+              {filteredDemos.length}
+            </strong>
+            <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.5 }}>
+              / {demos.length} total
+            </div>
           </div>
-          <strong style={{ fontSize: '2rem', color: '#fff', display: 'block' }}>
-            {filteredDemos.length}
-          </strong>
-          <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.5 }}>
-            / {DEMOS.length} total
-          </div>
-        </div>
+        )}
       </section>
     </div>
   );
