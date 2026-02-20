@@ -370,8 +370,12 @@ function placeNodes(count, cx, cy, radius) {
 //  Exactly 2 odd → must start/end at odd-degree nodes
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getEulerEndpoints(degree) {
-  const odd = degree.map((d,i)=>d%2===1?i:-1).filter(i=>i>=1);
-  return odd.length === 0 ? null : odd; // null = circuit, else [a,b]
+  // BUG FIX: was filter(i=>i>=1) which excluded node 0 forever
+  const odd = degree.map((d,i) => d%2===1 ? i : -1).filter(i => i !== -1);
+  if (odd.length === 0) return null;   // Euler circuit — any node is valid start
+  if (odd.length === 2) return odd;    // Euler path  — must start at one of these
+  // odd.length > 2 means generation error: return null as fallback (circuit)
+  return null;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -717,6 +721,7 @@ class Game {
     this.hintCount  = 3;
     this.dragging   = false;
     this.pointerPos = null;
+    this._lastMovedNode = null;
     this.timerSec   = 0;
     this.timerInt   = null;
     this.bestTimes  = {};
@@ -808,17 +813,22 @@ class Game {
   // ── Pointer helpers ──
   _getCanvasXY(e) {
     const rect = this.canvas.getBoundingClientRect();
-    const src = e.touches ? e.touches[0] : e;
+    // touchend: touches is empty → must use changedTouches
+    const touches = e.changedTouches || e.touches;
+    const src = touches && touches.length > 0 ? touches[0] : e;
     return { x: src.clientX - rect.left, y: src.clientY - rect.top };
   }
 
   _getNodeAt(x, y) {
     if (!this.state) return null;
-    const R = this.renderer.nodeR + 8; // slightly generous hit area
+    // Mobile finger contact = ~44px. Use nodeR*2.5 but never less than 44.
+    const R = Math.max(this.renderer.nodeR * 2.5, 44);
+    let best = null, bestD = Infinity;
     for(const n of this.state.nodes) {
-      if (dist(n.x,n.y,x,y) < R) return n.id;
+      const d = dist(n.x,n.y,x,y);
+      if (d < R && d < bestD) { best = n.id; bestD = d; }
     }
-    return null;
+    return best;
   }
 
   _shake() {
@@ -836,13 +846,16 @@ class Game {
     if (nodeId === null) return;
 
     if (this.state.currentNode === null) {
-      // Start game
+      // First touch: pick start node
       this.state.startAt(nodeId);
       this.dragging = true;
       this.hintActive = false;
+      this._lastMovedNode = nodeId;
     } else {
-      // Mid-game: try move
+      // Mid-game tap: attempt move
+      this.dragging = true;
       this._doMove(nodeId);
+      this._lastMovedNode = nodeId;
     }
   }
 
@@ -854,7 +867,11 @@ class Game {
     const nodeId = this._getNodeAt(x,y);
     this.hoverNode = nodeId;
 
-    if (this.dragging && nodeId !== null && nodeId !== this.state.currentNode) {
+    // Only trigger move when dragging AND entering a NEW node
+    if (this.dragging && nodeId !== null
+        && nodeId !== this.state?.currentNode
+        && nodeId !== this._lastMovedNode) {
+      this._lastMovedNode = nodeId;
       this._doMove(nodeId);
     }
   }
@@ -862,10 +879,13 @@ class Game {
   _onPointerUp(e) {
     this.dragging = false;
     this.pointerPos = null;
+    this._lastMovedNode = null;
   }
 
   _doMove(toNodeId) {
     if (!this.state || this.state.won) return;
+    // Tapping current node has no meaning — ignore silently
+    if (toNodeId === this.state.currentNode) return;
     const result = this.state.tryMove(toNodeId);
 
     if (result === 'invalid') {
@@ -960,7 +980,14 @@ class Game {
     });
 
     document.getElementById('btn-new').addEventListener('click', () => this.newPuzzle());
-    document.getElementById('sm-next').addEventListener('click', () => this.newPuzzle());
+
+    // sm-next: click for PC, touchstart for instant mobile response (no 300ms delay)
+    const smNext = document.getElementById('sm-next');
+    smNext.addEventListener('click', () => this.newPuzzle());
+    smNext.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // prevent ghost click
+      this.newPuzzle();
+    }, {passive:false});
 
     window.addEventListener('resize', () => this.resize());
   }
