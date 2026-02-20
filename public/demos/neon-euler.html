@@ -2,206 +2,139 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>NEON EULER — 一筆書き</title>
 <style>
-:root {
-  --bg:      #060612;
-  --bg2:     #0d0d2b;
-  --purple:  #a855f7;
-  --cyan:    #00d9ff;
-  --pink:    #ec4899;
-  --amber:   #f59e0b;
-  --red:     #ef4444;
-  --white:   #e2e8f0;
-  --dim:     rgba(255,255,255,0.12);
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
-
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
 body {
-  background: var(--bg);
-  color: var(--white);
-  font-family: 'Courier New', monospace;
-  height: 100dvh;
+  background: #060612;
+  color: #e2e8f0;
+  font-family: 'Courier New', Courier, monospace;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* ── HEADER ── */
+/* HEADER */
 #header {
-  width: 100%;
-  max-width: 600px;
+  width: 100%; max-width: 600px;
   padding: 10px 16px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; gap: 8px;
 }
-
 #logo {
-  font-size: 1.1rem;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  background: linear-gradient(90deg, var(--cyan), var(--purple));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 1.1rem; font-weight: 900; letter-spacing: 0.15em;
+  background: linear-gradient(90deg, #00d9ff, #a855f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 0 12px rgba(168,85,247,.5));
+  filter: drop-shadow(0 0 10px rgba(168,85,247,.6));
   white-space: nowrap;
 }
-
-#meta-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
+#meta-row { display: flex; gap: 10px; flex-shrink: 0; }
 #timer, #moves-display {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.5);
-  min-width: 52px;
-  text-align: center;
+  font-size: 0.72rem; color: rgba(255,255,255,0.45);
+  min-width: 52px; text-align: center;
 }
+#timer span, #moves-display span { color: #00d9ff; }
 
-#timer span, #moves-display span { color: var(--cyan); }
-
-/* ── DIFFICULTY TABS ── */
+/* DIFF BAR */
 #diff-bar {
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  gap: 5px;
-  padding: 0 16px 6px;
-  flex-shrink: 0;
+  width: 100%; max-width: 600px;
+  display: flex; gap: 5px;
+  padding: 0 16px 6px; flex-shrink: 0;
 }
-
 .diff-btn {
-  flex: 1;
-  padding: 5px 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  border-radius: 6px;
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.45);
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  line-height: 1.4;
+  flex: 1; padding: 5px 2px;
+  font-family: inherit; font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.04em; text-align: center; line-height: 1.4;
+  border: 1.5px solid rgba(255,255,255,0.15); border-radius: 6px;
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4);
+  cursor: pointer; touch-action: manipulation; transition: all 0.2s;
 }
-
 .diff-btn.active {
-  border-color: var(--active-color, var(--purple));
-  color: var(--active-color, var(--purple));
-  background: rgba(168,85,247,0.12);
-  box-shadow: 0 0 12px -2px var(--active-color, var(--purple));
+  border-color: var(--c, #a855f7); color: var(--c, #a855f7);
+  background: rgba(168,85,247,0.1);
+  box-shadow: 0 0 10px -2px var(--c, #a855f7);
 }
 
-/* ── CANVAS AREA ── */
+/* CANVAS AREA */
 #canvas-wrap {
-  position: relative;
-  flex: 1;
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative; flex: 1;
+  width: 100%; max-width: 600px;
   padding: 4px 16px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 0;
 }
-
 #canvas {
-  display: block;
-  border-radius: 16px;
-  cursor: crosshair;
+  display: block; border-radius: 14px; cursor: crosshair;
   touch-action: none;
 }
 
-/* ── STATUS OVERLAY ── */
-#status-msg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  background: rgba(6,6,18,0.92);
-  border: 2px solid var(--purple);
-  border-radius: 18px;
-  padding: 24px 36px;
-  text-align: center;
+/* OVERLAY — canvas の外側に置く (z-indexで前面へ) */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 30;
+  border-radius: 14px;
+}
+#overlay-box {
+  background: rgba(6,6,18,0.94);
+  border: 2px solid #a855f7; border-radius: 18px;
+  padding: 24px 32px; text-align: center;
+  transform: scale(0);
   transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
-  pointer-events: none;
-  z-index: 10;
-  backdrop-filter: blur(12px);
-  min-width: 200px;
+  min-width: 210px;
 }
+#overlay.show { pointer-events: auto; }
+#overlay.show #overlay-box { transform: scale(1); }
+#ov-title { font-size: 1.4rem; letter-spacing: 0.2em; margin-bottom: 6px; }
+#ov-sub   { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+#ov-stat  { font-size: 0.85rem; color: #00d9ff; margin-bottom: 16px; letter-spacing: 0.1em; }
+#btn-next {
+  width: 100%; padding: 12px;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.08em;
+  border: 2px solid #a855f7; border-radius: 10px;
+  background: rgba(168,85,247,0.15); color: #a855f7;
+  cursor: pointer; touch-action: manipulation; transition: background 0.15s;
+}
+#btn-next:active { background: rgba(168,85,247,0.35); }
 
-#status-msg.visible { transform: translate(-50%,-50%) scale(1); pointer-events: auto; }
-#status-msg h2 { font-size: 1.4rem; letter-spacing: 0.2em; margin-bottom: 6px; }
-#status-msg p { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; margin-bottom: 16px; }
-#status-msg .stat-line { font-size: 0.85rem; color: var(--cyan); margin-bottom: 14px; letter-spacing: 0.1em; }
-
-/* ── FOOTER CONTROLS ── */
+/* FOOTER */
 #footer {
-  width: 100%;
-  max-width: 600px;
+  width: 100%; max-width: 600px;
   padding: 6px 16px 14px;
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+  display: flex; gap: 8px; flex-shrink: 0;
 }
-
 .ctrl-btn {
-  flex: 1;
-  padding: 10px 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.7);
-  cursor: pointer;
-  transition: all 0.2s;
+  flex: 1; padding: 10px 6px;
+  font-family: inherit; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+  border: 1.5px solid rgba(255,255,255,0.18); border-radius: 10px;
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.65);
+  cursor: pointer; touch-action: manipulation; transition: background 0.15s;
 }
-
-.ctrl-btn:active { transform: scale(0.95); }
-
-.ctrl-btn.primary {
-  border-color: var(--purple);
-  color: var(--purple);
-  background: rgba(168,85,247,0.1);
-}
-
+.ctrl-btn:active { background: rgba(255,255,255,0.12); }
+.ctrl-btn.primary { border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,0.08); }
 .ctrl-btn.primary:active { background: rgba(168,85,247,0.25); }
+#hint-count { font-size: 0.58rem; color: rgba(255,255,255,0.38); display: block; }
 
-#hint-count {
-  font-size: 0.6rem;
-  color: rgba(255,255,255,0.4);
-  display: block;
-  margin-top: 2px;
-}
-
-/* ── SHAKE ANIMATION ── */
 @keyframes shake {
-  0%,100%{ transform:translateX(0) }
-  20%{ transform:translateX(-6px) }
-  40%{ transform:translateX(6px) }
-  60%{ transform:translateX(-4px) }
-  80%{ transform:translateX(4px) }
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-7px)}
+  50%{transform:translateX(7px)}
+  80%{transform:translateX(-4px)}
 }
-
-#canvas.shake { animation: shake 0.35s ease; }
+.shake { animation: shake 0.32s ease; }
 </style>
 </head>
 <body>
@@ -209,13 +142,12 @@ body {
 <!-- DEMO_META
 title: NEON EULER
 desc: 一筆書きパズル — 5段階難易度 · 無限ステージ生成
-tech: Canvas 2D · Graph Theory · Eulerian Path Algorithm
+tech: Canvas 2D · Graph Theory · Eulerian Path
 level: 90
 color: #a855f7
 type: game
 -->
 
-<!-- HEADER -->
 <div id="header">
   <div id="logo">✦ NEON EULER</div>
   <div id="meta-row">
@@ -224,27 +156,26 @@ type: game
   </div>
 </div>
 
-<!-- DIFFICULTY BAR -->
 <div id="diff-bar">
-  <button class="diff-btn" data-d="0">EASY<br><small>入門</small></button>
-  <button class="diff-btn" data-d="1">NORMAL<br><small>普通</small></button>
-  <button class="diff-btn active" data-d="2">HARD<br><small>難</small></button>
-  <button class="diff-btn" data-d="3">EXPERT<br><small>超難</small></button>
-  <button class="diff-btn" data-d="4">MASTER<br><small>達人</small></button>
+  <button class="diff-btn" data-d="0" style="--c:#22d3ee">EASY<br><small>入門</small></button>
+  <button class="diff-btn" data-d="1" style="--c:#a855f7">NORMAL<br><small>普通</small></button>
+  <button class="diff-btn active" data-d="2" style="--c:#f59e0b">HARD<br><small>難</small></button>
+  <button class="diff-btn" data-d="3" style="--c:#ec4899">EXPERT<br><small>超難</small></button>
+  <button class="diff-btn" data-d="4" style="--c:#ef4444">MASTER<br><small>達人</small></button>
 </div>
 
-<!-- GAME CANVAS -->
 <div id="canvas-wrap">
   <canvas id="canvas"></canvas>
-  <div id="status-msg">
-    <h2 id="sm-title">🎉 クリア！</h2>
-    <p id="sm-sub">一筆書き完成！</p>
-    <div class="stat-line" id="sm-stat"></div>
-    <button class="ctrl-btn primary" id="sm-next" style="width:100%;font-size:.85rem;padding:12px">次のパズル →</button>
+  <div id="overlay">
+    <div id="overlay-box">
+      <div id="ov-title">🎉 クリア！</div>
+      <div id="ov-sub"></div>
+      <div id="ov-stat"></div>
+      <button id="btn-next">次のパズル →</button>
+    </div>
   </div>
 </div>
 
-<!-- FOOTER -->
 <div id="footer">
   <button class="ctrl-btn" id="btn-undo">↩ もどす</button>
   <button class="ctrl-btn" id="btn-hint">💡 ヒント<span id="hint-count"></span></button>
@@ -255,804 +186,492 @@ type: game
 <script>
 'use strict';
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DIFFICULTY CONFIG
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const DIFFICULTIES = [
-  { id:0, name:'EASY',   nodes: 4,  triangles: 0, maxEdges: 0,  color:'#22d3ee', label:'入門' },
-  { id:1, name:'NORMAL', nodes: 6,  triangles: 1, maxEdges: 2,  color:'#a855f7', label:'普通' },
-  { id:2, name:'HARD',   nodes: 8,  triangles: 2, maxEdges: 3,  color:'#f59e0b', label:'難'   },
-  { id:3, name:'EXPERT', nodes: 11, triangles: 4, maxEdges: 4,  color:'#ec4899', label:'超難' },
-  { id:4, name:'MASTER', nodes: 14, triangles: 6, maxEdges: 6,  color:'#ef4444', label:'達人' },
+// ═══════════════════════════════════════════════════════
+//  [FIX-A] ピンチズーム完全封鎖
+//  iOS10+ は user-scalable=no を無視するため
+//  gesture系イベントと2本指touchmoveでブロック
+// ═══════════════════════════════════════════════════════
+['gesturestart','gesturechange','gestureend'].forEach(t =>
+  document.addEventListener(t, e => e.preventDefault(), {passive:false})
+);
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, {passive:false});
+
+// ═══════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════
+const DIFFS = [
+  {id:0, name:'EASY',   color:'#22d3ee', label:'入門', nodes:4,  tri:0, extra:0},
+  {id:1, name:'NORMAL', color:'#a855f7', label:'普通', nodes:6,  tri:1, extra:1},
+  {id:2, name:'HARD',   color:'#f59e0b', label:'難',   nodes:8,  tri:2, extra:2},
+  {id:3, name:'EXPERT', color:'#ec4899', label:'超難', nodes:11, tri:4, extra:3},
+  {id:4, name:'MASTER', color:'#ef4444', label:'達人', nodes:14, tri:6, extra:5},
 ];
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
 //  UTILS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const rng  = () => Math.random();
-const range = n => Array.from({length:n},(_,i)=>i);
-const shuffle = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
-const edgeKey = (a,b) => a<b ? `${a}:${b}` : `${b}:${a}`;
-const dist = (ax,ay,bx,by) => Math.hypot(ax-bx,ay-by);
-const lerp = (a,b,t) => a+(b-a)*t;
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  GRAPH GENERATION
-//  Eulerian circuit guaranteed:
-//    Base = Hamiltonian cycle (all even degrees)
-//    Each triangle adds +2 to 3 nodes → parity preserved
-//    Extra edges added in pairs → parity preserved
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function generateEulerianGraph(nodeCount, triangleCount, maxExtraEdges) {
-  const edges    = []; // [{id, a, b}]
-  const edgeSet  = new Set();
-  const degree   = Array(nodeCount).fill(0);
-
-  const addEdge = (a, b) => {
-    const k = edgeKey(a,b);
-    if (edgeSet.has(k) || a === b) return false;
-    edgeSet.add(k);
-    edges.push({ id: edges.length, a, b });
-    degree[a]++; degree[b]++;
-    return true;
-  };
-
-  // 1. Hamiltonian cycle (all degrees = 2)
-  const perm = shuffle(range(nodeCount));
-  for (let i = 0; i < nodeCount; i++) {
-    addEdge(perm[i], perm[(i+1) % nodeCount]);
-  }
-
-  // 2. Random triangles (each adds +2 to each of 3 nodes → even)
-  let triAttempts = 0;
-  let triAdded = 0;
-  while (triAdded < triangleCount && triAttempts < 2000) {
-    triAttempts++;
-    const [a,b,c] = shuffle(range(nodeCount)).slice(0,3);
-    const k1 = edgeKey(a,b), k2 = edgeKey(b,c), k3 = edgeKey(a,c);
-    if (!edgeSet.has(k1) && !edgeSet.has(k2) && !edgeSet.has(k3)) {
-      addEdge(a,b); addEdge(b,c); addEdge(a,c);
-      triAdded++;
-    }
-  }
-
-  // 3. Extra single-edge pairs (two at a time keeps parity even)
-  let extraAttempts = 0;
-  let extraAdded = 0;
-  const maxExtra = maxExtraEdges * 2;
-  while (extraAdded < maxExtra && extraAttempts < 2000) {
-    extraAttempts++;
-    const pool = shuffle(range(nodeCount));
-    const a = pool[0], b = pool[1];
-    if (addEdge(a,b)) extraAdded++;
-    // pair: add one more edge to maintain parity
-    if (extraAdded % 2 === 1) {
-      const c = pool[2], d = pool[3] ?? pool[0];
-      if (c !== d && addEdge(c,d)) extraAdded++;
-    }
-  }
-
-  return { edges, degree };
+// ═══════════════════════════════════════════════════════
+const rnd   = () => Math.random();
+const range = n  => Array.from({length:n},(_,i)=>i);
+const hypot = (ax,ay,bx,by) => Math.hypot(ax-bx,ay-by);
+const lerp  = (a,b,t) => a+(b-a)*t;
+const ekey  = (a,b) => a<b?`${a}:${b}`:`${b}:${a}`;
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=0|rnd()*(i+1);[a[i],a[j]]=[a[j],a[i]];}
+  return a;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
+//  GRAPH — オイラー回路保証グラフ生成
+//  全ノード次数が偶数 → オイラー回路必ず存在
+// ═══════════════════════════════════════════════════════
+function buildGraph(N, triCount, extraPairs) {
+  const edges=[]; const es=new Set(); const deg=new Array(N).fill(0);
+  function addEdge(a,b) {
+    if(a===b)return false;
+    const k=ekey(a,b);
+    if(es.has(k))return false;
+    es.add(k);edges.push({id:edges.length,a,b});
+    deg[a]++;deg[b]++;return true;
+  }
+  // ハミルトン閉路 (次数2, 全偶数)
+  const perm=shuffle(range(N));
+  for(let i=0;i<N;i++) addEdge(perm[i],perm[(i+1)%N]);
+  // 三角形 (+2 per node, 偶数維持)
+  for(let t=0,att=0;t<triCount&&att<3000;att++){
+    const [a,b,c]=shuffle(range(N));
+    if(!es.has(ekey(a,b))&&!es.has(ekey(b,c))&&!es.has(ekey(a,c))){
+      addEdge(a,b);addEdge(b,c);addEdge(a,c);t++;
+    }
+  }
+  // 追加ペア辺 (+2 per node pair, 偶数維持)
+  for(let p=0,att=0;p<extraPairs&&att<3000;att++){
+    const pool=shuffle(range(N));
+    const r1=addEdge(pool[0],pool[1]);
+    const r2=addEdge(pool[2]??0,pool[3]??1);
+    if(r1&&r2)p++;
+  }
+  return {edges,deg};
+}
+
+// ═══════════════════════════════════════════════════════
 //  NODE PLACEMENT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function placeNodes(count, cx, cy, radius) {
-  if (count <= 8) {
-    // Single circle with slight random jitter
-    return range(count).map(i => {
-      const angle = (i / count) * Math.PI * 2 - Math.PI/2 + (rng()-0.5)*0.3;
-      const r = radius * (0.85 + rng() * 0.15);
-      return { id:i, x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+// ═══════════════════════════════════════════════════════
+function placeNodes(count,cx,cy,radius) {
+  if(count<=8){
+    return range(count).map(i=>{
+      const a=(i/count)*Math.PI*2-Math.PI/2+(rnd()-.5)*.35;
+      const r=radius*(.85+rnd()*.15);
+      return {id:i,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};
     });
-  } else {
-    // Inner + outer rings
-    const outer = Math.ceil(count * 0.6);
-    const inner = count - outer;
-    const nodes = [];
-    for (let i = 0; i < inner; i++) {
-      const angle = (i/inner)*Math.PI*2 + rng()*0.2;
-      nodes.push({ id:i, x: cx + radius*0.45*Math.cos(angle), y: cy + radius*0.45*Math.sin(angle) });
-    }
-    for (let i = 0; i < outer; i++) {
-      const angle = (i/outer)*Math.PI*2 - Math.PI/2 + rng()*0.15;
-      const r = radius * (0.88 + rng()*0.12);
-      nodes.push({ id:inner+i, x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) });
-    }
-    return nodes;
   }
+  const inner=Math.floor(count*.4),outer=count-inner,nodes=[];
+  for(let i=0;i<inner;i++){
+    const a=(i/inner)*Math.PI*2+rnd()*.2;
+    nodes.push({id:i,x:cx+radius*.42*Math.cos(a),y:cy+radius*.42*Math.sin(a)});
+  }
+  for(let i=0;i<outer;i++){
+    const a=(i/outer)*Math.PI*2-Math.PI/2+rnd()*.15;
+    const r=radius*(.88+rnd()*.12);
+    nodes.push({id:inner+i,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});
+  }
+  return nodes;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  FIND EULER ENDPOINTS (for highlighting)
-//  All even → circuit (any start ok)
-//  Exactly 2 odd → must start/end at odd-degree nodes
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function getEulerEndpoints(degree) {
-  // BUG FIX: was filter(i=>i>=1) which excluded node 0 forever
-  const odd = degree.map((d,i) => d%2===1 ? i : -1).filter(i => i !== -1);
-  if (odd.length === 0) return null;   // Euler circuit — any node is valid start
-  if (odd.length === 2) return odd;    // Euler path  — must start at one of these
-  // odd.length > 2 means generation error: return null as fallback (circuit)
-  return null;
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
 //  PUZZLE STATE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-class PuzzleState {
-  constructor(nodes, edges, degree, diffColor) {
-    this.nodes      = nodes;
-    this.edges      = edges;
-    this.totalEdges = edges.length;
-    this.degree     = degree;
-    this.diffColor  = diffColor;
-
-    // Build adjacency: adj[nodeId] = [{edgeId, neighbor}]
-    this.adj = Array.from({length:nodes.length}, ()=>[]);
-    for (const e of edges) {
-      this.adj[e.a].push({edgeId:e.id, neighbor:e.b});
-      this.adj[e.b].push({edgeId:e.id, neighbor:e.a});
+// ═══════════════════════════════════════════════════════
+class Puzzle {
+  constructor(nodes,edges,deg,color) {
+    this.nodes=nodes; this.edges=edges; this.totalE=edges.length;
+    this.deg=deg; this.color=color;
+    this.adj=nodes.map(()=>[]);
+    for(const e of edges){
+      this.adj[e.a].push({eid:e.id,nb:e.b});
+      this.adj[e.b].push({eid:e.id,nb:e.a});
     }
-
-    this.eulerEndpoints = getEulerEndpoints(degree);
+    const odd=deg.map((d,i)=>d%2===1?i:-1).filter(i=>i!==-1);
+    this.endpoints=odd.length===2?odd:null;
     this.reset();
   }
-
-  reset() {
-    this.traversed    = new Set(); // edge ids
-    this.pathStack    = [];        // [{from, to, edgeId}]
-    this.currentNode  = null;
-    this.moveCount    = 0;
-    this.won          = false;
-    this.animEdges    = {};        // edgeId -> {progress 0..1}
-    this.particles    = [];
+  reset(){
+    this.traversed=new Set();this.stack=[];
+    this.cur=null;this.moves=0;this.won=false;this.animE={};
   }
-
-  get validStarts() {
-    return this.eulerEndpoints ?? range(this.nodes.length);
+  canStart(id){
+    if(this.cur!==null)return false;
+    return this.endpoints===null||this.endpoints.includes(id);
   }
-
-  canStartAt(nodeId) {
-    return this.currentNode === null;
+  start(id){this.cur=id;}
+  freeEdges(id){
+    if(id===null||id===undefined)return[];
+    return this.adj[id].filter(x=>!this.traversed.has(x.eid));
   }
-
-  availableEdges(nodeId) {
-    return this.adj[nodeId].filter(({edgeId}) => !this.traversed.has(edgeId));
-  }
-
-  tryMove(toNodeId) {
-    if (this.won) return 'won';
-    if (this.currentNode === null) return 'no_start';
-
-    // Backtrack?
-    if (this.pathStack.length > 0) {
-      const last = this.pathStack[this.pathStack.length-1];
-      if (last.from === toNodeId) {
-        // Undo last move
-        this.traversed.delete(last.edgeId);
-        this.pathStack.pop();
-        this.currentNode = toNodeId;
-        this.moveCount++;
-        return 'undo';
-      }
+  move(to){
+    if(this.won||this.cur===null||to===this.cur)return'noop';
+    if(this.stack.length>0&&this.stack[this.stack.length-1].from===to){
+      const last=this.stack.pop();
+      this.traversed.delete(last.eid);this.cur=to;this.moves++;return'back';
     }
-
-    // Find untraversed edge between currentNode and toNodeId
-    const available = this.adj[this.currentNode].filter(
-      ({edgeId, neighbor}) => neighbor === toNodeId && !this.traversed.has(edgeId)
-    );
-
-    if (available.length === 0) return 'invalid';
-
-    const {edgeId} = available[0];
-    this.traversed.add(edgeId);
-    this.pathStack.push({from: this.currentNode, to: toNodeId, edgeId});
-    this.animEdges[edgeId] = {progress: 0};
-    this.currentNode = toNodeId;
-    this.moveCount++;
-
-    if (this.traversed.size === this.totalEdges) {
-      this.won = true;
-      return 'win';
-    }
-    return 'ok';
+    const edge=this.adj[this.cur].find(x=>x.nb===to&&!this.traversed.has(x.eid));
+    if(!edge)return'bad';
+    this.traversed.add(edge.eid);this.animE[edge.eid]=0;
+    this.stack.push({from:this.cur,to,eid:edge.eid});
+    this.cur=to;this.moves++;
+    if(this.traversed.size===this.totalE){this.won=true;return'win';}
+    return'ok';
   }
-
-  startAt(nodeId) {
-    this.currentNode = nodeId;
+  undo(){
+    if(this.stack.length===0)return false;
+    const last=this.stack.pop();
+    this.traversed.delete(last.eid);this.cur=last.from;this.moves++;return true;
   }
-
-  getHintEdges() {
-    if (this.currentNode === null) return [];
-    return this.availableEdges(this.currentNode).map(e=>e.edgeId);
-  }
-
-  isDeadEnd() {
-    if (this.currentNode === null || this.won) return false;
-    return this.availableEdges(this.currentNode).length === 0 &&
-           this.traversed.size < this.totalEdges;
+  deadEnd(){
+    return this.cur!==null&&!this.won&&this.freeEdges(this.cur).length===0&&this.traversed.size<this.totalE;
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  PARTICLE SYSTEM
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-class Particle {
-  constructor(x,y,color) {
-    this.x = x; this.y = y;
-    const angle = rng()*Math.PI*2;
-    const speed = 2 + rng()*5;
-    this.vx = Math.cos(angle)*speed;
-    this.vy = Math.sin(angle)*speed - 2;
-    this.life = 1;
-    this.decay = 0.018 + rng()*0.02;
-    this.r = 2 + rng()*4;
-    this.color = color;
+// ═══════════════════════════════════════════════════════
+//  PARTICLE
+// ═══════════════════════════════════════════════════════
+class Pt {
+  constructor(x,y,c){
+    this.x=x;this.y=y;this.c=c;
+    const a=rnd()*Math.PI*2,s=2+rnd()*5;
+    this.vx=Math.cos(a)*s;this.vy=Math.sin(a)*s-1.5;
+    this.life=1;this.decay=.016+rnd()*.018;this.r=2+rnd()*3.5;
   }
-  update() {
-    this.x += this.vx; this.y += this.vy;
-    this.vy += 0.12;
-    this.life -= this.decay;
-    this.vx *= 0.97;
-  }
-  draw(ctx) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, this.life);
-    ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 6;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r * this.life, 0, Math.PI*2);
-    ctx.fill();
+  tick(){this.x+=this.vx;this.y+=this.vy;this.vy+=.1;this.vx*=.97;this.life-=this.decay;}
+  draw(ctx){
+    if(this.life<=0)return;
+    ctx.save();ctx.globalAlpha=this.life;
+    ctx.fillStyle=ctx.shadowColor=this.c;ctx.shadowBlur=5;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r*this.life,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
 //  RENDERER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
 class Renderer {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx    = canvas.getContext('2d');
-    this.nodeR  = 22;
-    this.particles = [];
+  constructor(cv){
+    this.cv=cv;this.ctx=cv.getContext('2d');
+    this.W=0;this.H=0;this.NR=20;this.pts=[];
   }
-
-  resize() {
-    const wrap = this.canvas.parentElement;
-    const W = wrap.clientWidth  - 32;
-    const H = wrap.clientHeight - 8;
-    this.canvas.width  = W;
-    this.canvas.height = H;
-    this.nodeR = Math.min(22, Math.max(14, Math.min(W,H)/22));
+  // [FIX-C] canvas属性とCSSサイズを同時設定
+  resize(){
+    const wrap=this.cv.parentElement;
+    const W=Math.floor(wrap.clientWidth-32);
+    const H=Math.floor(wrap.clientHeight-8);
+    if(W<=0||H<=0)return;
+    this.W=W;this.H=H;
+    this.cv.width=W;this.cv.height=H;
+    this.cv.style.width=W+'px';this.cv.style.height=H+'px';
+    this.NR=Math.min(22,Math.max(13,Math.min(W,H)/20));
   }
-
-  spawnParticles(x,y,color,count=20) {
-    for(let i=0;i<count;i++) this.particles.push(new Particle(x,y,color));
+  burst(nodes,color,n=14){
+    for(const nd of nodes)for(let i=0;i<n;i++)this.pts.push(new Pt(nd.x,nd.y,color));
   }
-
-  spawnWinBurst(nodes, color) {
-    for(const n of nodes) this.spawnParticles(n.x,n.y,color,12);
-  }
-
-  draw(state, hoverNode, hintActive, pointerPos) {
-    const {ctx, canvas, nodeR} = this;
-    const W = canvas.width, H = canvas.height;
-
-    // Background
-    ctx.fillStyle = '#060612';
-    ctx.fillRect(0,0,W,H);
-
-    // Subtle grid
-    ctx.strokeStyle = 'rgba(168,85,247,0.04)';
-    ctx.lineWidth = 1;
-    const gs = 40;
-    for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-
-    if (!state) { this._drawParticles(); return; }
-
-    const {nodes, edges, traversed, currentNode, diffColor, animEdges, won} = state;
-
-    // Update edge animations
-    for(const [id, anim] of Object.entries(animEdges)) {
-      if(anim.progress < 1) anim.progress = Math.min(1, anim.progress + 0.08);
+  draw(pz,hover,hintEids,cursor){
+    const{ctx,W,H,NR}=this;
+    if(!W)return;
+    ctx.fillStyle='#060612';ctx.fillRect(0,0,W,H);
+    // グリッド
+    ctx.strokeStyle='rgba(168,85,247,0.035)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // パーティクル
+    this.pts=this.pts.filter(p=>p.life>0);
+    for(const p of this.pts){p.tick();p.draw(ctx);}
+    if(!pz)return;
+    const{nodes,edges,traversed,cur,color,animE}=pz;
+    // アニメーション進行
+    for(const eid of Object.keys(animE)){
+      if(animE[eid]<1)animE[eid]=Math.min(1,animE[eid]+.1);
     }
-
-    // ── EDGES ──
-    for(const edge of edges) {
-      const a = nodes[edge.a], b = nodes[edge.b];
-      const done = traversed.has(edge.id);
-      const anim = animEdges[edge.id];
-
-      if (done && anim && anim.progress < 1) {
-        // Animated traversal
-        const t = anim.progress;
-        const mx = lerp(a.x, b.x, t);
-        const my = lerp(a.y, b.y, t);
-
-        // Untraversed part
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // 辺
+    for(const e of edges){
+      const A=nodes[e.a],B=nodes[e.b];
+      const done=traversed.has(e.id);
+      const prog=animE[e.id]??(done?1:-1);
+      const isHint=hintEids&&hintEids.includes(e.id);
+      if(done&&prog>=0&&prog<1){
+        const mx=lerp(A.x,B.x,prog),my=lerp(A.y,B.y,prog);
+        ctx.save();ctx.lineCap='round';
+        ctx.strokeStyle='rgba(255,255,255,0.09)';ctx.lineWidth=2.5;
+        ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(B.x,B.y);ctx.stroke();
+        ctx.strokeStyle=color;ctx.shadowColor=color;ctx.shadowBlur=16;ctx.lineWidth=3.5;
+        ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(mx,my);ctx.stroke();
         ctx.restore();
-
-        // Traversed glow part
-        ctx.save();
-        ctx.strokeStyle = diffColor;
-        ctx.shadowColor = diffColor;
-        ctx.shadowBlur  = 18;
-        ctx.lineWidth = 3.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(mx,my); ctx.stroke();
-        ctx.restore();
-
-      } else if (done) {
-        // Fully traversed
-        ctx.save();
-        ctx.strokeStyle = diffColor;
-        ctx.shadowColor = diffColor;
-        ctx.shadowBlur  = 14;
-        ctx.lineWidth = 3.5;
-        ctx.lineCap = 'round';
-        ctx.globalAlpha = won ? 0.9 : 0.85;
-        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-        ctx.restore();
-
+      } else if(done){
+        ctx.save();ctx.lineCap='round';ctx.strokeStyle=color;
+        ctx.shadowColor=color;ctx.shadowBlur=12;ctx.lineWidth=3.5;ctx.globalAlpha=.88;
+        ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore();
       } else {
-        // Untraversed
-        const isHint = hintActive && state.getHintEdges().includes(edge.id);
-        ctx.save();
-        if (isHint) {
-          ctx.strokeStyle = '#ffffff';
-          ctx.shadowColor = '#ffffff';
-          ctx.shadowBlur  = 10;
-          ctx.globalAlpha = 0.5 + 0.3*Math.sin(Date.now()/300);
-          ctx.lineWidth = 3;
+        ctx.save();ctx.lineCap='round';
+        if(isHint){
+          ctx.strokeStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=8;
+          ctx.globalAlpha=.4+.35*Math.sin(Date.now()/250);ctx.lineWidth=2.5;
         } else {
-          ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-          ctx.lineWidth = 2;
+          ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=2;
         }
-        ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-        ctx.restore();
+        ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore();
       }
     }
-
-    // Pointer drag line
-    if (currentNode !== null && pointerPos) {
-      const cn = nodes[currentNode];
-      ctx.save();
-      ctx.strokeStyle = diffColor;
-      ctx.shadowColor = diffColor;
-      ctx.shadowBlur  = 8;
-      ctx.globalAlpha = 0.5;
-      ctx.lineWidth   = 2;
-      ctx.setLineDash([6,4]);
-      ctx.beginPath(); ctx.moveTo(cn.x,cn.y); ctx.lineTo(pointerPos.x,pointerPos.y); ctx.stroke();
+    // ドラッグライン
+    if(cur!==null&&cursor){
+      const cn=nodes[cur];
+      ctx.save();ctx.strokeStyle=color;ctx.shadowColor=color;ctx.shadowBlur=6;
+      ctx.globalAlpha=.45;ctx.lineWidth=2;ctx.lineCap='round';ctx.setLineDash([6,5]);
+      ctx.beginPath();ctx.moveTo(cn.x,cn.y);ctx.lineTo(cursor.x,cursor.y);ctx.stroke();
       ctx.restore();
     }
-
-    // ── NODES ──
-    for(const node of nodes) {
-      const isCurrent = node.id === currentNode;
-      const isHover   = node.id === hoverNode && !isCurrent;
-      const isValidStart = currentNode === null && (state.eulerEndpoints === null || state.eulerEndpoints.includes(node.id));
-      const isEnd     = state.eulerEndpoints && state.eulerEndpoints.includes(node.id);
-      const availAdj  = currentNode !== null && state.availableEdges(currentNode).some(e=>e.neighbor===node.id);
-
-      // Outer glow ring
-      if (isCurrent || isHover || availAdj || (currentNode === null && isValidStart)) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, nodeR + 6, 0, Math.PI*2);
-        ctx.strokeStyle = isCurrent ? diffColor : (availAdj ? diffColor : 'rgba(255,255,255,0.3)');
-        ctx.shadowColor = isCurrent ? diffColor : diffColor;
-        ctx.shadowBlur  = isCurrent ? 24 : 10;
-        ctx.globalAlpha = isCurrent ? 0.9 : (availAdj ? 0.5 : 0.3);
-        ctx.lineWidth   = isCurrent ? 2.5 : 1.5;
-        ctx.stroke();
-        ctx.restore();
+    // ノード
+    for(const n of nodes){
+      const isCur=n.id===cur;
+      const isAdj=cur!==null&&pz.freeEdges(cur).some(x=>x.nb===n.id);
+      const isStart=cur===null&&pz.canStart(n.id);
+      if(isCur||isAdj||isStart||n.id===hover){
+        ctx.save();ctx.beginPath();ctx.arc(n.x,n.y,NR+7,0,Math.PI*2);
+        ctx.strokeStyle=isCur?color:(isAdj?color:'rgba(255,255,255,.25)');
+        ctx.shadowColor=color;ctx.shadowBlur=isCur?22:8;
+        ctx.globalAlpha=isCur?.9:(isAdj?.5:.3);ctx.lineWidth=isCur?2.5:1.5;
+        ctx.stroke();ctx.restore();
       }
-
-      // Node body
-      const grad = ctx.createRadialGradient(node.x-nodeR*0.3,node.y-nodeR*0.3,0,node.x,node.y,nodeR);
-      if (isCurrent) {
-        grad.addColorStop(0, diffColor);
-        grad.addColorStop(1, `${diffColor}88`);
-      } else if (availAdj) {
-        grad.addColorStop(0, `${diffColor}99`);
-        grad.addColorStop(1, `${diffColor}33`);
-      } else {
-        grad.addColorStop(0, 'rgba(255,255,255,0.18)');
-        grad.addColorStop(1, 'rgba(255,255,255,0.04)');
-      }
-
-      ctx.save();
-      ctx.shadowColor = isCurrent ? diffColor : 'rgba(255,255,255,0.2)';
-      ctx.shadowBlur  = isCurrent ? 20 : 4;
-      ctx.beginPath(); ctx.arc(node.x,node.y,nodeR,0,Math.PI*2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.strokeStyle = isCurrent ? diffColor : 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = isCurrent ? 2 : 1.5;
-      ctx.stroke();
+      const g=ctx.createRadialGradient(n.x-NR*.3,n.y-NR*.3,0,n.x,n.y,NR);
+      if(isCur){g.addColorStop(0,color);g.addColorStop(1,color+'77');}
+      else if(isAdj){g.addColorStop(0,color+'88');g.addColorStop(1,color+'22');}
+      else{g.addColorStop(0,'rgba(255,255,255,.16)');g.addColorStop(1,'rgba(255,255,255,.03)');}
+      ctx.save();ctx.shadowColor=isCur?color:'rgba(255,255,255,.15)';ctx.shadowBlur=isCur?18:3;
+      ctx.beginPath();ctx.arc(n.x,n.y,NR,0,Math.PI*2);
+      ctx.fillStyle=g;ctx.fill();
+      ctx.strokeStyle=isCur?color:'rgba(255,255,255,.2)';ctx.lineWidth=isCur?2:1.5;ctx.stroke();
       ctx.restore();
-
-      // Node label (degree indicator shown as dots at bottom-right)
-      if (isEnd && currentNode === null && state.eulerEndpoints) {
-        ctx.save();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${nodeR*0.55}px Courier New`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.globalAlpha = 0.9;
-        ctx.fillText('S', node.x, node.y);
-        ctx.restore();
+      // スタート指示
+      if(cur===null&&pz.endpoints&&pz.endpoints.includes(n.id)){
+        ctx.save();ctx.fillStyle='#fff';ctx.globalAlpha=.85;
+        ctx.font=`bold ${NR*.6}px Courier New`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('S',n.x,n.y);ctx.restore();
       }
     }
-
-    // ── PARTICLES ──
-    this._drawParticles();
-  }
-
-  _drawParticles() {
-    this.particles = this.particles.filter(p => p.life > 0);
-    for(const p of this.particles) { p.update(); p.draw(this.ctx); }
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  GAME CONTROLLER
-//  入力: Pointer Events API に完全統一
-//        touch/mouse の二重登録を廃止
-//        setPointerCapture でドラッグを確実に捕捉
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ═══════════════════════════════════════════════════════
+//  GAME
+// ═══════════════════════════════════════════════════════
 class Game {
-  constructor() {
-    this.canvas      = document.getElementById('canvas');
-    this.renderer    = new Renderer(this.canvas);
-    this.state       = null;
-    this.diffIdx     = 2;
-    this.hoverNode   = null;
-    this.hintActive  = false;
-    this.hintCount   = 3;
-    this.timerSec    = 0;
-    this.timerInt    = null;
-    this.animFrame   = null;
-
-    // Pointer state — 1指/1マウスを完全管理
-    this._activePtr       = null;   // 追跡中の pointerId
-    this._lastMovedNode   = null;   // 連続検出防止
-    this._pointerPos      = null;   // 描画用カーソル位置
-
-    // newPuzzle の多重呼び出し防止フラグ
-    this._generating = false;
-
-    this._bindEvents();
-    this.resize();
-    this.newPuzzle();
+  constructor(){
+    this.cv  = document.getElementById('canvas');
+    this.ren = new Renderer(this.cv);
+    this.pz  = null;
+    this.diff= 2;
+    // [FIX-B] ポインター管理を1変数で厳密に
+    this._pid      = null;  // 追跡中の pointerId (null=非追跡)
+    this._cursor   = null;
+    this._lastNode = null;
+    this.hover     = null;
+    this.hintEids  = null;
+    this.hintN     = 0;
+    this.timerSec  = 0;
+    this._timerID  = null;
+    this._busy     = false;
+    this._bindAll();
+    this.ren.resize();
+    this._newPuzzle();
+    this._loop();
   }
 
-  // ━━ リサイズ ━━
-  resize() {
-    this.renderer.resize();
-    if (this.state) this._layoutNodes();
+  _onResize(){
+    this.ren.resize();
+    if(this.pz)this._relayout();
+  }
+  _relayout(){
+    const{W,H}=this.ren;
+    const cx=W/2,cy=H/2,r=Math.min(W,H)*.38;
+    const fresh=placeNodes(this.pz.nodes.length,cx,cy,r);
+    this.pz.nodes.forEach((n,i)=>{if(fresh[i]){n.x=fresh[i].x;n.y=fresh[i].y;}});
   }
 
-  _layoutNodes() {
-    const { canvas: { width:W, height:H } } = this.renderer;
-    const cx = W/2, cy = H/2;
-    const radius = Math.min(W,H)*0.38;
-    const diff = DIFFICULTIES[this.diffIdx];
-    const nodes = placeNodes(diff.nodes, cx, cy, radius);
-    this.state.nodes.forEach((n,i) => { if(nodes[i]){ n.x=nodes[i].x; n.y=nodes[i].y; } });
+  // [FIX-B] releasePointerCapture を明示的に呼ぶ
+  _release(){
+    if(this._pid!==null){
+      try{this.cv.releasePointerCapture(this._pid);}catch(_){}
+    }
+    this._pid=null;this._cursor=null;this._lastNode=null;
   }
 
-  // ━━ 新パズル生成 ━━
-  newPuzzle() {
-    // 多重呼び出し防止 (連打 / touch+click 二重発火)
-    if (this._generating) return;
-    this._generating = true;
-    setTimeout(() => { this._generating = false; }, 300);
-
-    // アクティブなポインター追跡をリセット
-    this._activePtr     = null;
-    this._lastMovedNode = null;
-    this._pointerPos    = null;
-
-    const diff = DIFFICULTIES[this.diffIdx];
-    const { width:W, height:H } = this.renderer.canvas;
-    const cx = W/2, cy = H/2;
-    const radius = Math.min(W,H)*0.38;
-
-    const nodes = placeNodes(diff.nodes, cx, cy, radius);
-    const { edges, degree } = generateEulerianGraph(diff.nodes, diff.triangles, diff.maxEdges);
-
-    this.state = new PuzzleState(nodes, edges, degree, diff.color);
-    this.hintActive = false;
-    this.hintCount  = 3 + diff.id;
-    this._updateHintBtn();
-    this._startTimer();
-    this._updateUI();
-    this._setOverlay(false); // オーバーレイを確実に非表示
-
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-      btn.classList.toggle('active', +btn.dataset.d === this.diffIdx);
-      btn.style.setProperty('--active-color', diff.color);
-    });
+  _newPuzzle(){
+    if(this._busy)return;
+    this._busy=true;
+    setTimeout(()=>{this._busy=false;},400);
+    this._release(); // capture解放が先
+    this.hover=null;
+    const d=DIFFS[this.diff];
+    const{W,H}=this.ren;
+    const cx=W/2,cy=H/2,r=Math.min(W,H)*.38;
+    const nodes=placeNodes(d.nodes,cx,cy,r);
+    const{edges,deg}=buildGraph(d.nodes,d.tri,d.extra);
+    this.pz=new Puzzle(nodes,edges,deg,d.color);
+    this.hintN=3+d.id;this.hintEids=null;
+    this.timerSec=0;this._startTimer();this._ui();
+    this._setOverlay(false);
+    document.querySelectorAll('.diff-btn').forEach(b=>
+      b.classList.toggle('active',+b.dataset.d===this.diff));
   }
 
-  // ━━ タイマー ━━
-  _startTimer() {
-    clearInterval(this.timerInt);
-    this.timerSec = 0;
-    this._renderTimer();
-    this.timerInt = setInterval(() => {
-      if (!this.state?.won) { this.timerSec++; this._renderTimer(); }
-    }, 1000);
+  _startTimer(){
+    clearInterval(this._timerID);
+    document.getElementById('tm').textContent='0:00';
+    this._timerID=setInterval(()=>{
+      if(!this.pz?.won){
+        this.timerSec++;
+        const m=0|this.timerSec/60,s=this.timerSec%60;
+        document.getElementById('tm').textContent=`${m}:${String(s).padStart(2,'0')}`;
+      }
+    },1000);
   }
-
-  _renderTimer() {
-    const m = Math.floor(this.timerSec/60);
-    const s = this.timerSec % 60;
-    document.getElementById('tm').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  _ui(){
+    document.getElementById('mv').textContent=this.pz?.moves??0;
+    document.getElementById('hint-count').textContent=` (${this.hintN})`;
   }
-
-  _updateUI() {
-    document.getElementById('mv').textContent = this.state?.moveCount ?? 0;
-  }
-
-  _updateHintBtn() {
-    document.getElementById('hint-count').textContent = ` (${this.hintCount})`;
-  }
-
-  // ━━ オーバーレイ ━━
-  _setOverlay(visible, title='', sub='', stat='') {
-    const el = document.getElementById('status-msg');
-    if (visible) {
-      document.getElementById('sm-title').textContent = title;
-      document.getElementById('sm-sub').textContent   = sub;
-      document.getElementById('sm-stat').textContent  = stat;
-      el.classList.add('visible');
+  _setOverlay(show,title='',sub='',stat=''){
+    if(show){
+      document.getElementById('ov-title').textContent=title;
+      document.getElementById('ov-sub').textContent=sub;
+      document.getElementById('ov-stat').textContent=stat;
+      document.getElementById('overlay').classList.add('show');
     } else {
-      el.classList.remove('visible');
+      document.getElementById('overlay').classList.remove('show');
     }
   }
 
-  // ━━ ノードヒット判定 ━━
-  _getNodeAt(cx, cy) {
-    if (!this.state) return null;
-    // 指の接触面積に合わせた広めのヒット半径
-    const R = Math.max(this.renderer.nodeR * 2.8, 44);
-    let best = null, bestD = R;
-    for (const n of this.state.nodes) {
-      const d = dist(n.x, n.y, cx, cy);
-      if (d < bestD) { bestD = d; best = n.id; }
+  // canvas座標変換
+  _cvXY(e){
+    const r=this.cv.getBoundingClientRect();
+    return{x:e.clientX-r.left,y:e.clientY-r.top};
+  }
+  _nodeAt(x,y){
+    if(!this.pz)return null;
+    const R=Math.max(this.ren.NR*2.8,44);
+    let best=null,bestD=R;
+    for(const n of this.pz.nodes){
+      const d=hypot(n.x,n.y,x,y);
+      if(d<bestD){bestD=d;best=n.id;}
     }
     return best;
   }
 
-  // ━━ ポインター座標 (canvas相対) ━━
-  _toCanvas(e) {
-    const r = this.canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-
-  // ━━ シェイク ━━
-  _shake() {
-    this.canvas.classList.remove('shake');
-    void this.canvas.offsetWidth;
-    this.canvas.classList.add('shake');
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //  Pointer Events ハンドラ (canvas専用)
-  //  pointerdown / pointermove / pointerup の3本に統一
-  //  setPointerCapture → ドラッグ中に指がcanvas外に出ても追跡
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  _onPtrDown(e) {
-    // 既に追跡中のポインターがある場合は無視 (マルチタッチ防止)
-    if (this._activePtr !== null) return;
-
+  _onPtrDown(e){
+    if(this._pid!==null)return; // 2本目の指は無視
+    const{x,y}=this._cvXY(e);
+    const nid=this._nodeAt(x,y);
+    if(nid===null)return;
     e.preventDefault();
-    const {x, y} = this._toCanvas(e);
-    this._pointerPos = {x, y};
-
-    const nodeId = this._getNodeAt(x, y);
-    if (nodeId === null) return;
-
-    // このポインターを canvas に捕捉 (canvas外でも move/up が確実に届く)
-    this.canvas.setPointerCapture(e.pointerId);
-    this._activePtr     = e.pointerId;
-    this._lastMovedNode = nodeId;
-
-    if (this.state.currentNode === null) {
-      // ── ゲーム開始: スタートノードを選択 ──
-      this.state.startAt(nodeId);
-      this.hintActive = false;
+    this.cv.setPointerCapture(e.pointerId);
+    this._pid=e.pointerId;
+    this._cursor={x,y};
+    this._lastNode=nid;
+    if(this.pz.cur===null){
+      if(!this.pz.canStart(nid))return;
+      this.pz.start(nid);
     } else {
-      // ── ゲーム中: 移動を試みる ──
-      this._doMove(nodeId);
+      this._doMove(nid);
     }
   }
-
-  _onPtrMove(e) {
-    // 追跡中のポインター以外は無視
-    if (e.pointerId !== this._activePtr) return;
-
+  _onPtrMove(e){
+    const{x,y}=this._cvXY(e);
+    if(e.pointerId!==this._pid){
+      this.hover=this._nodeAt(x,y);return;
+    }
     e.preventDefault();
-    const {x, y} = this._toCanvas(e);
-    this._pointerPos = {x, y};
+    this._cursor={x,y};
+    this.hover=this._nodeAt(x,y);
+    const nid=this._nodeAt(x,y);
+    if(nid!==null&&nid!==this.pz?.cur&&nid!==this._lastNode){
+      this._lastNode=nid;this._doMove(nid);
+    }
+  }
+  _onPtrUp(e){
+    if(e.pointerId!==this._pid)return;
+    this._pid=null;this._cursor=null;this._lastNode=null;
+  }
 
-    const nodeId = this._getNodeAt(x, y);
-    this.hoverNode = nodeId;
-
-    // 新しいノードに入ったときだけ移動判定
-    if (nodeId !== null
-        && nodeId !== this.state?.currentNode
-        && nodeId !== this._lastMovedNode) {
-      this._lastMovedNode = nodeId;
-      this._doMove(nodeId);
+  _doMove(to){
+    if(!this.pz||this.pz.won||to===this.pz.cur)return;
+    const r=this.pz.move(to);
+    this.hintEids=null;this._ui();
+    if(r==='bad'){
+      this.cv.classList.remove('shake');
+      void this.cv.offsetWidth;
+      this.cv.classList.add('shake');
+      return;
+    }
+    if(r==='win'){
+      // [FIX-B] クリア時に必ずPointerCapture解放
+      this._release();
+      clearInterval(this._timerID);
+      const d=DIFFS[this.diff];
+      const tm=document.getElementById('tm').textContent;
+      const burst=()=>this.ren.burst(this.pz.nodes,d.color,12);
+      [0,180,360,540,720].forEach(t=>setTimeout(burst,t));
+      setTimeout(()=>{
+        this._setOverlay(true,'🎉 クリア！',`${d.name} — ${d.label}`,
+          `⏱ ${tm}  ✦  手数: ${this.pz.moves}`);
+      },650);
+    }
+    if(r!=='win'&&this.pz.deadEnd()){
+      setTimeout(()=>{
+        this._setOverlay(true,'⚠ 行き詰まり','リセットして再挑戦！',`手数: ${this.pz.moves}`);
+      },400);
     }
   }
 
-  _onPtrUp(e) {
-    if (e.pointerId !== this._activePtr) return;
-    this._activePtr     = null;
-    this._lastMovedNode = null;
-    this._pointerPos    = null;
+  _bindAll(){
+    // canvas: Pointer Events のみ (touch/mouseを二重登録しない)
+    this.cv.addEventListener('pointerdown',   e=>this._onPtrDown(e));
+    this.cv.addEventListener('pointermove',   e=>this._onPtrMove(e));
+    this.cv.addEventListener('pointerup',     e=>this._onPtrUp(e));
+    this.cv.addEventListener('pointercancel', e=>this._onPtrUp(e));
+
+    document.querySelectorAll('.diff-btn').forEach(b=>{
+      b.addEventListener('click',()=>{this.diff=+b.dataset.d;this._newPuzzle();});
+    });
+    document.getElementById('btn-undo').addEventListener('click',()=>{
+      if(!this.pz||this.pz.won)return;
+      if(this.pz.undo()){this.hintEids=null;this._ui();}
+    });
+    document.getElementById('btn-hint').addEventListener('click',()=>{
+      if(!this.pz||this.pz.cur===null||this.hintN<=0||this.hintEids)return;
+      const eids=this.pz.freeEdges(this.pz.cur).map(x=>x.eid);
+      if(!eids.length)return;
+      this.hintN--;this.hintEids=eids;this._ui();
+      setTimeout(()=>{this.hintEids=null;},2500);
+    });
+    document.getElementById('btn-reset').addEventListener('click',()=>{
+      if(!this.pz)return;
+      this._release();
+      this.pz.reset();this.hintEids=null;
+      this._setOverlay(false);this._startTimer();this._ui();
+    });
+    document.getElementById('btn-new').addEventListener('click',()=>this._newPuzzle());
+    // [FIX-B] btn-next は overlay内要素 → canvas のPointerCaptureとは無関係
+    //         releasePointerCapture済み後に呼ばれるため click だけで確実に動く
+    document.getElementById('btn-next').addEventListener('click',()=>this._newPuzzle());
+    window.addEventListener('resize',()=>this._onResize());
   }
 
-  // ━━ 移動実行 ━━
-  _doMove(toNodeId) {
-    if (!this.state || this.state.won) return;
-    if (toNodeId === this.state.currentNode) return; // 同一ノードは無視
-
-    const result = this.state.tryMove(toNodeId);
-
-    switch (result) {
-      case 'invalid': this._shake(); break;
-      case 'win':
-        this._activePtr = null; // ドラッグ解放
-        this._onWin();
-        break;
-      case 'ok':
-      case 'undo':
-        this.hintActive = false;
-        break;
-    }
-
-    // 行き詰まり検出
-    if (result !== 'win' && this.state.isDeadEnd()) {
-      setTimeout(() => {
-        this._setOverlay(true, '⚠ 行き詰まり', 'リセットして再挑戦！',
-          `手数: ${this.state.moveCount}`);
-      }, 400);
-    }
-
-    this._updateUI();
-  }
-
-  // ━━ クリア演出 ━━
-  _onWin() {
-    clearInterval(this.timerInt);
-    const diff = DIFFICULTIES[this.diffIdx];
-    const timeStr = document.getElementById('tm').textContent;
-
-    // パーティクル連続バースト
-    [0, 200, 400, 600, 800].forEach(delay => {
-      setTimeout(() => {
-        if (this.state) this.renderer.spawnWinBurst(this.state.nodes, diff.color);
-      }, delay);
-    });
-
-    // 600ms後にオーバーレイを表示
-    setTimeout(() => {
-      this._setOverlay(true,
-        '🎉 クリア！',
-        `${diff.name} — ${diff.label}`,
-        `⏱ ${timeStr}  ✦  手数: ${this.state.moveCount}`
-      );
-    }, 600);
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //  イベントバインド
-  //  canvas: Pointer Events のみ
-  //  ボタン類: click のみ (UIボタンはPointer Eventsと競合しない)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  _bindEvents() {
-    const c = this.canvas;
-
-    // canvas — Pointer Events (touch/mouse 統一)
-    c.style.touchAction = 'none'; // ブラウザのスクロール等を無効化
-    c.addEventListener('pointerdown', e => this._onPtrDown(e));
-    c.addEventListener('pointermove', e => this._onPtrMove(e));
-    c.addEventListener('pointerup',   e => this._onPtrUp(e));
-    c.addEventListener('pointercancel', e => this._onPtrUp(e));
-    c.addEventListener('pointerleave', e => {
-      if (e.pointerId === this._activePtr) return; // captureされているので無視
-      this.hoverNode   = null;
-      this._pointerPos = null;
-    });
-
-    // 難易度ボタン
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.diffIdx = +btn.dataset.d;
-        this.newPuzzle();
-      });
-    });
-
-    // フッターボタン
-    document.getElementById('btn-undo').addEventListener('click', () => {
-      if (!this.state || this.state.pathStack.length === 0) return;
-      const last = this.state.pathStack[this.state.pathStack.length-1];
-      this.state.traversed.delete(last.edgeId);
-      this.state.pathStack.pop();
-      this.state.currentNode = last.from;
-      this.state.moveCount++;
-      this._updateUI();
-    });
-
-    document.getElementById('btn-hint').addEventListener('click', () => {
-      if (this.hintCount <= 0 || this.hintActive) return;
-      this.hintActive = true;
-      this.hintCount--;
-      this._updateHintBtn();
-      setTimeout(() => { this.hintActive = false; }, 2500);
-    });
-
-    document.getElementById('btn-reset').addEventListener('click', () => {
-      this._setOverlay(false);
-      this.state.reset();
-      this._activePtr = null;
-      this._startTimer();
-      this._updateUI();
-    });
-
-    document.getElementById('btn-new').addEventListener('click', () => this.newPuzzle());
-
-    // ── 「次のパズル」ボタン ──
-    // オーバーレイ内ボタン: click だけで十分
-    // (オーバーレイがcanvasより上位にあるためPointer Eventsは競合しない)
-    document.getElementById('sm-next').addEventListener('click', () => {
-      this.newPuzzle();
-    });
-
-    window.addEventListener('resize', () => this.resize());
-  }
-
-  // ━━ メインループ ━━
-  start() {
-    const tick = () => {
-      this.renderer.draw(
-        this.state, this.hoverNode, this.hintActive, this._pointerPos
-      );
-      this.animFrame = requestAnimationFrame(tick);
-    };
-    tick();
+  _loop(){
+    this.ren.draw(this.pz,this.hover,this.hintEids,this._cursor);
+    requestAnimationFrame(()=>this._loop());
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  BOOT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const game = new Game();
-game.start();
-
-// Set diff btn colors on load
-document.querySelectorAll('.diff-btn').forEach(btn => {
-  const d = DIFFICULTIES[+btn.dataset.d];
-  btn.style.setProperty('--active-color', d.color);
-});
-document.querySelector('.diff-btn[data-d="2"]').style.setProperty('--active-color', DIFFICULTIES[2].color);
+window.addEventListener('DOMContentLoaded',()=>new Game());
 </script>
 </body>
 </html>
