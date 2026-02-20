@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NEON EULER — 一筆書き</title>
+<style>
+:root {
+  --bg:      #060612;
+  --bg2:     #0d0d2b;
+  --purple:  #a855f7;
+  --cyan:    #00d9ff;
+  --pink:    #ec4899;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --white:   #e2e8f0;
+  --dim:     rgba(255,255,255,0.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Courier New', monospace;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── HEADER ── */
+#header {
+  width: 100%;
+  max-width: 600px;
+  padding: 10px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#logo {
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 12px rgba(168,85,247,.5));
+  white-space: nowrap;
+}
+
+#meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+#timer, #moves-display {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+  min-width: 52px;
+  text-align: center;
+}
+
+#timer span, #moves-display span { color: var(--cyan); }
+
+/* ── DIFFICULTY TABS ── */
+#diff-bar {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  gap: 5px;
+  padding: 0 16px 6px;
+  flex-shrink: 0;
+}
+
+.diff-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.diff-btn.active {
+  border-color: var(--active-color, var(--purple));
+  color: var(--active-color, var(--purple));
+  background: rgba(168,85,247,0.12);
+  box-shadow: 0 0 12px -2px var(--active-color, var(--purple));
+}
+
+/* ── CANVAS AREA ── */
+#canvas-wrap {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 16px;
+}
+
+#canvas {
+  display: block;
+  border-radius: 16px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ── STATUS OVERLAY ── */
+#status-msg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(6,6,18,0.92);
+  border: 2px solid var(--purple);
+  border-radius: 18px;
+  padding: 24px 36px;
+  text-align: center;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  min-width: 200px;
+}
+
+#status-msg.visible { transform: translate(-50%,-50%) scale(1); pointer-events: auto; }
+#status-msg h2 { font-size: 1.4rem; letter-spacing: 0.2em; margin-bottom: 6px; }
+#status-msg p { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; margin-bottom: 16px; }
+#status-msg .stat-line { font-size: 0.85rem; color: var(--cyan); margin-bottom: 14px; letter-spacing: 0.1em; }
+
+/* ── FOOTER CONTROLS ── */
+#footer {
+  width: 100%;
+  max-width: 600px;
+  padding: 6px 16px 14px;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ctrl-btn {
+  flex: 1;
+  padding: 10px 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:active { transform: scale(0.95); }
+
+.ctrl-btn.primary {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(168,85,247,0.1);
+}
+
+.ctrl-btn.primary:active { background: rgba(168,85,247,0.25); }
+
+#hint-count {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.4);
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── SHAKE ANIMATION ── */
+@keyframes shake {
+  0%,100%{ transform:translateX(0) }
+  20%{ transform:translateX(-6px) }
+  40%{ transform:translateX(6px) }
+  60%{ transform:translateX(-4px) }
+  80%{ transform:translateX(4px) }
+}
+
+#canvas.shake { animation: shake 0.35s ease; }
+</style>
+</head>
+<body>
+
+<!-- DEMO_META
+title: NEON EULER
+desc: 一筆書きパズル — 5段階難易度 · 無限ステージ生成
+tech: Canvas 2D · Graph Theory · Eulerian Path Algorithm
+level: 90
+color: #a855f7
+type: game
+-->
+
+<!-- HEADER -->
+<div id="header">
+  <div id="logo">✦ NEON EULER</div>
+  <div id="meta-row">
+    <div id="moves-display">手数 <span id="mv">0</span></div>
+    <div id="timer">⏱ <span id="tm">0:00</span></div>
+  </div>
+</div>
+
+<!-- DIFFICULTY BAR -->
+<div id="diff-bar">
+  <button class="diff-btn" data-d="0">EASY<br><small>入門</small></button>
+  <button class="diff-btn" data-d="1">NORMAL<br><small>普通</small></button>
+  <button class="diff-btn active" data-d="2">HARD<br><small>難</small></button>
+  <button class="diff-btn" data-d="3">EXPERT<br><small>超難</small></button>
+  <button class="diff-btn" data-d="4">MASTER<br><small>達人</small></button>
+</div>
+
+<!-- GAME CANVAS -->
+<div id="canvas-wrap">
+  <canvas id="canvas"></canvas>
+  <div id="status-msg">
+    <h2 id="sm-title">🎉 クリア！</h2>
+    <p id="sm-sub">一筆書き完成！</p>
+    <div class="stat-line" id="sm-stat"></div>
+    <button class="ctrl-btn primary" id="sm-next" style="width:100%;font-size:.85rem;padding:12px">次のパズル →</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <button class="ctrl-btn" id="btn-undo">↩ もどす</button>
+  <button class="ctrl-btn" id="btn-hint">💡 ヒント<span id="hint-count"></span></button>
+  <button class="ctrl-btn" id="btn-reset">↺ リセット</button>
+  <button class="ctrl-btn primary" id="btn-new">NEW ✦</button>
+</div>
+
+<script>
+'use strict';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DIFFICULTY CONFIG
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const DIFFICULTIES = [
+  { id:0, name:'EASY',   nodes: 4,  triangles: 0, maxEdges: 0,  color:'#22d3ee', label:'入門' },
+  { id:1, name:'NORMAL', nodes: 6,  triangles: 1, maxEdges: 2,  color:'#a855f7', label:'普通' },
+  { id:2, name:'HARD',   nodes: 8,  triangles: 2, maxEdges: 3,  color:'#f59e0b', label:'難'   },
+  { id:3, name:'EXPERT', nodes: 11, triangles: 4, maxEdges: 4,  color:'#ec4899', label:'超難' },
+  { id:4, name:'MASTER', nodes: 14, triangles: 6, maxEdges: 6,  color:'#ef4444', label:'達人' },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  UTILS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const rng  = () => Math.random();
+const range = n => Array.from({length:n},(_,i)=>i);
+const shuffle = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const edgeKey = (a,b) => a<b ? `${a}:${b}` : `${b}:${a}`;
+const dist = (ax,ay,bx,by) => Math.hypot(ax-bx,ay-by);
+const lerp = (a,b,t) => a+(b-a)*t;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GRAPH GENERATION
+//  Eulerian circuit guaranteed:
+//    Base = Hamiltonian cycle (all even degrees)
+//    Each triangle adds +2 to 3 nodes → parity preserved
+//    Extra edges added in pairs → parity preserved
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function generateEulerianGraph(nodeCount, triangleCount, maxExtraEdges) {
+  const edges    = []; // [{id, a, b}]
+  const edgeSet  = new Set();
+  const degree   = Array(nodeCount).fill(0);
+
+  const addEdge = (a, b) => {
+    const k = edgeKey(a,b);
+    if (edgeSet.has(k) || a === b) return false;
+    edgeSet.add(k);
+    edges.push({ id: edges.length, a, b });
+    degree[a]++; degree[b]++;
+    return true;
+  };
+
+  // 1. Hamiltonian cycle (all degrees = 2)
+  const perm = shuffle(range(nodeCount));
+  for (let i = 0; i < nodeCount; i++) {
+    addEdge(perm[i], perm[(i+1) % nodeCount]);
+  }
+
+  // 2. Random triangles (each adds +2 to each of 3 nodes → even)
+  let triAttempts = 0;
+  let triAdded = 0;
+  while (triAdded < triangleCount && triAttempts < 2000) {
+    triAttempts++;
+    const [a,b,c] = shuffle(range(nodeCount)).slice(0,3);
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,c), k3 = edgeKey(a,c);
+    if (!edgeSet.has(k1) && !edgeSet.has(k2) && !edgeSet.has(k3)) {
+      addEdge(a,b); addEdge(b,c); addEdge(a,c);
+      triAdded++;
+    }
+  }
+
+  // 3. Extra single-edge pairs (two at a time keeps parity even)
+  let extraAttempts = 0;
+  let extraAdded = 0;
+  const maxExtra = maxExtraEdges * 2;
+  while (extraAdded < maxExtra && extraAttempts < 2000) {
+    extraAttempts++;
+    const pool = shuffle(range(nodeCount));
+    const a = pool[0], b = pool[1];
+    if (addEdge(a,b)) extraAdded++;
+    // pair: add one more edge to maintain parity
+    if (extraAdded % 2 === 1) {
+      const c = pool[2], d = pool[3] ?? pool[0];
+      if (c !== d && addEdge(c,d)) extraAdded++;
+    }
+  }
+
+  return { edges, degree };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  NODE PLACEMENT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function placeNodes(count, cx, cy, radius) {
+  if (count <= 8) {
+    // Single circle with slight random jitter
+    return range(count).map(i => {
+      const angle = (i / count) * Math.PI * 2 - Math.PI/2 + (rng()-0.5)*0.3;
+      const r = radius * (0.85 + rng() * 0.15);
+      return { id:i, x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+    });
+  } else {
+    // Inner + outer rings
+    const outer = Math.ceil(count * 0.6);
+    const inner = count - outer;
+    const nodes = [];
+    for (let i = 0; i < inner; i++) {
+      const angle = (i/inner)*Math.PI*2 + rng()*0.2;
+      nodes.push({ id:i, x: cx + radius*0.45*Math.cos(angle), y: cy + radius*0.45*Math.sin(angle) });
+    }
+    for (let i = 0; i < outer; i++) {
+      const angle = (i/outer)*Math.PI*2 - Math.PI/2 + rng()*0.15;
+      const r = radius * (0.88 + rng()*0.12);
+      nodes.push({ id:inner+i, x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) });
+    }
+    return nodes;
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  FIND EULER ENDPOINTS (for highlighting)
+//  All even → circuit (any start ok)
+//  Exactly 2 odd → must start/end at odd-degree nodes
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getEulerEndpoints(degree) {
+  const odd = degree.map((d,i)=>d%2===1?i:-1).filter(i=>i>=1);
+  return odd.length === 0 ? null : odd; // null = circuit, else [a,b]
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  PUZZLE STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class PuzzleState {
+  constructor(nodes, edges, degree, diffColor) {
+    this.nodes      = nodes;
+    this.edges      = edges;
+    this.totalEdges = edges.length;
+    this.degree     = degree;
+    this.diffColor  = diffColor;
+
+    // Build adjacency: adj[nodeId] = [{edgeId, neighbor}]
+    this.adj = Array.from({length:nodes.length}, ()=>[]);
+    for (const e of edges) {
+      this.adj[e.a].push({edgeId:e.id, neighbor:e.b});
+      this.adj[e.b].push({edgeId:e.id, neighbor:e.a});
+    }
+
+    this.eulerEndpoints = getEulerEndpoints(degree);
+    this.reset();
+  }
+
+  reset() {
+    this.traversed    = new Set(); // edge ids
+    this.pathStack    = [];        // [{from, to, edgeId}]
+    this.currentNode  = null;
+    this.moveCount    = 0;
+    this.won          = false;
+    this.animEdges    = {};        // edgeId -> {progress 0..1}
+    this.particles    = [];
+  }
+
+  get validStarts() {
+    return this.eulerEndpoints ?? range(this.nodes.length);
+  }
+
+  canStartAt(nodeId) {
+    return this.currentNode === null;
+  }
+
+  availableEdges(nodeId) {
+    return this.adj[nodeId].filter(({edgeId}) => !this.traversed.has(edgeId));
+  }
+
+  tryMove(toNodeId) {
+    if (this.won) return 'won';
+    if (this.currentNode === null) return 'no_start';
+
+    // Backtrack?
+    if (this.pathStack.length > 0) {
+      const last = this.pathStack[this.pathStack.length-1];
+      if (last.from === toNodeId) {
+        // Undo last move
+        this.traversed.delete(last.edgeId);
+        this.pathStack.pop();
+        this.currentNode = toNodeId;
+        this.moveCount++;
+        return 'undo';
+      }
+    }
+
+    // Find untraversed edge between currentNode and toNodeId
+    const available = this.adj[this.currentNode].filter(
+      ({edgeId, neighbor}) => neighbor === toNodeId && !this.traversed.has(edgeId)
+    );
+
+    if (available.length === 0) return 'invalid';
+
+    const {edgeId} = available[0];
+    this.traversed.add(edgeId);
+    this.pathStack.push({from: this.currentNode, to: toNodeId, edgeId});
+    this.animEdges[edgeId] = {progress: 0};
+    this.currentNode = toNodeId;
+    this.moveCount++;
+
+    if (this.traversed.size === this.totalEdges) {
+      this.won = true;
+      return 'win';
+    }
+    return 'ok';
+  }
+
+  startAt(nodeId) {
+    this.currentNode = nodeId;
+  }
+
+  getHintEdges() {
+    if (this.currentNode === null) return [];
+    return this.availableEdges(this.currentNode).map(e=>e.edgeId);
+  }
+
+  isDeadEnd() {
+    if (this.currentNode === null || this.won) return false;
+    return this.availableEdges(this.currentNode).length === 0 &&
+           this.traversed.size < this.totalEdges;
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  PARTICLE SYSTEM
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class Particle {
+  constructor(x,y,color) {
+    this.x = x; this.y = y;
+    const angle = rng()*Math.PI*2;
+    const speed = 2 + rng()*5;
+    this.vx = Math.cos(angle)*speed;
+    this.vy = Math.sin(angle)*speed - 2;
+    this.life = 1;
+    this.decay = 0.018 + rng()*0.02;
+    this.r = 2 + rng()*4;
+    this.color = color;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.vy += 0.12;
+    this.life -= this.decay;
+    this.vx *= 0.97;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r * this.life, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  RENDERER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class Renderer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx    = canvas.getContext('2d');
+    this.nodeR  = 22;
+    this.particles = [];
+  }
+
+  resize() {
+    const wrap = this.canvas.parentElement;
+    const W = wrap.clientWidth  - 32;
+    const H = wrap.clientHeight - 8;
+    this.canvas.width  = W;
+    this.canvas.height = H;
+    this.nodeR = Math.min(22, Math.max(14, Math.min(W,H)/22));
+  }
+
+  spawnParticles(x,y,color,count=20) {
+    for(let i=0;i<count;i++) this.particles.push(new Particle(x,y,color));
+  }
+
+  spawnWinBurst(nodes, color) {
+    for(const n of nodes) this.spawnParticles(n.x,n.y,color,12);
+  }
+
+  draw(state, hoverNode, hintActive, pointerPos) {
+    const {ctx, canvas, nodeR} = this;
+    const W = canvas.width, H = canvas.height;
+
+    // Background
+    ctx.fillStyle = '#060612';
+    ctx.fillRect(0,0,W,H);
+
+    // Subtle grid
+    ctx.strokeStyle = 'rgba(168,85,247,0.04)';
+    ctx.lineWidth = 1;
+    const gs = 40;
+    for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+    if (!state) { this._drawParticles(); return; }
+
+    const {nodes, edges, traversed, currentNode, diffColor, animEdges, won} = state;
+
+    // Update edge animations
+    for(const [id, anim] of Object.entries(animEdges)) {
+      if(anim.progress < 1) anim.progress = Math.min(1, anim.progress + 0.08);
+    }
+
+    // ── EDGES ──
+    for(const edge of edges) {
+      const a = nodes[edge.a], b = nodes[edge.b];
+      const done = traversed.has(edge.id);
+      const anim = animEdges[edge.id];
+
+      if (done && anim && anim.progress < 1) {
+        // Animated traversal
+        const t = anim.progress;
+        const mx = lerp(a.x, b.x, t);
+        const my = lerp(a.y, b.y, t);
+
+        // Untraversed part
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(mx,my); ctx.lineTo(b.x,b.y); ctx.stroke();
+        ctx.restore();
+
+        // Traversed glow part
+        ctx.save();
+        ctx.strokeStyle = diffColor;
+        ctx.shadowColor = diffColor;
+        ctx.shadowBlur  = 18;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(mx,my); ctx.stroke();
+        ctx.restore();
+
+      } else if (done) {
+        // Fully traversed
+        ctx.save();
+        ctx.strokeStyle = diffColor;
+        ctx.shadowColor = diffColor;
+        ctx.shadowBlur  = 14;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = won ? 0.9 : 0.85;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        ctx.restore();
+
+      } else {
+        // Untraversed
+        const isHint = hintActive && state.getHintEdges().includes(edge.id);
+        ctx.save();
+        if (isHint) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur  = 10;
+          ctx.globalAlpha = 0.5 + 0.3*Math.sin(Date.now()/300);
+          ctx.lineWidth = 3;
+        } else {
+          ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+          ctx.lineWidth = 2;
+        }
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Pointer drag line
+    if (currentNode !== null && pointerPos) {
+      const cn = nodes[currentNode];
+      ctx.save();
+      ctx.strokeStyle = diffColor;
+      ctx.shadowColor = diffColor;
+      ctx.shadowBlur  = 8;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth   = 2;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(cn.x,cn.y); ctx.lineTo(pointerPos.x,pointerPos.y); ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── NODES ──
+    for(const node of nodes) {
+      const isCurrent = node.id === currentNode;
+      const isHover   = node.id === hoverNode && !isCurrent;
+      const isValidStart = currentNode === null && (state.eulerEndpoints === null || state.eulerEndpoints.includes(node.id));
+      const isEnd     = state.eulerEndpoints && state.eulerEndpoints.includes(node.id);
+      const availAdj  = currentNode !== null && state.availableEdges(currentNode).some(e=>e.neighbor===node.id);
+
+      // Outer glow ring
+      if (isCurrent || isHover || availAdj || (currentNode === null && isValidStart)) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, nodeR + 6, 0, Math.PI*2);
+        ctx.strokeStyle = isCurrent ? diffColor : (availAdj ? diffColor : 'rgba(255,255,255,0.3)');
+        ctx.shadowColor = isCurrent ? diffColor : diffColor;
+        ctx.shadowBlur  = isCurrent ? 24 : 10;
+        ctx.globalAlpha = isCurrent ? 0.9 : (availAdj ? 0.5 : 0.3);
+        ctx.lineWidth   = isCurrent ? 2.5 : 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Node body
+      const grad = ctx.createRadialGradient(node.x-nodeR*0.3,node.y-nodeR*0.3,0,node.x,node.y,nodeR);
+      if (isCurrent) {
+        grad.addColorStop(0, diffColor);
+        grad.addColorStop(1, `${diffColor}88`);
+      } else if (availAdj) {
+        grad.addColorStop(0, `${diffColor}99`);
+        grad.addColorStop(1, `${diffColor}33`);
+      } else {
+        grad.addColorStop(0, 'rgba(255,255,255,0.18)');
+        grad.addColorStop(1, 'rgba(255,255,255,0.04)');
+      }
+
+      ctx.save();
+      ctx.shadowColor = isCurrent ? diffColor : 'rgba(255,255,255,0.2)';
+      ctx.shadowBlur  = isCurrent ? 20 : 4;
+      ctx.beginPath(); ctx.arc(node.x,node.y,nodeR,0,Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = isCurrent ? diffColor : 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = isCurrent ? 2 : 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // Node label (degree indicator shown as dots at bottom-right)
+      if (isEnd && currentNode === null && state.eulerEndpoints) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${nodeR*0.55}px Courier New`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.9;
+        ctx.fillText('S', node.x, node.y);
+        ctx.restore();
+      }
+    }
+
+    // ── PARTICLES ──
+    this._drawParticles();
+  }
+
+  _drawParticles() {
+    this.particles = this.particles.filter(p => p.life > 0);
+    for(const p of this.particles) { p.update(); p.draw(this.ctx); }
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GAME CONTROLLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+class Game {
+  constructor() {
+    this.canvas     = document.getElementById('canvas');
+    this.renderer   = new Renderer(this.canvas);
+    this.state      = null;
+    this.diffIdx    = 2;
+    this.hoverNode  = null;
+    this.hintActive = false;
+    this.hintCount  = 3;
+    this.dragging   = false;
+    this.pointerPos = null;
+    this.timerSec   = 0;
+    this.timerInt   = null;
+    this.bestTimes  = {};
+    this.animFrame  = null;
+
+    this._bindEvents();
+    this.resize();
+    this.newPuzzle();
+  }
+
+  resize() {
+    this.renderer.resize();
+    if (this.state) this._layoutNodes();
+  }
+
+  _layoutNodes() {
+    const { canvas: { width:W, height:H } } = this.renderer;
+    const cx = W/2, cy = H/2;
+    const radius = Math.min(W,H)*0.38;
+    const diff = DIFFICULTIES[this.diffIdx];
+    const nodes = placeNodes(diff.nodes, cx, cy, radius);
+    this.state.nodes.forEach((n,i) => {
+      if(nodes[i]){ n.x = nodes[i].x; n.y = nodes[i].y; }
+    });
+  }
+
+  // ── New puzzle ──
+  newPuzzle() {
+    const diff = DIFFICULTIES[this.diffIdx];
+    const { width:W, height:H } = this.renderer.canvas;
+    const cx = W/2, cy = H/2;
+    const radius = Math.min(W,H)*0.38;
+
+    const nodes = placeNodes(diff.nodes, cx, cy, radius);
+    const { edges, degree } = generateEulerianGraph(diff.nodes, diff.triangles, diff.maxEdges);
+
+    this.state = new PuzzleState(nodes, edges, degree, diff.color);
+    this.hintActive = false;
+    this.hintCount  = 3 + diff.id;
+    this._updateHintBtn();
+    this._startTimer();
+    this._updateUI();
+    this._hideStatus();
+
+    // Update diff buttons
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      const active = +btn.dataset.d === this.diffIdx;
+      btn.classList.toggle('active', active);
+      btn.style.setProperty('--active-color', diff.color);
+    });
+  }
+
+  // ── Timer ──
+  _startTimer() {
+    clearInterval(this.timerInt);
+    this.timerSec = 0;
+    this._renderTimer();
+    this.timerInt = setInterval(() => {
+      if (!this.state?.won) { this.timerSec++; this._renderTimer(); }
+    }, 1000);
+  }
+
+  _renderTimer() {
+    const m = Math.floor(this.timerSec/60);
+    const s = this.timerSec%60;
+    document.getElementById('tm').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }
+
+  _updateUI() {
+    document.getElementById('mv').textContent = this.state?.moveCount ?? 0;
+  }
+
+  _updateHintBtn() {
+    document.getElementById('hint-count').textContent = ` (${this.hintCount})`;
+  }
+
+  // ── Status overlay ──
+  _showStatus(title, sub, stat) {
+    document.getElementById('sm-title').textContent = title;
+    document.getElementById('sm-sub').textContent   = sub;
+    document.getElementById('sm-stat').textContent  = stat;
+    document.getElementById('status-msg').classList.add('visible');
+  }
+
+  _hideStatus() {
+    document.getElementById('status-msg').classList.remove('visible');
+  }
+
+  // ── Pointer helpers ──
+  _getCanvasXY(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+
+  _getNodeAt(x, y) {
+    if (!this.state) return null;
+    const R = this.renderer.nodeR + 8; // slightly generous hit area
+    for(const n of this.state.nodes) {
+      if (dist(n.x,n.y,x,y) < R) return n.id;
+    }
+    return null;
+  }
+
+  _shake() {
+    this.canvas.classList.remove('shake');
+    void this.canvas.offsetWidth;
+    this.canvas.classList.add('shake');
+  }
+
+  // ── Input handling ──
+  _onPointerDown(e) {
+    e.preventDefault();
+    const {x,y} = this._getCanvasXY(e);
+    this.pointerPos = {x,y};
+    const nodeId = this._getNodeAt(x,y);
+    if (nodeId === null) return;
+
+    if (this.state.currentNode === null) {
+      // Start game
+      this.state.startAt(nodeId);
+      this.dragging = true;
+      this.hintActive = false;
+    } else {
+      // Mid-game: try move
+      this._doMove(nodeId);
+    }
+  }
+
+  _onPointerMove(e) {
+    e.preventDefault();
+    const {x,y} = this._getCanvasXY(e);
+    this.pointerPos = {x,y};
+
+    const nodeId = this._getNodeAt(x,y);
+    this.hoverNode = nodeId;
+
+    if (this.dragging && nodeId !== null && nodeId !== this.state.currentNode) {
+      this._doMove(nodeId);
+    }
+  }
+
+  _onPointerUp(e) {
+    this.dragging = false;
+    this.pointerPos = null;
+  }
+
+  _doMove(toNodeId) {
+    if (!this.state || this.state.won) return;
+    const result = this.state.tryMove(toNodeId);
+
+    if (result === 'invalid') {
+      this._shake();
+    } else if (result === 'win') {
+      this.dragging = false;
+      this._onWin();
+    } else if (result === 'ok' || result === 'undo') {
+      this.hintActive = false;
+    }
+
+    // Dead end check
+    if (this.state.isDeadEnd()) {
+      setTimeout(() => {
+        this._showStatus('⚠ 行き詰まり', 'リセットして再挑戦！', `手数: ${this.state.moveCount}`);
+      }, 400);
+    }
+
+    this._updateUI();
+  }
+
+  _onWin() {
+    clearInterval(this.timerInt);
+    const diff = DIFFICULTIES[this.diffIdx];
+    const timeStr = document.getElementById('tm').textContent;
+
+    // Burst particles from all nodes
+    setTimeout(() => {
+      this.renderer.spawnWinBurst(this.state.nodes, diff.color);
+      for(let i=0;i<5;i++) {
+        setTimeout(()=>this.renderer.spawnWinBurst(this.state.nodes, diff.color), i*200);
+      }
+    }, 100);
+
+    setTimeout(() => {
+      this._showStatus(
+        '🎉 クリア！',
+        `${diff.name} — ${diff.label}`,
+        `⏱ ${timeStr}  ✦  手数: ${this.state.moveCount}`
+      );
+    }, 600);
+  }
+
+  // ── Bind all events ──
+  _bindEvents() {
+    const c = this.canvas;
+
+    // Touch
+    c.addEventListener('touchstart', e=>this._onPointerDown(e), {passive:false});
+    c.addEventListener('touchmove',  e=>this._onPointerMove(e), {passive:false});
+    c.addEventListener('touchend',   e=>this._onPointerUp(e),   {passive:false});
+    // Mouse
+    c.addEventListener('mousedown', e=>this._onPointerDown(e));
+    c.addEventListener('mousemove', e=>this._onPointerMove(e));
+    c.addEventListener('mouseup',   e=>this._onPointerUp(e));
+    c.addEventListener('mouseleave',e=>{ this.hoverNode=null; this.pointerPos=null; });
+
+    // Difficulty buttons
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.diffIdx = +btn.dataset.d;
+        this.newPuzzle();
+      });
+    });
+
+    // Footer controls
+    document.getElementById('btn-undo').addEventListener('click', () => {
+      if (!this.state || this.state.pathStack.length === 0) return;
+      const last = this.state.pathStack[this.state.pathStack.length-1];
+      this.state.traversed.delete(last.edgeId);
+      this.state.pathStack.pop();
+      this.state.currentNode = last.from;
+      this.state.moveCount++;
+      this._updateUI();
+    });
+
+    document.getElementById('btn-hint').addEventListener('click', () => {
+      if (this.hintCount <= 0) return;
+      if (!this.hintActive) {
+        this.hintActive = true;
+        this.hintCount--;
+        this._updateHintBtn();
+        setTimeout(()=>{ this.hintActive=false; }, 2500);
+      }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      this._hideStatus();
+      this.state.reset();
+      this._startTimer();
+      this._updateUI();
+    });
+
+    document.getElementById('btn-new').addEventListener('click', () => this.newPuzzle());
+    document.getElementById('sm-next').addEventListener('click', () => this.newPuzzle());
+
+    window.addEventListener('resize', () => this.resize());
+  }
+
+  // ── Main loop ──
+  start() {
+    const tick = () => {
+      this.renderer.draw(this.state, this.hoverNode, this.hintActive, this.pointerPos);
+      this.animFrame = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BOOT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const game = new Game();
+game.start();
+
+// Set diff btn colors on load
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  const d = DIFFICULTIES[+btn.dataset.d];
+  btn.style.setProperty('--active-color', d.color);
+});
+document.querySelector('.diff-btn[data-d="2"]').style.setProperty('--active-color', DIFFICULTIES[2].color);
+</script>
+</body>
+</html>
