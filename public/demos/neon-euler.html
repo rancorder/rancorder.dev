@@ -709,29 +709,37 @@ class Renderer {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  GAME CONTROLLER
+//  入力: Pointer Events API に完全統一
+//        touch/mouse の二重登録を廃止
+//        setPointerCapture でドラッグを確実に捕捉
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 class Game {
   constructor() {
-    this.canvas     = document.getElementById('canvas');
-    this.renderer   = new Renderer(this.canvas);
-    this.state      = null;
-    this.diffIdx    = 2;
-    this.hoverNode  = null;
-    this.hintActive = false;
-    this.hintCount  = 3;
-    this.dragging   = false;
-    this.pointerPos = null;
-    this._lastMovedNode = null;
-    this.timerSec   = 0;
-    this.timerInt   = null;
-    this.bestTimes  = {};
-    this.animFrame  = null;
+    this.canvas      = document.getElementById('canvas');
+    this.renderer    = new Renderer(this.canvas);
+    this.state       = null;
+    this.diffIdx     = 2;
+    this.hoverNode   = null;
+    this.hintActive  = false;
+    this.hintCount   = 3;
+    this.timerSec    = 0;
+    this.timerInt    = null;
+    this.animFrame   = null;
+
+    // Pointer state — 1指/1マウスを完全管理
+    this._activePtr       = null;   // 追跡中の pointerId
+    this._lastMovedNode   = null;   // 連続検出防止
+    this._pointerPos      = null;   // 描画用カーソル位置
+
+    // newPuzzle の多重呼び出し防止フラグ
+    this._generating = false;
 
     this._bindEvents();
     this.resize();
     this.newPuzzle();
   }
 
+  // ━━ リサイズ ━━
   resize() {
     this.renderer.resize();
     if (this.state) this._layoutNodes();
@@ -743,13 +751,21 @@ class Game {
     const radius = Math.min(W,H)*0.38;
     const diff = DIFFICULTIES[this.diffIdx];
     const nodes = placeNodes(diff.nodes, cx, cy, radius);
-    this.state.nodes.forEach((n,i) => {
-      if(nodes[i]){ n.x = nodes[i].x; n.y = nodes[i].y; }
-    });
+    this.state.nodes.forEach((n,i) => { if(nodes[i]){ n.x=nodes[i].x; n.y=nodes[i].y; } });
   }
 
-  // ── New puzzle ──
+  // ━━ 新パズル生成 ━━
   newPuzzle() {
+    // 多重呼び出し防止 (連打 / touch+click 二重発火)
+    if (this._generating) return;
+    this._generating = true;
+    setTimeout(() => { this._generating = false; }, 300);
+
+    // アクティブなポインター追跡をリセット
+    this._activePtr     = null;
+    this._lastMovedNode = null;
+    this._pointerPos    = null;
+
     const diff = DIFFICULTIES[this.diffIdx];
     const { width:W, height:H } = this.renderer.canvas;
     const cx = W/2, cy = H/2;
@@ -764,17 +780,15 @@ class Game {
     this._updateHintBtn();
     this._startTimer();
     this._updateUI();
-    this._hideStatus();
+    this._setOverlay(false); // オーバーレイを確実に非表示
 
-    // Update diff buttons
     document.querySelectorAll('.diff-btn').forEach(btn => {
-      const active = +btn.dataset.d === this.diffIdx;
-      btn.classList.toggle('active', active);
+      btn.classList.toggle('active', +btn.dataset.d === this.diffIdx);
       btn.style.setProperty('--active-color', diff.color);
     });
   }
 
-  // ── Timer ──
+  // ━━ タイマー ━━
   _startTimer() {
     clearInterval(this.timerInt);
     this.timerSec = 0;
@@ -786,7 +800,7 @@ class Game {
 
   _renderTimer() {
     const m = Math.floor(this.timerSec/60);
-    const s = this.timerSec%60;
+    const s = this.timerSec % 60;
     document.getElementById('tm').textContent = `${m}:${s.toString().padStart(2,'0')}`;
   }
 
@@ -798,77 +812,89 @@ class Game {
     document.getElementById('hint-count').textContent = ` (${this.hintCount})`;
   }
 
-  // ── Status overlay ──
-  _showStatus(title, sub, stat) {
-    document.getElementById('sm-title').textContent = title;
-    document.getElementById('sm-sub').textContent   = sub;
-    document.getElementById('sm-stat').textContent  = stat;
-    document.getElementById('status-msg').classList.add('visible');
+  // ━━ オーバーレイ ━━
+  _setOverlay(visible, title='', sub='', stat='') {
+    const el = document.getElementById('status-msg');
+    if (visible) {
+      document.getElementById('sm-title').textContent = title;
+      document.getElementById('sm-sub').textContent   = sub;
+      document.getElementById('sm-stat').textContent  = stat;
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
   }
 
-  _hideStatus() {
-    document.getElementById('status-msg').classList.remove('visible');
-  }
-
-  // ── Pointer helpers ──
-  _getCanvasXY(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    // touchend: touches is empty → must use changedTouches
-    const touches = e.changedTouches || e.touches;
-    const src = touches && touches.length > 0 ? touches[0] : e;
-    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
-  }
-
-  _getNodeAt(x, y) {
+  // ━━ ノードヒット判定 ━━
+  _getNodeAt(cx, cy) {
     if (!this.state) return null;
-    // Mobile finger contact = ~44px. Use nodeR*2.5 but never less than 44.
-    const R = Math.max(this.renderer.nodeR * 2.5, 44);
-    let best = null, bestD = Infinity;
-    for(const n of this.state.nodes) {
-      const d = dist(n.x,n.y,x,y);
-      if (d < R && d < bestD) { best = n.id; bestD = d; }
+    // 指の接触面積に合わせた広めのヒット半径
+    const R = Math.max(this.renderer.nodeR * 2.8, 44);
+    let best = null, bestD = R;
+    for (const n of this.state.nodes) {
+      const d = dist(n.x, n.y, cx, cy);
+      if (d < bestD) { bestD = d; best = n.id; }
     }
     return best;
   }
 
+  // ━━ ポインター座標 (canvas相対) ━━
+  _toCanvas(e) {
+    const r = this.canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  // ━━ シェイク ━━
   _shake() {
     this.canvas.classList.remove('shake');
     void this.canvas.offsetWidth;
     this.canvas.classList.add('shake');
   }
 
-  // ── Input handling ──
-  _onPointerDown(e) {
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //  Pointer Events ハンドラ (canvas専用)
+  //  pointerdown / pointermove / pointerup の3本に統一
+  //  setPointerCapture → ドラッグ中に指がcanvas外に出ても追跡
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  _onPtrDown(e) {
+    // 既に追跡中のポインターがある場合は無視 (マルチタッチ防止)
+    if (this._activePtr !== null) return;
+
     e.preventDefault();
-    const {x,y} = this._getCanvasXY(e);
-    this.pointerPos = {x,y};
-    const nodeId = this._getNodeAt(x,y);
+    const {x, y} = this._toCanvas(e);
+    this._pointerPos = {x, y};
+
+    const nodeId = this._getNodeAt(x, y);
     if (nodeId === null) return;
 
+    // このポインターを canvas に捕捉 (canvas外でも move/up が確実に届く)
+    this.canvas.setPointerCapture(e.pointerId);
+    this._activePtr     = e.pointerId;
+    this._lastMovedNode = nodeId;
+
     if (this.state.currentNode === null) {
-      // First touch: pick start node
+      // ── ゲーム開始: スタートノードを選択 ──
       this.state.startAt(nodeId);
-      this.dragging = true;
       this.hintActive = false;
-      this._lastMovedNode = nodeId;
     } else {
-      // Mid-game tap: attempt move
-      this.dragging = true;
+      // ── ゲーム中: 移動を試みる ──
       this._doMove(nodeId);
-      this._lastMovedNode = nodeId;
     }
   }
 
-  _onPointerMove(e) {
-    e.preventDefault();
-    const {x,y} = this._getCanvasXY(e);
-    this.pointerPos = {x,y};
+  _onPtrMove(e) {
+    // 追跡中のポインター以外は無視
+    if (e.pointerId !== this._activePtr) return;
 
-    const nodeId = this._getNodeAt(x,y);
+    e.preventDefault();
+    const {x, y} = this._toCanvas(e);
+    this._pointerPos = {x, y};
+
+    const nodeId = this._getNodeAt(x, y);
     this.hoverNode = nodeId;
 
-    // Only trigger move when dragging AND entering a NEW node
-    if (this.dragging && nodeId !== null
+    // 新しいノードに入ったときだけ移動判定
+    if (nodeId !== null
         && nodeId !== this.state?.currentNode
         && nodeId !== this._lastMovedNode) {
       this._lastMovedNode = nodeId;
@@ -876,52 +902,59 @@ class Game {
     }
   }
 
-  _onPointerUp(e) {
-    this.dragging = false;
-    this.pointerPos = null;
+  _onPtrUp(e) {
+    if (e.pointerId !== this._activePtr) return;
+    this._activePtr     = null;
     this._lastMovedNode = null;
+    this._pointerPos    = null;
   }
 
+  // ━━ 移動実行 ━━
   _doMove(toNodeId) {
     if (!this.state || this.state.won) return;
-    // Tapping current node has no meaning — ignore silently
-    if (toNodeId === this.state.currentNode) return;
+    if (toNodeId === this.state.currentNode) return; // 同一ノードは無視
+
     const result = this.state.tryMove(toNodeId);
 
-    if (result === 'invalid') {
-      this._shake();
-    } else if (result === 'win') {
-      this.dragging = false;
-      this._onWin();
-    } else if (result === 'ok' || result === 'undo') {
-      this.hintActive = false;
+    switch (result) {
+      case 'invalid': this._shake(); break;
+      case 'win':
+        this._activePtr = null; // ドラッグ解放
+        this._onWin();
+        break;
+      case 'ok':
+      case 'undo':
+        this.hintActive = false;
+        break;
     }
 
-    // Dead end check
-    if (this.state.isDeadEnd()) {
+    // 行き詰まり検出
+    if (result !== 'win' && this.state.isDeadEnd()) {
       setTimeout(() => {
-        this._showStatus('⚠ 行き詰まり', 'リセットして再挑戦！', `手数: ${this.state.moveCount}`);
+        this._setOverlay(true, '⚠ 行き詰まり', 'リセットして再挑戦！',
+          `手数: ${this.state.moveCount}`);
       }, 400);
     }
 
     this._updateUI();
   }
 
+  // ━━ クリア演出 ━━
   _onWin() {
     clearInterval(this.timerInt);
     const diff = DIFFICULTIES[this.diffIdx];
     const timeStr = document.getElementById('tm').textContent;
 
-    // Burst particles from all nodes
-    setTimeout(() => {
-      this.renderer.spawnWinBurst(this.state.nodes, diff.color);
-      for(let i=0;i<5;i++) {
-        setTimeout(()=>this.renderer.spawnWinBurst(this.state.nodes, diff.color), i*200);
-      }
-    }, 100);
+    // パーティクル連続バースト
+    [0, 200, 400, 600, 800].forEach(delay => {
+      setTimeout(() => {
+        if (this.state) this.renderer.spawnWinBurst(this.state.nodes, diff.color);
+      }, delay);
+    });
 
+    // 600ms後にオーバーレイを表示
     setTimeout(() => {
-      this._showStatus(
+      this._setOverlay(true,
         '🎉 クリア！',
         `${diff.name} — ${diff.label}`,
         `⏱ ${timeStr}  ✦  手数: ${this.state.moveCount}`
@@ -929,21 +962,27 @@ class Game {
     }, 600);
   }
 
-  // ── Bind all events ──
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //  イベントバインド
+  //  canvas: Pointer Events のみ
+  //  ボタン類: click のみ (UIボタンはPointer Eventsと競合しない)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   _bindEvents() {
     const c = this.canvas;
 
-    // Touch
-    c.addEventListener('touchstart', e=>this._onPointerDown(e), {passive:false});
-    c.addEventListener('touchmove',  e=>this._onPointerMove(e), {passive:false});
-    c.addEventListener('touchend',   e=>this._onPointerUp(e),   {passive:false});
-    // Mouse
-    c.addEventListener('mousedown', e=>this._onPointerDown(e));
-    c.addEventListener('mousemove', e=>this._onPointerMove(e));
-    c.addEventListener('mouseup',   e=>this._onPointerUp(e));
-    c.addEventListener('mouseleave',e=>{ this.hoverNode=null; this.pointerPos=null; });
+    // canvas — Pointer Events (touch/mouse 統一)
+    c.style.touchAction = 'none'; // ブラウザのスクロール等を無効化
+    c.addEventListener('pointerdown', e => this._onPtrDown(e));
+    c.addEventListener('pointermove', e => this._onPtrMove(e));
+    c.addEventListener('pointerup',   e => this._onPtrUp(e));
+    c.addEventListener('pointercancel', e => this._onPtrUp(e));
+    c.addEventListener('pointerleave', e => {
+      if (e.pointerId === this._activePtr) return; // captureされているので無視
+      this.hoverNode   = null;
+      this._pointerPos = null;
+    });
 
-    // Difficulty buttons
+    // 難易度ボタン
     document.querySelectorAll('.diff-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         this.diffIdx = +btn.dataset.d;
@@ -951,7 +990,7 @@ class Game {
       });
     });
 
-    // Footer controls
+    // フッターボタン
     document.getElementById('btn-undo').addEventListener('click', () => {
       if (!this.state || this.state.pathStack.length === 0) return;
       const last = this.state.pathStack[this.state.pathStack.length-1];
@@ -963,39 +1002,39 @@ class Game {
     });
 
     document.getElementById('btn-hint').addEventListener('click', () => {
-      if (this.hintCount <= 0) return;
-      if (!this.hintActive) {
-        this.hintActive = true;
-        this.hintCount--;
-        this._updateHintBtn();
-        setTimeout(()=>{ this.hintActive=false; }, 2500);
-      }
+      if (this.hintCount <= 0 || this.hintActive) return;
+      this.hintActive = true;
+      this.hintCount--;
+      this._updateHintBtn();
+      setTimeout(() => { this.hintActive = false; }, 2500);
     });
 
     document.getElementById('btn-reset').addEventListener('click', () => {
-      this._hideStatus();
+      this._setOverlay(false);
       this.state.reset();
+      this._activePtr = null;
       this._startTimer();
       this._updateUI();
     });
 
     document.getElementById('btn-new').addEventListener('click', () => this.newPuzzle());
 
-    // sm-next: click for PC, touchstart for instant mobile response (no 300ms delay)
-    const smNext = document.getElementById('sm-next');
-    smNext.addEventListener('click', () => this.newPuzzle());
-    smNext.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // prevent ghost click
+    // ── 「次のパズル」ボタン ──
+    // オーバーレイ内ボタン: click だけで十分
+    // (オーバーレイがcanvasより上位にあるためPointer Eventsは競合しない)
+    document.getElementById('sm-next').addEventListener('click', () => {
       this.newPuzzle();
-    }, {passive:false});
+    });
 
     window.addEventListener('resize', () => this.resize());
   }
 
-  // ── Main loop ──
+  // ━━ メインループ ━━
   start() {
     const tick = () => {
-      this.renderer.draw(this.state, this.hoverNode, this.hintActive, this.pointerPos);
+      this.renderer.draw(
+        this.state, this.hoverNode, this.hintActive, this._pointerPos
+      );
       this.animFrame = requestAnimationFrame(tick);
     };
     tick();
