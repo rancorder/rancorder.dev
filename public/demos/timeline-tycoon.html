@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TIMELINE TYCOON</title>
+  <!-- DEMO_META
+  title: TIMELINE TYCOON
+  desc: タスクカードを時間軸に並べて利益最大化を狙う、放置×最適化シミュレーション。
+  tech: React, DnD, Chart.js
+  level: 70
+  color: #22c55e
+  type: game
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+    :root {
+      --green: #22c55e;
+      --green-dim: #15803d;
+      --green-glow: rgba(34,197,94,0.35);
+      --green-glow2: rgba(34,197,94,0.12);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245,158,11,0.3);
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --purple: #a78bfa;
+      --bg: #030a04;
+      --surface: #071309;
+      --surface2: #0b1e0d;
+      --surface3: #0f2812;
+      --border: rgba(34,197,94,0.2);
+      --border2: rgba(34,197,94,0.1);
+      --text: #86efac;
+      --text-dim: #4ade80;
+      --text-mute: rgba(134,239,172,0.45);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html { font-size:16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(34,197,94,0.07) 0%, transparent 60%),
+        repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(34,197,94,0.02) 47px,rgba(34,197,94,0.02) 48px),
+        repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(34,197,94,0.02) 47px,rgba(34,197,94,0.02) 48px);
+      pointer-events:none; z-index:0;
+    }
+
+    #root { position:relative; z-index:1; }
+
+    .app {
+      max-width:1440px;
+      margin:0 auto;
+      padding:8px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:100dvh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      align-items:center;
+      gap:12px;
+      padding:10px 14px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      position:relative;
+      overflow:hidden;
+    }
+    .header::after {
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--green),transparent);
+      opacity:.5;
+    }
+
+    .logo {
+      font-family:'Orbitron',monospace;
+      font-size:clamp(.75rem,2.5vw,1.15rem);
+      font-weight:900;
+      color:var(--green);
+      text-shadow:0 0 20px var(--green-glow);
+      letter-spacing:2px;
+      white-space:nowrap;
+      line-height:1;
+    }
+    .logo span {
+      display:block;
+      font-size:.45em;
+      letter-spacing:4px;
+      opacity:.55;
+      margin-top:2px;
+    }
+
+    .stats-bar {
+      display:flex;
+      gap:clamp(8px,3vw,24px);
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .stat-item { text-align:center; min-width:48px; }
+    .stat-label { font-size:.5rem; color:var(--text-mute); letter-spacing:2px; text-transform:uppercase; }
+    .stat-value { font-size:clamp(.8rem,2vw,1.05rem); font-weight:bold; color:var(--green); text-shadow:0 0 10px var(--green-glow); line-height:1.2; }
+    .stat-value.amber { color:var(--amber); text-shadow:0 0 10px var(--amber-glow); }
+
+    .header-right {
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:3px;
+    }
+    .header-chart { width:clamp(80px,15vw,140px); height:38px; flex-shrink:0; }
+    .day-badge { font-size:.52rem; color:var(--text-mute); letter-spacing:1px; white-space:nowrap; }
+
+    /* ── HELP ── */
+    .help-section {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+    }
+    .help-toggle {
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 14px;
+      background:none;
+      border:none;
+      color:var(--green);
+      font-family:'Share Tech Mono',monospace;
+      font-size:.7rem;
+      letter-spacing:2px;
+      cursor:pointer;
+      text-align:left;
+      transition:background .15s;
+    }
+    .help-toggle:hover { background:var(--green-glow2); }
+    .help-tl { display:flex; align-items:center; gap:8px; }
+    .help-title-text { font-family:'Orbitron',monospace; font-size:.58rem; letter-spacing:3px; }
+    .help-arrow { font-size:.7rem; transition:transform .25s; color:var(--text-mute); }
+    .help-arrow.open { transform:rotate(180deg); }
+    .help-body { max-height:0; overflow:hidden; transition:max-height .35s ease; }
+    .help-body.open { max-height:900px; }
+    .help-content {
+      padding:12px 14px 14px;
+      border-top:1px solid var(--border2);
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:12px;
+    }
+    .help-block h4 {
+      font-family:'Orbitron',monospace;
+      font-size:.52rem;
+      letter-spacing:3px;
+      color:var(--amber);
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+    .help-block p,.help-block li { font-size:.62rem; color:var(--text-dim); line-height:1.85; }
+    .help-block ul { list-style:none; }
+    .help-block li::before { content:'▸ '; color:var(--green); }
+    .help-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+    .help-chip {
+      padding:3px 8px;
+      background:var(--surface3);
+      border:1px solid var(--border);
+      border-radius:3px;
+      font-size:.55rem;
+      color:var(--text-dim);
+    }
+    .help-chip b { color:var(--green); }
+
+    /* ── MAIN ── */
+    .main-body {
+      display:grid;
+      grid-template-columns:185px 1fr 180px;
+      gap:8px;
+      flex:1;
+    }
+
+    .panel {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      overflow-y:auto;
+    }
+    .panel-title {
+      font-family:'Orbitron',monospace;
+      font-size:.55rem;
+      letter-spacing:3px;
+      color:var(--green);
+      text-transform:uppercase;
+      padding-bottom:6px;
+      border-bottom:1px solid var(--border);
+      flex-shrink:0;
+    }
+
+    /* ── TASK CARD ── */
+    .task-card {
+      padding:8px 8px 8px 11px;
+      background:var(--surface2);
+      border:1px solid var(--border2);
+      border-radius:5px;
+      cursor:grab;
+      transition:border-color .15s,box-shadow .15s,transform .1s;
+      position:relative;
+      overflow:hidden;
+      user-select:none;
+      -webkit-user-select:none;
+      flex-shrink:0;
+    }
+    .task-card::before {
+      content:'';
+      position:absolute;
+      left:0;top:0;bottom:0;width:3px;
+      transition:box-shadow .15s;
+    }
+    .task-card.c-mining::before    { background:var(--green);  box-shadow:0 0 6px var(--green-glow); }
+    .task-card.c-processing::before{ background:var(--blue);   box-shadow:0 0 6px rgba(56,189,248,.4); }
+    .task-card.c-sales::before     { background:var(--amber);  box-shadow:0 0 6px var(--amber-glow); }
+    .task-card.c-research::before  { background:var(--purple); box-shadow:0 0 6px rgba(167,139,250,.4); }
+    .task-card.c-automation::before{ background:var(--red);    box-shadow:0 0 6px rgba(239,68,68,.4); }
+    .task-card:not(.locked):hover  { border-color:var(--border); box-shadow:0 0 10px var(--green-glow2); }
+    .task-card:active:not(.locked) { transform:scale(.97); }
+    .task-card.locked              { opacity:.35; cursor:not-allowed; }
+    .task-card.sel                 { border-color:var(--green); box-shadow:0 0 16px var(--green-glow); background:var(--surface3); }
+
+    .task-name { font-size:.72rem; font-weight:bold; color:var(--text); margin-bottom:3px; display:flex; align-items:center; gap:5px; }
+    .task-emoji { font-size:.75rem; }
+    .task-stat-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:2px; }
+    .task-stat { font-size:.54rem; padding:1px 5px; border-radius:2px; white-space:nowrap; }
+    .task-stat.tm   { background:rgba(56,189,248,.12); color:var(--blue); }
+    .task-stat.cst  { background:rgba(239,68,68,.12);  color:#f87171; }
+    .task-stat.prf  { background:rgba(34,197,94,.12);  color:var(--green); }
+    .task-stat.bon  { background:rgba(167,139,250,.12);color:var(--purple); }
+    .task-dep { font-size:.52rem; color:var(--amber); margin-top:3px; }
+    .task-hint { font-size:.5rem; color:var(--text-mute); margin-top:4px; text-align:center; padding-top:6px; border-top:1px solid var(--border2); }
+
+    /* ── MOBILE SELECT BAR ── */
+    .sel-bar {
+      background:var(--surface3);
+      border:1px solid var(--green);
+      border-radius:6px;
+      padding:8px 10px;
+      font-size:.65rem;
+      color:var(--green);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      box-shadow:0 0 16px var(--green-glow);
+      animation:fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .cancel-sel {
+      padding:3px 8px;
+      background:transparent;
+      border:1px solid rgba(239,68,68,.5);
+      color:var(--red);
+      border-radius:3px;
+      font-family:'Share Tech Mono',monospace;
+      font-size:.55rem;
+      cursor:pointer;
+      flex-shrink:0;
+    }
+
+    /* ── TIMELINE AREA ── */
+    .timeline-area { display:flex; flex-direction:column; gap:8px; min-width:0; }
+    .tl-controls { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding:8px 14px;
+      font-family:'Share Tech Mono',monospace;
+      font-size:.65rem;
+      letter-spacing:1px;
+      background:transparent;
+      border:1px solid var(--green);
+      color:var(--green);
+      border-radius:5px;
+      cursor:pointer;
+      transition:all .15s;
+      text-transform:uppercase;
+      white-space:nowrap;
+      touch-action:manipulation;
+    }
+    .btn:hover { background:var(--green-glow2); box-shadow:0 0 10px var(--green-glow2); }
+    .btn.primary { background:var(--green); color:#000; font-weight:bold; box-shadow:0 0 16px var(--green-glow); letter-spacing:2px; }
+    .btn.primary:hover { filter:brightness(1.1); box-shadow:0 0 28px var(--green-glow); }
+    .btn.amber { border-color:var(--amber); color:var(--amber); }
+    .btn.amber:hover { background:var(--amber-glow); }
+    .btn.red { border-color:var(--red); color:var(--red); }
+    .btn.red:hover { background:rgba(239,68,68,.1); }
+    .btn.active { background:rgba(34,197,94,.15); }
+    .btn.sm { padding:6px 10px; font-size:.6rem; }
+
+    .auto-badge {
+      font-size:.58rem;
+      padding:4px 8px;
+      background:rgba(34,197,94,.1);
+      border:1px solid rgba(34,197,94,.4);
+      border-radius:3px;
+      color:var(--green);
+      display:flex; align-items:center; gap:5px;
+    }
+    .auto-dot { width:6px;height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    .warn-bar {
+      background:rgba(245,158,11,.07);
+      border:1px solid rgba(245,158,11,.35);
+      border-radius:5px;
+      padding:7px 12px;
+      font-size:.6rem;
+      color:var(--amber);
+    }
+
+    /* ── TIMELINE ── */
+    .tl-wrapper {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+    }
+    .tl-header { display:flex; margin-bottom:5px; }
+    .hour-lbl { text-align:center; font-size:.48rem; color:var(--text-mute); flex:1; }
+
+    .tl-row { display:flex; align-items:center; }
+    .tl-slots {
+      flex:1;
+      height:52px;
+      position:relative;
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--border2);
+      border-radius:4px;
+      cursor:pointer;
+      overflow:hidden;
+    }
+    .tl-slot {
+      position:absolute;
+      top:0;bottom:0;
+      border-right:1px solid var(--border2);
+      transition:background .08s;
+      cursor:pointer;
+    }
+    .tl-slot:last-child { border-right:none; }
+    .tl-slot.hover { background:rgba(34,197,94,.15); }
+    .tl-slot.bad   { background:rgba(239,68,68,.12); }
+
+    .placed {
+      position:absolute;
+      top:3px;bottom:3px;
+      border-radius:4px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:.55rem;
+      font-weight:bold;
+      cursor:pointer;
+      overflow:hidden;
+      z-index:2;
+      transition:filter .1s;
+      border:1px solid transparent;
+      padding:0 4px;
+    }
+    .placed:hover { filter:brightness(1.25); z-index:10; }
+    .placed:active { filter:brightness(.85); }
+    .placed.mining     { background:rgba(34,197,94,.55);  border-color:rgba(34,197,94,.8);  color:#000; }
+    .placed.processing { background:rgba(56,189,248,.55); border-color:rgba(56,189,248,.8); color:#000; }
+    .placed.sales      { background:rgba(245,158,11,.55); border-color:rgba(245,158,11,.8); color:#000; }
+    .placed.research   { background:rgba(167,139,250,.55);border-color:rgba(167,139,250,.8);color:#fff; }
+    .placed.automation { background:rgba(239,68,68,.55);  border-color:rgba(239,68,68,.8);  color:#fff; }
+    .placed-inner { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; display:flex; align-items:center; gap:3px; }
+
+    .preview {
+      position:absolute;
+      top:3px;bottom:3px;
+      border-radius:4px;
+      border:2px dashed var(--green);
+      background:rgba(34,197,94,.1);
+      z-index:1;
+      pointer-events:none;
+    }
+    .preview.bad { border-color:var(--red); background:rgba(239,68,68,.1); }
+
+    /* ── METRICS ── */
+    .metrics-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .metric-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:8px 10px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .metric-icon { font-size:1.1rem; flex-shrink:0; }
+    .metric-text { flex:1; min-width:0; }
+    .metric-label { font-size:.5rem; color:var(--text-mute); letter-spacing:1px; text-transform:uppercase; }
+    .metric-val { font-size:.88rem; color:var(--green); font-weight:bold; }
+    .eff-wrap { display:flex; align-items:center; gap:5px; margin-top:3px; }
+    .eff-bar { flex:1; height:4px; background:rgba(0,0,0,.4); border-radius:2px; overflow:hidden; }
+    .eff-fill { height:100%; background:linear-gradient(90deg,var(--green-dim),var(--green)); box-shadow:0 0 6px var(--green-glow); transition:width .5s ease; border-radius:2px; }
+    .eff-pct { font-size:.6rem; color:var(--text-mute); min-width:28px; text-align:right; }
+
+    /* ── UPGRADE ── */
+    .upg-card {
+      padding:8px;
+      background:var(--surface2);
+      border:1px solid var(--border2);
+      border-radius:5px;
+      transition:border-color .15s,box-shadow .15s;
+      flex-shrink:0;
+    }
+    .upg-card:not(.bought):hover { border-color:rgba(245,158,11,.5); box-shadow:0 0 10px rgba(245,158,11,.15); }
+    .upg-card.bought { opacity:.4; }
+    .upg-name { font-size:.68rem; font-weight:bold; color:var(--amber); margin-bottom:2px; }
+    .upg-eff { font-size:.55rem; color:var(--text-mute); margin-bottom:5px; line-height:1.5; }
+    .upg-footer { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .upg-cost { font-size:.6rem; color:var(--green); }
+    .upg-cost.red { color:rgba(239,68,68,.7); }
+    .upg-btn {
+      padding:4px 10px;
+      font-family:'Share Tech Mono',monospace;
+      font-size:.58rem;
+      background:transparent;
+      border:1px solid var(--amber);
+      color:var(--amber);
+      border-radius:3px;
+      cursor:pointer;
+      transition:all .15s;
+      touch-action:manipulation;
+    }
+    .upg-btn:hover:not(:disabled) { background:rgba(245,158,11,.15); }
+    .upg-btn:disabled { opacity:.3; cursor:not-allowed; border-color:rgba(255,255,255,.1); color:rgba(255,255,255,.2); }
+
+    /* ── BOTTOM ── */
+    .bottom-bar {
+      display:flex; gap:8px; align-items:center;
+      padding:9px 12px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      flex-wrap:wrap;
+    }
+    .score-display { flex:1; font-size:.62rem; color:var(--text-mute); min-width:100px; }
+    .score-hi { color:var(--green); font-weight:bold; }
+
+    /* ── TOAST ── */
+    .toast-wrap {
+      position:fixed; bottom:16px; right:12px;
+      z-index:9999;
+      display:flex; flex-direction:column; gap:6px;
+      pointer-events:none;
+    }
+    .toast {
+      padding:9px 14px;
+      background:var(--surface2);
+      border:1px solid var(--green);
+      border-radius:5px;
+      font-size:.65rem;
+      color:var(--green);
+      box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 16px var(--green-glow);
+      animation:tIn .25s ease,tOut .25s ease 2.75s forwards;
+      max-width:min(280px,80vw);
+    }
+    @keyframes tIn  { from{opacity:0;transform:translateX(16px) scale(.95)} to{opacity:1;transform:translateX(0) scale(1)} }
+    @keyframes tOut { to{opacity:0;transform:translateX(16px) scale(.95)} }
+    .toast.amber  { border-color:var(--amber);  color:var(--amber);  box-shadow:0 4px 20px rgba(0,0,0,.6),0 0 16px var(--amber-glow); }
+    .toast.purple { border-color:var(--purple); color:var(--purple); }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.88);
+      z-index:500;
+      display:flex; align-items:center; justify-content:center;
+      padding:16px;
+      backdrop-filter:blur(4px);
+    }
+    .modal {
+      background:var(--surface);
+      border:1px solid var(--green);
+      border-radius:10px;
+      padding:28px 22px;
+      max-width:380px; width:100%;
+      text-align:center;
+      box-shadow:0 0 60px var(--green-glow);
+      position:relative;
+    }
+    .modal::before {
+      content:'';
+      position:absolute; top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--green),transparent);
+    }
+    .modal h2 { font-family:'Orbitron',monospace; font-size:1.3rem; color:var(--green); margin-bottom:10px; }
+    .modal p  { font-size:.7rem; color:var(--text-dim); margin-bottom:20px; line-height:2; white-space:pre-line; }
+    .modal-btns { display:flex; gap:10px; justify-content:center; }
+
+    /* ── SCANLINE ── */
+    .scanline {
+      position:fixed; inset:0;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+      pointer-events:none; z-index:9998;
+    }
+
+    ::-webkit-scrollbar { width:3px; height:3px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--green-dim); border-radius:2px; }
+
+    /* ── MOBILE ── */
+    @media (max-width:720px) {
+      .main-body { grid-template-columns:1fr; }
+
+      /* Horizontal scroll task list */
+      .tasks-outer {
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        padding-bottom:4px;
+      }
+      .tasks-outer .panel {
+        flex-direction:row;
+        overflow-x:visible;
+        overflow-y:hidden;
+        min-height:auto;
+        padding:8px;
+        gap:6px;
+      }
+      .tasks-outer .task-card {
+        min-width:130px;
+        max-width:155px;
+        flex-shrink:0;
+      }
+
+      /* Grid upgrades */
+      .upgs-outer .panel {
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(145px,1fr));
+        overflow:visible;
+      }
+
+      .header { grid-template-columns:1fr auto; }
+      .logo span { display:none; }
+      .btn { padding:9px 10px; font-size:.6rem; }
+      .btn.primary { padding:9px 14px; }
+      .metrics-row { grid-template-columns:1fr 1fr; }
+    }
+
+    @media (max-width:480px) {
+      .app { padding:6px; gap:6px; }
+      .stats-bar { gap:8px; }
+      .stat-value { font-size:.82rem; }
+      .tl-slots { height:44px; }
+    }
+  </style>
+</head>
+<body>
+<div class="scanline"></div>
+<div id="root"></div>
+<script>
+const { useState, useReducer, useEffect, useRef, useCallback } = React;
+
+// ══════════════════════════════════
+// DATA
+// ══════════════════════════════════
+const TASKS = [
+  { id:'mining',     e:'⛏', name:'採掘',   h:2, cost:0,  profit:10,  dep:null,         col:'mining',     bType:null,   bVal:0,   unlock:0 },
+  { id:'processing', e:'⚙', name:'加工',   h:3, cost:5,  profit:30,  dep:'mining',     col:'processing', bType:null,   bVal:0,   unlock:0 },
+  { id:'sales',      e:'💰',name:'販売',   h:1, cost:20, profit:50,  dep:'processing', col:'sales',      bType:null,   bVal:0,   unlock:0 },
+  { id:'research',   e:'🔬',name:'研究',   h:4, cost:10, profit:20,  dep:null,         col:'research',   bType:'pct',  bVal:.1,  unlock:3 },
+  { id:'automation', e:'🤖',name:'自動化', h:6, cost:50, profit:100, dep:'research',   col:'automation', bType:'carry',bVal:50,  unlock:7 },
+];
+
+const UPGS = [
+  { id:'slot1',   e:'📅', name:'スロット+2',  eff:'タイムライン 26h に拡張',    cost:800,  t:'slot',   v:2   },
+  { id:'speed1',  e:'⚡', name:'速度UP',      eff:'全処理時間 -25% 短縮',        cost:500,  t:'speed',  v:.75 },
+  { id:'profit1', e:'📈', name:'利益倍増',    eff:'全利益 ×1.5 倍',              cost:2000, t:'profit', v:1.5 },
+  { id:'autospd', e:'🚀', name:'自動化 II',   eff:'放置速度 2倍 (2.5秒/日)',     cost:3000, t:'autospd',v:2   },
+  { id:'slot2',   e:'🗓', name:'スロット+4',  eff:'タイムライン さらに+4h',      cost:5000, t:'slot',   v:4   },
+  { id:'profit2', e:'💎', name:'超利益',      eff:'全利益 さらに ×2.0 倍',       cost:8000, t:'profit', v:2   },
+];
+
+function calcRev(s) {
+  const ts = (s.tl || []).map(p => TASKS.find(t => t.id === p.tid)).filter(Boolean);
+  let base = 0, pct = 0;
+  ts.forEach(t => {
+    if (t.bType === 'pct') pct += t.bVal;
+    else if (t.bType === 'carry') base += t.profit;
+    else base += t.profit - t.cost;
+  });
+  base += (s.carryBonus || 0);
+  if (pct > 0) base *= (1 + pct);
+  base *= (s.profitMult || 1);
+  return Math.max(0, Math.floor(base));
+}
+
+const INIT = () => ({
+  day:1, cash:50, total:0, hist:[0],
+  tl:[], nid:0, slots:24,
+  ul:['mining','processing','sales'],
+  upgs:[], profitMult:1, autoSpd:1,
+  auto:false, hi:0, prestige:0, carryBonus:0,
+});
+
+function load() {
+  try { localStorage.removeItem('tt_state'); localStorage.removeItem('tt_v2'); } catch(_) {}
+  try {
+    const raw = localStorage.getItem('tt_v3');
+    if (!raw) return INIT();
+    const parsed = JSON.parse(raw);
+    const s = { ...INIT(), ...parsed };
+    if (!Array.isArray(s.tl)) s.tl = [];
+    if (!Array.isArray(s.hist)) s.hist = [0];
+    if (!Array.isArray(s.ul)) s.ul = ['mining','processing','sales'];
+    if (!Array.isArray(s.upgs)) s.upgs = [];
+    const elapsed = (Date.now() - (s._t || Date.now())) / 1000;
+    if (s.auto && elapsed > 5) {
+      const days = Math.min(60, Math.floor(elapsed / 5));
+      for (let i = 0; i < days; i++) {
+        s.day++; const r = calcRev(s); s.cash += r; s.total += r;
+        s.hist = [...s.hist, s.total].slice(-20);
+        TASKS.forEach(t => { if (!s.ul.includes(t.id) && s.day >= t.unlock) s.ul.push(t.id); });
+      }
+    }
+    return s;
+  } catch(_) { return INIT(); }
+}
+
+function reducer(s, a) {
+  switch(a.type) {
+    case 'PLACE': {
+      const t = TASKS.find(x=>x.id===a.tid); if(!t) return s;
+      let h = t.h; if((s.upgs||[]).includes('speed1')) h=Math.ceil(h*.75);
+      const end = a.start + h;
+      const tl = s.tl || [];
+      if(end > s.slots) return s;
+      if(tl.some(p=>p.start<end&&p.end>a.start)) return s;
+      return {...s, tl:[...tl,{id:s.nid,tid:a.tid,start:a.start,end}], nid:(s.nid||0)+1};
+    }
+    case 'REMOVE': return {...s, tl:(s.tl||[]).filter(p=>p.id!==a.id)};
+    case 'DAY': {
+      const r=calcRev(s); const nc=s.cash+r; const nt=s.total+r;
+      const h=[...s.hist,nt].slice(-20);
+      const ul=[...s.ul]; TASKS.forEach(t=>{if(!ul.includes(t.id)&&(s.day+1)>=t.unlock)ul.push(t.id);});
+      const carry=(s.tl||[]).some(p=>p.tid==='automation')?50:0;
+      const sc=Math.floor(nt/Math.max(1,s.day+1));
+      return {...s,day:s.day+1,cash:nc,total:nt,hist:h,ul,carryBonus:carry,hi:Math.max(s.hi,sc)};
+    }
+    case 'BUY': {
+      const u=UPGS.find(x=>x.id===a.id); if(!u||s.cash<u.cost||s.upgs.includes(u.id)) return s;
+      let ns={...s,cash:s.cash-u.cost,upgs:[...s.upgs,u.id]};
+      if(u.t==='slot')   ns.slots=s.slots+u.v;
+      if(u.t==='profit') ns.profitMult=(s.profitMult||1)*u.v;
+      if(u.t==='autospd') ns.autoSpd=(s.autoSpd||1)*u.v;
+      return ns;
+    }
+    case 'TAUTO': return {...s,auto:!s.auto};
+    case 'PRESTIGE': {
+      const hi=Math.max(s.hi,Math.floor(s.total/Math.max(1,s.day)));
+      return {...INIT(),hi,prestige:(s.prestige||0)+1,cash:100*((s.prestige||0)+1)};
+    }
+    default: return s;
+  }
+}
+
+// ══════════════════════════════════
+// CHART
+// ══════════════════════════════════
+function MiniChart({hist}) {
+  const ref=useRef(); const ch=useRef();
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(ch.current) ch.current.destroy();
+    ch.current=new Chart(ref.current.getContext('2d'),{
+      type:'line',
+      data:{labels:hist.map((_,i)=>i),datasets:[{data:hist,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.08)',borderWidth:1.5,fill:true,tension:.5,pointRadius:0}]},
+      options:{animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},responsive:false}
+    });
+    return()=>{if(ch.current)ch.current.destroy();};
+  },[hist]);
+  return React.createElement('canvas',{ref,width:140,height:38,className:'header-chart'});
+}
+
+// ══════════════════════════════════
+// HELP
+// ══════════════════════════════════
+function Help() {
+  const [open,set]=useState(false);
+  const e=React.createElement;
+  return e('div',{className:'help-section'},
+    e('button',{className:'help-toggle',onClick:()=>set(o=>!o)},
+      e('div',{className:'help-tl'},e('span',null,'❓'),e('span',{className:'help-title-text'},'遊び方 / HOW TO PLAY')),
+      e('span',{className:`help-arrow${open?' open':''}`},'▼')
+    ),
+    e('div',{className:`help-body${open?' open':''}`},
+      e('div',{className:'help-content'},
+        e('div',{className:'help-block'},
+          e('h4',null,'🎮 基本操作'),
+          e('ul',null,
+            e('li',null,'PCはタスクカードをドラッグ→タイムラインにドロップ'),
+            e('li',null,'スマホはタスクをタップで選択→タイムラインをタップで配置'),
+            e('li',null,'配置済みカードをタップで削除'),
+            e('li',null,'「1日進める」でその日の収益を獲得'),
+          )
+        ),
+        e('div',{className:'help-block'},
+          e('h4',null,'⛓ 依存関係'),
+          e('ul',null,
+            e('li',null,'⛏採掘 → ⚙加工 → 💰販売 の順で依存'),
+            e('li',null,'依存タスクが未配置だと利益が出ない'),
+            e('li',null,'🔬研究は3日目、🤖自動化は7日目に解放'),
+            e('li',null,'自動化は翌日に$50のキャリーボーナス'),
+          )
+        ),
+        e('div',{className:'help-block'},
+          e('h4',null,'💡 攻略ヒント'),
+          e('ul',null,
+            e('li',null,'採掘→加工→販売を全部配置で高収益'),
+            e('li',null,'スロットを埋めて効率100%を目指す'),
+            e('li',null,'AUTOモードで放置しながらアップグレード'),
+            e('li',null,'プレステージでリセット→ボーナス資金スタート'),
+          )
+        ),
+        e('div',{className:'help-block'},
+          e('h4',null,'⌨ キーボード'),
+          e('div',{className:'help-chips'},
+            e('div',{className:'help-chip'},e('b',null,'Space'),' = 1日進める'),
+            e('div',{className:'help-chip'},e('b',null,'A'),' = AUTO切替'),
+          ),
+          e('h4',{style:{marginTop:10}},'📊 タスク一覧'),
+          e('ul',null,
+            e('li',null,'採掘 ⏱2h +$10 (コスト無)'),
+            e('li',null,'加工 ⏱3h +$25 (-$5)'),
+            e('li',null,'販売 ⏱1h +$30 (-$20)'),
+            e('li',null,'研究 ⏱4h +$10 全利益+10%'),
+            e('li',null,'自動化 ⏱6h +$50 翌日キャリー'),
+          )
+        ),
+      )
+    )
+  );
+}
+
+// ══════════════════════════════════
+// TASK CARD
+// ══════════════════════════════════
+function TaskCard({task,state,onDragStart,selId,onSel}) {
+  const ul=state.ul.includes(task.id);
+  const depOk=!task.dep||state.tl.some(p=>p.tid===task.dep);
+  const ok=ul&&(!task.dep||depOk);
+  const isSel=selId===task.id;
+  let h=task.h; if(state.upgs.includes('speed1')) h=Math.ceil(h*.75);
+  const e=React.createElement;
+  return e('div',{
+    className:`task-card c-${task.col}${!ok?' locked':''}${isSel?' sel':''}`,
+    draggable:ok,
+    onDragStart:ok?(ev)=>{ev.dataTransfer.setData('tid',task.id);onDragStart(task.id);}:undefined,
+    onClick:(ev)=>{ev.stopPropagation();if(ok)onSel(isSel?null:task.id);}
+  },
+    e('div',{className:'task-name'},e('span',{className:'task-emoji'},task.e),task.name),
+    e('div',{className:'task-stat-row'},
+      e('span',{className:'task-stat tm'},`⏱${h}h`),
+      task.cost>0&&e('span',{className:'task-stat cst'},`-$${task.cost}`),
+      e('span',{className:'task-stat prf'},`+$${task.profit}`),
+      task.bType==='pct'&&e('span',{className:'task-stat bon'},`+${Math.round(task.bVal*100)}%`),
+      task.bType==='carry'&&e('span',{className:'task-stat bon'},'翌日+50'),
+    ),
+    task.dep&&e('div',{className:'task-dep'},'↳ ',TASKS.find(t=>t.id===task.dep)?.name,' 要'),
+    !ul&&e('div',{className:'task-dep'},`🔒 ${task.unlock}日目解放`),
+  );
+}
+
+// ══════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════
+function Timeline({slots,tl,dispatch,dragging,selMob,onDrop}) {
+  const [hov,setHov]=useState(null);
+  const e=React.createElement;
+
+  const getH=(tid)=>{
+    if(!tid) return 0;
+    const t=TASKS.find(x=>x.id===tid); return t?t.h:0;
+  };
+  const act=dragging||selMob;
+  const ph=getH(act);
+  const pe=hov!==null&&act?hov+ph:null;
+  const bad=pe!==null&&(pe>slots||tl.some(p=>p.start<pe&&p.end>hov));
+
+  const slotArr=Array.from({length:slots},(_,i)=>i);
+
+  return e('div',{className:'tl-row'},
+    e('div',{
+      className:'tl-slots',
+      onDragLeave:()=>setHov(null),
+      onMouseLeave:()=>setHov(null),
+    },
+      slotArr.map(h=>e('div',{
+        key:h,
+        className:`tl-slot${hov===h&&act?(bad?' bad':' hover'):''}`,
+        style:{left:`${(h/slots)*100}%`,width:`${100/slots}%`},
+        onDragOver:(ev)=>{ev.preventDefault();setHov(h);},
+        onDrop:(ev)=>{ev.preventDefault();const tid=ev.dataTransfer.getData('tid');if(tid){dispatch({type:'PLACE',tid,start:h});}setHov(null);},
+        onMouseEnter:()=>act&&setHov(h),
+        onClick:()=>{if(selMob&&!dragging){onDrop(selMob,h);setHov(null);}},
+      })),
+      hov!==null&&pe!==null&&act&&e('div',{
+        className:`preview${bad?' bad':''}`,
+        style:{left:`${(hov/slots)*100}%`,width:`${((pe-hov)/slots)*100}%`},
+      }),
+      tl.map(p=>{
+        const t=TASKS.find(x=>x.id===p.tid);
+        const w=((p.end-p.start)/slots)*100;
+        const l=(p.start/slots)*100;
+        return e('div',{
+          key:p.id,
+          className:`placed ${t?.col||''}`,
+          style:{left:`${l}%`,width:`${w}%`},
+          onClick:(ev)=>{ev.stopPropagation();dispatch({type:'REMOVE',id:p.id});},
+          title:`${t?.name} (タップで削除)`,
+        },
+          e('div',{className:'placed-inner'},
+            e('span',null,t?.e||''),
+            w>10&&e('span',null,t?.name||p.tid),
+          )
+        );
+      })
+    )
+  );
+}
+
+// ══════════════════════════════════
+// TOAST
+// ══════════════════════════════════
+function Toasts({list}) {
+  return React.createElement('div',{className:'toast-wrap'},
+    list.map(t=>React.createElement('div',{key:t.id,className:`toast ${t.tp||''}`},t.msg))
+  );
+}
+
+// ══════════════════════════════════
+// APP
+// ══════════════════════════════════
+function App() {
+  const [s,dispatch]=useReducer(reducer,null,load);
+  const [drag,setDrag]=useState(null);
+  const [selMob,setSelMob]=useState(null);
+  const [toasts,setToasts]=useState([]);
+  const [pres,setPres]=useState(false);
+  const autoRef=useRef();
+  const tid=useRef(0);
+  const e=React.createElement;
+
+  useEffect(()=>{
+    localStorage.setItem('tt_v3',JSON.stringify({...s,_t:Date.now()}));
+  },[s]);
+
+  const toast=useCallback((msg,tp='')=>{
+    const id=++tid.current;
+    setToasts(t=>[...t,{id,msg,tp}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3000);
+  },[]);
+
+  const adv=useCallback(()=>{
+    const r=calcRev(s);
+    dispatch({type:'DAY'});
+    toast(r>0?`DAY ${s.day} 終了 ── +$${r} 獲得！`:`DAY ${s.day} 終了 ── 収益なし`,'');
+  },[s,toast]);
+
+  useEffect(()=>{
+    if(s.auto){
+      const ms=5000/(s.autoSpd||1);
+      autoRef.current=setInterval(adv,ms);
+    }
+    return()=>clearInterval(autoRef.current);
+  },[s.auto,s.autoSpd,adv]);
+
+  useEffect(()=>{
+    const h=(ev)=>{
+      if(ev.code==='Space'&&!ev.target.matches('input,button,textarea')){ev.preventDefault();adv();}
+      if(ev.code==='KeyA')dispatch({type:'TAUTO'});
+    };
+    window.addEventListener('keydown',h);
+    return()=>window.removeEventListener('keydown',h);
+  },[adv]);
+
+  useEffect(()=>{
+    const h=()=>setSelMob(null);
+    document.addEventListener('click',h);
+    return()=>document.removeEventListener('click',h);
+  },[]);
+
+  const handleDrop=(tid,start)=>{
+    dispatch({type:'PLACE',tid,start});
+    setSelMob(null);
+    toast('✓ 配置完了！');
+  };
+
+  const warns=[];
+  s.tl.forEach(p=>{
+    const t=TASKS.find(x=>x.id===p.tid);
+    if(t?.dep&&!s.tl.some(q=>q.tid===t.dep)) {
+      warns.push(`⚠ 「${t.name}」→「${TASKS.find(x=>x.id===t.dep)?.name}」が未配置`);
+    }
+  });
+
+  const used=s.tl.reduce((a,p)=>a+(p.end-p.start),0);
+  const eff=Math.min(100,Math.round((used/s.slots)*100));
+  const today=calcRev(s);
+  const score=Math.floor(s.total/Math.max(1,s.day));
+
+  return e('div',{className:'app'},
+    // ── HEADER ──
+    e('div',{className:'header'},
+      e('div',{className:'logo'},'TIMELINE',e('span',null,'TYCOON')),
+      e('div',{className:'stats-bar'},
+        e('div',{className:'stat-item'},e('div',{className:'stat-label'},'DAY'),e('div',{className:'stat-value'},s.day)),
+        e('div',{className:'stat-item'},e('div',{className:'stat-label'},'CASH'),e('div',{className:'stat-value amber'},`$${s.cash}`)),
+        e('div',{className:'stat-item'},e('div',{className:'stat-label'},'TOTAL'),e('div',{className:'stat-value'},`$${s.total}`)),
+        e('div',{className:'stat-item'},e('div',{className:'stat-label'},'TODAY'),e('div',{className:`stat-value${today>0?' amber':''}`},`+$${today}`)),
+      ),
+      e('div',{className:'header-right'},
+        e(MiniChart,{hist:s.hist}),
+        e('div',{className:'day-badge'},`HI $${s.hi} · 効率 ${eff}%`)
+      )
+    ),
+
+    // ── HELP ──
+    e(Help),
+
+    // ── MOBILE SELECT ──
+    selMob&&e('div',{className:'sel-bar',onClick:ev=>ev.stopPropagation()},
+      e('span',null,`${TASKS.find(t=>t.id===selMob)?.e} 「${TASKS.find(t=>t.id===selMob)?.name}」→ タイムラインをタップ`),
+      e('button',{className:'cancel-sel',onClick:()=>setSelMob(null)},'✕ キャンセル')
+    ),
+
+    // ── MAIN ──
+    e('div',{className:'main-body'},
+      // Tasks
+      e('div',{className:'tasks-outer',onClick:ev=>ev.stopPropagation()},
+        e('div',{className:'panel'},
+          e('div',{className:'panel-title'},'📦 タスク'),
+          TASKS.map(task=>e(TaskCard,{key:task.id,task,state:s,onDragStart:setDrag,selId:selMob,onSel:setSelMob})),
+          e('div',{className:'task-hint'},'PCはドラッグ / スマホはタップ選択→配置先タップ'),
+        )
+      ),
+
+      // Timeline
+      e('div',{className:'timeline-area',onClick:()=>!drag&&setSelMob(null)},
+        e('div',{className:'tl-controls'},
+          e('button',{className:'btn primary',onClick:adv},'▶ 1日進める'),
+          e('button',{className:`btn${s.auto?' active':''}`,onClick:()=>dispatch({type:'TAUTO'})},
+            s.auto?'⏸ AUTO ON':'▷ AUTO'
+          ),
+          s.auto&&e('div',{className:'auto-badge'},
+            e('div',{className:'auto-dot'}),
+            `自動進行 ${(5000/(s.autoSpd||1)/1000).toFixed(1)}s/日`
+          ),
+          e('div',{style:{marginLeft:'auto',fontSize:'.57rem',color:'var(--text-mute)'}},
+            `${s.slots}h枠 / ${used}h使用`
+          ),
+        ),
+
+        warns.length>0&&e('div',{className:'warn-bar'},warns[0]),
+
+        e('div',{className:'tl-wrapper'},
+          e('div',{className:'tl-header'},
+            Array.from({length:s.slots},(_,i)=>
+              e('div',{key:i,className:'hour-lbl',style:{flex:1}},i%4===0?`${i}h`:'')
+            )
+          ),
+          e(Timeline,{slots:s.slots,tl:s.tl,dispatch,dragging:drag,selMob,onDrop:handleDrop})
+        ),
+
+        // Metrics
+        e('div',{className:'metrics-row'},
+          e('div',{className:'metric-card'},
+            e('div',{className:'metric-icon'},'📊'),
+            e('div',{className:'metric-text'},
+              e('div',{className:'metric-label'},'EFFICIENCY'),
+              e('div',{className:'eff-wrap'},
+                e('div',{className:'eff-bar'},e('div',{className:'eff-fill',style:{width:`${eff}%`}})),
+                e('div',{className:'eff-pct'},`${eff}%`)
+              )
+            )
+          ),
+          e('div',{className:'metric-card'},
+            e('div',{className:'metric-icon'},'🏆'),
+            e('div',{className:'metric-text'},
+              e('div',{className:'metric-label'},'SCORE/DAY'),
+              e('div',{className:'metric-val'},`$${score}`)
+            )
+          ),
+        )
+      ),
+
+      // Upgrades
+      e('div',{className:'upgs-outer'},
+        e('div',{className:'panel'},
+          e('div',{className:'panel-title'},'⚡ アップグレード'),
+          UPGS.map(u=>{
+            const bought=s.upgs.includes(u.id);
+            const can=!bought&&s.cash>=u.cost;
+            return e('div',{key:u.id,className:`upg-card${bought?' bought':''}`},
+              e('div',{className:'upg-name'},u.e,' ',u.name),
+              e('div',{className:'upg-eff'},u.eff),
+              e('div',{className:'upg-footer'},
+                e('div',{className:`upg-cost${!can&&!bought?' red':''}`},bought?'✓ 購入済':`$${u.cost}`),
+                !bought&&e('button',{
+                  className:'upg-btn',
+                  disabled:!can,
+                  onClick:()=>{dispatch({type:'BUY',id:u.id});toast(`${u.e} ${u.name} 購入！`,'amber');}
+                },can?'購入':`¥${u.cost-s.cash} 不足`)
+              )
+            );
+          })
+        )
+      ),
+    ),
+
+    // ── BOTTOM ──
+    e('div',{className:'bottom-bar'},
+      e('div',{className:'score-display'},
+        'Score: ',e('span',{className:'score-hi'},score),
+        '  Hi: ',e('span',{className:'score-hi'},s.hi),
+        s.prestige>0&&`  P×${s.prestige}`,
+      ),
+      e('button',{className:'btn sm amber',onClick:()=>{
+        const cv=document.createElement('canvas'); cv.width=400;cv.height=200;
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#030a04';ctx.fillRect(0,0,400,200);
+        ctx.fillStyle='#22c55e';ctx.font='bold 20px monospace';ctx.fillText('TIMELINE TYCOON',20,35);
+        ctx.fillStyle='#86efac';ctx.font='14px monospace';
+        ctx.fillText(`DAY ${s.day}`,20,70);
+        ctx.fillText(`TOTAL $${s.total}`,20,95);
+        ctx.fillText(`SCORE $${score}`,20,120);
+        ctx.fillText(`HI-SCORE $${s.hi}`,20,145);
+        const a=document.createElement('a');a.href=cv.toDataURL();a.download='timeline-tycoon.png';a.click();
+        toast('スクリーンショット保存！');
+      }},'📷 共有'),
+      e('button',{className:'btn sm red',onClick:()=>setPres(true)},'🔄 プレステージ'),
+    ),
+
+    // ── PRESTIGE MODAL ──
+    pres&&e('div',{className:'modal-bg'},
+      e('div',{className:'modal'},
+        e('h2',null,'PRESTIGE'),
+        e('p',null,`ゲームをリセットして再スタートします。\n\nスコア: $${score}\n総収益: $${s.total}\nプレステージ: ${s.prestige}回\n\n次回は +$${100*((s.prestige||0)+1)} ボーナスキャッシュでスタート！`),
+        e('div',{className:'modal-btns'},
+          e('button',{className:'btn primary',onClick:()=>{dispatch({type:'PRESTIGE'});setPres(false);toast('プレステージ達成！新たな旅へ…','purple');}},'実行'),
+          e('button',{className:'btn',onClick:()=>setPres(false)},'キャンセル'),
+        )
+      )
+    ),
+
+    e(Toasts,{list:toasts}),
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
