@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>NEON LIFE</title>
+  <!-- DEMO_META
+  title: NEON LIFE
+  desc: ルーレットでキャリア→24h配分→因果が歪む人生シミュレーター
+  tech: React, Canvas, DragAndDrop, LocalStorage
+  level: 85
+  color: #3b82f6
+  type: game
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne+Mono&family=Nunito:wght@300;400;600&display=swap');
+
+    /* リセット & ベース */
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;min-height:100vh;background:#030509;color:rgba(255,255,255,0.8);
+      font-family:'Nunito',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+
+    /* スクロールバー非表示 */
+    ::-webkit-scrollbar{display:none}
+
+    /* ドラッグ中のゴーストを透明に */
+    [draggable=true]{-webkit-user-drag:element}
+
+    /* fadeIn */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+    /* スキャンライン (夜の東京の求人誌 aesthetic) */
+    body::before{
+      content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+      background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04)3px,rgba(0,0,0,0.04)4px);
+    }
+
+    /* 環境光: ネオンブルーが空間に滲む */
+    body::after{
+      content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:radial-gradient(ellipse 80% 40% at 50% 100%,rgba(59,130,246,0.06)0%,transparent 70%);
+    }
+
+    #root{position:relative;z-index:1}
+
+    /* ボタン共通 */
+    button{outline:none}
+    button:focus-visible{outline:2px solid rgba(59,130,246,0.5)}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ──────────────────────────────────────────────────────────────────
+//  NEON LIFE — 完全実装
+//  設計拘束: 正解が消える構造 / 因果が歪む人生 / FIREは退屈フェーズ
+// ──────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  NEON LIFE — DATA & LOGIC LAYER
+//  設計原則: 「正解が存在しない」ことをデータ構造から保証する
+// ══════════════════════════════════════════════════════════════════
+
+// ─── 職業定義 ─────────────────────────────────────────────────────
+// 職業 = 収入源ではなく「イベント分布を歪めるタグ」
+const JOBS = [
+  {
+    id:'salaryman', name:'会社員', icon:'🏢',
+    baseIncome: 380000,
+    incomeVariance: 0.05,   // 安定の代償は停滞
+    eventTags: ['org','stability','slowburn'],
+    desc: '組織の歯車。安全だが、気づけば10年経っている',
+    hiddenEffect: { socialCredit: +0.8, fatigue: +0.3, eraFit: -0.1 },
+  },
+  {
+    id:'entrepreneur', name:'起業家', icon:'🔥',
+    baseIncome: 0,           // 収入は0から。成功すれば青天井
+    incomeVariance: 3.0,
+    eventTags: ['risk','pivot','explosion'],
+    desc: '全か無か。成功率は低いが、失敗した話の方が面白い',
+    hiddenEffect: { socialCredit: +0.2, fatigue: +0.8, eraFit: +0.5 },
+  },
+  {
+    id:'investor', name:'投資家', icon:'📈',
+    baseIncome: 0,           // 資産がないと機能しない
+    incomeVariance: 2.0,
+    eventTags: ['market','compound','volatility'],
+    desc: '市場が人生の主語になる。自分の意志が消えていく',
+    hiddenEffect: { socialCredit: +0.5, fatigue: -0.2, eraFit: +0.3 },
+  },
+  {
+    id:'landlord', name:'不動産王', icon:'🏠',
+    baseIncome: 200000,
+    incomeVariance: 0.3,
+    eventTags: ['debt','passive','crisis'],
+    desc: '他人の家賃で生きる。借金も他人の規模で膨らむ',
+    hiddenEffect: { socialCredit: +0.6, fatigue: +0.1, eraFit: -0.2 },
+  },
+  {
+    id:'influencer', name:'インフルエンサー', icon:'✨',
+    baseIncome: 0,
+    incomeVariance: 4.0,
+    eventTags: ['viral','burnout','parasocial'],
+    desc: 'フォロワーが資産。炎上も資産。消えた時は一瞬',
+    hiddenEffect: { socialCredit: -0.3, fatigue: +1.2, eraFit: +0.8 },
+  },
+  {
+    id:'freelancer', name:'フリーエンジニア', icon:'💻',
+    baseIncome: 600000,
+    incomeVariance: 0.8,
+    eventTags: ['gig','isolation','skill'],
+    desc: '自由の代償は孤独と不安定。案件ガチャが続く',
+    hiddenEffect: { socialCredit: +0.0, fatigue: +0.4, eraFit: +0.6 },
+  },
+];
+
+// ─── 行動カード ───────────────────────────────────────────────────
+// 1スロット(1時間)に配置する行動
+// 「効果が明確に見えない」ものを意図的に含める
+const ACTIONS = [
+  // 生存系
+  { id:'sleep', name:'睡眠', icon:'🌙', hours:1, category:'survival',
+    effect:{energy:+0.15}, cost:0,
+    desc:'必要。だが削れる気がしてしまう' },
+  { id:'meal', name:'食事', icon:'🍱', hours:1, category:'survival',
+    effect:{energy:+0.05, social:+0.02}, cost:1000,
+    desc:'コンビニか外食か。何を食べたかで何かが変わる' },
+
+  // 仕事系
+  { id:'work_core', name:'本業', icon:'⚡', hours:1, category:'work',
+    effect:{income:+1.0, fatigue:+0.08},
+    desc:'時間が金になる。ただし等価ではない' },
+  { id:'work_extra', name:'残業', icon:'🌃', hours:1, category:'work',
+    effect:{income:+0.8, fatigue:+0.15, social:-0.03},
+    desc:'割に合わない。でも断れない' },
+  { id:'side_hustle', name:'副業', icon:'🔧', hours:1, category:'work',
+    effect:{income:+0.3, fatigue:+0.1, skill:+0.05},
+    desc:'疲れた体でもう一仕事。いつか逆転するかもしれない' },
+
+  // 投資・資産系
+  { id:'study_invest', name:'投資勉強', icon:'📊', hours:1, category:'invest',
+    effect:{skill:+0.1, eraFit:+0.03},
+    cost:0, desc:'知識が増える。勝率は上がる。でも市場は変わる' },
+  { id:'trade', name:'株取引', icon:'💹', hours:1, category:'invest',
+    effect:{income_volatile:true}, cost:0,
+    desc:'運と実力の区別がつかない。それがいい' },
+  { id:'networking', name:'人脈形成', icon:'🤝', hours:1, category:'social',
+    effect:{social:+0.08, fatigue:+0.03}, cost:5000,
+    desc:'繋がりは見えない資産。使えるかは状況次第' },
+
+  // 自己投資系
+  { id:'gym', name:'ジム', icon:'💪', hours:1, category:'health',
+    effect:{energy:+0.08, fatigue:-0.1}, cost:2000,
+    desc:'体は正直。でも成果は遅れてやってくる' },
+  { id:'learn', name:'スキルアップ', icon:'📚', hours:1, category:'growth',
+    effect:{skill:+0.12, eraFit:+0.05}, cost:3000,
+    desc:'今の正解が10年後の正解とは限らない' },
+  { id:'meditate', name:'瞑想', icon:'🧘', hours:1, category:'health',
+    effect:{fatigue:-0.15, luck:+0.02},
+    desc:'何もしない時間。何かが変わる気がする' },
+  { id:'drink', name:'飲み会', icon:'🍻', hours:1, category:'social',
+    effect:{social:+0.12, fatigue:+0.08, energy:-0.05}, cost:5000,
+    desc:'翌日に残る。関係性にも残る' },
+  { id:'game', name:'ゲーム', icon:'🎮', hours:1, category:'leisure',
+    effect:{fatigue:-0.05, social:-0.01, eraFit:+0.01},
+    desc:'逃げている。それが悪いとは言っていない' },
+  { id:'family', name:'家族時間', icon:'👨‍👩‍👧', hours:1, category:'social',
+    effect:{social:+0.15, luck:+0.03, fatigue:-0.05},
+    desc:'数値に現れない何かが増えていく' },
+  { id:'travel', name:'旅行', icon:'✈️', hours:4, category:'leisure',
+    effect:{eraFit:+0.1, fatigue:-0.2, social:+0.1}, cost:80000,
+    desc:'視野が変わる。変わったかどうかは後でわかる' },
+  { id:'volunteer', name:'ボランティア', icon:'🌱', hours:2, category:'social',
+    effect:{social:+0.2, luck:+0.05}, cost:0,
+    desc:'見返りは確率で来る。来ないこともある' },
+];
+
+// ─── 市場フェーズ ──────────────────────────────────────────────────
+// プレイヤーは変えられない。ただ対応するか、逆張りするかだけ
+const MARKET_PHASES = [
+  { id:'bull', name:'🐂 バブル期', multiplier:1.4, risk:1.6,
+    desc:'なんでも上がる。上がりすぎている',
+    favors:['investor','entrepreneur','influencer'] },
+  { id:'bear', name:'🐻 不況期', multiplier:0.6, risk:0.8,
+    desc:'耐える者だけが次を見る',
+    favors:['salaryman','landlord'] },
+  { id:'stable', name:'📊 安定期', multiplier:1.0, risk:1.0,
+    desc:'平和。刺激がない。何かが積み上がっている',
+    favors:['salaryman','freelancer'] },
+  { id:'disruption', name:'⚡ 変革期', multiplier:1.2, risk:2.0,
+    desc:'古い正解が死ぬ時代。新しい正解はまだ誰も知らない',
+    favors:['entrepreneur','influencer','investor'] },
+  { id:'crisis', name:'🌪 危機', multiplier:0.4, risk:0.5,
+    desc:'全員が等しく打撃を受けるわけではない',
+    favors:['landlord'] },
+];
+
+// ─── 社会ムード ────────────────────────────────────────────────────
+const SOCIAL_MOODS = [
+  { id:'optimism', name:'楽観ムード', eventBias:'positive', luckMod:+0.15 },
+  { id:'anxiety', name:'不安ムード', eventBias:'negative', luckMod:-0.1 },
+  { id:'hustle', name:'努力信仰', eventBias:'work', luckMod:0 },
+  { id:'wellness', name:'ウェルビーイング', eventBias:'balance', luckMod:+0.05 },
+  { id:'nihilism', name:'虚無感', eventBias:'random', luckMod:-0.05 },
+];
+
+// ─── イベントプール ────────────────────────────────────────────────
+// 「明確な正解・不正解は禁止」
+// 「成功しても後悔の種を残す」「失敗しても語れる物語を残す」
+const EVENTS = [
+  // キャリア
+  { id:'promotion', name:'昇進', icon:'⬆️',
+    trigger:{tags:['org'], minMonth:6},
+    choices:[
+      { label:'受ける', effect:{income:+0.2, fatigue:+0.2, social:+0.1},
+        narrative:'肩書きが増えた。それだけではないが、それだけかもしれない' },
+      { label:'断る', effect:{socialCredit:-0.1, fatigue:-0.1, eraFit:+0.05},
+        narrative:'珍しい選択。組織はそれを覚えている' },
+    ]},
+  { id:'layoff', name:'リストラ', icon:'📋',
+    trigger:{tags:['org','bear'], probability:0.3},
+    choices:[
+      { label:'交渉する', effect:{income:-0.1, socialCredit:+0.05},
+        narrative:'少し守った。しかし波風は立った' },
+      { label:'受け入れる', effect:{income:-0.5, fatigue:-0.3, eraFit:+0.1},
+        narrative:'外に出た。世界が少し広く見えた' },
+    ]},
+  { id:'startup_offer', name:'スタートアップからオファー', icon:'🚀',
+    trigger:{tags:['disruption'], probability:0.25},
+    choices:[
+      { label:'転職する', effect:{income_volatile:true, fatigue:+0.3, eraFit:+0.2},
+        narrative:'賭けに出た。結果は半年後にわかる' },
+      { label:'留まる', effect:{social:+0.05, eraFit:-0.1},
+        narrative:'安全を選んだ。後悔しないかは未来の自分に聞いてくれ' },
+    ]},
+
+  // 市場
+  { id:'market_crash', name:'市場暴落', icon:'📉',
+    trigger:{tags:['investor','bear'], probability:0.4},
+    choices:[
+      { label:'損切り', effect:{asset:-0.2, fatigue:+0.1},
+        narrative:'確定した損失。しかし次の一手が打てる' },
+      { label:'ホールド', effect:{luck_roll:true},
+        narrative:'信じる者だけが見る光景がある。あるいは暗闇だけがある' },
+    ]},
+  { id:'windfall', name:'予期せぬ利益', icon:'💰',
+    trigger:{probability:0.1},
+    choices:[
+      { label:'再投資', effect:{asset:+0.3, risk:+0.2},
+        narrative:'増やした。次に減る準備も整った' },
+      { label:'使う', effect:{fatigue:-0.2, social:+0.2, asset:+0.05},
+        narrative:'消費した。記憶に変わった' },
+    ]},
+
+  // 人間関係
+  { id:'mentor', name:'師匠に出会う', icon:'🧙',
+    trigger:{tags:['networking','stable'], probability:0.15},
+    choices:[
+      { label:'弟子入り', effect:{skill:+0.3, income:-0.1, socialCredit:+0.2},
+        narrative:'教わることと失うことは同時に起きる' },
+      { label:'礼儀だけ', effect:{social:+0.05},
+        narrative:'機会を大切にしなかった。それも選択だ' },
+    ]},
+  { id:'betrayal', name:'裏切り', icon:'🗡️',
+    trigger:{tags:['risk','org'], probability:0.2},
+    choices:[
+      { label:'戦う', effect:{income:-0.1, fatigue:+0.3, socialCredit:+0.1},
+        narrative:'消耗した。正しかったかどうかは歴史が決める' },
+      { label:'去る', effect:{income:-0.2, fatigue:-0.2, eraFit:+0.15},
+        narrative:'賢い撤退か、逃げか。自分でも判断できない' },
+    ]},
+  { id:'viral_moment', name:'バズる', icon:'🌊',
+    trigger:{tags:['viral','influencer'], probability:0.3},
+    choices:[
+      { label:'乗る', effect:{income:+0.5, fatigue:+0.4, socialCredit:-0.1},
+        narrative:'注目は短い。消費されることが仕事になった' },
+      { label:'無視する', effect:{eraFit:+0.1, socialCredit:+0.05},
+        narrative:'あの波に乗らなかった人間として覚えられるかもしれない' },
+    ]},
+
+  // 社会
+  { id:'tax_audit', name:'税務調査', icon:'🏛️',
+    trigger:{tags:['landlord','investor'], probability:0.15},
+    choices:[
+      { label:'正直に', effect:{asset:-0.1, socialCredit:+0.1},
+        narrative:'払った。清廉だった。それが得かどうかは別の話' },
+      { label:'グレー対応', effect:{luck_roll:true, fatigue:+0.2},
+        narrative:'リスクを選んだ。運と法律の両方が審判する' },
+    ]},
+  { id:'economic_change', name:'時代の変化', icon:'🌐',
+    trigger:{probability:0.2},
+    choices:[
+      { label:'適応する', effect:{skill:+0.2, eraFit:+0.3, income:-0.1},
+        narrative:'変わった。何を失ったかは後でわかる' },
+      { label:'抵抗する', effect:{income:+0.05, eraFit:-0.2, socialCredit:-0.1},
+        narrative:'自分を守った。世界が先に行った' },
+    ]},
+
+  // 私生活
+  { id:'health_crisis', name:'体の異変', icon:'🏥',
+    trigger:{minFatigue:0.7, probability:0.35},
+    choices:[
+      { label:'入院・治療', effect:{fatigue:-0.4, asset:-0.15, income:-0.3},
+        narrative:'命を買い戻した。値段は後から効いてくる' },
+      { label:'無視して続ける', effect:{fatigue:+0.2, luck:-0.1},
+        narrative:'乗り切った。今は。体は記録する' },
+    ]},
+  { id:'life_partner', name:'パートナーとの転機', icon:'💍',
+    trigger:{probability:0.15, minMonth:12},
+    choices:[
+      { label:'前進する', effect:{social:+0.3, income:-0.05, luck:+0.1},
+        narrative:'人生の重心が変わった' },
+      { label:'現状維持', effect:{fatigue:+0.05, socialCredit:-0.05},
+        narrative:'選ばないことも選択だった' },
+    ]},
+  { id:'fire_temptation', name:'FIREできる資産に近づく', icon:'🔥',
+    trigger:{minAsset:100000000, probability:0.9},
+    choices:[
+      { label:'まだ働く', effect:{income:+0.1, fatigue:+0.1, eraFit:-0.05},
+        narrative:'自分が何者かを仕事で決めている。いつまでも' },
+      { label:'引退を考える', effect:{fatigue:-0.2, socialCredit:-0.1, luck:-0.05},
+        narrative:'退屈が来る。それが次の問いになる' },
+    ]},
+];
+
+// ─── ルーレットテーブル ────────────────────────────────────────────
+// 「見た目は完全ランダム。実際は自分で確率を作っている」
+const ROULETTE_EVENTS = [
+  { id:'lucky_break', name:'幸運の突破口', icon:'⭐', type:'positive',
+    effect:{asset:+0.15, income:+0.1},
+    narrative:'準備していた者に運が来た。準備の定義は広い' },
+  { id:'unexpected_loss', name:'予期せぬ損失', icon:'💸', type:'negative',
+    effect:{asset:-0.1},
+    narrative:'なぜかわからない損失。後から繋がって見える' },
+  { id:'connection', name:'運命的な出会い', icon:'🌟', type:'event',
+    effect:{socialCredit:+0.2, luck:+0.1},
+    narrative:'人が人生を変える。それは今日だったかもしれない' },
+  { id:'market_surprise', name:'市場サプライズ', icon:'📊', type:'market',
+    effect:{asset_volatile:true},
+    narrative:'市場は感情を持たない。それが怖い' },
+  { id:'burnout', name:'燃え尽き', icon:'🕯️', type:'negative',
+    effect:{fatigue:+0.3, income:-0.1, eraFit:-0.1},
+    narrative:'全力だった。だから空になった' },
+  { id:'breakthrough', name:'突然の覚醒', icon:'💡', type:'positive',
+    effect:{skill:+0.3, eraFit:+0.2},
+    narrative:'点が線になった瞬間。あの日があったから' },
+  { id:'inheritance', name:'相続', icon:'🏛️', type:'special',
+    effect:{asset:+500000},
+    narrative:'誰かの人生の終わりが始まりになった' },
+  { id:'scandal', name:'スキャンダル', icon:'📰', type:'negative',
+    effect:{socialCredit:-0.4, income:-0.2},
+    narrative:'忘れられない出来事。世間も忘れない' },
+  { id:'nothing', name:'静かな月', icon:'🌙', type:'neutral',
+    effect:{},
+    narrative:'何も起きなかった。それがどれほど贅沢か' },
+  { id:'trend_change', name:'時代の風向き', icon:'🌀', type:'market',
+    effect:{eraFit_change: true},
+    narrative:'空気が変わった。気づいた人間が次の時代を作る' },
+];
+
+// ─── 永続化キー ────────────────────────────────────────────────────
+const STORAGE_KEY = 'neonlife_v1';
+
+// 過去周回の因果を記録する「墓場」
+function loadKarma() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { runs: [], totalMonths: 0 };
+  } catch { return { runs: [], totalMonths: 0 }; }
+}
+
+function saveKarma(karma) {
+  try {
+    // 10周回分だけ保存（「10年分の因果」）
+    const trimmed = { ...karma, runs: karma.runs.slice(-10) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch {}
+}
+
+// 過去の失敗パターンから確率を歪める
+// 「人生は記憶され、世界は冷たくなる」
+function getKarmaModifiers(karma, currentJob) {
+  if (!karma.runs.length) return { luckyMod: 0, eventBias: null };
+
+  const recentRuns = karma.runs.slice(-3);
+  // 同じ職業で失敗した回数
+  const sameJobFailures = recentRuns.filter(r =>
+    r.finalJob === currentJob && r.endReason === 'bankruptcy'
+  ).length;
+
+  // 過去に成功した周回があると「成功イベント」が少し出にくくなる
+  // 世界は慣れた者に厳しい
+  const successRuns = karma.runs.filter(r => r.endReason === 'fire').length;
+
+  return {
+    luckyMod: -0.08 * sameJobFailures + 0.05 * Math.min(2, successRuns),
+    eventBias: sameJobFailures >= 2 ? 'adversity' : null,
+  };
+}
+
+// ─── ゲーム状態初期化 ─────────────────────────────────────────────
+function createInitialState(selectedJob, karma) {
+  const karmaModifiers = getKarmaModifiers(karma, selectedJob.id);
+
+  return {
+    // 時間
+    month: 1,
+    phase: 'timeline', // 'timeline' | 'event' | 'roulette' | 'settlement' | 'fire' | 'bankrupt'
+
+    // 可視数値（プレイヤーが見える）
+    asset: 500000,      // 50万円スタート
+    monthlyIncome: 0,
+    monthlyExpense: 0,
+    job: selectedJob,
+    timeline: Array(24).fill(null), // 24hスロット
+
+    // 隠し内部ステータス（UIに表示しない）
+    _hidden: {
+      socialCredit: 0.5,  // 0〜1
+      fatigue: 0.2,       // 0〜1
+      eraFit: 0.5,        // 0〜1
+      luck: 0.5 + karmaModifiers.luckyMod,
+      skill: 0.3,
+      karmaModifiers,
+    },
+
+    // 市場・社会
+    market: MARKET_PHASES[2], // 安定期スタート
+    mood: SOCIAL_MOODS[0],
+
+    // イベント
+    currentEvent: null,
+    log: [], // 人生イベントログ
+
+    // ルーレット
+    rouletteResult: null,
+
+    // 統計（後から語るための記録）
+    history: {
+      assets: [500000],
+      decisions: [],
+      peakAsset: 500000,
+      lowestMonth: null,
+      eventsFaced: [],
+    },
+
+    // FIRE状態
+    isFire: false,
+    fireMonth: null,
+
+    // 連続赤字カウント
+    redMonths: 0,
+  };
+}
+
+// ─── 月末決算 ─────────────────────────────────────────────────────
+function calculateMonthEnd(state) {
+  const { job, timeline, _hidden, market, month } = state;
+  let income = 0, expense = 0;
+
+  // タイムラインから収入・支出計算
+  const placedActions = timeline.filter(Boolean);
+  const workHours = placedActions.filter(a => a.category === 'work').length;
+  const sleepHours = placedActions.filter(a => a.id === 'sleep').length;
+
+  // 基本収入 × 市場係数 × 時代適合度 × 疲弊補正
+  const fatigueMultiplier = 1 - _hidden.fatigue * 0.4;
+  const eraMultiplier = 0.5 + _hidden.eraFit;
+  const marketMultiplier = market.multiplier;
+
+  if (workHours > 0) {
+    income = job.baseIncome * (workHours / 8) * marketMultiplier * eraMultiplier * fatigueMultiplier;
+    // 収入の分散（不確実性）
+    income *= (1 + (Math.random() - 0.5) * job.incomeVariance);
+  }
+
+  // 起業家: 資産があれば収入発生
+  if (job.id === 'entrepreneur') {
+    income += state.asset * 0.02 * Math.random() * 3;
+  }
+
+  // 投資家: 市場フェーズに強く依存
+  if (job.id === 'investor') {
+    income += state.asset * (market.multiplier - 0.8) * 0.15 * _hidden.skill;
+  }
+
+  // インフルエンサー: ランダム性が高い
+  if (job.id === 'influencer') {
+    income += Math.random() < 0.3 ? state.asset * 0.1 * Math.random() : 0;
+  }
+
+  // 支出
+  placedActions.forEach(a => {
+    if (a.cost) expense += a.cost;
+  });
+  expense += 150000; // 基本生活費
+
+  // 睡眠不足ペナルティ（UIには表示しない）
+  const sleepPenalty = Math.max(0, 8 - sleepHours);
+  const newFatigue = Math.min(1, _hidden.fatigue + sleepPenalty * 0.05);
+
+  // スキル・社会信用の変動
+  const socialActions = placedActions.filter(a =>
+    ['networking','volunteer','drink','family'].includes(a.id)
+  ).length;
+
+  const newHidden = {
+    ..._hidden,
+    fatigue: newFatigue,
+    socialCredit: Math.min(1, _hidden.socialCredit + socialActions * 0.02),
+    skill: Math.min(1, _hidden.skill + placedActions.filter(a =>
+      ['learn','study_invest','side_hustle'].includes(a.id)
+    ).length * 0.03),
+    eraFit: Math.min(1, Math.max(0,
+      _hidden.eraFit + placedActions.filter(a => a.id === 'learn').length * 0.02
+      - 0.01 // 時代は常に先に行く
+    )),
+    luck: Math.min(1, Math.max(0,
+      _hidden.luck + (Math.random() - 0.48) * 0.05 // わずかなランダムウォーク
+    )),
+  };
+
+  const netChange = Math.floor(income - expense);
+  const newAsset = state.asset + netChange;
+  const isFire = newAsset >= 500000000; // 5億円でFIRE
+
+  return {
+    income: Math.floor(income),
+    expense: Math.floor(expense),
+    netChange,
+    newAsset,
+    newHidden,
+    isFire,
+    sleepPenalty,
+  };
+}
+
+// ─── ルーレット確率計算 ────────────────────────────────────────────
+// 「見た目はランダム、実際は自分で確率を作っている」
+function calculateRouletteProbabilities(state) {
+  const { _hidden, job, market, month } = state;
+
+  return ROULETTE_EVENTS.map(ev => {
+    let weight = 1.0; // ベース確率
+
+    // 隠しステータスによる歪み
+    if (ev.type === 'positive') weight *= (0.5 + _hidden.luck);
+    if (ev.type === 'negative') weight *= (1.5 - _hidden.luck);
+    if (ev.type === 'negative' && _hidden.fatigue > 0.7) weight *= 1.4;
+    if (ev.type === 'market') weight *= market.risk;
+    if (ev.id === 'burnout') weight *= _hidden.fatigue * 1.5;
+    if (ev.id === 'connection') weight *= _hidden.socialCredit * 1.3;
+    if (ev.id === 'breakthrough') weight *= _hidden.skill * 0.8;
+    if (ev.type === 'neutral') weight *= (1 + (month > 12 ? 0.3 : 0)); // 長く続くと静寂が来る
+    if (_hidden.karmaModifiers?.eventBias === 'adversity' && ev.type === 'positive') weight *= 0.5;
+
+    return { ...ev, weight: Math.max(0.1, weight) };
+  });
+}
+
+function spinRoulette(state) {
+  const probs = calculateRouletteProbabilities(state);
+  const total = probs.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  for (const ev of probs) {
+    r -= ev.weight;
+    if (r <= 0) return ev;
+  }
+  return probs[probs.length - 1];
+}
+
+// ─── 月初処理 ─────────────────────────────────────────────────────
+function determineMonthStart(state, karma) {
+  // 市場フェーズは完全ランダム+過去の流れ補正
+  const currentIdx = MARKET_PHASES.indexOf(state.market);
+  // 現在フェーズが続く確率40%、隣接フェーズへ移行45%、急変15%
+  let marketIdx;
+  const r = Math.random();
+  if (r < 0.40) {
+    marketIdx = currentIdx;
+  } else if (r < 0.85) {
+    marketIdx = (currentIdx + (Math.random() < 0.5 ? 1 : -1) + MARKET_PHASES.length) % MARKET_PHASES.length;
+  } else {
+    marketIdx = Math.floor(Math.random() * MARKET_PHASES.length);
+  }
+
+  const moodIdx = Math.floor(Math.random() * SOCIAL_MOODS.length);
+
+  return {
+    market: MARKET_PHASES[marketIdx],
+    mood: SOCIAL_MOODS[moodIdx],
+  };
+}
+
+// エクスポート（global）
+window.NEONLIFE = {
+  JOBS, ACTIONS, MARKET_PHASES, SOCIAL_MOODS, EVENTS, ROULETTE_EVENTS,
+  loadKarma, saveKarma, getKarmaModifiers,
+  createInitialState, calculateMonthEnd, calculateRouletteProbabilities,
+  spinRoulette, determineMonthStart,
+};
+
+// ══════════════════════════════════════════════════════════════════
+//  NEON LIFE — UI LAYER
+//  設計原則: 「情報が多すぎて全部は読めない」「数値が見えているようで本質が隠れる」
+// ══════════════════════════════════════════════════════════════════
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+// Aliases from window.NEONLIFE (avoids re-declaring consts from data layer)
+const _NL = window.NEONLIFE;
+
+// ─── Canvas: 資産チャート + FIRE進捗 ──────────────────────────────
+function AssetCanvas({ history, asset, isFire }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const W = cv.offsetWidth, H = cv.offsetHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const assets = history.assets;
+    if (assets.length < 2) return;
+
+    // FIRE目標ライン
+    const FIRE_TARGET = 500000000;
+    const max = Math.max(FIRE_TARGET * 0.3, ...assets);
+    const min = Math.min(0, ...assets);
+
+    const pad = { t: 8, r: 8, b: 20, l: 8 };
+    const cw = W - pad.l - pad.r;
+    const ch = H - pad.t - pad.b;
+
+    const toX = i => pad.l + (i / (assets.length - 1)) * cw;
+    const toY = v => pad.t + ch - ((v - min) / (max - min)) * ch;
+
+    // FIRE目標ライン
+    const fireY = toY(FIRE_TARGET);
+    ctx.strokeStyle = 'rgba(59,130,246,0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.l, fireY); ctx.lineTo(W - pad.r, fireY);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // ゼロライン
+    const zeroY = toY(0);
+    ctx.strokeStyle = 'rgba(239,68,68,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(pad.l, zeroY); ctx.lineTo(W - pad.r, zeroY);
+    ctx.stroke();
+
+    // 資産ライン
+    const gradient = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+    gradient.addColorStop(0, isFire ? 'rgba(59,130,246,0.8)' : 'rgba(34,197,94,0.7)');
+    gradient.addColorStop(1, 'rgba(34,197,94,0.1)');
+
+    ctx.beginPath();
+    assets.forEach((v, i) => {
+      const x = toX(i), y = toY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = isFire ? '#3b82f6' : '#22c55e';
+    ctx.lineWidth = 1.5; ctx.stroke();
+
+    // 塗りつぶし
+    ctx.lineTo(toX(assets.length - 1), zeroY);
+    ctx.lineTo(toX(0), zeroY);
+    ctx.closePath();
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // FIRE進捗ラベル
+    const progress = Math.min(1, Math.max(0, asset) / FIRE_TARGET);
+    ctx.fillStyle = 'rgba(59,130,246,0.5)';
+    ctx.font = `${10 / dpr * dpr}px 'Syne Mono', monospace`;
+    ctx.fillText(`FIRE ${Math.floor(progress * 100)}%`, pad.l + 2, H - 4);
+  }, [history, asset, isFire]);
+
+  return React.createElement('canvas', {
+    ref,
+    style: { width: '100%', height: '100%', display: 'block' }
+  });
+}
+
+// ─── ドラッグ&ドロップ タイムライン ──────────────────────────────
+function Timeline({ timeline, onDrop, onRemove, market, month }) {
+  const [dragOver, setDragOver] = useState(null);
+
+  // 睡眠8時間の確認（足りないとラベル表示）
+  const sleepHours = timeline.filter(a => a?.id === 'sleep').length;
+  const sleepWarning = sleepHours < 8;
+
+  const slotStyle = (idx, action) => ({
+    minWidth: 36, height: 52,
+    border: `1px solid ${dragOver === idx ? '#3b82f6' : action ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.06)'}`,
+    borderRadius: 3,
+    background: action
+      ? `hsla(${getCategoryHue(action.category)}, 60%, 12%, 0.9)`
+      : dragOver === idx ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.02)',
+    cursor: action ? 'pointer' : 'default',
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    gap: 2,
+    transition: 'all 0.15s',
+    fontSize: action ? 14 : 10,
+    position: 'relative',
+    flexShrink: 0,
+  });
+
+  return React.createElement('div', { style: { width: '100%' } },
+    // 時刻ラベル
+    React.createElement('div', {
+      style: { display: 'flex', gap: 1, marginBottom: 4, padding: '0 2px' }
+    },
+      Array.from({ length: 24 }, (_, i) =>
+        React.createElement('div', {
+          key: i,
+          style: {
+            minWidth: 36, textAlign: 'center',
+            fontSize: 9, color: 'rgba(255,255,255,0.2)',
+            fontFamily: "'Syne Mono', monospace",
+          }
+        }, i === 0 ? '00' : i % 6 === 0 ? `${i}` : '')
+      )
+    ),
+    // スロット
+    React.createElement('div', {
+      style: { display: 'flex', gap: 1, padding: '0 2px', overflowX: 'auto',
+        scrollbarWidth: 'none' }
+    },
+      Array.from({ length: 24 }, (_, i) => {
+        const action = timeline[i];
+        return React.createElement('div', {
+          key: i,
+          style: slotStyle(i, action),
+          onDragOver: (e) => { e.preventDefault(); setDragOver(i); },
+          onDragLeave: () => setDragOver(null),
+          onDrop: (e) => {
+            e.preventDefault();
+            setDragOver(null);
+            const actionId = e.dataTransfer.getData('actionId');
+            onDrop(i, actionId);
+          },
+          onClick: () => action && onRemove(i),
+        },
+          action
+            ? [
+                React.createElement('span', { key: 'icon', style: { fontSize: 14 } }, action.icon),
+                React.createElement('span', {
+                  key: 'name',
+                  style: { fontSize: 7, color: 'rgba(255,255,255,0.5)',
+                    textAlign: 'center', lineHeight: 1.2, maxWidth: 32 }
+                }, action.name.slice(0, 3))
+              ]
+            : React.createElement('span', {
+                style: { fontSize: 9, color: 'rgba(255,255,255,0.08)' }
+              }, i + 1)
+        );
+      })
+    ),
+    // 睡眠警告（数値ではなく「あと○h」という曖昧な表示）
+    sleepWarning && React.createElement('div', {
+      style: {
+        marginTop: 6, fontSize: 10,
+        color: 'rgba(239,68,68,0.6)',
+        fontFamily: "'Syne Mono', monospace",
+        letterSpacing: 1,
+      }
+    }, `睡眠 ${sleepHours}/8h — 疲れが蓄積する（かもしれない）`)
+  );
+}
+
+function getCategoryHue(cat) {
+  const map = { survival: 160, work: 220, invest: 45, social: 280, health: 120, growth: 190, leisure: 20 };
+  return map[cat] || 200;
+}
+
+// ─── 行動カードリスト ─────────────────────────────────────────────
+function ActionCard({ action, jobId }) {
+  const [dragging, setDragging] = useState(false);
+
+  // 職業との相性を示すが「相性スコア」は見せない
+  // 雰囲気で伝える
+  const isResonant = action.category === 'work' && jobId === 'salaryman'
+    || action.category === 'invest' && jobId === 'investor'
+    || action.category === 'social' && jobId === 'influencer';
+
+  return React.createElement('div', {
+    draggable: true,
+    onDragStart: (e) => {
+      e.dataTransfer.setData('actionId', action.id);
+      setDragging(true);
+    },
+    onDragEnd: () => setDragging(false),
+    style: {
+      padding: '8px 10px',
+      background: dragging ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${isResonant ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+      borderRadius: 4,
+      cursor: 'grab',
+      marginBottom: 4,
+      transition: 'all 0.15s',
+      position: 'relative',
+    }
+  },
+    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+      React.createElement('span', { style: { fontSize: 14 } }, action.icon),
+      React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+        React.createElement('div', {
+          style: { fontSize: 11, color: 'rgba(255,255,255,0.8)',
+            fontFamily: "'Syne Mono', monospace", letterSpacing: 0.5 }
+        }, action.name),
+        React.createElement('div', {
+          style: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2,
+            lineHeight: 1.3, fontFamily: "'Nunito', sans-serif" }
+        }, action.desc)
+      ),
+      action.cost > 0 && React.createElement('div', {
+        style: { fontSize: 9, color: 'rgba(239,68,68,0.5)', flexShrink: 0,
+          fontFamily: "'Syne Mono', monospace" }
+      }, `¥${(action.cost / 1000).toFixed(0)}k`)
+    )
+  );
+}
+
+// ─── イベントモーダル ─────────────────────────────────────────────
+function EventModal({ event, onChoice, hidden }) {
+  if (!event) return null;
+  return React.createElement('div', {
+    style: {
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.85)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backdropFilter: 'blur(4px)',
+    }
+  },
+    React.createElement('div', {
+      style: {
+        width: 'min(480px, 90vw)',
+        background: '#070d1a',
+        border: '1px solid rgba(59,130,246,0.3)',
+        borderRadius: 8,
+        padding: 28,
+        boxShadow: '0 0 60px rgba(59,130,246,0.1)',
+      }
+    },
+      React.createElement('div', {
+        style: { fontSize: 28, marginBottom: 12, textAlign: 'center' }
+      }, event.icon),
+      React.createElement('h3', {
+        style: {
+          fontSize: 16, color: '#fff', marginBottom: 8,
+          fontFamily: "'Syne Mono', monospace",
+          letterSpacing: 2, textAlign: 'center',
+        }
+      }, event.name),
+      // 選択肢（それぞれの効果は曖昧な言葉で）
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 20 } },
+        event.choices.map((choice, i) =>
+          React.createElement('button', {
+            key: i,
+            onClick: () => onChoice(choice),
+            style: {
+              padding: '12px 16px',
+              background: 'rgba(59,130,246,0.06)',
+              border: '1px solid rgba(59,130,246,0.25)',
+              borderRadius: 4, color: 'rgba(255,255,255,0.85)',
+              cursor: 'pointer', textAlign: 'left',
+              fontFamily: "'Nunito', sans-serif",
+              fontSize: 13, lineHeight: 1.5,
+              transition: 'all 0.15s',
+            },
+            onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(59,130,246,0.15)',
+            onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(59,130,246,0.06)',
+          }, choice.label)
+        )
+      ),
+      // 「内部への影響は隠す」— 選択後にnarrativeだけ見せる
+    )
+  );
+}
+
+// ─── ルーレット演出 ────────────────────────────────────────────────
+function RouletteDisplay({ state, onSpin, result, onConfirm }) {
+  const [spinning, setSpinning] = useState(false);
+  const [displayItems, setDisplayItems] = useState([]);
+  const [revealed, setRevealed] = useState(false);
+  const ROULETTE_EVENTS = window.NEONLIFE.ROULETTE_EVENTS;
+
+  const handleSpin = () => {
+    if (spinning || result) return;
+    setSpinning(true);
+    setRevealed(false);
+
+    // 演出: ランダムに並ぶアイテムを高速で切り替える
+    let count = 0;
+    const maxCount = 20 + Math.floor(Math.random() * 15);
+    const interval = setInterval(() => {
+      setDisplayItems(
+        Array.from({ length: 5 }, () =>
+          _NL.ROULETTE_EVENTS[Math.floor(Math.random() * ROULETTE_EVENTS.length)]
+        )
+      );
+      count++;
+      if (count >= maxCount) {
+        clearInterval(interval);
+        setSpinning(false);
+        setRevealed(true);
+        onSpin();
+      }
+    }, 80);
+  };
+
+  return React.createElement('div', {
+    style: {
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.9)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 20,
+      backdropFilter: 'blur(8px)',
+    }
+  },
+    React.createElement('div', {
+      style: {
+        fontSize: 11, letterSpacing: 4, color: 'rgba(59,130,246,0.6)',
+        fontFamily: "'Syne Mono', monospace",
+      }
+    }, `${state.month}月 — 運命の番`),
+
+    // ルーレット表示域
+    React.createElement('div', {
+      style: {
+        display: 'flex', gap: 8, alignItems: 'center',
+        height: 90, overflow: 'hidden',
+        padding: '0 20px',
+      }
+    },
+      spinning ? displayItems.map((item, i) =>
+        React.createElement('div', {
+          key: i,
+          style: {
+            width: 64, height: 80,
+            background: 'rgba(59,130,246,0.08)',
+            border: '1px solid rgba(59,130,246,0.2)',
+            borderRadius: 4,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 4, flexShrink: 0,
+            opacity: i === 2 ? 1 : 0.3,
+          }
+        },
+          React.createElement('span', { style: { fontSize: 22 } }, item.icon),
+          React.createElement('span', { style: { fontSize: 8, color: 'rgba(255,255,255,0.4)',
+            fontFamily: "'Syne Mono', monospace" } }, '?')
+        )
+      ) : revealed && result
+        ? React.createElement('div', {
+            style: {
+              padding: '16px 32px',
+              background: 'rgba(59,130,246,0.1)',
+              border: '1px solid rgba(59,130,246,0.4)',
+              borderRadius: 6,
+              textAlign: 'center',
+              animation: 'fadeIn 0.3s ease',
+            }
+          },
+            React.createElement('div', { style: { fontSize: 36, marginBottom: 8 } }, result.icon),
+            React.createElement('div', {
+              style: { fontSize: 14, color: '#fff',
+                fontFamily: "'Syne Mono', monospace", letterSpacing: 2 }
+            }, result.name),
+            React.createElement('div', {
+              style: { fontSize: 11, color: 'rgba(255,255,255,0.4)',
+                marginTop: 8, fontFamily: "'Nunito', sans-serif",
+                maxWidth: 280, lineHeight: 1.5, fontStyle: 'italic' }
+            }, result.narrative)
+          )
+        : React.createElement('div', {
+            style: { fontSize: 11, color: 'rgba(255,255,255,0.2)',
+              fontFamily: "'Syne Mono', monospace" }
+          }, '─ 待機中 ─')
+    ),
+
+    // ボタン
+    !result
+      ? React.createElement('button', {
+          onClick: handleSpin,
+          disabled: spinning,
+          style: {
+            padding: '12px 40px',
+            background: spinning ? 'rgba(59,130,246,0.05)' : 'rgba(59,130,246,0.15)',
+            border: '1px solid rgba(59,130,246,0.4)',
+            borderRadius: 4, color: spinning ? 'rgba(255,255,255,0.3)' : '#fff',
+            cursor: spinning ? 'not-allowed' : 'pointer',
+            fontFamily: "'Syne Mono', monospace",
+            fontSize: 12, letterSpacing: 3,
+          }
+        }, spinning ? '...' : 'SPIN')
+      : React.createElement('button', {
+          onClick: onConfirm,
+          style: {
+            padding: '12px 40px',
+            background: 'rgba(59,130,246,0.1)',
+            border: '1px solid rgba(59,130,246,0.3)',
+            borderRadius: 4, color: 'rgba(255,255,255,0.7)',
+            cursor: 'pointer',
+            fontFamily: "'Syne Mono', monospace",
+            fontSize: 12, letterSpacing: 3,
+          }
+        }, '次の月へ')
+  );
+}
+
+// ─── 職業選択画面 ─────────────────────────────────────────────────
+function JobSelect({ karma, onSelect }) {
+  const [hovered, setHovered] = useState(null);
+  const JOBS = window.NEONLIFE.JOBS
+
+  // 過去の因果を表示（「人生は記憶される」）
+  const hasKarma = karma.runs.length > 0;
+
+  return React.createElement('div', {
+    style: {
+      minHeight: '100vh', background: '#030509',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }
+  },
+    // タイトル
+    React.createElement('div', { style: { textAlign: 'center', marginBottom: 40 } },
+      React.createElement('h1', {
+        style: {
+          fontSize: 'clamp(1.8rem, 5vw, 3rem)',
+          fontFamily: "'Syne Mono', monospace",
+          color: '#3b82f6',
+          letterSpacing: 8,
+          textShadow: '0 0 40px rgba(59,130,246,0.4)',
+          margin: 0,
+        }
+      }, 'NEON LIFE'),
+      React.createElement('p', {
+        style: {
+          fontSize: 11, color: 'rgba(255,255,255,0.25)',
+          letterSpacing: 3, marginTop: 8,
+          fontFamily: "'Syne Mono', monospace",
+        }
+      }, 'ネオン輝く東京で、人生を選べ'),
+    ),
+
+    // 因果の記録
+    hasKarma && React.createElement('div', {
+      style: {
+        marginBottom: 24, padding: '10px 16px',
+        background: 'rgba(239,68,68,0.05)',
+        border: '1px solid rgba(239,68,68,0.1)',
+        borderRadius: 4, fontSize: 10,
+        color: 'rgba(239,68,68,0.4)',
+        fontFamily: "'Syne Mono', monospace",
+        letterSpacing: 1,
+        maxWidth: 500, textAlign: 'center',
+      }
+    }, `${karma.runs.length}周の記憶が残っている — 世界は学習する`),
+
+    // 職業グリッド
+    React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 12, maxWidth: 700, width: '100%',
+      }
+    },
+      JOBS.map(job =>
+        React.createElement('div', {
+          key: job.id,
+          onClick: () => onSelect(job),
+          onMouseEnter: () => setHovered(job.id),
+          onMouseLeave: () => setHovered(null),
+          style: {
+            padding: '16px 18px',
+            background: hovered === job.id ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${hovered === job.id ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+            borderRadius: 6,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }
+        },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 } },
+            React.createElement('span', { style: { fontSize: 20 } }, job.icon),
+            React.createElement('span', {
+              style: { fontSize: 13, color: '#fff',
+                fontFamily: "'Syne Mono', monospace", letterSpacing: 1 }
+            }, job.name)
+          ),
+          React.createElement('p', {
+            style: { fontSize: 10, color: 'rgba(255,255,255,0.35)',
+              lineHeight: 1.6, margin: 0, fontFamily: "'Nunito', sans-serif" }
+          }, job.desc),
+          React.createElement('div', {
+            style: { marginTop: 8, fontSize: 9, color: 'rgba(59,130,246,0.4)',
+              fontFamily: "'Syne Mono', monospace" }
+          }, job.baseIncome > 0 ? `基本 ¥${(job.baseIncome/10000).toFixed(0)}万/月` : '収入: 不定')
+        )
+      )
+    )
+  );
+}
+
+// ─── メイン App ────────────────────────────────────────────────────
+function NeonLife() {
+  const [screen, setScreen] = useState('jobselect'); // 'jobselect' | 'game' | 'over'
+  const [karma, setKarma] = useState(() => loadKarma());
+  const [state, setState] = useState(null);
+  const [rouletteResult, setRouletteResult] = useState(null);
+  const [narrative, setNarrative] = useState('');
+  const [showNarrative, setShowNarrative] = useState(false);
+  const [activeTab, setActiveTab] = useState('actions'); // 'actions' | 'shop' | 'log'
+
+  // 月初の市場・ムードを決定してゲームを開始
+  const startGame = useCallback((job) => {
+    const newState = createInitialState(job, karma);
+    // 最初の市場を設定
+    const { market, mood } = window.NEONLIFE.determineMonthStart(newState, karma);
+    setState({ ...newState, market, mood });
+    setScreen('game');
+  }, [karma]);
+
+  // タイムラインにアクションを配置
+  const handleDrop = useCallback((slotIndex, actionId) => {
+    if (!state || state.phase !== 'timeline') return;
+    const action = ACTIONS.find(a => a.id === actionId);
+    if (!action) return;
+
+    // 複数スロットが必要なアクション（例: 旅行=4h）
+    const slots = action.hours || 1;
+    const available = Array.from({ length: slots }, (_, i) => slotIndex + i)
+      .every(i => i < 24 && !state.timeline[i]);
+    if (!available) return;
+
+    const newTimeline = [...state.timeline];
+    for (let i = 0; i < slots; i++) {
+      newTimeline[slotIndex + i] = action;
+    }
+    setState(s => ({ ...s, timeline: newTimeline }));
+  }, [state]);
+
+  const handleRemove = useCallback((slotIndex) => {
+    if (!state || state.phase !== 'timeline') return;
+    const action = state.timeline[slotIndex];
+    if (!action) return;
+
+    const newTimeline = [...state.timeline];
+    // 複数スロット占有のアクションを全削除
+    newTimeline.forEach((a, i) => {
+      if (a === action) newTimeline[i] = null;
+    });
+    setState(s => ({ ...s, timeline: newTimeline }));
+  }, [state]);
+
+  // 月末決算へ進む
+  const handleEndMonth = useCallback(() => {
+    if (!state) return;
+
+    // イベント発生判定
+    const EVENTS = window.NEONLIFE.EVENTS
+    const triggeredEvents = EVENTS.filter(ev => {
+      if (!ev.trigger) return false;
+      const t = ev.trigger;
+      if (t.tags && !t.tags.some(tag => state.job.eventTags?.includes(tag))) return false;
+      if (t.minMonth && state.month < t.minMonth) return false;
+      if (t.minFatigue && state._hidden.fatigue < t.minFatigue) return false;
+      if (t.minAsset && state.asset < t.minAsset) return false;
+      const prob = t.probability || 0.3;
+      return Math.random() < prob;
+    });
+
+    if (triggeredEvents.length > 0) {
+      setState(s => ({
+        ...s,
+        phase: 'event',
+        currentEvent: triggeredEvents[0],
+      }));
+    } else {
+      setState(s => ({ ...s, phase: 'settlement' }));
+    }
+  }, [state]);
+
+  // イベント選択
+  const handleEventChoice = useCallback((choice) => {
+    if (!state) return;
+    const { currentEvent } = state;
+
+    // narrative表示
+    setNarrative(choice.narrative);
+    setShowNarrative(true);
+    setTimeout(() => setShowNarrative(false), 3000);
+
+    // 効果適用（内部ステータスのみ変更、asset変更は決算時）
+    const newHidden = { ...state._hidden };
+    const eff = choice.effect || {};
+    if (eff.socialCredit) newHidden.socialCredit = Math.min(1, Math.max(0, newHidden.socialCredit + eff.socialCredit));
+    if (eff.fatigue) newHidden.fatigue = Math.min(1, Math.max(0, newHidden.fatigue + eff.fatigue));
+    if (eff.eraFit) newHidden.eraFit = Math.min(1, Math.max(0, newHidden.eraFit + eff.eraFit));
+    if (eff.luck) newHidden.luck = Math.min(1, Math.max(0, newHidden.luck + eff.luck));
+    if (eff.skill) newHidden.skill = Math.min(1, Math.max(0, newHidden.skill + eff.skill));
+
+    const newLog = [{
+      month: state.month,
+      event: currentEvent.name,
+      choice: choice.label,
+      narrative: choice.narrative,
+    }, ...state.log].slice(0, 50);
+
+    const newHistory = {
+      ...state.history,
+      decisions: [...state.history.decisions, { month: state.month, event: currentEvent.name, choice: choice.label }],
+      eventsFaced: [...state.history.eventsFaced, currentEvent.id],
+    };
+
+    setState(s => ({
+      ...s,
+      _hidden: newHidden,
+      phase: 'settlement',
+      currentEvent: null,
+      log: newLog,
+      history: newHistory,
+    }));
+  }, [state]);
+
+  // 決算処理
+  const handleSettle = useCallback(() => {
+    if (!state) return;
+    const result = calculateMonthEnd(state);
+
+    const newAsset = Math.max(-10000000, result.newAsset); // 借金は-1000万まで
+    const isFire = newAsset >= 500000000;
+    const newRedMonths = result.netChange < 0 ? state.redMonths + 1 : 0;
+    const isBankrupt = newRedMonths >= 12 || newAsset < -5000000;
+
+    const newHistory = {
+      ...state.history,
+      assets: [...state.history.assets, newAsset],
+      peakAsset: Math.max(state.history.peakAsset, newAsset),
+      lowestMonth: result.netChange < 0
+        ? (state.history.lowestMonth || state.month)
+        : state.history.lowestMonth,
+    };
+
+    // ログに月末記録
+    const settlementLog = {
+      month: state.month,
+      event: '月末決算',
+      choice: `+¥${(result.income/10000).toFixed(0)}万 / -¥${(result.expense/10000).toFixed(0)}万`,
+      narrative: result.netChange > 0
+        ? `${Math.floor(result.netChange/10000)}万円増えた`
+        : `${Math.floor(Math.abs(result.netChange)/10000)}万円減った`,
+    };
+
+    setState(s => ({
+      ...s,
+      asset: newAsset,
+      monthlyIncome: result.income,
+      monthlyExpense: result.expense,
+      _hidden: result.newHidden,
+      phase: isBankrupt ? 'bankrupt' : 'roulette',
+      isFire: isFire || s.isFire,
+      fireMonth: isFire && !s.isFire ? state.month : s.fireMonth,
+      redMonths: newRedMonths,
+      history: newHistory,
+      log: [settlementLog, ...s.log].slice(0, 50),
+    }));
+
+    if (isBankrupt) {
+      // 因果として記録
+      const newKarma = {
+        ...karma,
+        runs: [...karma.runs, {
+          finalJob: state.job.id,
+          endReason: 'bankruptcy',
+          months: state.month,
+          peakAsset: newHistory.peakAsset,
+          decisions: newHistory.decisions,
+        }],
+        totalMonths: karma.totalMonths + state.month,
+      };
+      setKarma(newKarma);
+      saveKarma(newKarma);
+    }
+  }, [state, karma]);
+
+  // ルーレット
+  const handleSpin = useCallback(() => {
+    if (!state) return;
+    const result = spinRoulette(state);
+    setRouletteResult(result);
+
+    // ルーレット結果を内部に適用
+    const eff = result.effect || {};
+    setState(s => {
+      const newHidden = { ...s._hidden };
+      if (eff.asset) {
+        const delta = Math.floor(s.asset * eff.asset);
+        return {
+          ...s,
+          asset: s.asset + delta,
+          _hidden: newHidden,
+          rouletteResult: result,
+          log: [{ month: s.month, event: result.name, choice: '', narrative: result.narrative }, ...s.log].slice(0, 50),
+        };
+      }
+      if (eff.fatigue) newHidden.fatigue = Math.min(1, Math.max(0, newHidden.fatigue + eff.fatigue));
+      if (eff.luck) newHidden.luck = Math.min(1, Math.max(0, newHidden.luck + eff.luck));
+      if (eff.socialCredit) newHidden.socialCredit = Math.min(1, Math.max(0, newHidden.socialCredit + eff.socialCredit));
+      if (eff.skill) newHidden.skill = Math.min(1, Math.max(0, newHidden.skill + eff.skill));
+      if (eff.income) {
+        // 収入ボーナスは次月の基本収入に影響（一時的）
+      }
+      if (eff.asset_volatile) {
+        const delta = Math.floor(s.asset * (Math.random() * 0.4 - 0.15));
+        return {
+          ...s, asset: s.asset + delta,
+          _hidden: newHidden, rouletteResult: result,
+          log: [{ month: s.month, event: result.name, choice: '', narrative: result.narrative }, ...s.log].slice(0, 50),
+        };
+      }
+      return { ...s, _hidden: newHidden, rouletteResult: result,
+        log: [{ month: s.month, event: result.name, choice: '', narrative: result.narrative }, ...s.log].slice(0, 50) };
+    });
+  }, [state]);
+
+  // ルーレット確認 → 次月へ
+  const handleNextMonth = useCallback(() => {
+    if (!state) return;
+
+    const { market, mood } = window.NEONLIFE.determineMonthStart(state, karma);
+    setState(s => ({
+      ...s,
+      month: s.month + 1,
+      phase: 'timeline',
+      timeline: Array(24).fill(null),
+      currentEvent: null,
+      rouletteResult: null,
+      market,
+      mood,
+      monthlyIncome: 0,
+      monthlyExpense: 0,
+    }));
+    setRouletteResult(null);
+
+    // FIREに到達したら因果として記録
+    if (state.isFire && state.month > state.fireMonth) {
+      const newKarma = {
+        ...karma,
+        runs: [...karma.runs, {
+          finalJob: state.job.id,
+          endReason: 'fire',
+          months: state.month,
+          peakAsset: state.history.peakAsset,
+          decisions: state.history.decisions,
+        }],
+        totalMonths: karma.totalMonths + 1,
+      };
+      setKarma(newKarma);
+      saveKarma(newKarma);
+    }
+  }, [state, karma]);
+
+  // 画面: 職業選択
+  if (screen === 'jobselect') {
+    return React.createElement(JobSelect, { karma, onSelect: (job) => startGame(job) });
+  }
+
+  // 画面: 破産
+  if (state?.phase === 'bankrupt') {
+    return React.createElement('div', {
+      style: {
+        minHeight: '100vh', background: '#030509',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }
+    },
+      React.createElement('div', {
+        style: { textAlign: 'center', maxWidth: 400 }
+      },
+        React.createElement('div', { style: { fontSize: 48, marginBottom: 16 } }, '📋'),
+        React.createElement('h2', {
+          style: { fontFamily: "'Syne Mono', monospace", color: 'rgba(239,68,68,0.8)',
+            fontSize: 18, letterSpacing: 4, marginBottom: 12 }
+        }, '破産'),
+        React.createElement('p', {
+          style: { color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 1.7,
+            fontFamily: "'Nunito', sans-serif", marginBottom: 24 }
+        }, `${state.month}ヶ月の人生だった。ピーク資産: ¥${(state.history.peakAsset/10000).toFixed(0)}万円。これは失敗ではない。語れる物語だ。`),
+        // 決断の記録
+        state.history.decisions.length > 0 && React.createElement('div', {
+          style: { marginBottom: 24, textAlign: 'left',
+            padding: '12px 16px', background: 'rgba(239,68,68,0.05)',
+            border: '1px solid rgba(239,68,68,0.1)', borderRadius: 4 }
+        },
+          React.createElement('div', { style: { fontSize: 10, color: 'rgba(255,255,255,0.25)',
+            fontFamily: "'Syne Mono', monospace", marginBottom: 8, letterSpacing: 2 } }, '決断の記録'),
+          state.history.decisions.slice(-5).map((d, i) =>
+            React.createElement('div', { key: i, style: { fontSize: 10, color: 'rgba(255,255,255,0.4)',
+              fontFamily: "'Nunito', sans-serif", marginBottom: 3 } },
+              `${d.month}月 / ${d.event} → ${d.choice}`)
+          )
+        ),
+        React.createElement('button', {
+          onClick: () => { setState(null); setScreen('jobselect'); },
+          style: {
+            padding: '12px 32px', background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)', borderRadius: 4,
+            color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+            fontFamily: "'Syne Mono', monospace", fontSize: 12, letterSpacing: 3,
+          }
+        }, '再起する')
+      )
+    );
+  }
+
+  if (!state) return null;
+
+  const FIRE_TARGET = 500000000;
+  const fireProgress = Math.min(1, Math.max(0, state.asset) / FIRE_TARGET);
+
+  // ゲーム画面
+  return React.createElement('div', {
+    style: {
+      minHeight: '100vh', background: '#030509',
+      color: 'rgba(255,255,255,0.8)',
+      fontFamily: "'Nunito', sans-serif",
+      display: 'flex', flexDirection: 'column',
+    }
+  },
+    // ── ヘッダー ──
+    React.createElement('div', {
+      style: {
+        padding: '10px 16px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', alignItems: 'center', gap: 16,
+        flexWrap: 'wrap', gap: 8,
+      }
+    },
+      // タイトル
+      React.createElement('span', {
+        style: { fontFamily: "'Syne Mono', monospace", fontSize: 14,
+          color: '#3b82f6', letterSpacing: 4,
+          textShadow: '0 0 20px rgba(59,130,246,0.4)', flexShrink: 0 }
+      }, 'NEON LIFE'),
+
+      // 月数
+      React.createElement('span', {
+        style: { fontFamily: "'Syne Mono', monospace", fontSize: 11,
+          color: 'rgba(255,255,255,0.3)', letterSpacing: 2 }
+      }, `${state.month}月目`),
+
+      // 資産
+      React.createElement('span', {
+        style: {
+          fontFamily: "'Syne Mono', monospace", fontSize: 13,
+          color: state.asset < 0 ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.9)',
+          letterSpacing: 1,
+        }
+      }, state.asset < 0
+        ? `▼¥${(Math.abs(state.asset)/10000).toFixed(0)}万 (借金)`
+        : `¥${(state.asset/10000).toFixed(0)}万`),
+
+      // 市場フェーズ（変えられないもの）
+      React.createElement('span', {
+        style: { fontSize: 10, color: 'rgba(255,255,255,0.3)',
+          fontFamily: "'Syne Mono', monospace",
+          padding: '2px 6px', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 2 }
+      }, state.market.name),
+
+      // 職業
+      React.createElement('span', {
+        style: { fontSize: 10, color: 'rgba(59,130,246,0.6)',
+          fontFamily: "'Syne Mono', monospace", marginLeft: 'auto' }
+      }, `${state.job.icon} ${state.job.name}`),
+
+      // FIRE状態
+      state.isFire && React.createElement('span', {
+        style: { fontSize: 10, color: '#3b82f6',
+          fontFamily: "'Syne Mono', monospace",
+          textShadow: '0 0 8px rgba(59,130,246,0.6)' }
+      }, '🔥 FIRE'),
+    ),
+
+    // ── Canvas (資産チャート) ──
+    React.createElement('div', {
+      style: {
+        height: 60, borderBottom: '1px solid rgba(255,255,255,0.04)',
+        padding: '4px 16px',
+      }
+    },
+      React.createElement(AssetCanvas, {
+        history: state.history,
+        asset: state.asset,
+        isFire: state.isFire,
+      })
+    ),
+
+    // ── メインエリア ──
+    React.createElement('div', {
+      style: {
+        flex: 1, display: 'grid',
+        gridTemplateColumns: '200px 1fr',
+        gap: 0, overflow: 'hidden',
+      }
+    },
+      // 左パネル
+      React.createElement('div', {
+        style: {
+          borderRight: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }
+      },
+        // タブ
+        React.createElement('div', {
+          style: { display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.04)' }
+        },
+          ['actions', 'log'].map(tab =>
+            React.createElement('button', {
+              key: tab,
+              onClick: () => setActiveTab(tab),
+              style: {
+                flex: 1, padding: '8px 4px',
+                background: 'none', border: 'none',
+                borderBottom: `2px solid ${activeTab === tab ? '#3b82f6' : 'transparent'}`,
+                color: activeTab === tab ? '#3b82f6' : 'rgba(255,255,255,0.25)',
+                fontFamily: "'Syne Mono', monospace",
+                fontSize: 9, letterSpacing: 1, cursor: 'pointer',
+                transition: 'all 0.15s',
+              }
+            }, tab === 'actions' ? '行動' : 'ログ')
+          )
+        ),
+        // タブコンテンツ
+        React.createElement('div', {
+          style: { flex: 1, overflow: 'auto', padding: 8, scrollbarWidth: 'none' }
+        },
+          activeTab === 'actions'
+            ? ACTIONS.map(action =>
+                React.createElement(ActionCard, {
+                  key: action.id, action, jobId: state.job.id
+                })
+              )
+            : state.log.slice(0, 20).map((entry, i) =>
+                React.createElement('div', {
+                  key: i,
+                  style: {
+                    padding: '6px 0',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    fontSize: 9,
+                  }
+                },
+                  React.createElement('div', {
+                    style: { color: 'rgba(59,130,246,0.5)',
+                      fontFamily: "'Syne Mono', monospace", marginBottom: 2 }
+                  }, `${entry.month}月 / ${entry.event}`),
+                  entry.choice && React.createElement('div', {
+                    style: { color: 'rgba(255,255,255,0.4)', marginBottom: 2 }
+                  }, `→ ${entry.choice}`),
+                  React.createElement('div', {
+                    style: { color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }
+                  }, entry.narrative)
+                )
+              )
+        )
+      ),
+
+      // 右パネル: タイムライン + 操作
+      React.createElement('div', {
+        style: { display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }
+      },
+        // タイムライン
+        React.createElement('div', {
+          style: {
+            padding: '12px 12px 8px',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+          }
+        },
+          React.createElement('div', {
+            style: { fontSize: 9, color: 'rgba(255,255,255,0.2)',
+              fontFamily: "'Syne Mono', monospace", letterSpacing: 2,
+              marginBottom: 6 }
+          }, `─ 24時間タイムライン (${state.phase === 'timeline' ? '配置中' : '確定'})`),
+          React.createElement(Timeline, {
+            timeline: state.timeline,
+            onDrop: handleDrop,
+            onRemove: handleRemove,
+            market: state.market,
+            month: state.month,
+          })
+        ),
+
+        // 月末へのボタン / 決算情報
+        React.createElement('div', {
+          style: { padding: '10px 12px', flex: 1, overflow: 'auto',
+            scrollbarWidth: 'none' }
+        },
+          state.phase === 'timeline' && React.createElement('div', {
+            style: { display: 'flex', gap: 8, alignItems: 'center' }
+          },
+            React.createElement('button', {
+              onClick: handleEndMonth,
+              style: {
+                padding: '10px 24px',
+                background: 'rgba(59,130,246,0.12)',
+                border: '1px solid rgba(59,130,246,0.35)',
+                borderRadius: 4, color: 'rgba(255,255,255,0.8)',
+                cursor: 'pointer',
+                fontFamily: "'Syne Mono', monospace",
+                fontSize: 11, letterSpacing: 2,
+                transition: 'all 0.15s',
+              },
+              onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(59,130,246,0.2)',
+              onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(59,130,246,0.12)',
+            }, `${state.month}月を終える`),
+            state.isFire && React.createElement('span', {
+              style: { fontSize: 10, color: 'rgba(255,255,255,0.2)',
+                fontFamily: "'Syne Mono', monospace" }
+            }, '— FIREした。でも世界は続く')
+          ),
+
+          state.phase === 'settlement' && React.createElement('div', {
+            style: { display: 'flex', flexDirection: 'column', gap: 8 }
+          },
+            React.createElement('div', {
+              style: { padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4 }
+            },
+              React.createElement('div', { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)',
+                fontFamily: "'Syne Mono', monospace", marginBottom: 6 } }, '月末決算'),
+              React.createElement('div', { style: { fontSize: 12, color: 'rgba(34,197,94,0.8)',
+                fontFamily: "'Syne Mono', monospace" } },
+                `収入: ¥${(state.monthlyIncome/10000).toFixed(1)}万`),
+              React.createElement('div', { style: { fontSize: 12, color: 'rgba(239,68,68,0.8)',
+                fontFamily: "'Syne Mono', monospace" } },
+                `支出: ¥${(state.monthlyExpense/10000).toFixed(1)}万`),
+            ),
+            React.createElement('button', {
+              onClick: handleSettle,
+              style: {
+                padding: '10px 24px', background: 'rgba(59,130,246,0.1)',
+                border: '1px solid rgba(59,130,246,0.3)', borderRadius: 4,
+                color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+                fontFamily: "'Syne Mono', monospace", fontSize: 11, letterSpacing: 2,
+              }
+            }, '確定する')
+          ),
+        ),
+
+        // 社会ムード表示（小さく）
+        React.createElement('div', {
+          style: {
+            padding: '6px 12px',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            display: 'flex', gap: 12, alignItems: 'center',
+          }
+        },
+          React.createElement('span', { style: { fontSize: 9, color: 'rgba(255,255,255,0.2)',
+            fontFamily: "'Syne Mono', monospace" } }, state.mood.name),
+          // FIRE進捗を小さく
+          React.createElement('span', { style: { fontSize: 9, color: 'rgba(59,130,246,0.3)',
+            fontFamily: "'Syne Mono', monospace", marginLeft: 'auto' } },
+            `FIRE ${Math.floor(fireProgress * 100)}%`)
+        )
+      )
+    ),
+
+    // ── モーダル群 ──
+    state.phase === 'event' && state.currentEvent &&
+      React.createElement(EventModal, {
+        event: state.currentEvent,
+        onChoice: handleEventChoice,
+      }),
+
+    state.phase === 'roulette' &&
+      React.createElement(RouletteDisplay, {
+        state,
+        onSpin: handleSpin,
+        result: rouletteResult,
+        onConfirm: handleNextMonth,
+      }),
+
+    // ナラティブ表示（一瞬だけ）
+    showNarrative && React.createElement('div', {
+      style: {
+        position: 'fixed', bottom: 24, left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '10px 20px',
+        background: 'rgba(0,0,0,0.85)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 4, fontSize: 11,
+        color: 'rgba(255,255,255,0.6)',
+        fontFamily: "'Nunito', sans-serif",
+        fontStyle: 'italic', maxWidth: '60vw', textAlign: 'center',
+        lineHeight: 1.5, zIndex: 2000,
+        backdropFilter: 'blur(4px)',
+      }
+    }, narrative)
+  );
+}
+
+window.NeonLifeApp = NeonLife;
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.NeonLifeApp));
+</script>
+</body>
+</html>
