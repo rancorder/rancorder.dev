@@ -355,25 +355,52 @@ function NeonTama(){
   useEffect(()=>{
     const now=Date.now();
     let data=loadLog();
-    if(!data){data=born();}
-    else{
-      // RELOAD記録: 再読込はペットにとって「突然の暗闇」
+    if(!data){
+      data=born();
+    } else {
+      // lastSeenAt は「最後に別れた時刻」。ここで上書きしてはいけない。
+      // 上書きすると「最後に会ってから○時間」が常に0になる。
+      // RELOADイベントだけ記録する（ペットの不安蓄積のため）。
       data.eventLog.push({type:'RELOAD',at:now});
-      data.lastSeenAt=now;
     }
-    saveLog(data);logRef.current=data;
+    saveLog(data);
+    logRef.current=data;
 
-    // visibilitychange: HIDDEN/RETURNペアで孤独時間を計測
+    // タブが隠れた瞬間 = 「別れの時刻」としてlastSeenAtを更新
     const onVis=()=>{
       const t=Date.now();
-      if(document.hidden){logRef.current.eventLog.push({type:'HIDDEN',at:t});logRef.current.lastSeenAt=t;}
-      else logRef.current.eventLog.push({type:'RETURN',at:t});
+      if(document.hidden){
+        logRef.current.eventLog.push({type:'HIDDEN',at:t});
+        logRef.current.lastSeenAt=t;
+      } else {
+        logRef.current.eventLog.push({type:'RETURN',at:t});
+      }
       saveLog(logRef.current);
     };
     document.addEventListener('visibilitychange',onVis);
-    const onUnload=()=>{if(logRef.current){logRef.current.lastSeenAt=Date.now();saveLog(logRef.current);}};
-    window.addEventListener('beforeunload',onUnload);window.addEventListener('pagehide',onUnload);
-    return()=>{document.removeEventListener('visibilitychange',onVis);window.removeEventListener('beforeunload',onUnload);window.removeEventListener('pagehide',onUnload);cancelAnimationFrame(rafRef.current);};
+
+    // ページを閉じる直前に「別れの時刻」を記録
+    // beforeunload + pagehide 両方（モバイルはpagehideが確実）
+    const onLeave=()=>{
+      if(!logRef.current)return;
+      const t=Date.now();
+      logRef.current.lastSeenAt=t;
+      logRef.current.eventLog.push({type:'HIDDEN',at:t});
+      saveLog(logRef.current);
+    };
+    window.addEventListener('beforeunload',onLeave);
+    window.addEventListener('pagehide',onLeave);
+
+    // 10秒ごとに定期保存（突然のクラッシュでもデータを守る）
+    const autosave=setInterval(()=>{if(logRef.current)saveLog(logRef.current);},10000);
+
+    return()=>{
+      document.removeEventListener('visibilitychange',onVis);
+      window.removeEventListener('beforeunload',onLeave);
+      window.removeEventListener('pagehide',onLeave);
+      clearInterval(autosave);
+      cancelAnimationFrame(rafRef.current);
+    };
   },[]);
 
   useEffect(()=>{
@@ -399,7 +426,11 @@ function NeonTama(){
       }
       if(now-lastUIRef.current>1000){
         lastUIRef.current=now;
-        setUi({stage:s.stage,sinceSeen:now-(logRef.current.lastSeenAt||now),alive:s.alive});
+        // sinceSeen = ページを開く前に最後に別れてから何ミリ秒か
+        // lastSeenAt はページを閉じる/タブを隠す瞬間に記録される
+        const lastGoodbye = logRef.current.lastSeenAt || now;
+        const sinceSeenMs = now - lastGoodbye;
+        setUi({stage:s.stage,sinceSeen:sinceSeenMs,alive:s.alive});
       }
       rafRef.current=requestAnimationFrame(loop);
     };
