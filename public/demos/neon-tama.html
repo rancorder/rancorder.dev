@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>NEON TAMA</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne+Mono&display=swap');
+    :root{--h:150;--sat:80%;--lit:45%;--c:hsl(var(--h),var(--sat),var(--lit));--cg:hsl(var(--h),var(--sat),70%);--cd:hsl(var(--h),30%,20%);--bg:#02040a;--t:rgba(180,240,210,0.7);--tm:rgba(130,190,160,0.3)}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--t);font-family:'Syne Mono',monospace;touch-action:manipulation}
+    body::before{content:'';position:fixed;inset:0;z-index:200;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08)2px,rgba(0,0,0,0.08)3px)}
+    body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 62%,hsla(var(--h),70%,12%,0.45)0%,transparent 72%);transition:background 4s ease}
+    #root{position:relative;z-index:1;width:100%;height:100dvh;display:flex;flex-direction:column;align-items:center}
+    .hd{width:100%;padding:18px 24px 6px;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .hd-title{font-size:clamp(1.1rem,4vw,1.5rem);letter-spacing:8px;color:var(--c);text-shadow:0 0 14px var(--c),0 0 32px var(--cg);transition:color 3s,text-shadow 3s;text-transform:uppercase}
+    .hd-stage{font-size:clamp(0.6rem,2vw,0.72rem);letter-spacing:4px;color:var(--cd);text-shadow:0 0 8px var(--cd);transition:color 3s;text-transform:uppercase}
+    .hd-since{font-size:clamp(0.5rem,1.5vw,0.6rem);letter-spacing:2px;color:var(--tm)}
+    .cv-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;position:relative}
+    #c{max-width:min(340px,88vw);max-height:min(340px,52vh);width:100%;height:100%;aspect-ratio:1/1;display:block}
+    .whisper{position:absolute;bottom:-4px;font-size:0.6rem;letter-spacing:2px;color:var(--tm);opacity:0;transition:opacity 1.8s;pointer-events:none;text-align:center;white-space:nowrap}
+    .whisper.on{opacity:1}
+    .acts{width:100%;max-width:360px;padding:0 14px clamp(16px,4vh,28px);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn{padding:clamp(11px,3vh,15px) 0;background:transparent;border:1px solid var(--cd);border-radius:3px;color:var(--cd);font-family:'Syne Mono',monospace;font-size:clamp(0.7rem,2.5vw,0.85rem);letter-spacing:3px;cursor:pointer;transition:border-color .3s,color .3s,box-shadow .3s;text-transform:uppercase;position:relative;overflow:hidden}
+    .btn::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--c)0%,transparent 70%);opacity:0;transition:opacity .5s}
+    .btn:not(:disabled):hover{border-color:var(--c);color:var(--c);box-shadow:0 0 18px var(--cg),inset 0 0 10px rgba(34,197,94,0.04)}
+    .btn:not(:disabled):active::after{opacity:0.12}
+    .btn:disabled,.btn.cd{opacity:0.2;cursor:not-allowed}
+  </style>
+</head>
+<body>
+<!-- DEMO_META
+title: NEON TAMA
+desc: ブラウザの持続性で生きるネオン仮想ペット
+tech: Canvas2D, React, Event Log Reconstruction
+type: game
+index: true
+-->
+<div id="root"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  NEON TAMA — 設計哲学
+//  「状態は計算結果であり、保存物ではない」
+//  LocalStorage: 過去に何があったかのリストのみ
+//  rAF: キャンバス描画のためだけ
+//  時間: 常に(Date.now() - bornAt)の差分
+// ═══════════════════════════════════════════════════════════════════
+const {useState,useEffect,useRef,useCallback}=React;
+
+const KEY='nt_v2';
+function loadLog(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch{return null}}
+function saveLog(d){try{localStorage.setItem(KEY,JSON.stringify({...d,eventLog:d.eventLog.slice(-2000)}))}catch{}}
+function born(){const n=Date.now();return{bornAt:n,lastSeenAt:n,eventLog:[]}}
+function clamp(v,mn=0,mx=100){return Math.max(mn,Math.min(mx,v))}
+
+// ── reconstruct: ログから現在状態を算出する純関数 ─────────────────
+// 副作用ゼロ。同じログを渡せば常に同じ結果。
+// 毎rAFフレームで呼ばれ、nowが変わるたびに少しずつ値が変わる。
+function reconstruct(log,now){
+  const{bornAt,eventLog}=log;
+  const ageMin=(now-bornAt)/60000;
+  const stage=ageMin<5?'EGG':ageMin<30?'HATCH':ageMin<120?'BABY':ageMin<720?'CHILD':ageMin<2880?'TEEN':ageMin<10080?'ADULT':'ELDER';
+  const DR={EGG:{h:0.4,hp:0.2,e:0.3},HATCH:{h:1.0,hp:0.5,e:0.7},BABY:{h:1.2,hp:0.6,e:0.9},CHILD:{h:0.9,hp:0.5,e:0.6},TEEN:{h:1.1,hp:0.7,e:0.8},ADULT:{h:0.8,hp:0.4,e:0.5},ELDER:{h:0.5,hp:0.3,e:0.3}}[stage];
+  let hunger=75,happy=65,energy=80,health=100;
+  let cursor=bornAt,reloadCount=0,hiddenStart=null,totalLoneMs=0;
+  let careLog=[],lastCareAt=bornAt;
+
+  function decay(gapMin){
+    hunger=clamp(hunger-DR.h*gapMin,0);
+    happy=clamp(happy-DR.hp*gapMin,0);
+    energy=clamp(energy-DR.e*gapMin,0);
+    if(hunger<15)health=clamp(health-0.6*gapMin,0);
+    if(happy>65)health=clamp(health+0.08*gapMin);
+    if(energy<10)happy=clamp(happy-0.3*gapMin,0);
+  }
+
+  for(const ev of eventLog){
+    decay(Math.max(0,(ev.at-cursor)/60000));
+    cursor=ev.at;
+    switch(ev.type){
+      case'FEED':hunger=clamp(hunger+32);health=clamp(health+1);careLog.push({t:'FEED',at:ev.at});lastCareAt=ev.at;break;
+      case'PLAY':happy=clamp(happy+28);energy=clamp(energy-18,0);hunger=clamp(hunger-10,0);careLog.push({t:'PLAY',at:ev.at});lastCareAt=ev.at;break;
+      case'SLEEP':energy=clamp(energy+45);health=clamp(health+3);careLog.push({t:'SLEEP',at:ev.at});lastCareAt=ev.at;break;
+      case'HEAL':health=clamp(health+40);careLog.push({t:'HEAL',at:ev.at});lastCareAt=ev.at;break;
+      case'RELOAD':
+        reloadCount++;
+        if(reloadCount>2)happy=clamp(happy-6*(reloadCount-2),0);
+        break;
+      case'HIDDEN':hiddenStart=ev.at;break;
+      case'RETURN':
+        if(hiddenStart!==null){
+          const am=(ev.at-hiddenStart)/60000;
+          totalLoneMs+=ev.at-hiddenStart;
+          if(am>3&&am<=30)happy=clamp(happy-am*0.3,0);
+          else if(am>30&&am<=180){happy=clamp(happy-9-am*0.12,0);health=clamp(health-am*0.015,0);}
+          else if(am>180){happy=clamp(happy-20-am*0.05,0);health=clamp(health-am*0.01,0);hunger=clamp(hunger-am*0.1,0);}
+          hiddenStart=null;
+        }
+        happy=clamp(happy+4);
+        break;
+    }
+    careLog=careLog.slice(-24);
+  }
+
+  decay(Math.max(0,(now-cursor)/60000));
+  if(hiddenStart!==null){
+    const cam=(now-hiddenStart)/60000;
+    if(cam>3)happy=clamp(happy-Math.min(18,cam*0.2),0);
+  }
+
+  // 世話傾向分析 — 同じhunger値でも表情が変わる核心
+  const recent=careLog.slice(-12);
+  const rt=recent.map(c=>c.t);
+  const fc=rt.filter(t=>t==='FEED').length,pc=rt.filter(t=>t==='PLAY').length,sc=rt.filter(t=>t==='SLEEP').length;
+  const tot=rt.length||1;
+  const maxR=Math.max(fc,pc,sc)/tot;
+  const biased=maxR>0.7&&tot>=4;
+  const dominant=fc>=pc&&fc>=sc?'FEED':pc>=sc?'PLAY':'SLEEP';
+  const sinceLastCare=(now-lastCareAt)/60000;
+  const neglected=sinceLastCare>30;
+  const farGaze=sinceLastCare>120;
+
+  // 輝度と色相
+  const careRichness=Math.min(1,careLog.length/(Math.max(1,ageMin/30)));
+  const glow=0.25+0.5*(health/100)+0.25*careRichness;
+  const hue=health<25?260-Math.round((health/25)*60):health<60?180+Math.round(((health-25)/35)*(-30)):150+Math.round((1-health/100)*(-30));
+  const loneRatio=Math.min(1,totalLoneMs/(120*60000));
+
+  return{hunger,happy,energy,health,stage,ageMin,glow,hue,biased,dominant,neglected,farGaze,reloadCount,loneRatio,sinceLastCare,alive:health>0};
+}
+
+// ── Canvas描画 ─────────────────────────────────────────────────────
+function drawPet(ctx,W,H,s,frame){
+  ctx.clearRect(0,0,W,H);
+  if(!s)return;
+  if(!s.alive){drawGhost(ctx,W,H,frame);return;}
+  const{hue,glow,stage,neglected,farGaze,biased,loneRatio,energy,happy,hunger,health,reloadCount}=s;
+  const baseR={EGG:32,HATCH:38,BABY:48,CHILD:58,TEEN:66,ADULT:72,ELDER:68}[stage]??58;
+  const R=baseR*(W/320);
+  const floatAmp=R*0.06*(0.3+0.7*(energy/100));
+  const floatSpeed=biased?0.018:0.024;
+  const floatY=Math.sin(frame*floatSpeed)*floatAmp;
+  const anxAmp=Math.min(Math.max(0,reloadCount-2),4)*0.4;
+  const anxX=reloadCount>2?Math.sin(frame*0.19+1.2)*anxAmp:0;
+  const anxY=reloadCount>2?Math.cos(frame*0.23+0.7)*anxAmp*0.5:0;
+  const px=W/2+anxX,py=H/2+floatY+anxY;
+  const breathSpeed=health<40?0.08:energy<30?0.05:0.035;
+  const breathScale=1+Math.sin(frame*breathSpeed)*(health<40?0.028:0.018);
+
+  // 影
+  const sg=ctx.createRadialGradient(W/2,H/2+R*0.85,0,W/2,H/2+R*0.85,R*0.9);
+  sg.addColorStop(0,`hsla(${hue},50%,10%,${0.15+0.1*(energy/100)})`);
+  sg.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.ellipse(W/2,H/2+R*0.85,R*0.75*(2-breathScale),R*0.15,0,0,Math.PI*2);
+  ctx.fillStyle=sg;ctx.fill();
+
+  ctx.save();ctx.translate(px,py);ctx.scale(breathScale,breathScale);
+  if(stage==='EGG'||stage==='HATCH')drawEgg(ctx,R,hue,glow,frame);
+  else{drawBody(ctx,R,hue,glow,frame,s);drawFace(ctx,R,hue,glow,frame,s);if(stage!=='BABY')drawEars(ctx,R,hue,glow);}
+  ctx.restore();
+
+  // アウターグロー
+  const ogA=0.06+0.08*glow;
+  const og=ctx.createRadialGradient(px,py,R*0.3,px,py,R*2.4);
+  og.addColorStop(0,`hsla(${hue},100%,60%,${ogA})`);
+  og.addColorStop(0.5,`hsla(${hue},100%,50%,${ogA*0.4})`);
+  og.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.arc(px,py,R*2.4,0,Math.PI*2);ctx.fillStyle=og;ctx.fill();
+
+  if(happy>60&&energy>40&&!neglected)drawSparkles(ctx,px,py,R,hue,frame,glow);
+
+  // 孤独の薄霧 — 空気の変化として表現
+  if(loneRatio>0.2){
+    const fogA=(loneRatio-0.2)*0.18;
+    const fog=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.6);
+    fog.addColorStop(0,'transparent');fog.addColorStop(0.7,'transparent');
+    fog.addColorStop(1,`rgba(0,2,15,${fogA})`);
+    ctx.fillStyle=fog;ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawEgg(ctx,R,hue,glow,frame){
+  const sat=Math.round(50+40*glow),lit=Math.round(35+25*glow),a=0.55+0.3*glow;
+  const g=ctx.createRadialGradient(-R*0.25,-R*0.35,R*0.05,0,0,R*1.1);
+  g.addColorStop(0,`hsla(${hue},${sat}%,${Math.min(88,lit+28)}%,${a})`);
+  g.addColorStop(0.55,`hsla(${hue},${sat}%,${lit}%,${a*0.9})`);
+  g.addColorStop(1,`hsla(${hue-10},${sat-15}%,${lit-18}%,${a*0.4})`);
+  const p=0.93+0.07*Math.sin(frame*0.04);
+  ctx.save();ctx.scale(1,p);
+  ctx.beginPath();ctx.ellipse(0,0,R*0.72,R,0,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.restore();
+  const sh=ctx.createRadialGradient(-R*0.22,-R*0.35,0,-R*0.1,-R*0.2,R*0.48);
+  sh.addColorStop(0,`hsla(${hue},100%,92%,${0.45*glow})`);sh.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.ellipse(-R*0.1,-R*0.22,R*0.38,R*0.26,-0.2,0,Math.PI*2);ctx.fillStyle=sh;ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,0,R*0.72,R,0,0,Math.PI*2);
+  ctx.strokeStyle=`hsla(${hue},100%,75%,${0.25+0.2*glow})`;ctx.lineWidth=1.5;ctx.stroke();
+}
+
+function drawBody(ctx,R,hue,glow,frame,s){
+  const{energy,health}=s;
+  const sat=Math.round(45+40*glow),lit=Math.round(30+28*glow),a=0.5+0.35*glow;
+  const bR=R*(0.88+0.12*(energy/100));
+  const g=ctx.createRadialGradient(-bR*0.22,-bR*0.28,bR*0.04,0,0,bR);
+  g.addColorStop(0,`hsla(${hue},${sat}%,${Math.min(86,lit+22)}%,${a})`);
+  g.addColorStop(0.5,`hsla(${hue},${sat}%,${lit}%,${a*0.95})`);
+  g.addColorStop(1,`hsla(${hue-8},${sat-12}%,${lit-14}%,${a*0.55})`);
+  ctx.beginPath();ctx.arc(0,0,bR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  const sh=ctx.createRadialGradient(-bR*0.28,-bR*0.3,0,-bR*0.12,-bR*0.18,bR*0.52);
+  sh.addColorStop(0,`hsla(${hue},100%,92%,${0.42*glow})`);sh.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.arc(-bR*0.1,-bR*0.18,bR*0.42,0,Math.PI*2);ctx.fillStyle=sh;ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,bR,0,Math.PI*2);
+  ctx.strokeStyle=`hsla(${hue},100%,70%,${0.15+0.15*glow})`;ctx.lineWidth=1.5;ctx.stroke();
+  if(health<40){
+    const spots=Math.floor((40-health)/10);
+    for(let i=0;i<spots;i++){
+      ctx.beginPath();ctx.arc(Math.cos(i*2.1)*bR*0.4,Math.sin(i*1.7)*bR*0.35,bR*0.06,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${hue+100},40%,20%,0.3)`;ctx.fill();
+    }
+  }
+}
+
+function drawFace(ctx,R,hue,glow,frame,s){
+  // ──────────────────────────────────────────────────────
+  //  表情の核心:「同じhappy=50でも全く違う顔になる」
+  //  数値を直接使わず neglected/farGaze/biased/loneRatio/reloadCount を使う
+  // ──────────────────────────────────────────────────────
+  const{neglected,farGaze,biased,loneRatio,reloadCount,hunger,happy,energy,health}=s;
+  const bR=R*(0.88+0.12*(energy/100));
+  const eY=-bR*0.08,eX=bR*0.28,eR=bR*0.18;
+
+  // 視線計算 — 「何をされてきたか」が視線方向を決める
+  const anxG=reloadCount>2?{x:Math.sin(frame*0.21+0.5)*1.8,y:Math.cos(frame*0.17)*0.9}:{x:0,y:0};
+  const neglG=neglected?(farGaze?{x:eR*0.55,y:eR*0.35}:{x:eR*0.25,y:eR*0.18}):{x:0,y:0};
+  const loneG={x:0,y:loneRatio*eR*0.45};
+  const gx=anxG.x+neglG.x+loneG.x;
+  const gy=anxG.y+neglG.y+loneG.y;
+
+  // 瞳孔サイズ — 幸せ・元気→大、孤独・不安→小
+  const pR=eR*Math.max(0.2,Math.min(0.75,0.45+0.25*(happy/100)-0.15*loneRatio+(reloadCount>2?-0.08:0)));
+
+  // まばたき
+  const blinkPhase=Math.sin(frame*0.013)*Math.sin(frame*0.007);
+  const isBlinking=blinkPhase>0.94;
+  const lidW=hunger<25?0.5:energy<20?0.4:0;
+
+  for(const side of[-1,1]){
+    const ex=eX*side;
+    ctx.beginPath();ctx.ellipse(ex,eY,eR,eR*(isBlinking?0.1:1),0,0,Math.PI*2);
+    ctx.fillStyle=`rgba(240,250,255,${0.82*(0.5+0.4*glow)})`;ctx.fill();
+    if(!isBlinking){
+      const iris=ctx.createRadialGradient(ex,eY,0,ex,eY,eR*0.82);
+      iris.addColorStop(0,`hsla(${hue},60%,25%,0.9)`);iris.addColorStop(1,`hsla(${hue+20},40%,15%,0.95)`);
+      ctx.beginPath();ctx.arc(ex,eY,eR*0.82,0,Math.PI*2);ctx.fillStyle=iris;ctx.fill();
+      const pgx=clamp(gx,-eR*0.38,eR*0.38),pgy=clamp(gy,-eR*0.38,eR*0.38);
+      ctx.beginPath();ctx.arc(ex+pgx,eY+pgy,pR,0,Math.PI*2);ctx.fillStyle='rgba(5,8,12,0.95)';ctx.fill();
+      const spA=farGaze?0.1:neglected?0.35:0.75;
+      ctx.beginPath();ctx.arc(ex+pgx*0.3-eR*0.08,eY+pgy*0.3-eR*0.12,pR*0.32,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${spA})`;ctx.fill();
+    }
+    if(lidW>0){
+      ctx.save();ctx.beginPath();ctx.ellipse(ex,eY-eR*(1-lidW),eR+0.5,eR+0.5,0,Math.PI,Math.PI*2);ctx.clip();
+      ctx.beginPath();ctx.arc(ex,eY,eR*1.02,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${hue},40%,18%,${lidW*0.85})`;ctx.fill();ctx.restore();
+    }
+  }
+
+  // 口 — biased→表情固まる、neglected→無表情
+  const mY=bR*0.3,mR=bR*0.28;
+  const base=(happy-50)/50;
+  const smAmt=clamp(biased?0.05:neglected?Math.min(base,0.1):base,-0.99,0.99);
+  ctx.strokeStyle=`hsla(${hue-25},50%,28%,${0.7+0.2*glow})`;
+  ctx.lineWidth=1.8;ctx.lineCap='round';
+  ctx.beginPath();
+  if(smAmt>0.15)ctx.arc(0,mY-mR*smAmt*0.55,mR,0.1*Math.PI,0.9*Math.PI);
+  else if(smAmt<-0.15)ctx.arc(0,mY+mR*Math.abs(smAmt)*0.7,mR,-0.9*Math.PI,-0.1*Math.PI);
+  else{const wb=biased?Math.sin(frame*0.003)*2:0;ctx.moveTo(-mR*0.55,mY+wb);ctx.lineTo(mR*0.55,mY-wb);}
+  ctx.stroke();
+
+  // 頬 — neglected/farGazeの時は出ない
+  if(happy>72&&energy>45&&!neglected&&!farGaze){
+    for(const bx of[-bR*0.46,bR*0.46]){
+      const bg=ctx.createRadialGradient(bx,bR*0.06,0,bx,bR*0.06,bR*0.22);
+      bg.addColorStop(0,`hsla(${hue+15},75%,70%,0.3)`);bg.addColorStop(1,'transparent');
+      ctx.beginPath();ctx.ellipse(bx,bR*0.06,bR*0.2,bR*0.12,0,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
+    }
+  }
+}
+
+function drawEars(ctx,R,hue,glow){
+  const bR=R*0.9,sat=Math.round(45+35*glow),lit=Math.round(28+22*glow),a=0.55+0.3*glow;
+  for(const[ex,tilt]of[[-bR*0.72,-0.28],[bR*0.72,0.28]]){
+    ctx.save();ctx.translate(ex,-bR*0.68);ctx.rotate(tilt);
+    ctx.beginPath();ctx.ellipse(0,0,bR*0.21,bR*0.3,0,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${hue},${sat}%,${lit-3}%,${a*0.9})`;ctx.fill();
+    ctx.beginPath();ctx.ellipse(0,bR*0.03,bR*0.11,bR*0.17,0,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${hue+12},${sat}%,${lit+16}%,${a*0.55})`;ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawSparkles(ctx,cx,cy,R,hue,frame,glow){
+  for(let i=0;i<5;i++){
+    const a=(i/5)*Math.PI*2+frame*0.014+i*0.8;
+    const d=R*(1.25+Math.sin(frame*0.028+i*1.4)*0.22);
+    const pr=1.5+Math.sin(frame*0.046+i*0.9)*0.8;
+    const pa=(0.35+0.35*Math.sin(frame*0.038+i))*glow;
+    ctx.beginPath();ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d*0.65,pr,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${hue+i*10},100%,72%,${pa})`;ctx.fill();
+  }
+}
+
+function drawGhost(ctx,W,H,frame){
+  const cx=W/2,cy=H/2,a=0.22+0.06*Math.sin(frame*0.018);
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,65);
+  g.addColorStop(0,`rgba(90,100,115,${a})`);g.addColorStop(0.5,`rgba(60,70,85,${a*0.6})`);g.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.arc(cx,cy,65,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle=`rgba(110,120,135,${a*0.7})`;ctx.lineWidth=1.8;ctx.lineCap='round';
+  for(const[ex,ey]of[[-16,-12],[16,-12]]){
+    ctx.beginPath();ctx.moveTo(cx+ex-5,cy+ey-5);ctx.lineTo(cx+ex+5,cy+ey+5);
+    ctx.moveTo(cx+ex+5,cy+ey-5);ctx.lineTo(cx+ex-5,cy+ey+5);ctx.stroke();
+  }
+}
+
+function fmtSince(ms){
+  const s=Math.floor(ms/1000);
+  if(s<60)return`${s}秒前`;const m=Math.floor(s/60);
+  if(m<60)return`${m}分前`;const h=Math.floor(m/60);
+  if(h<24)return`${h}時間前`;return`${Math.floor(h/24)}日前`;
+}
+const SJ={EGG:'─ 卵 ─',HATCH:'孵化中',BABY:'ベイビー',CHILD:'こども',TEEN:'ティーン',ADULT:'おとな',ELDER:'老成'};
+
+function getWhisper(type,s){
+  if(!s)return'';
+  const M={
+    FEED:s.hunger>75?'おなかはいっぱいみたい…':'おいしそうに食べた',
+    PLAY:s.energy<25?'つかれてるみたい…':'うれしそうに跳ねた',
+    SLEEP:s.energy>75?'まだ眠たくなさそう':'すやすやと眠った',
+    HEAL:s.health>85?'そんなに具合は悪くない':'すこし楽になった',
+  };
+  return M[type]||'';
+}
+
+function NeonTama(){
+  const cvRef=useRef(null);
+  const frameRef=useRef(0);
+  const rafRef=useRef(null);
+  const logRef=useRef(null);
+  const stateRef=useRef(null);
+  const lastUIRef=useRef(0);
+  const[ui,setUi]=useState({stage:'EGG',sinceSeen:0,alive:true});
+  const[whisper,setWhisper]=useState('');
+  const[cds,setCds]=useState({});
+
+  useEffect(()=>{
+    const now=Date.now();
+    let data=loadLog();
+    if(!data){data=born();}
+    else{
+      // RELOAD記録: 再読込はペットにとって「突然の暗闇」
+      data.eventLog.push({type:'RELOAD',at:now});
+      data.lastSeenAt=now;
+    }
+    saveLog(data);logRef.current=data;
+
+    // visibilitychange: HIDDEN/RETURNペアで孤独時間を計測
+    const onVis=()=>{
+      const t=Date.now();
+      if(document.hidden){logRef.current.eventLog.push({type:'HIDDEN',at:t});logRef.current.lastSeenAt=t;}
+      else logRef.current.eventLog.push({type:'RETURN',at:t});
+      saveLog(logRef.current);
+    };
+    document.addEventListener('visibilitychange',onVis);
+    const onUnload=()=>{if(logRef.current){logRef.current.lastSeenAt=Date.now();saveLog(logRef.current);}};
+    window.addEventListener('beforeunload',onUnload);window.addEventListener('pagehide',onUnload);
+    return()=>{document.removeEventListener('visibilitychange',onVis);window.removeEventListener('beforeunload',onUnload);window.removeEventListener('pagehide',onUnload);cancelAnimationFrame(rafRef.current);};
+  },[]);
+
+  useEffect(()=>{
+    const cv=cvRef.current;if(!cv)return;
+    const ctx=cv.getContext('2d');
+    const dpr=window.devicePixelRatio||1;
+    const resize=()=>{const r=cv.getBoundingClientRect();const w=r.width||320,h=r.height||320;cv.width=w*dpr;cv.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);};
+    resize();const ro=new ResizeObserver(resize);ro.observe(cv);
+    const loop=()=>{
+      if(!logRef.current){rafRef.current=requestAnimationFrame(loop);return;}
+      frameRef.current++;
+      const frame=frameRef.current,now=Date.now();
+      // 毎フレーム純関数で再計算 — これが「状態は計算結果」の実装
+      const s=reconstruct(logRef.current,now);
+      stateRef.current=s;
+      const W=cv.width/dpr,H=cv.height/dpr;
+      drawPet(ctx,W,H,s,frame);
+      if(frame%6===0){
+        const r=document.documentElement;
+        r.style.setProperty('--h',s.hue);
+        r.style.setProperty('--sat',`${Math.round(40+50*s.glow)}%`);
+        r.style.setProperty('--lit',`${Math.round(28+22*s.glow)}%`);
+      }
+      if(now-lastUIRef.current>1000){
+        lastUIRef.current=now;
+        setUi({stage:s.stage,sinceSeen:now-(logRef.current.lastSeenAt||now),alive:s.alive});
+      }
+      rafRef.current=requestAnimationFrame(loop);
+    };
+    rafRef.current=requestAnimationFrame(loop);
+    return()=>{cancelAnimationFrame(rafRef.current);ro.disconnect();};
+  },[]);
+
+  // アクション: イベントをログに追記するだけ。状態を直接変えない。
+  const act=useCallback((type)=>{
+    if(!logRef.current)return;
+    const now=Date.now();
+    if(cds[type]&&now<cds[type])return;
+    logRef.current.eventLog.push({type,at:now});
+    logRef.current.lastSeenAt=now;
+    saveLog(logRef.current);
+    const cdMs={FEED:3500,PLAY:5000,SLEEP:8000,HEAL:12000}[type]||4000;
+    setCds(p=>({...p,[type]:now+cdMs}));
+    const msg=getWhisper(type,stateRef.current);
+    if(msg){setWhisper(msg);setTimeout(()=>setWhisper(''),2800);}
+  },[cds]);
+
+  const now=Date.now();
+  const ACTS=[{t:'FEED',l:'食べる',i:'·'},{t:'PLAY',l:'遊ぶ',i:'◇'},{t:'SLEEP',l:'寝かす',i:'○'},{t:'HEAL',l:'癒す',i:'△'}];
+
+  return React.createElement(React.Fragment,null,
+    React.createElement('div',{className:'hd'},
+      React.createElement('div',{className:'hd-title'},'NEON TAMA'),
+      React.createElement('div',{className:'hd-stage'},SJ[ui.stage]||ui.stage),
+      React.createElement('div',{className:'hd-since'},logRef.current?`最後に会ってから ${fmtSince(ui.sinceSeen)}`:'…')
+    ),
+    React.createElement('div',{className:'cv-wrap'},
+      React.createElement('canvas',{ref:cvRef,id:'c'}),
+      React.createElement('div',{className:`whisper${whisper?' on':''}`},whisper)
+    ),
+    React.createElement('div',{className:'acts'},
+      ACTS.map(({t,l,i})=>React.createElement('button',{
+        key:t,
+        className:`btn${(cds[t]&&now<cds[t])?' cd':''}`,
+        disabled:!ui.alive||(cds[t]&&now<cds[t]),
+        onClick:()=>act(t)
+      },`${i} ${l}`))
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(NeonTama));
+
+</script>
+</body>
+</html>
