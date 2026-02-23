@@ -102,6 +102,70 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 #minimap { position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none; opacity: 0.7; }
 
 #joy-area { position: fixed; bottom: 24px; left: 16px; width: 112px; height: 112px; pointer-events: auto; z-index: 20; }
+
+/* ── キルフィード ── */
+#killfeed {
+  position: fixed; top: 54px; right: 16px; z-index: 15;
+  display: flex; flex-direction: column; align-items: flex-end;
+  pointer-events: none; gap: 4px;
+}
+.kf-row {
+  background: rgba(0,0,0,0.65); border-left: 2px solid #00ffc8;
+  padding: 3px 10px; color: #fff; font-size: 10px; letter-spacing: 2px;
+  text-shadow: 0 0 6px rgba(0,255,200,0.6);
+  animation: kf-in 0.15s ease-out, kf-out 0.4s ease-in 2.2s forwards;
+  white-space: nowrap;
+}
+.kf-row.kill  { border-left-color: #ffdd00; color: #ffdd00; text-shadow: 0 0 8px #ffdd00; }
+.kf-row.boss  { border-left-color: #ff9900; color: #ff9900; text-shadow: 0 0 8px #ff9900; }
+@keyframes kf-in  { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:none } }
+@keyframes kf-out { to   { opacity:0; transform:translateX(10px) } }
+
+/* ── ボスHPバー ── */
+#boss-wrap {
+  position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+  z-index: 15; pointer-events: none; display: none; text-align: center;
+}
+#boss-name { font-size: 10px; color: #ff9900; letter-spacing: 4px;
+  text-shadow: 0 0 8px #ff9900; margin-bottom: 4px; }
+#boss-hp-bg { width: 220px; height: 7px; background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,153,0,0.5); }
+#boss-hp-bar { height: 100%; width: 100%;
+  background: linear-gradient(90deg,#ff3366,#ff9900);
+  box-shadow: 0 0 10px #ff9900; transition: width 0.1s; }
+
+/* ── Wave開始アナウンス ── */
+#wave-announce {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 90; pointer-events: none; opacity: 0; text-align: center;
+}
+#wave-announce.show { animation: wa-pop 1.6s ease-out forwards; }
+#wave-announce .wa-main {
+  font-size: clamp(36px,10vw,72px); letter-spacing: 10px;
+  color: #00ffc8; text-shadow: 0 0 30px #00ffc8, 0 0 60px #3b82f6;
+  font-family: 'Courier New',monospace;
+}
+#wave-announce .wa-main.boss-ann { color: #ff9900; text-shadow: 0 0 30px #ff9900, 0 0 60px #ff3366; }
+#wave-announce .wa-sub { font-size: 12px; letter-spacing: 6px; color: rgba(255,255,255,0.5); margin-top: 6px; }
+@keyframes wa-pop {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(1.8) }
+  15%  { opacity:1; transform:translate(-50%,-50%) scale(1.0) }
+  70%  { opacity:1; transform:translate(-50%,-50%) scale(1.0) }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(0.85) }
+}
+
+/* ── ランキング（スタート画面内） ── */
+#ranking-box {
+  margin-top: 16px; border: 1px solid rgba(0,255,200,0.2);
+  padding: 10px 22px; background: rgba(0,0,0,0.5); min-width: 210px;
+}
+#ranking-box h3 { font-size: 9px; color: rgba(0,255,200,0.55);
+  letter-spacing: 4px; margin-bottom: 8px; text-align: center; }
+.rank-row { display: flex; justify-content: space-between; gap: 20px;
+  font-size: 11px; color: rgba(255,255,255,0.55); letter-spacing: 2px; margin: 4px 0; }
+.rank-row .rk-pos   { color: #00ffc8; min-width: 18px; }
+.rank-row .rk-wave  { color: rgba(255,255,255,0.35); font-size: 10px; }
+.rank-row .rk-score { color: #fff; text-shadow: 0 0 6px #00ffc8; }
 #joy-base { width: 100%; height: 100%; border-radius: 50%; background: rgba(0,255,200,0.04); border: 1px solid rgba(0,255,200,0.2); }
 #joy-knob {
   position: absolute; width: 40px; height: 40px; border-radius: 50%;
@@ -147,6 +211,15 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 </head>
 <body>
 
+<!-- DEMO_META
+title: NEON STRIKE
+desc: スマホ全画面WebGLで動く近未来3DライフルFPS — Wave制サバイバル · ボスWave · スキルドロップ · コンボ
+tech: Canvas 2D · Raycasting Engine · Web Audio API · Touch Joystick · First Person Shooter
+level: 92
+color: #00ffc8
+type: game
+-->
+
 <canvas id="c"></canvas>
 
 <div id="damage-vignette"></div>
@@ -175,6 +248,18 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 
 <canvas id="minimap" width="80" height="80"></canvas>
 
+<div id="killfeed"></div>
+
+<div id="boss-wrap">
+  <div id="boss-name">◆ BOSS UNIT ◆</div>
+  <div id="boss-hp-bg"><div id="boss-hp-bar"></div></div>
+</div>
+
+<div id="wave-announce">
+  <div class="wa-main" id="wa-main-txt">WAVE 1</div>
+  <div class="wa-sub"  id="wa-sub-txt">SURVIVE</div>
+</div>
+
 <div id="joy-area">
   <div id="joy-base"></div>
   <div id="joy-knob"></div>
@@ -186,6 +271,10 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
   <h1>NEON STRIKE</h1>
   <p>NEON CITY WAVE SURVIVAL</p>
   <button class="btn" id="btn-start">START GAME</button>
+  <div id="ranking-box">
+    <h3>─ BEST SCORES ─</h3>
+    <div id="ranking-list"></div>
+  </div>
   <div class="hint">LEFT THUMB: MOVE<br>RIGHT SWIPE: AIM<br>FIRE BUTTON / CLICK: SHOOT<br>R KEY: RELOAD</div>
 </div>
 
@@ -285,6 +374,13 @@ var autoTimer = null;
 var enemies = [];
 var particles = [];
 var keys = {};
+
+/* ── ボス管理 ── */
+var bossEnemy   = null;   // 現在のボス参照
+var BOSS_WAVES  = [5, 10, 15, 20]; // ボスが出るWave番号
+
+/* ── キルフィード ── */
+var kfTimers = [];
 
 var gunKick   = 0;
 var gunSway   = 0;
@@ -463,7 +559,8 @@ function drawSprites() {
     if (Math.abs(relAngle) > PFOV * 0.7) continue;
 
     var screenX = Math.floor((0.5 + relAngle / PFOV) * RW);
-    var sprH    = Math.abs(Math.floor(RH / sprDist));
+    var scale   = e.isBoss ? 2.8 : 1;
+    var sprH    = Math.abs(Math.floor(RH / sprDist)) * scale;
     var sprW    = sprH * 0.65;
     var drawX   = Math.floor(screenX - sprW / 2);
     var drawY   = Math.floor(RH / 2 - sprH / 2);
@@ -474,30 +571,41 @@ function drawSprites() {
 
     bctx.globalAlpha = alpha;
 
-    var bodyColor = e.flashTimer > 0 ? '#ffffff' : (e.alive ? '#cc1133' : '#440011');
+    // ボスはオレンジ、通常は赤
+    var baseBody = e.isBoss ? '#cc5500' : '#cc1133';
+    var baseHead = e.isBoss ? '#ff7700' : '#dd2244';
+    var bodyColor = e.flashTimer > 0 ? '#ffffff' : baseBody;
+    var headColor = e.flashTimer > 0 ? '#ffffff' : baseHead;
+
     bctx.fillStyle = bodyColor;
     bctx.fillRect(drawX + sprW*0.2, drawY + sprH*0.35, sprW*0.6, sprH*0.55);
 
-    var headColor = e.flashTimer > 0 ? '#ffffff' : (e.alive ? '#dd2244' : '#330011');
     bctx.fillStyle = headColor;
     var hSize = sprW * 0.4;
     bctx.fillRect(drawX + sprW*0.3, drawY + sprH*0.1, hSize, hSize);
 
     if (e.alive && alpha > 0.4) {
-      bctx.fillStyle = '#ff0000';
+      bctx.fillStyle = e.isBoss ? '#ff6600' : '#ff0000';
       bctx.globalAlpha = alpha * 0.9;
       var es = Math.max(1, sprW * 0.08);
       bctx.fillRect(drawX + sprW*0.33, drawY + sprH*0.18, es, es);
       bctx.fillRect(drawX + sprW*0.55, drawY + sprH*0.18, es, es);
     }
 
+    // HPバー（ボスは太め）
     if (e.alive && sprH > 20) {
       var hpRatio = e.hp / e.maxHp;
-      bctx.globalAlpha = alpha * 0.8;
+      var barH = e.isBoss ? 5 : 3;
+      bctx.globalAlpha = alpha * 0.85;
       bctx.fillStyle = '#330000';
-      bctx.fillRect(drawX, drawY - 4, sprW, 3);
-      bctx.fillStyle = hpRatio > 0.5 ? '#00ff88' : '#ff3366';
-      bctx.fillRect(drawX, drawY - 4, sprW * hpRatio, 3);
+      bctx.fillRect(drawX, drawY - 6, sprW, barH);
+      bctx.fillStyle = e.isBoss ? '#ff9900' : (hpRatio > 0.5 ? '#00ff88' : '#ff3366');
+      bctx.fillRect(drawX, drawY - 6, sprW * hpRatio, barH);
+
+      // ボスはトップHPバーも同期
+      if (e.isBoss) {
+        document.getElementById('boss-hp-bar').style.width = (hpRatio * 100) + '%';
+      }
     }
 
     bctx.globalAlpha = 1;
@@ -618,26 +726,61 @@ function drawMinimap() {
 
 var SIGHT = 8, ATRANGE = 6, STOP = 0.8;
 
+function isBossWave(w) { return BOSS_WAVES.indexOf(w) !== -1; }
+
 function spawnWave(w) {
   enemies = [];
-  var count = 3 + w * 2;
+  bossEnemy = null;
+  document.getElementById('boss-wrap').style.display = 'none';
+
+  var isBoss = isBossWave(w);
+  var count  = isBoss ? 1 : 3 + w * 2;
+
   for (var i = 0; i < count; i++) {
     var sp = SPAWNS[i % SPAWNS.length];
-    var baseHp = 35 + (w - 1) * 12;
-    enemies.push({
+    var baseHp, spd, fireCd;
+
+    if (isBoss && i === 0) {
+      // ボス専用パラメータ
+      baseHp = 250 + w * 40;
+      spd    = 2.2 + w * 0.08;
+      fireCd = 0.5;
+    } else {
+      baseHp = 35 + (w - 1) * 12;
+      spd    = 1.4 + Math.random() * 0.5 + (w - 1) * 0.2;
+      fireCd = Math.max(0.7, 2.5 - w * 0.12);
+    }
+
+    var e = {
       x: sp[0] + (Math.random() - 0.5) * 0.6,
       y: sp[1] + (Math.random() - 0.5) * 0.6,
       hp: baseHp, maxHp: baseHp,
-      speed: 1.4 + Math.random() * 0.5 + (w - 1) * 0.2,
+      speed: spd,
       fireTimer: 1 + Math.random() * 2,
-      fireCd: Math.max(0.7, 2.5 - w * 0.12),
+      fireCd: fireCd,
       patAngle: Math.random() * Math.PI * 2,
       state: 'patrol',
       flashTimer: 0,
-      alive: true
-    });
+      knockTimer: 0, knockX: 0, knockY: 0,
+      alive: true,
+      isBoss: isBoss && i === 0
+    };
+    enemies.push(e);
+    if (e.isBoss) bossEnemy = e;
   }
+
   setEl('el-enemies', enemies.length);
+
+  // ボスHPバー表示
+  if (isBoss) {
+    document.getElementById('boss-wrap').style.display = 'block';
+    document.getElementById('boss-name').textContent = '◆ WAVE ' + w + ' BOSS ◆';
+    document.getElementById('boss-hp-bar').style.width = '100%';
+  }
+
+  // Waveアナウンス
+  showWaveAnnounce(w, isBoss);
+  addKillfeed(isBoss ? '⚠ BOSS WAVE ' + w : 'WAVE ' + w + ' START', isBoss ? 'boss' : '');
 }
 
 function updateEnemies(dt) {
@@ -767,9 +910,19 @@ function shoot() {
 
 function killEnemy(e) {
   e.alive = false;
-  kills++; score += 100 * wave;
+  var isBoss = e.isBoss;
+  var bonus  = isBoss ? 10 : 1;
+  kills++; score += 100 * wave * bonus;
   setEl('el-kills', kills);
   setEl('el-score', score);
+
+  // キルフィード
+  if (isBoss) {
+    addKillfeed('★ BOSS DESTROYED! +' + (100 * wave * bonus), 'boss');
+    document.getElementById('boss-wrap').style.display = 'none';
+  } else {
+    addKillfeed('▶ ENEMY DESTROYED  +' + (100 * wave), 'kill');
+  }
 
   // 爆発パーティクル大量
   spawnParticles(e.x, e.y, true);
@@ -779,13 +932,13 @@ function killEnemy(e) {
 
   // キル専用演出
   showHit(true);
-  spawnDmgNum('KILL!', true);
+  spawnDmgNum(isBoss ? 'BOSS DOWN!!' : 'KILL!', true);
   flashHit(true);
-  triggerShake(14, 0.22);
+  triggerShake(isBoss ? 22 : 14, isBoss ? 0.4 : 0.22);
 
   // スローモーション
-  timeScale = 0.18;
-  slowTimer = 0.55;
+  timeScale = isBoss ? 0.1 : 0.18;
+  slowTimer  = isBoss ? 0.9 : 0.55;
 }
 
 function startReload() {
@@ -930,6 +1083,66 @@ function spawnDmgNum(val, isKill) {
   setTimeout(function() { el.remove(); }, 900);
 }
 
+/* ── キルフィード ─────────────────────────────────────── */
+function addKillfeed(msg, cls) {
+  var feed = document.getElementById('killfeed');
+  var row  = document.createElement('div');
+  row.className = 'kf-row' + (cls ? ' ' + cls : '');
+  row.textContent = msg;
+  feed.appendChild(row);
+  // 最大5行まで
+  while (feed.children.length > 5) feed.removeChild(feed.firstChild);
+  var t = setTimeout(function() { if (row.parentNode) row.parentNode.removeChild(row); }, 2700);
+  kfTimers.push(t);
+}
+
+/* ── Waveアナウンス ──────────────────────────────────── */
+function showWaveAnnounce(w, isBoss) {
+  var el  = document.getElementById('wave-announce');
+  var main = document.getElementById('wa-main-txt');
+  var sub  = document.getElementById('wa-sub-txt');
+  main.className = isBoss ? 'wa-main boss-ann' : 'wa-main';
+  main.textContent = isBoss ? '⚠ BOSS WAVE' : 'WAVE  ' + w;
+  sub.textContent  = isBoss ? '— ELIMINATE THE BOSS —' : 'SURVIVE';
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 1700);
+}
+
+/* ── ランキング（localStorage） ──────────────────────── */
+var RANK_KEY = 'neonStrikeRanks';
+function loadRanks() {
+  try { return JSON.parse(localStorage.getItem(RANK_KEY)) || []; } catch(e) { return []; }
+}
+function saveRank(s, w) {
+  var ranks = loadRanks();
+  ranks.push({ score: s, wave: w });
+  ranks.sort(function(a, b) { return b.score - a.score; });
+  ranks = ranks.slice(0, 5);
+  try { localStorage.setItem(RANK_KEY, JSON.stringify(ranks)); } catch(e) {}
+  return ranks;
+}
+function renderRanking() {
+  var ranks = loadRanks();
+  var list  = document.getElementById('ranking-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (ranks.length === 0) {
+    list.innerHTML = '<div class="rank-row" style="justify-content:center;color:rgba(255,255,255,0.25)">NO DATA</div>';
+    return;
+  }
+  var medals = ['①','②','③','④','⑤'];
+  ranks.forEach(function(r, i) {
+    var row = document.createElement('div');
+    row.className = 'rank-row';
+    row.innerHTML = '<span class="rk-pos">' + medals[i] + '</span>'
+                  + '<span class="rk-score">' + r.score + '</span>'
+                  + '<span class="rk-wave">W' + r.wave + '</span>';
+    list.appendChild(row);
+  });
+}
+
 function flashDmg() {
   var v = document.getElementById('damage-vignette');
   v.classList.add('show');
@@ -941,12 +1154,15 @@ function startGame() {
   hp = maxHp; ammo = maxAmmo; reloading = false;
   px = 8.5; py = 8.5; pa = 0;
   moveX = 0; moveZ = 0;
-  particles = [];
+  particles = []; bossEnemy = null;
+  document.getElementById('killfeed').innerHTML = '';
+  kfTimers.forEach(clearTimeout); kfTimers = [];
 
   setEl('el-kills', 0); setEl('el-score', 0); setEl('el-wave', 1);
   setEl('ammo-n', maxAmmo);
   document.getElementById('hp-bar').style.width = '100%';
   document.getElementById('reload-t').style.display = 'none';
+  document.getElementById('boss-wrap').style.display = 'none';
   hide('scr-start'); hide('scr-over'); hide('scr-clear');
 
   spawnWave(wave);
@@ -978,6 +1194,9 @@ function playerDead() {
   document.getElementById('go-w').textContent = wave;
   document.getElementById('go-k').textContent = kills;
   document.getElementById('go-s').textContent = score;
+  // ランキング保存して表示更新
+  saveRank(score, wave);
+  renderRanking();
   show('scr-over');
 }
 
@@ -1112,6 +1331,9 @@ function processKeys() {
 document.getElementById('btn-start').addEventListener('click', startGame);
 document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-next').addEventListener('click', nextWave);
+
+// 起動時にランキング表示
+renderRanking();
 
 function setEl(id, val) { document.getElementById(id).textContent = val; }
 function show(id) { document.getElementById(id).classList.remove('off'); }
