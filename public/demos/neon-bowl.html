@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEON BOWL</title>
+
+  <!-- DEMO_META
+  title: NEON BOWL
+  desc: ネオン輝く3D物理ボウリング。1スワイプ1投、10フレーム本格ルール。物理が結果を決める短時間セッションゲーム。
+  tech: Three.js · Rapier Physics WASM · WebGL · Pointer/Touch Gesture · Web Audio API · LocalStorage
+  level: 88 / color: #f59e0b / type: game
+  -->
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #000; font-family: 'Courier New', monospace;
+      touch-action: none; -webkit-user-select: none; user-select: none;
+    }
+    #c { position: fixed; inset: 0; display: block; width: 100%!important; height: 100%!important; }
+
+    /* ── LOADER ── */
+    #loader {
+      position: fixed; inset: 0; background: #000;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 18px; z-index: 200;
+      transition: opacity .7s;
+    }
+    #loader.out { opacity: 0; pointer-events: none; }
+    .lt { font-size: clamp(28px,7vw,54px); letter-spacing: 12px; color: #0ff; text-shadow: 0 0 18px #0ff, 0 0 50px #0ff; }
+    .lb { width: 140px; height: 2px; background: #0ff2; overflow: hidden; position: relative; }
+    .lb::after { content: ''; position: absolute; left: -60%; top: 0; bottom: 0; width: 60%; background: #0ff; animation: ls 1s linear infinite; }
+    @keyframes ls { to { left: 100%; } }
+    .ls { font-size: 9px; letter-spacing: 4px; color: #fff3; }
+
+    /* ── UI ── */
+    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+    #strip {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 12px 14px 10px;
+      background: linear-gradient(to bottom, #000b, transparent);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    #total { font-size: clamp(20px,5vw,34px); letter-spacing: 6px; color: #0ff; text-shadow: 0 0 10px #0ff, 0 0 28px #0ff; line-height: 1; }
+    #frames { display: flex; gap: 3px; }
+    .fc {
+      width: clamp(20px,4.5vw,30px); height: clamp(20px,4.5vw,30px);
+      border: 1px solid #0ff3; display: flex; align-items: center;
+      justify-content: center; font-size: clamp(8px,1.6vw,12px); color: #0ff7;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .fc.cur { border-color: #f0f; box-shadow: 0 0 8px #f0f; }
+    .fc.X { color: #ff0; text-shadow: 0 0 8px #ff0; border-color: #ff04; }
+    .fc.S { color: #0ff; text-shadow: 0 0 6px #0ff; }
+    .fc.d { color: #fff5; }
+    #best { position: absolute; top: 12px; right: 14px; font-size: 9px; letter-spacing: 2px; color: #f0f; opacity: .5; }
+    #hint { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: 4px; color: #fff3; white-space: nowrap; }
+
+    /* ── Result pop ── */
+    #result {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(32px, 10vw, 72px); font-weight: 900; letter-spacing: 8px;
+      text-align: center; pointer-events: none; opacity: 0;
+    }
+    #result.show { animation: rpop 1.8s ease-out forwards; }
+    #result.rSTRIKE { color: #ff0; text-shadow: 0 0 20px #ff0, 0 0 60px #f80; }
+    #result.rSPARE  { color: #0ff; text-shadow: 0 0 20px #0ff, 0 0 50px #08f; }
+    #result.rGUTTER { color: #f005; font-size: clamp(18px,5vw,36px); letter-spacing: 5px; }
+    @keyframes rpop {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(.4); }
+      15%  { opacity: 1; transform: translate(-50%,-50%) scale(1.12); }
+      35%  { transform: translate(-50%,-50%) scale(.97); }
+      50%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%,-55%); }
+    }
+
+    /* ── Game Over ── */
+    #go {
+      position: absolute; inset: 0; background: #000c;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px;
+      pointer-events: all; opacity: 0; transition: opacity .8s;
+    }
+    #go.vis { opacity: 1; }
+    #go-t { font-size: 12px; letter-spacing: 6px; color: #f0f; text-shadow: 0 0 10px #f0f; }
+    #go-s { font-size: clamp(50px,16vw,90px); letter-spacing: 4px; line-height: 1; color: #ff0; text-shadow: 0 0 20px #ff0, 0 0 60px #f80; }
+    #go-b { font-size: 10px; letter-spacing: 3px; color: #f0f; opacity: .6; }
+    #go-btn {
+      margin-top: 10px; padding: 12px 36px; background: transparent;
+      border: 1px solid #0ff; color: #0ff; font-family: inherit;
+      font-size: 12px; letter-spacing: 4px; cursor: pointer;
+      text-shadow: 0 0 8px #0ff;
+      box-shadow: 0 0 14px #0ff2, inset 0 0 14px #0ff1;
+      transition: box-shadow .2s; pointer-events: all;
+    }
+    #go-btn:hover { box-shadow: 0 0 28px #0ff5, inset 0 0 28px #0ff2; }
+
+    /* ── Swipe zone & trail ── */
+    #sz { position: fixed; bottom: 0; left: 0; right: 0; height: 48%; z-index: 20; cursor: crosshair; }
+    #tc { position: fixed; inset: 0; pointer-events: none; z-index: 19; }
+  </style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="lt">NEON BOWL</div>
+  <div class="lb"></div>
+  <div class="ls">LOADING PHYSICS ENGINE...</div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="strip">
+    <div id="total">—</div>
+    <div id="frames"></div>
+  </div>
+  <div id="best"></div>
+  <div id="result"></div>
+  <div id="hint">SWIPE TO THROW</div>
+  <div id="go">
+    <div id="go-t">FINAL SCORE</div>
+    <div id="go-s">0</div>
+    <div id="go-b"></div>
+    <button id="go-btn">PLAY AGAIN</button>
+  </div>
+</div>
+
+<canvas id="tc"></canvas>
+<div id="sz"></div>
+
+<script type="module">
+// ════════════════════════════════════════════════════════════
+// IMPORTS — only reliable CDN URLs, no importmap
+// Three.js: stable ES module from jsdelivr
+// Rapier:   @dimforge/rapier3d-compat  (WASM, browser-safe)
+// ════════════════════════════════════════════════════════════
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js';
+import RAPIER     from 'https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.12.0/rapier.min.js';
+
+// ════════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════════
+const LZ = 28;         // lane length (Z axis)
+const LW = 2.7;        // lane width  (X axis)
+const BR = 0.21;       // ball radius
+const PR = 0.09;       // pin base radius
+const PH = 0.36;       // pin height
+const PS = 0.82;       // pin spacing
+
+// Camera
+const CAM_POS  = new THREE.Vector3(0, 2.3, LZ / 2 + 1.5);
+const CAM_LOOK = new THREE.Vector3(0, 0.3, -2);
+
+// Ball start (approach end)
+const BALL_START = new THREE.Vector3(0, BR + 0.02, LZ / 2 - 1.5);
+
+// 10 pin positions (standard triangle, head pin closest to player)
+const PIN_ROWS = [[0,0],[-.5,1],[.5,1],[-1,2],[0,2],[1,2],[-1.5,3],[-.5,3],[.5,3],[1.5,3]];
+const PIN_POSITIONS = PIN_ROWS.map(([cx, rz]) => ({
+  x: cx * PS,
+  y: PH / 2 + 0.02,
+  z: -LZ / 2 + 2.0 + rz * PS * 0.87,
+}));
+
+// Physics timing
+const SETTLE_DELAY = 1000;  // ms after ball stops, before counting pins
+const NEXT_DELAY   = 1900;  // ms before next roll begins
+
+// ════════════════════════════════════════════════════════════
+// AUDIO ENGINE
+// ════════════════════════════════════════════════════════════
+let _ac = null;
+const ac = () => {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume().catch(() => {});
+  return _ac;
+};
+const sfx = {
+  throw(p = 0.8) {
+    try {
+      const a = ac(), t = a.currentTime;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(160 + p * 90, t);
+      o.frequency.exponentialRampToValueAtTime(50, t + 0.5);
+      g.gain.setValueAtTime(0.22 * p, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.5);
+    } catch (_) {}
+  },
+  pin() {
+    try {
+      const a = ac(), t = a.currentTime;
+      const buf = a.createBuffer(1, Math.ceil(a.sampleRate * 0.11), a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++)
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.8);
+      const src = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 600 + Math.random() * 500; f.Q.value = 2;
+      src.buffer = buf; g.gain.value = 0.5;
+      src.connect(f); f.connect(g); g.connect(a.destination); src.start(t);
+    } catch (_) {}
+  },
+  strike() {
+    try {
+      const a = ac(), t = a.currentTime;
+      [220, 277, 330, 415, 523].forEach((f, i) => {
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        const s = t + i * 0.07;
+        g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.13, s + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, s + 0.8);
+        o.connect(g); g.connect(a.destination); o.start(s); o.stop(s + 0.9);
+      });
+    } catch (_) {}
+  },
+  spare() {
+    try {
+      const a = ac(), t = a.currentTime;
+      [311, 392, 494].forEach((f, i) => {
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = 'triangle'; o.frequency.value = f;
+        const s = t + i * 0.09;
+        g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.12, s + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, s + 0.6);
+        o.connect(g); g.connect(a.destination); o.start(s); o.stop(s + 0.7);
+      });
+    } catch (_) {}
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+// SCORE ENGINE
+// ════════════════════════════════════════════════════════════
+function scorecard(rolls) {
+  const card = [];
+  let i = 0;
+  for (let f = 0; f < 10; f++) {
+    if (f === 9) {
+      const r1 = rolls[i] ?? null, r2 = rolls[i+1] ?? null, r3 = rolls[i+2] ?? null;
+      const isX = r1 === 10, isS = !isX && r1 !== null && r2 !== null && r1 + r2 === 10;
+      const needs3 = isX || isS;
+      const raw = (r1 ?? 0) + (r2 ?? 0) + (r3 ?? 0);
+      const prev = card[f - 1]?.cum ?? 0;
+      card.push({ cum: (needs3 ? r3 !== null : r2 !== null) ? prev + raw : null, isX, isS, r1, r2, r3 });
+    } else if (rolls[i] === 10) {
+      const b1 = rolls[i+1] ?? null, b2 = rolls[i+2] ?? null;
+      const prev = card[f - 1]?.cum ?? 0;
+      card.push({ cum: b1 !== null && b2 !== null ? prev + 10 + b1 + b2 : null, isX: true, isS: false, r1: 10, r2: null });
+      i += 1;
+    } else {
+      const r1 = rolls[i] ?? null, r2 = rolls[i+1] ?? null;
+      const isS = r1 !== null && r2 !== null && r1 + r2 === 10;
+      const b = rolls[i+2] ?? null;
+      const prev = card[f - 1]?.cum ?? 0;
+      const score = isS ? (b !== null ? prev + 10 + b : null) : (r2 !== null ? prev + r1 + r2 : null);
+      card.push({ cum: score, isX: false, isS, r1, r2 });
+      i += 2;
+    }
+  }
+  return card;
+}
+function totalScore(rolls) {
+  const c = scorecard(rolls);
+  for (let f = 9; f >= 0; f--) if (c[f]?.cum !== null) return c[f].cum;
+  return 0;
+}
+
+// ════════════════════════════════════════════════════════════
+// DOM UI  (pure DOM, zero framework overhead)
+// ════════════════════════════════════════════════════════════
+const DOM = {
+  _best: parseInt(localStorage.getItem('nb_best') || '0'),
+  _rt: null,
+  onReset: null,
+  init() {
+    document.getElementById('go-btn').onclick = () => this.onReset?.();
+    document.getElementById('frames').innerHTML =
+      Array.from({ length: 10 }, (_, i) => `<div class="fc" id="f${i}"></div>`).join('');
+    if (this._best > 0) document.getElementById('best').textContent = `BEST ${this._best}`;
+  },
+  hint(t) { document.getElementById('hint').textContent = t; },
+  result(text, cls) {
+    clearTimeout(this._rt);
+    const el = document.getElementById('result');
+    el.className = ''; el.textContent = text; void el.offsetWidth;
+    el.className = `show r${cls}`;
+    this._rt = setTimeout(() => { el.className = ''; }, 2100);
+  },
+  score(rolls, curF) {
+    const c = scorecard(rolls);
+    document.getElementById('total').textContent = rolls.length ? totalScore(rolls) : '—';
+    for (let f = 0; f < 10; f++) {
+      const el = document.getElementById(`f${f}`); if (!el) continue;
+      const d = c[f];
+      let txt = '', cls = '';
+      if (d.isX)           { txt = 'X'; cls = 'X'; }
+      else if (d.isS)      { txt = '/'; cls = 'S'; }
+      else if (d.cum !== null) { txt = d.cum; cls = 'd'; }
+      else if (d.r1 !== null)  { txt = d.r1 === 0 ? '−' : d.r1; }
+      el.textContent = txt;
+      el.className = `fc ${cls}${f === curF ? ' cur' : ''}`;
+    }
+  },
+  gameover(score) {
+    const isNew = score > this._best;
+    if (isNew) { this._best = score; localStorage.setItem('nb_best', String(score)); }
+    document.getElementById('best').textContent = this._best > 0 ? `BEST ${this._best}` : '';
+    document.getElementById('go-s').textContent = score;
+    const sub = document.getElementById('go-b');
+    if (isNew) { sub.textContent = '★ NEW BEST ★'; sub.style.color = '#ff0'; }
+    else { sub.textContent = this._best > 0 ? `BEST ${this._best}` : ''; sub.style.color = ''; }
+    document.getElementById('go').classList.add('vis');
+  },
+  hideGO() { document.getElementById('go').classList.remove('vis'); },
+};
+
+// ════════════════════════════════════════════════════════════
+// SWIPE TRAIL
+// ════════════════════════════════════════════════════════════
+const Trail = (() => {
+  let el, ctx, pts = [], on = false;
+  const resize = () => { el.width = innerWidth; el.height = innerHeight; };
+  const draw = () => {
+    ctx.clearRect(0, 0, el.width, el.height);
+    if (!on || pts.length < 2) return;
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.strokeStyle = 'rgba(0,255,255,.55)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.shadowBlur = 14; ctx.shadowColor = '#0ff'; ctx.stroke();
+    const L = pts[pts.length - 1];
+    ctx.beginPath(); ctx.arc(L.x, L.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#0ff'; ctx.shadowBlur = 22; ctx.fill(); ctx.shadowBlur = 0;
+  };
+  return {
+    init() { el = document.getElementById('tc'); ctx = el.getContext('2d'); window.addEventListener('resize', resize); resize(); },
+    start(x, y) { on = true; pts = [{ x, y }]; draw(); },
+    move(x, y)  { if (!on) return; pts.push({ x, y }); if (pts.length > 50) pts.shift(); draw(); },
+    end()       { on = false; pts = []; ctx?.clearRect(0, 0, el?.width || 0, el?.height || 0); },
+  };
+})();
+
+// ════════════════════════════════════════════════════════════
+// GESTURE ANALYZER  (Input Layer → abstract GestureData)
+// ════════════════════════════════════════════════════════════
+function analyzeGesture(start, end, pts) {
+  const dx = end.x - start.x, dy = end.y - start.y;
+  const dist = Math.hypot(dx, dy);
+  const dt = Math.max((end.t - start.t) / 1000, 0.04);
+  if (dist < 18) return null;
+
+  const angleX = Math.atan2(dx, -dy) * 0.3;                        // lateral aim
+  const power  = Math.min(1, Math.max(0.1, (dist / dt / 1000) / 0.55));
+
+  let spin = 0;
+  if (pts.length > 5) {
+    const m = pts[Math.floor(pts.length / 2)];
+    const t = (m.t - start.t) / (end.t - start.t);
+    spin = Math.max(-1, Math.min(1, (m.x - (start.x + dx * t)) / (innerWidth * 0.14)));
+  }
+  return { angleX, power, spin };
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER LAYER  (Three.js)
+// ════════════════════════════════════════════════════════════
+class Renderer {
+  constructor(canvas) {
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.5;
+
+    this.scene  = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x000008);
+    this.scene.fog = new THREE.Fog(0x000008, 22, 55);
+
+    this.camera = new THREE.PerspectiveCamera(56, 1, 0.1, 100);
+    this.camera.position.copy(CAM_POS);
+    this.camera.lookAt(CAM_LOOK);
+
+    this._resize();
+    window.addEventListener('resize', () => this._resize());
+
+    this._buildLights();
+    this._buildLane();
+
+    // Meshes managed externally
+    this.ballMesh = null;
+    this.pinMeshes = [];   // index = pin id
+    this.clock = new THREE.Clock();
+  }
+
+  _resize() {
+    const w = innerWidth, h = innerHeight;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+  }
+
+  _buildLights() {
+    this.scene.add(new THREE.AmbientLight(0x001133, 0.6));
+
+    const dir = new THREE.DirectionalLight(0x5566ff, 1.0);
+    dir.position.set(0, 8, 4);
+    dir.castShadow = true;
+    dir.shadow.mapSize.set(512, 512);
+    dir.shadow.camera.top    =  12; dir.shadow.camera.bottom = -12;
+    dir.shadow.camera.left   =  -6; dir.shadow.camera.right  =  6;
+    dir.shadow.camera.near   =  1;  dir.shadow.camera.far    = 40;
+    this.scene.add(dir);
+
+    // Lane strip lights
+    [-1, 1].forEach(s => {
+      const pl = new THREE.PointLight(0x00ffff, 1.2, LZ, 2);
+      pl.position.set(s * LW / 2, 0.3, 0);
+      this.scene.add(pl);
+    });
+
+    // Overhead spots
+    [-6, -2, 2, 6].forEach(z => {
+      const pl = new THREE.PointLight(0x002266, 2.5, 14, 2);
+      pl.position.set(0, 5, z);
+      this.scene.add(pl);
+    });
+
+    // Pin deck
+    const pd1 = new THREE.PointLight(0xff00ff, 6, 7, 2);
+    pd1.position.set(0, 0.5, -LZ / 2 + 3);
+    this.scene.add(pd1);
+
+    const pd2 = new THREE.PointLight(0x4400ff, 3, 12, 2);
+    pd2.position.set(0, 3.5, -LZ / 2 + 3);
+    this.scene.add(pd2);
+  }
+
+  _buildLane() {
+    // Main lane floor
+    const floorGeo = new THREE.BoxGeometry(LW, 0.1, LZ);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x040412, roughness: 0.1, metalness: 0.9 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.position.y = -0.05;
+    floor.receiveShadow = true;
+    this.scene.add(floor);
+
+    // Neon side strips
+    [-1, 1].forEach(s => {
+      const geo = new THREE.BoxGeometry(0.022, 0.015, LZ);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 3 });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(s * (LW / 2 - 0.02), 0.04, 0);
+      this.scene.add(m);
+    });
+
+    // Center guide
+    const cg = new THREE.Mesh(
+      new THREE.BoxGeometry(0.016, 0.008, LZ),
+      new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0xff00ff, emissiveIntensity: 1.5 })
+    );
+    cg.position.y = 0.04;
+    this.scene.add(cg);
+
+    // Aiming arrows
+    [-1, 0, 1].forEach(x => {
+      const arr = new THREE.Mesh(
+        new THREE.ConeGeometry(0.055, 0.15, 3),
+        new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 2 })
+      );
+      arr.position.set(x * 0.52, 0.04, LZ / 2 - 5.5);
+      arr.rotation.x = -Math.PI / 2;
+      this.scene.add(arr);
+    });
+
+    // Approach glow
+    const ag = new THREE.Mesh(
+      new THREE.PlaneGeometry(LW, 2.5),
+      new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: 0xff4400, emissiveIntensity: 0.4, transparent: true, opacity: 0.22 })
+    );
+    ag.rotation.x = -Math.PI / 2;
+    ag.position.set(0, 0.03, LZ / 2 - 2);
+    this.scene.add(ag);
+
+    // Gutters
+    [-1, 1].forEach(s => {
+      const g = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.4, LZ),
+        new THREE.MeshStandardMaterial({ color: 0x080818, roughness: 0.9 })
+      );
+      g.position.set(s * (LW / 2 + 0.2), 0.2, 0);
+      this.scene.add(g);
+    });
+
+    // Back wall
+    const bw = new THREE.Mesh(
+      new THREE.BoxGeometry(LW + 1, 1.6, 0.3),
+      new THREE.MeshStandardMaterial({ color: 0x060614, roughness: 0.9 })
+    );
+    bw.position.set(0, 0.8, -LZ / 2 - 0.25);
+    this.scene.add(bw);
+  }
+
+  createBall() {
+    if (this.ballMesh) { this.scene.remove(this.ballMesh); this.ballMesh = null; }
+    const geo = new THREE.SphereGeometry(BR, 22, 22);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff5500, emissive: 0xff2200, emissiveIntensity: 0.55,
+      roughness: 0.04, metalness: 0.96,
+    });
+    this.ballMesh = new THREE.Mesh(geo, mat);
+    this.ballMesh.castShadow = true;
+    this.ballMesh.position.copy(BALL_START);
+
+    // Ball glow
+    const pl = new THREE.PointLight(0xff4400, 12, 2.8, 2);
+    this.ballMesh.add(pl);
+
+    this.scene.add(this.ballMesh);
+    return this.ballMesh;
+  }
+
+  removeBall() {
+    if (this.ballMesh) { this.scene.remove(this.ballMesh); this.ballMesh = null; }
+  }
+
+  createPins(activePins) {
+    // Clear existing
+    this.pinMeshes.forEach(m => { if (m) this.scene.remove(m); });
+    this.pinMeshes = [];
+
+    activePins.forEach((alive, i) => {
+      if (!alive) { this.pinMeshes.push(null); return; }
+      const group = new THREE.Group();
+
+      // Body
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(PR * 0.5, PR, PH * 0.75, 8),
+        new THREE.MeshStandardMaterial({ color: 0xe8f4ff, emissive: 0x00ffff, emissiveIntensity: 0.7, roughness: 0.08, metalness: 0.92 })
+      );
+      body.castShadow = true;
+      group.add(body);
+
+      // Belly
+      const belly = new THREE.Mesh(
+        new THREE.SphereGeometry(PR * 1.12, 8, 6),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x88ffff, emissiveIntensity: 0.4, roughness: 0.06, metalness: 0.94 })
+      );
+      belly.position.y = -PH * 0.16;
+      belly.castShadow = true;
+      group.add(belly);
+
+      // Head
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(PR * 0.62, 8, 6),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff00ff, emissiveIntensity: 1.2, roughness: 0.06, metalness: 0.94 })
+      );
+      head.position.y = PH * 0.44;
+      head.castShadow = true;
+      group.add(head);
+
+      const p = PIN_POSITIONS[i];
+      group.position.set(p.x, p.y, p.z);
+      this.scene.add(group);
+      this.pinMeshes.push(group);
+    });
+  }
+
+  syncPhysics(world, pinBodies, ballBody) {
+    // Sync ball mesh
+    if (this.ballMesh && ballBody) {
+      const t = ballBody.translation();
+      const r = ballBody.rotation();
+      this.ballMesh.position.set(t.x, t.y, t.z);
+      this.ballMesh.quaternion.set(r.x, r.y, r.z, r.w);
+      // Pulse emissive
+      const ei = 0.55 + Math.sin(this.clock.getElapsedTime() * 4) * 0.22;
+      this.ballMesh.material.emissiveIntensity = ei;
+    }
+    // Sync pin meshes
+    pinBodies.forEach((body, i) => {
+      if (!body || !this.pinMeshes[i]) return;
+      const t = body.translation();
+      const r = body.rotation();
+      this.pinMeshes[i].position.set(t.x, t.y, t.z);
+      this.pinMeshes[i].quaternion.set(r.x, r.y, r.z, r.w);
+    });
+  }
+
+  render() {
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// PHYSICS LAYER  (Rapier)
+// ════════════════════════════════════════════════════════════
+class PhysicsWorld {
+  constructor(rapier) {
+    this.R = rapier;
+    this.world = new rapier.World({ x: 0, y: -9.81, z: 0 });
+    this.pinBodies  = [];   // RigidBody | null
+    this.ballBody   = null;
+    this._buildStatics();
+  }
+
+  _body(x, y, z) {
+    return this.world.createRigidBody(
+      this.R.RigidBodyDesc.fixed().setTranslation(x, y, z)
+    );
+  }
+
+  _buildStatics() {
+    const W = this.world, R = this.R;
+
+    // Floor
+    const floor = W.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(0, -0.05, 0));
+    W.createCollider(R.ColliderDesc.cuboid(LW / 2, 0.05, LZ / 2).setFriction(0.32).setRestitution(0.04), floor);
+
+    // Gutters
+    [-1, 1].forEach(s => {
+      const g = W.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(s * (LW / 2 + 0.2), 0.2, 0));
+      W.createCollider(R.ColliderDesc.cuboid(0.2, 0.2, LZ / 2).setFriction(0.12).setRestitution(0.18), g);
+    });
+
+    // Back wall
+    const bw = W.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(0, 0.8, -LZ / 2 - 0.25));
+    W.createCollider(R.ColliderDesc.cuboid((LW + 1) / 2, 0.8, 0.15), bw);
+  }
+
+  spawnPins(activePins) {
+    const W = this.world, R = this.R;
+    // Remove old pin bodies
+    this.pinBodies.forEach(b => { if (b) W.removeRigidBody(b); });
+    this.pinBodies = [];
+
+    activePins.forEach((alive, i) => {
+      if (!alive) { this.pinBodies.push(null); return; }
+      const p = PIN_POSITIONS[i];
+      const desc = R.RigidBodyDesc.dynamic()
+        .setTranslation(p.x, p.y, p.z)
+        .setLinearDamping(0.55)
+        .setAngularDamping(0.55);
+      const body = W.createRigidBody(desc);
+      W.createCollider(
+        R.ColliderDesc.cylinder(PH / 2, PR)
+          .setMass(1.5).setFriction(0.65).setRestitution(0.1),
+        body
+      );
+      this.pinBodies.push(body);
+    });
+  }
+
+  spawnBall() {
+    if (this.ballBody) { this.world.removeRigidBody(this.ballBody); this.ballBody = null; }
+    const R = this.R;
+    const desc = R.RigidBodyDesc.dynamic()
+      .setTranslation(BALL_START.x, BALL_START.y, BALL_START.z)
+      .setLinearDamping(0.04)
+      .setAngularDamping(0.06);
+    this.ballBody = this.world.createRigidBody(desc);
+    this.world.createCollider(
+      R.ColliderDesc.ball(BR).setMass(5).setFriction(0.36).setRestitution(0.05),
+      this.ballBody
+    );
+    return this.ballBody;
+  }
+
+  removeBall() {
+    if (this.ballBody) { this.world.removeRigidBody(this.ballBody); this.ballBody = null; }
+  }
+
+  throwBall(gesture) {
+    if (!this.ballBody) return;
+    const { angleX, power, spin } = gesture;
+    const spd = 7 + power * 13;
+    const vx  = Math.sin(angleX) * spd;
+    const vz  = -Math.cos(angleX) * spd;
+    this.ballBody.setLinvel({ x: vx, y: 0, z: vz }, true);
+    this.ballBody.setAngvel({ x: -vz * 0.35, y: spin * 8, z: vx * 0.35 }, true);
+    this.ballBody.wakeUp();
+  }
+
+  step(dt) {
+    // Fixed 60Hz steps
+    const steps = Math.round(dt * 60);
+    for (let i = 0; i < Math.min(steps, 3); i++) this.world.step();
+  }
+
+  // Returns uprightness [0,1] of pin i (1 = fully upright)
+  pinUprightness(i) {
+    const b = this.pinBodies[i];
+    if (!b) return 0;
+    const r = b.rotation();
+    return 1 - 2 * (r.x * r.x + r.z * r.z);
+  }
+
+  ballTranslation() {
+    return this.ballBody ? this.ballBody.translation() : null;
+  }
+  ballLinvel() {
+    return this.ballBody ? this.ballBody.linvel() : null;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// GAME LOGIC  (pure state machine, no framework)
+// ════════════════════════════════════════════════════════════
+class Game {
+  constructor(renderer, physics) {
+    this.R = renderer;
+    this.P = physics;
+
+    // Mutable game state
+    this.state = this._fresh();
+    this.knocked = new Set();
+    this._timer = null;
+
+    DOM.init();
+    DOM.onReset = () => this.reset();
+    DOM.score([], 0);
+    DOM.hint('SWIPE TO THROW');
+
+    this._setupInput();
+    Trail.init();
+  }
+
+  _fresh() {
+    return {
+      phase: 'ready',     // 'ready' | 'thrown' | 'settling' | 'over'
+      rolls: [],
+      frame: 0,
+      rollNum: 0,         // 0 = first, 1 = second, 2 = third (10th only)
+      tenthRolls: [],
+      pinsUp: 10,         // standing pins before this roll
+      activePins: Array(10).fill(true),
+    };
+  }
+
+  start() {
+    this._spawnRound();
+  }
+
+  _spawnRound() {
+    const s = this.state;
+    this.R.createPins(s.activePins);
+    this.P.spawnPins(s.activePins);
+    this.R.createBall();
+    this.P.spawnBall();
+  }
+
+  _setupInput() {
+    const zone = document.getElementById('sz');
+    let sp = null, pts = [];
+    const ev = e => { const t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY, t: Date.now() }; };
+    const evc = e => { const t = e.changedTouches ? e.changedTouches[0] : e; return { x: t.clientX, y: t.clientY, t: Date.now() }; };
+
+    const down = e => {
+      if (this.state.phase !== 'ready') return;
+      sp = ev(e); pts = [{ ...sp }]; Trail.start(sp.x, sp.y);
+    };
+    const move = e => {
+      if (!sp) return; const p = ev(e); pts.push(p); Trail.move(p.x, p.y);
+    };
+    const up = e => {
+      if (!sp || this.state.phase !== 'ready') { Trail.end(); sp = null; pts = []; return; }
+      const ep = evc(e);
+      const g = analyzeGesture(sp, ep, pts);
+      Trail.end(); sp = null; pts = [];
+      if (g) this._doThrow(g);
+    };
+
+    zone.addEventListener('pointerdown', down, { passive: true });
+    window.addEventListener('pointermove', move, { passive: true });
+    window.addEventListener('pointerup', up);
+    zone.addEventListener('touchstart', down, { passive: true });
+    window.addEventListener('touchmove', move, { passive: true });
+    window.addEventListener('touchend', up);
+  }
+
+  _doThrow(gesture) {
+    this.state.phase = 'thrown';
+    this.P.throwBall(gesture);
+    sfx.throw(gesture.power);
+    DOM.hint('...');
+  }
+
+  // Called every frame from main loop
+  update(dt) {
+    const s = this.state;
+    if (s.phase === 'over') return;
+
+    this.P.step(dt);
+
+    // Detect knocked pins
+    if (s.phase === 'thrown' || s.phase === 'settling') {
+      for (let i = 0; i < 10; i++) {
+        if (!s.activePins[i] || this.knocked.has(i)) continue;
+        if (this.P.pinUprightness(i) < 0.55) {
+          this.knocked.add(i);
+          sfx.pin();
+        }
+      }
+    }
+
+    // Settle detection
+    if (s.phase === 'thrown') {
+      const pos = this.P.ballTranslation();
+      const vel = this.P.ballLinvel();
+      if (!pos || !vel) return;
+      const spd = Math.hypot(vel.x, vel.y, vel.z);
+
+      const doSettle = () => {
+        if (s.phase !== 'thrown') return;
+        s.phase = 'settling';
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => this._processRoll(), SETTLE_DELAY);
+      };
+
+      if (pos.y < -3 || pos.z < -LZ / 2 - 1 || Math.abs(pos.x) > LW * 0.5 + 0.65) {
+        doSettle();
+      } else if (pos.z < -LZ * 0.3 && spd < 0.25) {
+        doSettle();
+      }
+    }
+
+    // Sync visuals ← physics
+    this.R.syncPhysics(this.P.world, this.P.pinBodies, this.P.ballBody);
+    this.R.render();
+  }
+
+  _processRoll() {
+    const s = this.state;
+    const k = this.knocked.size;
+    const newRolls = [...s.rolls, k];
+    s.rolls = newRolls;
+
+    const isFirst  = s.rollNum === 0;
+    const isStrike = k === s.pinsUp && s.pinsUp === 10;
+    const isSpare  = !isFirst && k === s.pinsUp;
+
+    if (isStrike) { sfx.strike(); DOM.result('STRIKE', 'STRIKE'); }
+    else if (isSpare) { sfx.spare(); DOM.result('SPARE', 'SPARE'); }
+    else if (k === 0) { DOM.result('GUTTER', 'GUTTER'); }
+
+    DOM.score(newRolls, s.frame);
+
+    const D = NEXT_DELAY;
+    const is10 = s.frame === 9;
+
+    if (!is10) {
+      if (isStrike || s.rollNum === 1) {
+        const nf = s.frame + 1;
+        this._after(D, () => this._nextFrame(nf, Array(10).fill(true), 10));
+      } else {
+        const alive = s.activePins.map((a, i) => a && !this.knocked.has(i));
+        const left  = alive.filter(Boolean).length;
+        this._after(D, () => this._sameFrame(alive, left));
+      }
+    } else {
+      // ── 10th frame ──
+      const newT = [...s.tenthRolls, k];
+      s.tenthRolls = newT;
+      const tc = newT.length;
+
+      if (tc === 1) {
+        if (isStrike) {
+          this._after(D, () => this._sameFrame10(1, Array(10).fill(true), 10));
+        } else {
+          const alive = s.activePins.map((a, i) => a && !this.knocked.has(i));
+          const left  = alive.filter(Boolean).length;
+          this._after(D, () => this._sameFrame10(1, alive, left));
+        }
+      } else if (tc === 2) {
+        const r1 = newT[0], r2 = newT[1];
+        const had1X = r1 === 10, hadS = !had1X && r1 + r2 === 10;
+        if (had1X || hadS) {
+          const needReset = had1X ? r2 === 10 : true;
+          const alive = needReset ? Array(10).fill(true)
+            : s.activePins.map((a, i) => a && !this.knocked.has(i));
+          const left = alive.filter(Boolean).length;
+          this._after(D, () => this._sameFrame10(2, alive, left));
+        } else {
+          this._after(D, () => this._gameOver());
+        }
+      } else {
+        this._after(D, () => this._gameOver());
+      }
+    }
+  }
+
+  _after(ms, fn) {
+    clearTimeout(this._timer);
+    this._timer = setTimeout(fn, ms);
+  }
+
+  _nextFrame(frame, activePins, pinsUp) {
+    const s = this.state;
+    s.frame = frame; s.rollNum = 0;
+    s.activePins = activePins; s.pinsUp = pinsUp;
+    s.phase = 'ready';
+    this.knocked.clear();
+    this._respawn(activePins);
+    DOM.hint('SWIPE TO THROW');
+  }
+
+  _sameFrame(alive, left) {
+    const s = this.state;
+    s.rollNum = 1; s.activePins = alive; s.pinsUp = left;
+    s.phase = 'ready';
+    this.knocked.clear();
+    this._respawn(alive);
+    DOM.hint('SWIPE TO THROW');
+  }
+
+  _sameFrame10(rollNum, alive, left) {
+    const s = this.state;
+    s.rollNum = rollNum; s.activePins = alive; s.pinsUp = left;
+    s.phase = 'ready';
+    this.knocked.clear();
+    this._respawn(alive);
+    DOM.hint(rollNum === 2 ? 'FINAL THROW' : 'SWIPE TO THROW');
+  }
+
+  _respawn(activePins) {
+    this.P.removeBall(); this.R.removeBall();
+    this.R.createPins(activePins);
+    this.P.spawnPins(activePins);
+    this.R.createBall();
+    this.P.spawnBall();
+  }
+
+  _gameOver() {
+    this.state.phase = 'over';
+    this.P.removeBall(); this.R.removeBall();
+    DOM.gameover(totalScore(this.state.rolls));
+    DOM.hint('');
+  }
+
+  reset() {
+    clearTimeout(this._timer);
+    this.knocked.clear();
+    this.state = this._fresh();
+    this.P.removeBall(); this.R.removeBall();
+    DOM.hideGO();
+    DOM.score([], 0);
+    DOM.hint('SWIPE TO THROW');
+    this._spawnRound();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ════════════════════════════════════════════════════════════
+async function main() {
+  // Init Rapier WASM
+  await RAPIER.init();
+
+  const canvas   = document.getElementById('c');
+  const renderer = new Renderer(canvas);
+  const physics  = new PhysicsWorld(RAPIER);
+  const game     = new Game(renderer, physics);
+
+  game.start();
+
+  // Hide loader
+  setTimeout(() => document.getElementById('loader').classList.add('out'), 400);
+
+  // Main loop
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - last) / 1000, 0.05); // cap at 50ms
+    last = now;
+    game.update(dt);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+main().catch(err => {
+  console.error('NEON BOWL init error:', err);
+  document.getElementById('loader').querySelector('.ls').textContent = 'ERROR: ' + err.message;
+});
+</script>
+</body>
+</html>
