@@ -9,7 +9,6 @@
 html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; user-select: none; font-family: 'Courier New', monospace; }
 #c { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 
-/* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 
 #crosshair {
@@ -25,15 +24,29 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 
 #hitmarker {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  width: 40px; height: 40px; opacity: 0; transition: opacity 0.04s; z-index: 10;
+  width: 44px; height: 44px; opacity: 0; z-index: 10; pointer-events: none;
+  transition: opacity 0.05s;
 }
-#hitmarker.show { opacity: 1; }
-#hitmarker::before, #hitmarker::after {
-  content: ''; position: absolute; width: 14px; height: 2px;
-  background: #ff3366; box-shadow: 0 0 6px #ff3366; top: 50%; transform: translateY(-50%);
+#hitmarker.show { opacity: 1; animation: hm-pop 0.18s ease-out forwards; }
+#hitmarker.kill { opacity: 1; animation: hm-kill 0.35s ease-out forwards; }
+@keyframes hm-pop  { 0%{transform:translate(-50%,-50%) scale(1.6)} 100%{transform:translate(-50%,-50%) scale(1)} }
+@keyframes hm-kill { 0%{transform:translate(-50%,-50%) scale(2.2) rotate(45deg); opacity:1}
+                     100%{transform:translate(-50%,-50%) scale(0.8) rotate(45deg); opacity:0} }
+/* 斜め4本線の×マーカー */
+#hitmarker::before, #hitmarker::after,
+#hitmarker .hm2::before, #hitmarker .hm2::after {
+  content: ''; position: absolute; width: 13px; height: 2.5px;
+  background: #ff3366; box-shadow: 0 0 8px #ff3366, 0 0 18px #ff3366;
+  top: 50%; left: 50%;
 }
-#hitmarker::before { left: 0; }
-#hitmarker::after  { right: 0; }
+#hitmarker::before  { transform: translate(-50%,-50%) translateX(-8px) rotate(45deg); }
+#hitmarker::after   { transform: translate(-50%,-50%) translateX( 8px) rotate(45deg); }
+#hitmarker .hm2::before { transform: translate(-50%,-50%) translateX(-8px) rotate(-45deg); }
+#hitmarker .hm2::after  { transform: translate(-50%,-50%) translateX( 8px) rotate(-45deg); }
+#hitmarker.kill::before, #hitmarker.kill::after,
+#hitmarker.kill .hm2::before, #hitmarker.kill .hm2::after {
+  background: #ffdd00; box-shadow: 0 0 14px #ffdd00, 0 0 30px #ff9900;
+}
 
 #damage-vignette {
   position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 5;
@@ -41,6 +54,27 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
   transition: opacity 0.07s;
 }
 #damage-vignette.show { opacity: 1; }
+
+/* ヒット時の白フラッシュ */
+#hit-flash {
+  position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 6;
+  background: rgba(255,255,255,0.9);
+}
+#hit-flash.show { animation: flash-out 0.22s ease-out forwards; }
+#hit-flash.kill-flash { animation: kill-flash-out 0.4s ease-out forwards; }
+@keyframes flash-out      { 0%{opacity:0.45} 100%{opacity:0} }
+@keyframes kill-flash-out { 0%{opacity:0.75; background:rgba(255,200,0,0.6)} 40%{opacity:0.4} 100%{opacity:0} }
+
+/* 浮動ダメージ数字 */
+.dmg-num {
+  position: fixed; left: 50%; font-family: 'Courier New', monospace;
+  font-size: 22px; font-weight: bold; letter-spacing: 2px;
+  color: #ff3366; text-shadow: 0 0 10px #ff3366, 0 0 22px #ff0044;
+  pointer-events: none; z-index: 50; transform: translateX(-50%);
+  animation: dmg-float 0.85s ease-out forwards;
+}
+.dmg-num.kill { color: #ffdd00; text-shadow: 0 0 14px #ffdd00, 0 0 28px #ff9900; font-size: 30px; }
+@keyframes dmg-float { 0%{opacity:1;top:44%} 100%{opacity:0;top:30%} }
 
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 10;
@@ -65,10 +99,8 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 #reload-t { font-size: 10px; color: #ff9900; letter-spacing: 3px; text-shadow: 0 0 6px #ff9900; animation: blink .4s infinite; display: none; }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* Minimap */
 #minimap { position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none; opacity: 0.7; }
 
-/* Joystick */
 #joy-area { position: fixed; bottom: 24px; left: 16px; width: 112px; height: 112px; pointer-events: auto; z-index: 20; }
 #joy-base { width: 100%; height: 100%; border-radius: 50%; background: rgba(0,255,200,0.04); border: 1px solid rgba(0,255,200,0.2); }
 #joy-knob {
@@ -77,7 +109,6 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
   pointer-events: none; top: 50%; left: 50%; transform: translate(-50%,-50%);
 }
 
-/* Fire btn */
 #fire-btn {
   position: fixed; bottom: 34px; right: 24px; width: 78px; height: 78px; border-radius: 50%;
   background: rgba(255,51,102,0.1); border: 2px solid rgba(255,51,102,0.5);
@@ -88,7 +119,6 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 }
 #fire-btn.on { background: rgba(255,51,102,0.32); box-shadow: 0 0 30px rgba(255,51,102,0.5); }
 
-/* Screens */
 .scr {
   position: fixed; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; z-index: 100; background: rgba(0,0,0,0.9);
@@ -103,6 +133,10 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
   padding: 12px 36px; font-family: 'Courier New',monospace; font-size: 12px;
   letter-spacing: 4px; cursor: pointer; box-shadow: 0 0 16px rgba(0,255,200,0.25);
   text-transform: uppercase; margin: 4px;
+  /* ▼ タッチ操作でclickが抑制されないようpointer-eventsを明示 */
+  pointer-events: auto;
+  -webkit-tap-highlight-color: rgba(0,255,200,0.2);
+  touch-action: manipulation;   /* ← ダブルタップズームを防ぎ即座にclickを発火 */
 }
 .btn:hover { background: rgba(0,255,200,0.12); }
 .btn:active { background: rgba(0,255,200,0.22); }
@@ -113,20 +147,12 @@ html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touc
 </head>
 <body>
 
-<!-- DEMO_META
-title: NEON STRIKE
-desc: スマホ全画面WebGLで動く近未来3DライフルFPS — Wave制サバイバル
-tech: Canvas 2D · Raycasting · Touch Controls · First Person Shooter
-level: 90
-color: #00ffc8
-type: game
--->
-
 <canvas id="c"></canvas>
 
 <div id="damage-vignette"></div>
+<div id="hit-flash"></div>
 <div id="crosshair"></div>
-<div id="hitmarker"></div>
+<div id="hitmarker"><div class="hm2"></div></div>
 
 <div id="topbar">
   <div class="sbox">SCORE&nbsp;<span id="el-score">0</span></div>
@@ -185,18 +211,13 @@ type: game
 (function() {
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════
-   RAYCASTING ENGINE  (Wolfenstein-style, pure Canvas 2D)
-   ═══════════════════════════════════════════════════════════ */
-
-var W = 0, H = 0;         // canvas size (set on resize)
-var RW = 320;             // ray resolution width
-var RH = 200;             // ray resolution height
+var W = 0, H = 0;
+var RW = 320;
+var RH = 200;
 
 var canvas = document.getElementById('c');
 var ctx    = canvas.getContext('2d');
 
-// Off-screen buffer at low resolution for performance
 var buf    = document.createElement('canvas');
 var bctx   = buf.getContext('2d');
 
@@ -211,8 +232,6 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-/* ── MAP ────────────────────────────────────────────────────
-   0 = empty, 1-4 = wall types, 9 = spawn zone              */
 var MAP_W = 16, MAP_H = 16;
 var MAP = [
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -239,18 +258,15 @@ function mapAt(x, y) {
   return MAP[my * MAP_W + mx];
 }
 
-// Wall colors by type (neon palette)
 var WALL_COLS = ['','#0d0d2a','#1a1a3e','#0d1a2e','#1a0d1a'];
 var WALL_EMIS = ['','#3b82f6','#00ffc8','#3b82f6','#ff3366'];
 
-/* ── PLAYER ─────────────────────────────────────────────── */
-var px = 8.5, py = 8.5;    // position
-var pa = 0;                  // angle (radians)
-var PFOV = Math.PI / 2.8;   // field of view
+var px = 8.5, py = 8.5;
+var pa = 0;
+var PFOV = Math.PI / 2.8;
 var PSPEED = 3.5;
 var PTURN  = 2.2;
 
-/* ── GAME STATE ─────────────────────────────────────────── */
 var state    = 'start';
 var wave     = 1;
 var kills    = 0;
@@ -270,12 +286,61 @@ var enemies = [];
 var particles = [];
 var keys = {};
 
-/* ── GUN ANIMATION ──────────────────────────────────────── */
 var gunKick   = 0;
 var gunSway   = 0;
 var muzzleOn  = false;
+var muzzleSize = 0;      // 可変マズルフラッシュサイズ
+var shakeX = 0, shakeY = 0, shakeDecay = 0;  // 画面シェイク
+var timeScale = 1;       // スローモーション (キル時)
+var slowTimer = 0;
 
-/* ── ENEMY SPAWN POINTS ─────────────────────────────────── */
+/* ── WEB AUDIO SYNTH ──────────────────────────────────── */
+var audioCtx = null;
+function getAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return audioCtx;
+}
+function playGunshot() {
+  var ac = getAudio(); if (!ac) return;
+  var buf = ac.createBuffer(1, ac.sampleRate * 0.12, ac.sampleRate);
+  var d = buf.getChannelData(0);
+  for (var i = 0; i < d.length; i++) {
+    var t = i / ac.sampleRate;
+    d[i] = (Math.random()*2-1) * Math.exp(-t * 55) * 1.5
+           + Math.sin(t * 180 * Math.PI * 2) * Math.exp(-t * 80) * 0.6;
+  }
+  var src = ac.createBufferSource();
+  var g = ac.createGain(); g.gain.setValueAtTime(0.55, ac.currentTime);
+  src.buffer = buf; src.connect(g); g.connect(ac.destination); src.start();
+}
+function playHit() {
+  var ac = getAudio(); if (!ac) return;
+  var buf = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate);
+  var d = buf.getChannelData(0);
+  for (var i = 0; i < d.length; i++) {
+    var t = i / ac.sampleRate;
+    d[i] = (Math.random()*2-1) * Math.exp(-t * 90) * 0.9
+           + Math.sin(t * 800 * Math.PI * 2) * Math.exp(-t * 120) * 0.4;
+  }
+  var src = ac.createBufferSource();
+  var g = ac.createGain(); g.gain.setValueAtTime(0.35, ac.currentTime);
+  src.buffer = buf; src.connect(g); g.connect(ac.destination); src.start();
+}
+function playKill() {
+  var ac = getAudio(); if (!ac) return;
+  var buf = ac.createBuffer(1, ac.sampleRate * 0.22, ac.sampleRate);
+  var d = buf.getChannelData(0);
+  for (var i = 0; i < d.length; i++) {
+    var t = i / ac.sampleRate;
+    d[i] = (Math.random()*2-1) * Math.exp(-t * 18) * 1.1
+           + Math.sin(t * 120 * Math.PI * 2) * Math.exp(-t * 25) * 0.8
+           + Math.sin(t * 60 * Math.PI * 2) * Math.exp(-t * 15) * 0.5;
+  }
+  var src = ac.createBufferSource();
+  var g = ac.createGain(); g.gain.setValueAtTime(0.6, ac.currentTime);
+  src.buffer = buf; src.connect(g); g.connect(ac.destination); src.start();
+}
+
 var SPAWNS = [
   [1.5,1.5],[14.5,1.5],[1.5,14.5],[14.5,14.5],
   [8,1.5],[1.5,8],[14.5,8],[8,14.5],
@@ -283,15 +348,13 @@ var SPAWNS = [
   [8,4],[4,8],[12,8],[8,12]
 ];
 
-/* ── RAYCASTING ─────────────────────────────────────────── */
-var zbuf = []; // z-buffer for sprite clipping
+var zbuf = [];
 
 function castRays() {
   zbuf = [];
   var halfH = RH / 2;
 
   for (var x = 0; x < RW; x++) {
-    // Ray direction
     var camX = (2 * x / RW) - 1;
     var rayDirX = Math.cos(pa) - Math.sin(pa) * camX * (PFOV / (Math.PI / 4));
     var rayDirY = Math.sin(pa) + Math.cos(pa) * camX * (PFOV / (Math.PI / 4));
@@ -326,20 +389,17 @@ function castRays() {
     var drawS  = Math.max(0, halfH - lineH / 2);
     var drawE  = Math.min(RH - 1, halfH + lineH / 2);
 
-    // Wall color with distance fog
     var fog   = Math.min(1, wallDist / 12);
     var wtype = Math.min(4, wallType);
     var base  = WALL_COLS[wtype] || '#0d0d2a';
     var emis  = WALL_EMIS[wtype] || '#3b82f6';
 
-    // Darker on side faces
     var shade = side === 1 ? 0.6 : 1.0;
     shade *= (1 - fog * 0.85);
 
     bctx.fillStyle = lerpColor(base, '#050510', fog * 0.9);
     bctx.fillRect(x, drawS, 1, drawE - drawS);
 
-    // Emissive neon edge line (top/bottom of wall strip)
     if (lineH > 2 && shade > 0.3) {
       bctx.fillStyle = emis;
       bctx.globalAlpha = shade * 0.35 * (1 - fog);
@@ -351,7 +411,6 @@ function castRays() {
 }
 
 function lerpColor(a, b, t) {
-  // Simple hex lerp
   var ar = parseInt(a.slice(1,3),16), ag = parseInt(a.slice(3,5),16), ab2 = parseInt(a.slice(5,7),16);
   var br = parseInt(b.slice(1,3),16), bg = parseInt(b.slice(3,5),16), bb2 = parseInt(b.slice(5,7),16);
   var r = Math.round(ar + (br - ar) * t);
@@ -361,21 +420,18 @@ function lerpColor(a, b, t) {
 }
 
 function drawFloorCeiling() {
-  // Ceiling gradient
   var cg = bctx.createLinearGradient(0, 0, 0, RH / 2);
   cg.addColorStop(0, '#050510');
   cg.addColorStop(1, '#0a0a1f');
   bctx.fillStyle = cg;
   bctx.fillRect(0, 0, RW, RH / 2);
 
-  // Floor gradient
   var fg = bctx.createLinearGradient(0, RH / 2, 0, RH);
   fg.addColorStop(0, '#080815');
   fg.addColorStop(1, '#020208');
   bctx.fillStyle = fg;
   bctx.fillRect(0, RH / 2, RW, RH / 2);
 
-  // Neon grid on floor
   bctx.strokeStyle = 'rgba(0,255,200,0.06)';
   bctx.lineWidth = 0.5;
   for (var gx = 0; gx < RW; gx += Math.floor(RW / 16)) {
@@ -383,9 +439,7 @@ function drawFloorCeiling() {
   }
 }
 
-/* ── ENEMY SPRITES ──────────────────────────────────────── */
 function drawSprites() {
-  // Sort enemies by distance (far to near)
   var sorted = [];
   for (var i = 0; i < enemies.length; i++) {
     var e = enemies[i];
@@ -396,20 +450,16 @@ function drawSprites() {
 
   for (var si = 0; si < sorted.length; si++) {
     var e = sorted[si].e;
+    if (!e.alive) continue; // 死亡した敵は描画しない
     var sprDist = Math.sqrt(sorted[si].dist2);
     if (sprDist < 0.3) continue;
 
-    // Transform sprite to camera space
     var dx = e.x - px;
     var dy = e.y - py;
-    var invDet = 1 / (Math.cos(pa) * Math.sin(pa) - Math.sin(pa) * Math.cos(pa));
-    // Use angle to sprite
     var relAngle = Math.atan2(dy, dx) - pa;
-    // Normalize to [-PI, PI]
     while (relAngle >  Math.PI) relAngle -= 2 * Math.PI;
     while (relAngle < -Math.PI) relAngle += 2 * Math.PI;
 
-    // Only draw if in FOV
     if (Math.abs(relAngle) > PFOV * 0.7) continue;
 
     var screenX = Math.floor((0.5 + relAngle / PFOV) * RW);
@@ -418,25 +468,21 @@ function drawSprites() {
     var drawX   = Math.floor(screenX - sprW / 2);
     var drawY   = Math.floor(RH / 2 - sprH / 2);
 
-    // Fog
     var fog = Math.min(1, sprDist / 10);
     var alpha = Math.max(0, 1 - fog * 0.9);
     if (alpha < 0.05) continue;
 
     bctx.globalAlpha = alpha;
 
-    // Body
     var bodyColor = e.flashTimer > 0 ? '#ffffff' : (e.alive ? '#cc1133' : '#440011');
     bctx.fillStyle = bodyColor;
     bctx.fillRect(drawX + sprW*0.2, drawY + sprH*0.35, sprW*0.6, sprH*0.55);
 
-    // Head
     var headColor = e.flashTimer > 0 ? '#ffffff' : (e.alive ? '#dd2244' : '#330011');
     bctx.fillStyle = headColor;
     var hSize = sprW * 0.4;
     bctx.fillRect(drawX + sprW*0.3, drawY + sprH*0.1, hSize, hSize);
 
-    // Eyes (neon red)
     if (e.alive && alpha > 0.4) {
       bctx.fillStyle = '#ff0000';
       bctx.globalAlpha = alpha * 0.9;
@@ -445,7 +491,6 @@ function drawSprites() {
       bctx.fillRect(drawX + sprW*0.55, drawY + sprH*0.18, es, es);
     }
 
-    // HP bar above head
     if (e.alive && sprH > 20) {
       var hpRatio = e.hp / e.maxHp;
       bctx.globalAlpha = alpha * 0.8;
@@ -459,70 +504,76 @@ function drawSprites() {
   }
 }
 
-/* ── GUN DRAW ───────────────────────────────────────────── */
 function drawGun(t) {
   var sw = RW, sh = RH;
   var gw = sw * 0.35, gh = gw * 0.55;
   var gx = sw / 2 - gw / 2 + Math.sin(t * 3) * 2 * Math.max(0.1, Math.abs(moveZ) + Math.abs(moveX));
   var gy = sh - gh + gunKick * 18 + Math.abs(Math.sin(t * 3)) * 2;
 
-  // Shadow
   bctx.fillStyle = 'rgba(0,0,0,0.5)';
   bctx.fillRect(gx + 3, gy + 3, gw, gh);
 
-  // Body
   bctx.fillStyle = '#1a1a2e';
   bctx.fillRect(gx, gy, gw, gh);
 
-  // Neon accent stripe
   bctx.fillStyle = '#00ffc8';
   bctx.fillRect(gx, gy + 2, gw, 2);
   bctx.fillRect(gx, gy + gh - 4, gw, 2);
 
-  // Barrel
   bctx.fillStyle = '#111122';
   bctx.fillRect(gx + gw * 0.42, gy - gh * 0.3, gw * 0.16, gh * 0.35);
   bctx.fillStyle = '#00ffc8';
   bctx.fillRect(gx + gw * 0.42, gy - gh * 0.3, gw * 0.16, 2);
 
-  // Muzzle flash
   if (muzzleOn) {
-    bctx.fillStyle = '#ffcc00';
-    bctx.globalAlpha = 0.9;
     var mfx = gx + gw * 0.42 + gw * 0.08;
     var mfy = gy - gh * 0.3 - 6;
-    bctx.beginPath();
-    bctx.arc(mfx, mfy, 6, 0, Math.PI * 2);
-    bctx.fill();
+    var ms = muzzleSize;
+    // 外炎
+    bctx.fillStyle = '#ff9900';
+    bctx.globalAlpha = 0.75;
+    bctx.beginPath(); bctx.arc(mfx, mfy, ms * 1.6, 0, Math.PI * 2); bctx.fill();
+    // 内炎
+    bctx.fillStyle = '#ffee44';
+    bctx.globalAlpha = 0.9;
+    bctx.beginPath(); bctx.arc(mfx, mfy, ms, 0, Math.PI * 2); bctx.fill();
+    // コア白
     bctx.fillStyle = '#ffffff';
-    bctx.globalAlpha = 0.7;
-    bctx.beginPath();
-    bctx.arc(mfx, mfy, 3, 0, Math.PI * 2);
-    bctx.fill();
+    bctx.globalAlpha = 1;
+    bctx.beginPath(); bctx.arc(mfx, mfy, ms * 0.45, 0, Math.PI * 2); bctx.fill();
+    // 横ビーム
+    bctx.fillStyle = '#ffcc00';
+    bctx.globalAlpha = 0.5;
+    bctx.fillRect(mfx - ms * 2.5, mfy - 1, ms * 5, 2);
     bctx.globalAlpha = 1;
   }
 }
 
-/* ── RENDER ─────────────────────────────────────────────── */
 function render(t) {
   bctx.clearRect(0, 0, RW, RH);
   drawFloorCeiling();
   castRays();
   drawSprites();
+  drawWorldParticles(); // 3Dパーティクル
   drawGun(t);
 
-  // Blit low-res buffer to full canvas
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(buf, 0, 0, W, H);
 
-  // Scan-line overlay for CRT feel
-  ctx.fillStyle = 'rgba(0,0,0,0.08)';
-  for (var y = 0; y < H; y += 3) {
-    ctx.fillRect(0, y, W, 1);
+  // 画面シェイク適用
+  if (shakeDecay > 0) {
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+    ctx.drawImage(buf, 0, 0, W, H);
+    ctx.restore();
+  } else {
+    ctx.drawImage(buf, 0, 0, W, H);
   }
+
+  // スキャンライン
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for (var y = 0; y < H; y += 3) { ctx.fillRect(0, y, W, 1); }
 }
 
-/* ── MINIMAP ────────────────────────────────────────────── */
 var mmCanvas = document.getElementById('minimap');
 var mmCtx    = mmCanvas.getContext('2d');
 var MM = 80, CELL = MM / MAP_W;
@@ -544,7 +595,6 @@ function drawMinimap() {
     }
   }
 
-  // Enemies
   for (var ei = 0; ei < enemies.length; ei++) {
     var e = enemies[ei];
     if (!e.alive) continue;
@@ -554,12 +604,10 @@ function drawMinimap() {
     mmCtx.fill();
   }
 
-  // Player
   mmCtx.fillStyle = '#00ffc8';
   mmCtx.beginPath();
   mmCtx.arc(px * CELL, py * CELL, CELL * 0.55, 0, Math.PI * 2);
   mmCtx.fill();
-  // Direction
   mmCtx.strokeStyle = '#00ffc8';
   mmCtx.lineWidth = 1;
   mmCtx.beginPath();
@@ -568,7 +616,6 @@ function drawMinimap() {
   mmCtx.stroke();
 }
 
-/* ── ENEMY AI ───────────────────────────────────────────── */
 var SIGHT = 8, ATRANGE = 6, STOP = 0.8;
 
 function spawnWave(w) {
@@ -600,6 +647,7 @@ function updateEnemies(dt) {
     if (!e.alive) continue;
     alive++;
     if (e.flashTimer > 0) e.flashTimer -= dt;
+    applyKnockback(e, dt); // ノックバック
 
     var dx = px - e.x, dy = py - e.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
@@ -622,7 +670,6 @@ function updateEnemies(dt) {
         }
       }
     } else {
-      // Patrol
       e.patAngle += dt * 0.8;
       var nx2 = e.x + Math.cos(e.patAngle) * 0.03;
       var ny2 = e.y + Math.sin(e.patAngle) * 0.03;
@@ -644,7 +691,6 @@ function enemyShoot(dist) {
   if (hp <= 0) playerDead();
 }
 
-/* ── SHOOTING ───────────────────────────────────────────── */
 function shoot() {
   if (state !== 'playing') return;
   if (reloading || ammo <= 0) { if (!reloading && ammo <= 0) startReload(); return; }
@@ -658,13 +704,15 @@ function shoot() {
 
   gunKick = 1;
   muzzleOn = true;
-  setTimeout(function() { muzzleOn = false; }, 55);
+  muzzleSize = 6 + Math.random() * 4;
+  setTimeout(function() { muzzleOn = false; }, 65);
 
-  // Shake canvas
-  canvas.style.transform = 'translate('+(Math.random()*5-2.5)+'px,'+(Math.random()*5-2.5)+'px)';
-  setTimeout(function() { canvas.style.transform = ''; }, 80);
+  // 射撃音
+  playGunshot();
 
-  // Ray-based hit detection: check if any enemy is in center of screen
+  // 射撃シェイク（軽め）
+  triggerShake(3, 0.08);
+
   var hitDist = 99;
   var hitEnemy = null;
   for (var i = 0; i < enemies.length; i++) {
@@ -676,10 +724,8 @@ function shoot() {
     var relAngle = angleToEnemy - pa;
     while (relAngle >  Math.PI) relAngle -= 2 * Math.PI;
     while (relAngle < -Math.PI) relAngle += 2 * Math.PI;
-    // Hit cone
-    var hitCone = 0.08 + 0.04 / Math.max(0.5, dist);
+    var hitCone = 0.10 + 0.05 / Math.max(0.5, dist);
     if (Math.abs(relAngle) < hitCone && dist < hitDist && dist < 14) {
-      // Check wall not blocking
       if (zbuf[Math.floor(RW / 2)] > dist - 0.5) {
         hitDist = dist; hitEnemy = e;
       }
@@ -687,13 +733,35 @@ function shoot() {
   }
 
   if (hitEnemy) {
-    // Headshot if aiming high
     var dmg = 38;
     hitEnemy.hp -= dmg;
-    hitEnemy.flashTimer = 0.1;
-    showHit();
-    spawnParticles(hitEnemy.x, hitEnemy.y);
-    if (hitEnemy.hp <= 0) killEnemy(hitEnemy);
+    hitEnemy.flashTimer = 0.14;
+
+    // ノックバック：弾を受けた方向に吹き飛ぶ
+    var ndx = hitEnemy.x - px, ndy = hitEnemy.y - py;
+    var ndist = Math.sqrt(ndx*ndx + ndy*ndy);
+    hitEnemy.knockX = (ndx / ndist) * 1.8;
+    hitEnemy.knockY = (ndy / ndist) * 1.8;
+    hitEnemy.knockTimer = 0.12;
+
+    // 3Dパーティクル大量
+    spawnParticles(hitEnemy.x, hitEnemy.y, false);
+
+    // ヒット音
+    playHit();
+
+    // ヒットシェイク（強め）
+    triggerShake(7, 0.12);
+
+    // 白フラッシュ
+    flashHit(false);
+
+    if (hitEnemy.hp <= 0) {
+      killEnemy(hitEnemy);
+    } else {
+      showHit(false);
+      spawnDmgNum(dmg, false);
+    }
   }
 }
 
@@ -702,6 +770,22 @@ function killEnemy(e) {
   kills++; score += 100 * wave;
   setEl('el-kills', kills);
   setEl('el-score', score);
+
+  // 爆発パーティクル大量
+  spawnParticles(e.x, e.y, true);
+
+  // キル音
+  playKill();
+
+  // キル専用演出
+  showHit(true);
+  spawnDmgNum('KILL!', true);
+  flashHit(true);
+  triggerShake(14, 0.22);
+
+  // スローモーション
+  timeScale = 0.18;
+  slowTimer = 0.55;
 }
 
 function startReload() {
@@ -715,14 +799,43 @@ function startReload() {
   }, RELOAD_MS);
 }
 
-/* ── PARTICLES ──────────────────────────────────────────── */
-function spawnParticles(ex, ey) {
-  for (var i = 0; i < 5; i++) {
+function spawnParticles(ex, ey, isKill) {
+  var count = isKill ? 20 : 8;
+  for (var i = 0; i < count; i++) {
+    var angle = Math.random() * Math.PI * 2;
+    var speed = isKill ? (1.5 + Math.random() * 3.5) : (0.8 + Math.random() * 2);
     particles.push({
       x: ex, y: ey,
-      vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2,
-      life: 0.4
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: isKill ? (0.5 + Math.random() * 0.6) : (0.25 + Math.random() * 0.3),
+      maxLife: isKill ? 1.1 : 0.55,
+      color: isKill ? (Math.random() < 0.5 ? '#ff3366' : '#ffdd00') : '#ff3366',
+      size: isKill ? (1.5 + Math.random() * 2) : (0.8 + Math.random() * 1.2),
+      kill: isKill
     });
+  }
+}
+
+function drawWorldParticles() {
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    var dx = p.x - px, dy = p.y - py;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 0.1) continue;
+    var relAngle = Math.atan2(dy, dx) - pa;
+    while (relAngle >  Math.PI) relAngle -= 2 * Math.PI;
+    while (relAngle < -Math.PI) relAngle += 2 * Math.PI;
+    if (Math.abs(relAngle) > PFOV * 0.75) continue;
+    var screenX = Math.floor((0.5 + relAngle / PFOV) * RW);
+    if (zbuf[screenX] < dist - 0.2) continue;
+    var sz = Math.max(1, p.size * (RH / dist) * 0.08);
+    var sy = RH / 2;
+    var lifeRatio = p.life / (p.maxLife || 0.55);
+    bctx.globalAlpha = lifeRatio * 0.9;
+    bctx.fillStyle = p.color;
+    bctx.fillRect(screenX - sz/2, sy - sz/2, sz, sz);
+    bctx.globalAlpha = 1;
   }
 }
 
@@ -733,18 +846,22 @@ function updateParticles(dt) {
     if (p.life <= 0) { particles.splice(i, 1); continue; }
     p.x += p.vx * dt;
     p.y += p.vy * dt;
+    p.vx *= 0.88; p.vy *= 0.88;
   }
 }
 
-/* ── PLAYER MOVEMENT ────────────────────────────────────── */
+function triggerShake(intensity, duration) {
+  shakeX = (Math.random()-0.5) * intensity;
+  shakeY = (Math.random()-0.5) * intensity;
+  shakeDecay = duration;
+}
+
 function updatePlayer(dt) {
   if (state !== 'playing') return;
 
-  // Rotate
   pa += lookDelta * PTURN * dt;
   lookDelta = 0;
 
-  // Move
   var fx = Math.cos(pa) * (-moveZ) - Math.sin(pa) * moveX;
   var fy = Math.sin(pa) * (-moveZ) + Math.cos(pa) * moveX;
   var spd = PSPEED * dt;
@@ -754,18 +871,63 @@ function updatePlayer(dt) {
   if (!mapAt(nx + Math.sign(fx) * 0.2, py)) px = Math.max(0.5, Math.min(MAP_W - 0.5, nx));
   if (!mapAt(px, ny + Math.sign(fy) * 0.2)) py = Math.max(0.5, Math.min(MAP_H - 0.5, ny));
 
-  // Gun sway / kick recovery
-  if (gunKick > 0) gunKick -= dt * 6;
+  if (gunKick > 0) gunKick -= dt * 7;
   if (gunKick < 0) gunKick = 0;
+
+  // シェイク減衰
+  if (shakeDecay > 0) {
+    shakeDecay -= dt;
+    var ratio = Math.max(0, shakeDecay);
+    shakeX = (Math.random()-0.5) * ratio * 60;
+    shakeY = (Math.random()-0.5) * ratio * 40;
+    if (shakeDecay <= 0) { shakeX = 0; shakeY = 0; }
+  }
+
+  // スローモーション回復
+  if (slowTimer > 0) {
+    slowTimer -= dt;
+    if (slowTimer <= 0) { timeScale = 1; slowTimer = 0; }
+  }
 }
 
-/* ── EFFECTS ────────────────────────────────────────────── */
+// 敵ノックバック更新（updateEnemies内で呼ぶ）
+function applyKnockback(e, dt) {
+  if (e.knockTimer && e.knockTimer > 0) {
+    e.knockTimer -= dt;
+    var nx = e.x + e.knockX * dt * 8;
+    var ny = e.y + e.knockY * dt * 8;
+    if (!mapAt(nx, e.y)) e.x = nx;
+    if (!mapAt(e.x, ny)) e.y = ny;
+    e.knockX *= 0.7; e.knockY *= 0.7;
+  }
+}
+
 var hitT;
-function showHit() {
+function showHit(isKill) {
   var h = document.getElementById('hitmarker');
-  h.classList.add('show');
+  h.classList.remove('show', 'kill');
+  void h.offsetWidth; // reflow
+  h.classList.add(isKill ? 'kill' : 'show');
   clearTimeout(hitT);
-  hitT = setTimeout(function() { h.classList.remove('show'); }, 130);
+  hitT = setTimeout(function() { h.classList.remove('show', 'kill'); }, isKill ? 400 : 160);
+}
+
+function flashHit(isKill) {
+  var f = document.getElementById('hit-flash');
+  f.classList.remove('show', 'kill-flash');
+  void f.offsetWidth;
+  f.classList.add(isKill ? 'kill-flash' : 'show');
+  setTimeout(function() { f.classList.remove('show', 'kill-flash'); }, isKill ? 450 : 250);
+}
+
+function spawnDmgNum(val, isKill) {
+  var el = document.createElement('div');
+  el.className = 'dmg-num' + (isKill ? ' kill' : '');
+  el.textContent = isKill ? val : '-' + val;
+  el.style.top = (40 + Math.random() * 12) + '%';
+  el.style.left = (45 + Math.random() * 10) + '%';
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 900);
 }
 
 function flashDmg() {
@@ -774,7 +936,6 @@ function flashDmg() {
   setTimeout(function() { v.classList.remove('show'); }, 260);
 }
 
-/* ── GAME FLOW ──────────────────────────────────────────── */
 function startGame() {
   state = 'playing'; wave = 1; kills = 0; score = 0;
   hp = maxHp; ammo = maxAmmo; reloading = false;
@@ -829,7 +990,20 @@ function stopAuto() {
   if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
 }
 
-/* ── TOUCH ──────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   TOUCH CONTROLS
+   ─────────────────────────────────────────────────────────
+   【修正①】isInteractive() でボタン要素はpreventDefaultを
+   スキップ → click イベントが正常に発火するようになる
+   ═══════════════════════════════════════════════════════════ */
+function isInteractive(target) {
+  while (target) {
+    if (target.tagName === 'BUTTON' || target.classList.contains('btn')) return true;
+    target = target.parentElement;
+  }
+  return false;
+}
+
 var joyArea = document.getElementById('joy-area');
 var joyKnob = document.getElementById('joy-knob');
 var fireBtn = document.getElementById('fire-btn');
@@ -838,7 +1012,15 @@ var joyId = -1, lookId = -1, fireId = -1;
 var joyBX = 0, joyBY = 0, lookPX = 0, lookPY = 0;
 
 document.addEventListener('touchstart', function(e) {
+  /* ── 【修正①ここが根本原因】──────────────────────────────
+     元コードは e.preventDefault() を無条件で呼んでいた。
+     これによりボタンタップ時の click イベント合成がキャンセルされ
+     START / RETRY / NEXT WAVE が一切反応しなかった。
+     ボタン要素の場合はpreventDefaultをスキップする。
+     ──────────────────────────────────────────────────── */
+  if (isInteractive(e.target)) return; // ← ボタンはデフォルト動作を維持
   e.preventDefault();
+
   for (var i = 0; i < e.changedTouches.length; i++) {
     var t = e.changedTouches[i];
     var tx = t.clientX, ty = t.clientY;
@@ -856,6 +1038,7 @@ document.addEventListener('touchstart', function(e) {
 }, { passive: false });
 
 document.addEventListener('touchmove', function(e) {
+  if (isInteractive(e.target)) return;
   e.preventDefault();
   for (var i = 0; i < e.changedTouches.length; i++) {
     var t = e.changedTouches[i];
@@ -874,6 +1057,7 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 document.addEventListener('touchend', function(e) {
+  if (isInteractive(e.target)) return;
   e.preventDefault();
   for (var i = 0; i < e.changedTouches.length; i++) {
     var t = e.changedTouches[i];
@@ -900,16 +1084,28 @@ document.addEventListener('keydown', function(e) {
   keys[e.code] = true;
   if (e.code === 'KeyR') startReload();
 });
-document.addEventListener('keyup', function(e) { keys[e.code] = false; });
+document.addEventListener('keyup', function(e) {
+  keys[e.code] = false;
+  /* 【修正②】スペースキーを離したら自動射撃を止める */
+  if (e.code === 'Space') stopAuto();
+});
 
 function processKeys() {
   var s = 0.9;
-  moveZ = (keys['KeyW'] ? -s : 0) + (keys['KeyS'] ? s : 0);
-  moveX = (keys['KeyA'] ? -s : 0) + (keys['KeyD'] ? s : 0);
+  /* 【修正③】キーボード入力がある場合のみ moveX/moveZ を上書きする。
+     joyId !== -1 (ジョイスティック操作中) はタッチ側の値を尊重する。
+     キーが何も押されていない & ジョイスティック未使用のときだけ 0 にリセット。 */
+  var anyMove = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
+  if (anyMove || joyId === -1) {
+    var kz = (keys['KeyW'] ? -s : 0) + (keys['KeyS'] ? s : 0);
+    var kx = (keys['KeyA'] ? -s : 0) + (keys['KeyD'] ? s : 0);
+    // キーボード入力がある場合はキーボード優先、なければジョイスティック値を維持
+    if (anyMove) { moveZ = kz; moveX = kx; }
+    else if (joyId === -1) { moveZ = 0; moveX = 0; } // 両方未使用ならゼロ
+  }
   if (keys['ArrowLeft'])  lookDelta -= 0.05;
   if (keys['ArrowRight']) lookDelta += 0.05;
   if (keys['Space'] && !autoTimer) startAuto();
-  if (!keys['Space']) {} // mouseup handles stop
 }
 
 /* ── BUTTONS ────────────────────────────────────────────── */
@@ -917,22 +1113,21 @@ document.getElementById('btn-start').addEventListener('click', startGame);
 document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-next').addEventListener('click', nextWave);
 
-/* ── HELPERS ────────────────────────────────────────────── */
 function setEl(id, val) { document.getElementById(id).textContent = val; }
 function show(id) { document.getElementById(id).classList.remove('off'); }
 function hide(id) { document.getElementById(id).classList.add('off'); }
 
-/* ── MAIN LOOP ──────────────────────────────────────────── */
 var lastTime = performance.now();
 
 function loop(now) {
   requestAnimationFrame(loop);
-  var dt = Math.min((now - lastTime) / 1000, 0.05);
+  var rawDt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
+  var dt = rawDt * timeScale; // スローモーション適用
 
   if (state === 'playing') {
     processKeys();
-    updatePlayer(dt);
+    updatePlayer(rawDt); // シェイク・スロータイマーはリアルタイム
     updateEnemies(dt);
     updateParticles(dt);
   }
