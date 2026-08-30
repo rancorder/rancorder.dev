@@ -1,6 +1,6 @@
 'use client';
 
-type Sector = 'manufacturing' | 'sales';
+type Sector = 'manufacturing' | 'sales' | 'dx';
 
 export default function SurvivalCombatHUD({
   sector,
@@ -34,7 +34,7 @@ export default function SurvivalCombatHUD({
       <aside className={`combat-hud ${danger ? 'danger' : warning ? 'warning' : 'stable'}`} aria-live="polite">
         <div className="combat-hud-top">
           <div>
-            <small>{sector === 'sales' ? 'SALES OPS MISSION' : 'MFG AI MISSION'}</small>
+            <small>{sector === 'sales' ? 'SALES OPS MISSION' : sector === 'dx' ? 'DX TRANSFORMATION' : 'MFG AI MISSION'}</small>
             <b>MISSION INTEGRITY</b>
           </div>
           <span>{status}</span>
@@ -50,7 +50,7 @@ export default function SurvivalCombatHUD({
         <div className="combat-stats">
           <div><small>RISK SIGNALS</small><b>{String(riskCount).padStart(2, '0')}</b></div>
           <div><small>SCAN</small><b>{answered}/{total}</b></div>
-          <div><small>SECTOR</small><b>{sector === 'sales' ? 'OPS' : 'AI'}</b></div>
+          <div><small>SECTOR</small><b>{sector === 'sales' ? 'OPS' : sector === 'dx' ? 'DX' : 'AI'}</b></div>
         </div>
 
         <div key={pulse} className={`combat-alert ${alert ? 'active' : ''}`}>
