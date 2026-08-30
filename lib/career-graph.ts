@@ -65,3 +65,26 @@ export function evidenceForExpertise(id:string){const x=expertise.find(e=>e.id==
 
 export function decisionsForExpertise(id:string){return decisions.filter(d=>d.expertiseIds.includes(id));}
 export function decisionsForCase(slug:string){return decisions.filter(d=>d.caseSlug===slug);}
+
+export type KnowledgeNode={
+ id:string; slug:string; expertiseIds:string[]; caseSlugs:string[]; decisionIds:string[];
+ principle:string; relation:'framework'|'principle'|'field-note';
+};
+
+export const knowledgeNodes:KnowledgeNode[]=[
+ {id:'knowledge:poc-production-framework',slug:'2026-02-03-poc-to-production-framework',expertiseIds:['expertise:ai-production','expertise:technical-pm'],caseSlugs:['ai-production-delivery'],decisionIds:['decision:ai-failure-boundary'],principle:'PoCの成功とProduction Readinessは別の判定軸として設計する。',relation:'framework'},
+ {id:'knowledge:responsibility-boundary',slug:'2026-02-12-poc-to-production-responsibility',expertiseIds:['expertise:ai-production','expertise:decision-architecture','expertise:technical-pm'],caseSlugs:['ai-production-delivery'],decisionIds:['decision:ai-failure-boundary'],principle:'本番移行では精度だけでなく、失敗時の責任主体と人への切替条件を先に決める。',relation:'principle'},
+ {id:'knowledge:failure-definition',slug:'2026-02-13-failure-definition-production-design',expertiseIds:['expertise:ai-production','expertise:automation-reliability','expertise:decision-architecture'],caseSlugs:['ai-production-delivery','54-site-monitoring'],decisionIds:['decision:ai-failure-boundary','decision:failure-mode-monitoring'],principle:'成功条件だけでは運用できない。何を失敗と判定するかが監視と復旧を決める。',relation:'principle'},
+ {id:'knowledge:poc-judgement',slug:'2026-02-13-poc-failure-pm-judgement-design',expertiseIds:['expertise:decision-architecture','expertise:technical-pm','expertise:ai-production'],caseSlugs:['ai-production-delivery'],decisionIds:['decision:ai-failure-boundary'],principle:'PMの価値は進捗管理ではなく、曖昧な状況に判断可能な境界を置くことにある。',relation:'principle'},
+ {id:'knowledge:reliability-judgment',slug:'2026-02-02-reliability-judgment',expertiseIds:['expertise:automation-reliability','expertise:decision-architecture'],caseSlugs:['54-site-monitoring'],decisionIds:['decision:failure-mode-monitoring'],principle:'Reliabilityは止まらないことではなく、異常を識別し復旧判断へ接続できることで成立する。',relation:'principle'},
+ {id:'knowledge:lock-decision',slug:'2026-02-06-lock-cannot-protect-decision',expertiseIds:['expertise:automation-reliability','expertise:decision-architecture'],caseSlugs:['54-site-monitoring','sales-support-poc-operations'],decisionIds:['decision:failure-mode-monitoring','decision:sales-completion-condition'],principle:'排他制御だけでは業務上の正しさを保証できない。処理結果の完全性を別に観測する。',relation:'field-note'},
+ {id:'knowledge:web-automation',slug:'2024-01-20-web-automation',expertiseIds:['expertise:automation-reliability','expertise:technical-pm'],caseSlugs:['54-site-monitoring'],decisionIds:['decision:failure-mode-monitoring'],principle:'自動化は実行コードだけでなく、監視・再実行・運用境界まで含めて設計する。',relation:'field-note'},
+ {id:'knowledge:automation-bestpractice',slug:'2026-01-20-blogautomation-bestpractice',expertiseIds:['expertise:automation-reliability'],caseSlugs:['54-site-monitoring'],decisionIds:['decision:failure-mode-monitoring'],principle:'定常自動化は成功時より失敗時の振る舞いを先に設計する。',relation:'framework'},
+ {id:'knowledge:technical-pm-architecture',slug:'2026-01-30-technical-pm-architecture-review',expertiseIds:['expertise:technical-pm','expertise:decision-architecture'],caseSlugs:['1400-line-quality-rebuild','ai-production-delivery'],decisionIds:['decision:risk-based-test-boundary','decision:ai-failure-boundary'],principle:'Technical PMは実装詳細を知るだけでなく、変更がどの境界へ影響するかを判断する。',relation:'framework'},
+ {id:'knowledge:trusted-pm-communication',slug:'2026-01-31-trusted-technical-pm-communication',expertiseIds:['expertise:technical-pm','expertise:decision-architecture'],caseSlugs:['ai-production-delivery'],decisionIds:['decision:ai-failure-boundary'],principle:'信頼されるPMコミュニケーションは、未確定事項と決定事項の境界を明示する。',relation:'principle'},
+ {id:'knowledge:poc-expectation',slug:'2026-02-10-poc-expectation-verbalization',expertiseIds:['expertise:ai-production','expertise:decision-architecture','expertise:technical-pm'],caseSlugs:['ai-production-delivery'],decisionIds:['decision:ai-failure-boundary'],principle:'PoC開始前に期待を観測可能な言葉へ変換すると、本番移行判断が可能になる。',relation:'framework'},
+];
+
+export function knowledgeForExpertise(id:string){return knowledgeNodes.filter(k=>k.expertiseIds.includes(id));}
+export function knowledgeForCase(slug:string){return knowledgeNodes.filter(k=>k.caseSlugs.includes(slug));}
+export function knowledgeForPost(slug:string){return knowledgeNodes.find(k=>k.slug===slug);}
