@@ -21,7 +21,7 @@ export default function MissionFX(){
       window.setTimeout(()=>setBoot(false),1500),
     ];
     return ()=>timers.forEach(clearTimeout);
-  },[sector]);
+  },[]);
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
@@ -121,7 +121,7 @@ export default function MissionFX(){
     };
     draw();
     return ()=>{cancelAnimationFrame(raf);window.removeEventListener('resize',resize);window.removeEventListener('pointermove',move);};
-  },[]);
+  },[sector]);
 
   return <>
     <canvas ref={canvasRef} className="mission-network" aria-hidden="true" />
