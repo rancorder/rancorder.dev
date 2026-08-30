@@ -3,13 +3,18 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-type Sector = 'manufacturing' | 'sales';
+type Sector = 'manufacturing' | 'sales' | 'dx';
 
 const systems = {
   manufacturing: {
     code:'MFG-AI',
     readiness:84,
     boot:['BOOT / MFG AI MISSION','LOADING / DECISION ENGINE','CHECKING / AI ERROR BOUNDARY','CHECKING / OBSERVABILITY','RISK SIGNALS / 02 DETECTED','SYSTEM / READY'],
+  },
+  dx: {
+    code:'DX-OPS',
+    readiness:71,
+    boot:['BOOT / DX TRANSFORMATION','LOADING / PROCESS MAP','CHECKING / SOURCE OF TRUTH','CHECKING / ADOPTION SIGNAL','RISK SIGNALS / 03 DETECTED','SYSTEM / READY'],
   },
   sales: {
     code:'SALES-OPS',
@@ -35,7 +40,7 @@ export default function HeroMissionConsole(){
 
   useEffect(()=>{
     const saved=window.localStorage.getItem('rancorder-mission');
-    if(saved==='manufacturing'||saved==='sales') setSector(saved);
+    if(saved==='manufacturing'||saved==='sales'||saved==='dx') setSector(saved);
     const onSector=(event:Event)=>{
       const next=(event as CustomEvent<{sector:Sector}>).detail?.sector;
       if(next){setSector(next);setLine(0);setReady(false);setPulse(v=>v+1);}
@@ -61,6 +66,6 @@ export default function HeroMissionConsole(){
     </div>
     <div className="mc-score"><strong>{ready?system.readiness:'--'}</strong><span>%</span><div><b>MISSION STATUS</b><em>{ready?'CONDITIONAL READY':'INITIALIZING'}</em></div></div>
     <div className="mc-meter"><i style={{width:ready?`${system.readiness}%`:'8%'}} /></div>
-    <div className="hero-console-command"><button type="button" onClick={()=>run()}>↻ RUN SYSTEM CHECK</button><Link href={`/survival-test?s=${sector==='sales'?'sales':'mfg'}`}>ENTER MISSION →</Link></div>
+    <div className="hero-console-command"><button type="button" onClick={()=>run()}>↻ RUN SYSTEM CHECK</button><Link href={`/survival-test?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}`}>ENTER MISSION →</Link></div>
   </aside>;
 }
