@@ -4,6 +4,7 @@ import MissionSelector from '../components/MissionSelector';
 import SectorMissionPanel from '../components/SectorMissionPanel';
 import HeroMissionConsole from '../components/HeroMissionConsole';
 import AdaptiveHeroCopy from '../components/AdaptiveHeroCopy';
+import KnowledgeDeck from '../components/KnowledgeDeck';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -53,12 +54,6 @@ const cases = [
     decision: '巡回・アポ検知・文字起こし・KPI集計・配布を一つの運用パイプラインへ。',
     result: '38顧客規模の巡回運用 / 1時間単位の監視',
   },
-];
-
-const knowledge = [
-  ['01', 'PoC → Production', 'デモを本番へ移すとき、何を追加で設計するか。'],
-  ['02', 'Decision Architecture', '曖昧な案件で、誰が何を決めるべきか。'],
-  ['03', 'Automation Reliability', '自動化を「動く」から「任せられる」へ変える。'],
 ];
 
 export default function HomePage() {
@@ -209,16 +204,7 @@ export default function HomePage() {
           </div>
           <Link href="/blog" className="mc-text-link">KNOWLEDGE BASE を開く →</Link>
         </header>
-        <div className="mc-knowledge-grid">
-          {knowledge.map(([id, title, desc]) => (
-            <Link href="/blog" className="mc-knowledge-card" key={id}>
-              <span>{id}</span>
-              <h3>{title}</h3>
-              <p>{desc}</p>
-              <b>EXPLORE ↗</b>
-            </Link>
-          ))}
-        </div>
+        <KnowledgeDeck />
       </section>
 
       <footer className="mc-footer">
