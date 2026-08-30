@@ -42,6 +42,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/lab`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/survival-test`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/cases/54-site-monitoring`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/cases/ai-production-delivery`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/cases/1400-line-quality-rebuild`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/lp/lp-thought-to-website`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
