@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { expertise, evidenceForExpertise, decisionsForExpertise, knowledgeForExpertise, citationForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
+import { expertise, evidenceForExpertise, decisionsForExpertise, knowledgeForExpertise, citationForExpertise, sourceForEvidence, evidenceVerificationClass, canonicalExpertiseStatement } from '../../lib/career-graph';
 import { getCaseStudy } from '../../lib/case-studies';
 import { getAllBlogPosts } from '../../lib/blog';
 
@@ -40,7 +40,7 @@ export default function ExpertisePage(){
        <div className="expertise-decisions"><span>DECISION NODES</span>{decisions.map(d=><Link href={'/cases/'+d.caseSlug+'#decision-node'} key={d.id}><small>{d.id.replace('decision:','DECISION / ')}</small><b>{d.title}</b><p>{d.reason}</p></Link>)}</div>
        <div className="expertise-proof-grid">
         <section><span>CASES / PROOF</span>{cases.map(c=>c&&<Link href={'/cases/'+c.slug} key={c.slug}><b>{c.title}</b><small>{c.principle} →</small></Link>)}</section>
-        <section><span>EVIDENCE</span>{ev.map(e=><div key={e.id}><strong>{e.value}</strong><p>{e.claim}</p><small>{e.publiclyVerifiable?'PUBLICLY VERIFIABLE':'FIRST-PARTY CASE RECORD'}</small></div>)}</section>
+        <section><span>EVIDENCE / PROVENANCE</span>{ev.map(e=>{const source=sourceForEvidence(e.id);return <div key={e.id} className="evidence-provenance-item"><strong>{e.value}</strong><p>{e.claim}</p><small>{evidenceVerificationClass(e)}</small>{source&&<a href={source.url} target={source.url.startsWith('http')?'_blank':undefined} rel={source.url.startsWith('http')?'noreferrer':undefined}>{source.label} ↗</a>}<em>{e.verificationNote}</em></div>})}</section>
         <section><span>KNOWLEDGE</span>{knowledge.length?knowledge.map(p=><Link href={'/blog/'+p.slug} key={p.slug}><b>{p.title}</b><small>{p.date} →</small></Link>):<p className="expertise-empty">Knowledge node is being indexed.</p>}</section>
        </div>
       </article>;
