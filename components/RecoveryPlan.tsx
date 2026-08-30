@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { awardAchievement } from './MissionXP';
 
 type Sector = 'mfg' | 'sales';
 
@@ -50,7 +51,7 @@ export default function RecoveryPlan({ sector, code }: { sector: Sector; code: s
   const selectedFixes = fixed.slice().sort((a,b)=>a-b).join(',');
   const briefUrl = `/mission-brief?s=${sector}&r=${code}&f=${selectedFixes}`;
 
-  const toggle = (index:number) => setFixed(prev=>prev.includes(index)?prev.filter(x=>x!==index):[...prev,index]);
+  const toggle = (index:number) => { setFixed(prev=>prev.includes(index)?prev.filter(x=>x!==index):[...prev,index]); awardAchievement('recovery'); };
 
   return <section className="recovery-plan">
     <header className="recovery-head">
