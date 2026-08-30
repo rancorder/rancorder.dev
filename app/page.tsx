@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MissionFX from '../components/MissionFX';
 import MissionSelector from '../components/MissionSelector';
+import SectorMissionPanel from '../components/SectorMissionPanel';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -137,11 +138,7 @@ export default function HomePage() {
       </section>
 
       <MissionSelector />
-
-      <section className="mc-battle-strip" aria-label="live mission events">
-        <div className="battle-alert"><span>LIVE EVENT</span><b>SALES PoC / APPOINTMENT SIGNAL DETECTED</b><i>+12 OPERATOR XP</i></div>
-        <div className="battle-alert muted"><span>MISSION</span><b>CONVERT DATA → DECISION → OPERATION</b><i>CHAIN x4</i></div>
-      </section>
+      <SectorMissionPanel />
 
       <section className="mc-proof" aria-label="operational evidence">
         <div className="mc-section-tag">01 / OPERATIONAL EVIDENCE</div>
