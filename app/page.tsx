@@ -2,6 +2,7 @@ import Link from 'next/link';
 import MissionFX from '../components/MissionFX';
 import MissionSelector from '../components/MissionSelector';
 import SectorMissionPanel from '../components/SectorMissionPanel';
+import HeroMissionConsole from '../components/HeroMissionConsole';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -88,6 +89,8 @@ export default function HomePage() {
           <span>AI DELIVERY</span>
           <b>/</b>
           <span>MANUFACTURING B2B</span>
+          <b>/</b>
+          <span>SALES OPS POC</span>
         </div>
 
         <div className="mc-hero-layout">
@@ -99,8 +102,8 @@ export default function HomePage() {
             </h1>
             <p>
               曖昧な要件、複数の関係者、AIの不確実性。<br className="desktop-break" />
-              判断・責任・監視・復旧を設計し、
-              「動くデモ」を「使い続けられるシステム」へ移行します。
+              製造業AIと営業支援PoCの「判断・責任・監視・復旧」を設計し、
+              「動くデモ」を「使い続けられる運用」へ移行します。
             </p>
             <div className="mc-actions">
               <a className="mc-primary" href="#cases">実績を見る <span>↘</span></a>
@@ -108,30 +111,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <aside className="mc-console" aria-label="production readiness console">
-            <div className="mc-console-head">
-              <span>PRODUCTION READINESS</span>
-              <span className="mc-live"><i /> LIVE</span>
-            </div>
-            <div className="mc-score">
-              <strong>84</strong><span>%</span>
-              <div>
-                <b>MISSION STATUS</b>
-                <em>CONDITIONAL READY</em>
-              </div>
-            </div>
-            <div className="mc-meter"><i style={{ width: '84%' }} /></div>
-            <div className="mc-console-list">
-              <div><span><i className="s-green" /> Responsibility</span><b>DEFINED</b></div>
-              <div><span><i className="s-green" /> Observability</span><b>ACTIVE</b></div>
-              <div><span><i className="s-yellow" /> Rollback</span><b>PENDING</b></div>
-              <div className="critical-row"><span><i className="s-red" /> Failure Criteria</span><b>CHECK</b></div>
-            </div>
-            <div className="mc-console-foot">
-              <span>LAST CHECK 00:00:12</span>
-              <span>RISK SIGNALS 02</span>
-            </div>
-          </aside>
+          <HeroMissionConsole />
         </div>
 
         <div className="mc-scroll-hint"><span /> SCROLL TO INSPECT</div>
