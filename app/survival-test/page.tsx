@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import SurvivalCombatHUD from '../../components/SurvivalCombatHUD';
 
 type Answer = 'yes' | 'partial' | 'no';
-type Sector = 'manufacturing' | 'sales';
+type Sector = 'manufacturing' | 'sales' | 'dx';
 type Question = { id:string; domain:string; question:string; why:string; blocker:string; action:string; weight:number };
 
 const common: Question[] = [
@@ -31,6 +31,16 @@ const sales: Question[] = [
   { id:'decision', domain:'DECISION OUTPUT', question:'集計結果が「次に誰へ何をするか」まで接続されていますか？', why:'営業支援PoCは分析結果を出すだけでは、現場の摩擦を減らしません。', blocker:'分析と営業アクションが分断', action:'レポートに次アクションと担当を最低1つ持たせる', weight:11 },
 ];
 
+
+const dx: Question[] = [
+  ...common,
+  { id:'process', domain:'PROCESS OWNERSHIP', question:'DX後の業務フローについて、工程ごとの責任者が決まっていますか？', why:'システム導入後も責任が旧組織のままだと、例外処理だけ人に残ります。', blocker:'新業務フローの責任境界がない', action:'主要工程ごとに実行者・承認者・例外判断者を定義する', weight:16 },
+  { id:'truth', domain:'SOURCE OF TRUTH', question:'同じ情報について「どのシステムが正本か」を一意に決めていますか？', why:'Excel・既存システム・新ツールが併存すると、DXは入力先を増やしただけになります。', blocker:'データの正本が分裂している', action:'主要データごとにSystem of Recordを1つ指定する', weight:14 },
+  { id:'shadow', domain:'SHADOW WORKFLOW', question:'新システム導入後に残るExcel・紙・口頭連絡を把握していますか？', why:'公式フローではなく、残存する裏フローが実際の運用コストを決めます。', blocker:'Shadow Workflowを把握できていない', action:'旧手順の残存箇所を棚卸しし、廃止条件を設定する', weight:14 },
+  { id:'adoption', domain:'ADOPTION SIGNAL', question:'ログイン数ではなく「新業務が実際に完了した割合」を測れますか？', why:'利用率は定着を保証しません。旧手順へ戻らず業務完了できたかが重要です。', blocker:'現場定着を測る指標がない', action:'新フロー完結率と旧フロー逆戻り率を計測する', weight:13 },
+  { id:'fallback', domain:'TRANSITION FALLBACK', question:'移行失敗時に、どこまで旧運用へ戻すか決めていますか？', why:'全面切替より、移行期間の境界設計がDX失敗の被害を限定します。', blocker:'移行時の復旧境界がない', action:'切替単位・戻し条件・旧運用保持期限を定義する', weight:11 },
+];
+
 const valueMap: Record<Answer, number> = { yes:1, partial:.5, no:0 };
 
 export default function SurvivalTestPage(){
@@ -41,10 +51,14 @@ export default function SurvivalTestPage(){
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
-    if(saved === 'manufacturing' || saved === 'sales') setSector(saved);
+    const query = new URLSearchParams(window.location.search).get('s');
+    if(query === 'dx') setSector('dx');
+    else if(query === 'sales') setSector('sales');
+    else if(query === 'mfg') setSector('manufacturing');
+    else if(saved === 'manufacturing' || saved === 'sales' || saved === 'dx') setSector(saved);
   },[]);
 
-  const questions = sector === 'sales' ? sales : manufacturing;
+  const questions = sector === 'sales' ? sales : sector === 'dx' ? dx : manufacturing;
   const answered = questions.filter(q=>answers[q.id]).length;
   const riskCount = questions.filter(q=>answers[q.id] === 'no' || answers[q.id] === 'partial').length;
   const score = useMemo(()=>{
@@ -93,12 +107,15 @@ export default function SurvivalTestPage(){
         <div className="survival-sector-switch">
           <button className={sector==='manufacturing'?'active':''} onClick={()=>changeSector('manufacturing')}>MFG AI</button>
           <button className={sector==='sales'?'active':''} onClick={()=>changeSector('sales')}>SALES OPS</button>
+          <button className={sector==='dx'?'active':''} onClick={()=>changeSector('dx')}>DX</button>
         </div>
-        <div className="mc-section-tag purple">{sector==='sales'?'SALES SUPPORT POC':'MANUFACTURING AI POC'} / READINESS DIAGNOSTIC</div>
+        <div className="mc-section-tag purple">{sector==='sales'?'SALES SUPPORT POC':sector==='dx'?'DX TRANSFORMATION':'MANUFACTURING AI POC'} / READINESS DIAGNOSTIC</div>
         <h1>そのPoC、<br/><span>本番で生き残れるか。</span></h1>
         <p>{sector==='sales'
           ? '架電データ・アポ・文字起こし・KPIが、営業判断までつながる運用かを診断します。'
-          : 'AIの誤判定・責任境界・監視・復旧まで、本番運用に耐える設計かを診断します。'}
+          : sector==='dx'
+            ? '業務フロー・データ正本・Shadow Workflow・現場定着まで、DXが本当に運用へ根付く設計かを診断します。'
+            : 'AIの誤判定・責任境界・監視・復旧まで、本番運用に耐える設計かを診断します。'}
         </p>
         <div className="survival-progress">
           <div><i style={{width:`${answered/questions.length*100}%`}} /></div>
@@ -123,12 +140,12 @@ export default function SurvivalTestPage(){
 
       <div className="survival-submit">
         <div>
-          <span>{sector==='sales'?'SALES OPS READINESS ENGINE':'AI PRODUCTION READINESS ENGINE'}</span>
+          <span>{sector==='sales'?'SALES OPS READINESS ENGINE':sector==='dx'?'DX ADOPTION READINESS ENGINE':'AI PRODUCTION READINESS ENGINE'}</span>
           <p>{answered===questions.length?'入力完了。Sector固有のBlockerを解析します。':'すべての質問に回答してください。'}</p>
         </div>
         <button type="button" disabled={answered!==questions.length} onClick={()=>{
           const code = questions.map(q=>answers[q.id]==='yes'?'y':answers[q.id]==='partial'?'p':'n').join('');
-          window.location.href = `/survival-test/result?s=${sector==='sales'?'sales':'mfg'}&r=${code}`;
+          window.location.href = `/survival-test/result?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}&r=${code}`;
         }}>ANALYZE MISSION →</button>
       </div>
     </section>
