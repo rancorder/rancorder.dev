@@ -39,6 +39,16 @@ const cases = [
     decision: '壊れたときの影響度から保証境界を決め、30テストを追加。',
     result: '変更可能なコードへ段階的に再構築',
   },
+  {
+    slug: 'sales-support-poc-operations',
+    id: 'CASE 04',
+    status: 'SALES OPS / POC',
+    tone: 'purple',
+    title: '営業支援PoCの運用化',
+    signal: '架電結果・アポ・音声・KPIが分散し、取得成功と営業判断がつながっていない。',
+    decision: '巡回・アポ検知・文字起こし・KPI集計・配布を一つの運用パイプラインへ。',
+    result: '38顧客規模の巡回運用 / 1時間単位の監視',
+  },
 ];
 
 const knowledge = [
@@ -64,6 +74,7 @@ export default function HomePage() {
           <a href="#diagnostic">DIAGNOSTIC</a>
           <Link href="/blog">KNOWLEDGE</Link>
           <Link href="/lab">LAB</Link>
+          <a href="#sales-poc">SALES PoC</a>
         </div>
         <div className="mc-system-state"><i /> SYSTEM ONLINE</div>
       </nav>
@@ -124,6 +135,11 @@ export default function HomePage() {
         <div className="mc-scroll-hint"><span /> SCROLL TO INSPECT</div>
       </section>
 
+      <section className="mc-battle-strip" aria-label="live mission events">
+        <div className="battle-alert"><span>LIVE EVENT</span><b>SALES PoC / APPOINTMENT SIGNAL DETECTED</b><i>+12 OPERATOR XP</i></div>
+        <div className="battle-alert muted"><span>MISSION</span><b>CONVERT DATA → DECISION → OPERATION</b><i>CHAIN x4</i></div>
+      </section>
+
       <section className="mc-proof" aria-label="operational evidence">
         <div className="mc-section-tag">01 / OPERATIONAL EVIDENCE</div>
         <div className="mc-proof-grid">
@@ -172,6 +188,28 @@ export default function HomePage() {
               <div className="mc-case-line" />
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="mc-section mc-sector" id="sales-poc">
+        <header className="mc-section-head">
+          <div>
+            <div className="mc-section-tag purple">03 / SALES SUPPORT POC</div>
+            <h2>営業支援PoCを、<br /><span>データ取得で終わらせない。</span></h2>
+          </div>
+          <p>架電結果・音声・アポ・KPIを、取得→検知→分析→報告まで一続きの運用へ変換します。</p>
+        </header>
+        <div className="sector-console">
+          <div className="sector-flow">
+            <span>CALL DATA</span><i>→</i><span>APPOINTMENT SIGNAL</span><i>→</i><span>TRANSCRIPT</span><i>→</i><span>KPI</span><i>→</i><strong>DECISION</strong>
+          </div>
+          <div className="sector-stats">
+            <div><small>MONITORED ACCOUNTS</small><b>38</b></div>
+            <div><small>巡回 CADENCE</small><b>1H</b></div>
+            <div><small>APPOINTMENT DETECTION</small><b>AUTO</b></div>
+            <div><small>REPORT ROUTING</small><b>ACTIVE</b></div>
+          </div>
+          <Link href="/cases/sales-support-poc-operations" className="mc-primary sector-cta">営業支援PoCのDecision Recordを見る <span>↗</span></Link>
         </div>
       </section>
 
