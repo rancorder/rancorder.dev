@@ -6,6 +6,7 @@ import HeroMissionConsole from '../components/HeroMissionConsole';
 import AdaptiveHeroCopy from '../components/AdaptiveHeroCopy';
 import KnowledgeDeck from '../components/KnowledgeDeck';
 import MissionIntake from '../components/MissionIntake';
+import OriginSystem from '../components/OriginSystem';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -70,6 +71,7 @@ export default function HomePage() {
           RANCORDER<span>.DEV</span>
         </Link>
         <div className="mc-nav-links">
+          <a href="#origin">ORIGIN</a>
           <a href="#cases">CASES</a>
           <a href="#diagnostic">DIAGNOSTIC</a>
           <Link href="/blog">KNOWLEDGE</Link>
@@ -92,8 +94,10 @@ export default function HomePage() {
       <MissionSelector />
       <SectorMissionPanel />
 
+      <OriginSystem />
+
       <section className="mc-proof" aria-label="operational evidence">
-        <div className="mc-section-tag">01 / OPERATIONAL EVIDENCE</div>
+        <div className="mc-section-tag">02 / OPERATIONAL EVIDENCE</div>
         <div className="mc-proof-grid">
           {proof.map((item) => (
             <article key={item.label} className="mc-proof-card">
@@ -109,7 +113,7 @@ export default function HomePage() {
       <section className="mc-section" id="cases">
         <header className="mc-section-head">
           <div>
-            <div className="mc-section-tag">02 / DECISION RECORDS</div>
+            <div className="mc-section-tag">03 / DECISION RECORDS</div>
             <h2>コードではなく、<br /><span>判断の履歴を見せる。</span></h2>
           </div>
           <p>複雑な案件で価値になるのは、実装量ではなく「何を危険と見て、どこに境界を引いたか」です。</p>
@@ -146,7 +150,7 @@ export default function HomePage() {
       <section className="mc-section mc-sector" id="sales-poc">
         <header className="mc-section-head">
           <div>
-            <div className="mc-section-tag purple">03 / SALES SUPPORT POC</div>
+            <div className="mc-section-tag purple">04 / SALES SUPPORT POC</div>
             <h2>営業支援PoCを、<br /><span>データ取得で終わらせない。</span></h2>
           </div>
           <p>架電結果・音声・アポ・KPIを、取得→検知→分析→報告まで一続きの運用へ変換します。</p>
@@ -168,7 +172,7 @@ export default function HomePage() {
       <section className="mc-section mc-diagnostic" id="diagnostic">
         <div className="mc-diag-panel">
           <div className="mc-diag-copy">
-            <div className="mc-section-tag purple">03 / POC SURVIVAL TEST</div>
+            <div className="mc-section-tag purple">05 / POC SURVIVAL TEST</div>
             <h2>そのPoC、<br /><span>本番で生き残れるか。</span></h2>
             <p>
               成功条件だけでは、本番移行はできません。
@@ -200,7 +204,7 @@ export default function HomePage() {
       <section className="mc-section mc-knowledge">
         <header className="mc-section-head">
           <div>
-            <div className="mc-section-tag">04 / KNOWLEDGE SYSTEM</div>
+            <div className="mc-section-tag">06 / KNOWLEDGE SYSTEM</div>
             <h2>知識を、<br /><span>判断に使える形で残す。</span></h2>
           </div>
           <Link href="/blog" className="mc-text-link">KNOWLEDGE BASE を開く →</Link>
