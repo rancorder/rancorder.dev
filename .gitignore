@@ -28,3 +28,7 @@ pnpm-debug.log*
 # operating system files
 .DS_Store
 Thumbs.db
+
+# Gemini CLI local state
+.gemini/
+gha-creds-*.json
