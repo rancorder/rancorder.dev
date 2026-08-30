@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { BlogRenderer } from '@/components/blog/blog-renderer';
 import BlogLayout from '@/components/BlogLayout';
 import { getAllBlogPosts, getBlogPost, getBlogSlugs, type BlogPost } from '@/lib/blog';
+import { knowledgeForPost, expertise as expertiseGraph, decisions, getCaseStudy as _unused } from '@/lib/career-graph';
+import { getCaseStudy } from '@/lib/case-studies';
+import Link from 'next/link';
 import './blog-post.css';
 
 interface BlogPostPageProps { params: { slug: string } }
@@ -29,6 +32,10 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const post=getBlogPost(params.slug);
   if(!post) notFound();
   const related=relatedPosts(post);
+  const knowledgeNode=knowledgeForPost(post.slug);
+  const semanticExpertise=knowledgeNode?.expertiseIds.map(id=>expertiseGraph.find(x=>x.id===id)).filter(Boolean)||[];
+  const semanticCases=knowledgeNode?.caseSlugs.map(getCaseStudy).filter(Boolean)||[];
+  const semanticDecisions=knowledgeNode?.decisionIds.map(id=>decisions.find(x=>x.id===id)).filter(Boolean)||[];
   const canonical=`https://rancorder.dev/blog/${post.slug}`;
   const articleSchema={
     '@context':'https://schema.org',
@@ -43,6 +50,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     url:canonical,
     keywords:post.tags.join(', '),
     articleSection:classify(post),
+    about:semanticExpertise.map(x=>x?.name).filter(Boolean),
     author:{'@id':'https://rancorder.dev/#person'},
     publisher:{'@id':'https://rancorder.dev/#person'},
     isPartOf:{'@id':'https://rancorder.dev/#website'},
@@ -53,6 +61,15 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
       <BlogLayout title={post.title} date={post.date} readTime={post.readingTime} tags={post.tags}
       category={classify(post)}
       related={related.map((p,i)=>({slug:p.slug,title:p.title,category:classify(p),readTime:p.readingTime,xp:140+i*20}))}>
+      {knowledgeNode&&<aside className="knowledge-graph-layer">
+        <header><span>KNOWLEDGE GRAPH NODE</span><b>{knowledgeNode.relation.toUpperCase()}</b></header>
+        <div className="knowledge-principle"><small>PRINCIPLE</small><p>{knowledgeNode.principle}</p></div>
+        <div className="knowledge-semantic-grid">
+          <section><span>EXPERTISE</span>{semanticExpertise.map(x=>x&&<Link key={x.id} href={'/expertise#'+x.slug}>{x.name} →</Link>)}</section>
+          <section><span>DECISION EVIDENCE</span>{semanticDecisions.map(x=>x&&<Link key={x.id} href={'/cases/'+x.caseSlug+'#decision-node'}>{x.title} →</Link>)}</section>
+          <section><span>RELATED CASE</span>{semanticCases.map(x=>x&&<Link key={x.slug} href={'/cases/'+x.slug}>{x.title} →</Link>)}</section>
+        </div>
+      </aside>}
       <BlogRenderer content={post.content}/>
       </BlogLayout>
     </>
