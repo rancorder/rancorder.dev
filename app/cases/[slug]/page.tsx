@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { caseStudies, getCaseStudy } from '../../../lib/case-studies';
+import { decisionsForCase, expertise as expertiseGraph } from '../../../lib/career-graph';
 
 const geoAnswers: Record<string,{
   question:string;
@@ -72,6 +73,7 @@ export default function CasePage({ params }: { params: { slug: string } }) {
   const item = getCaseStudy(params.slug);
   if (!item) notFound();
   const geo=geoAnswers[item.slug];
+  const decisionNodes=decisionsForCase(item.slug);
   const canonical=`https://rancorder.dev/cases/${item.slug}`;
 
   const structuredData={
@@ -139,6 +141,15 @@ export default function CasePage({ params }: { params: { slug: string } }) {
           <h2>{geo.question}</h2>
           <p>{geo.answer}</p>
           <footer><span>SHORT ANSWER</span><strong>{item.principle}</strong></footer>
+        </section>}
+
+        {decisionNodes.length>0&&<section className="case-decision-node" id="decision-node">
+          <header><span>DECISION NODE</span><b>MACHINE + HUMAN READABLE</b></header>
+          {decisionNodes.map(d=><article key={d.id}>
+            <div className="case-decision-title"><small>{d.id}</small><h2>{d.title}</h2></div>
+            <dl><div><dt>SITUATION</dt><dd>{d.situation}</dd></div><div><dt>CONSTRAINT</dt><dd>{d.constraint}</dd></div><div><dt>RISK</dt><dd>{d.risk}</dd></div><div><dt>DECISION</dt><dd>{d.decision}</dd></div><div><dt>WHY</dt><dd>{d.reason}</dd></div><div><dt>RESULT</dt><dd>{d.result}</dd></div></dl>
+            <footer><span>PROVES</span>{d.expertiseIds.map(id=>{const x=expertiseGraph.find(e=>e.id===id);return x?<Link key={id} href={'/expertise#'+x.slug}>{x.name}</Link>:null})}</footer>
+          </article>)}
         </section>}
 
         <section className="decision-sequence">
