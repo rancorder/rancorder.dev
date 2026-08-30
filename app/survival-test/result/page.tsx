@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ShareButton from './share-button';
+import MissionReplay from '../../../components/MissionReplay';
 
 type SectorCode = 'mfg' | 'sales';
 
@@ -102,9 +103,11 @@ export default async function ResultPage({ searchParams }: { searchParams: Promi
       </div>
       <div className="result-meter"><i style={{width:`${score}%`}} /></div>
 
+      <MissionReplay sector={sector} code={code.join('')} />
+
       <div className="result-grid">
         <section className="result-blockers">
-          <header><span>SECTOR BLOCKERS</span><b>{String(weak.length).padStart(2,'0')}</b></header>
+          <header><span>THE 3 DECISIONS THAT ALMOST KILLED THIS MISSION</span><b>{String(weak.length).padStart(2,'0')}</b></header>
           {weak.length===0 ? <div className="result-clear">重大な阻害要因は検出されませんでした。</div> :
             weak.map((x,idx)=><article key={x.i}><span>{String(idx+1).padStart(2,'0')}</span><div><h3>{config.blockers[x.i][0]}</h3><p>IMPACT WEIGHT {weights[x.i]}</p></div></article>)}
         </section>
