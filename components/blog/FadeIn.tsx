@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, Children, isValidElement } from 'react';
+import { useEffect, useRef, useState, Children } from 'react';
 
 interface FadeInProps {
   delay?: number;
@@ -13,13 +13,20 @@ export function FadeIn({ delay = 0, duration = 700, children }: FadeInProps) {
   const [scanLine, setScanLine] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const childCount = Children.count(children);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPhase('visible');
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setTimeout(() => {
+          observer.disconnect();
+          timeoutRef.current = setTimeout(() => {
             setPhase('scanning');
 
             let start: number | null = null;
@@ -48,6 +55,7 @@ export function FadeIn({ delay = 0, duration = 700, children }: FadeInProps) {
 
     return () => {
       observer.disconnect();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [delay, duration]);

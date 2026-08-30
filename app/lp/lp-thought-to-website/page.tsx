@@ -189,20 +189,23 @@ function TerminalSection({ prompt, lines, delay = 0 }: {
     if (!visible) return;
     let i = 0;
     const text = prompt;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
     const timer = setTimeout(() => {
-      const id = setInterval(() => {
+      intervalId = setInterval(() => {
         i++;
         setTyped(text.slice(0, i));
         beep(600 + Math.random() * 200, 'square', 0.03, 0.03);
         if (i >= text.length) {
-          clearInterval(id);
+          clearInterval(intervalId);
           setTimeout(() => setLineIdx(lines.length), 300);
         }
       }, 28);
-      return () => clearInterval(id);
     }, delay);
-    return () => clearTimeout(timer);
-  }, [visible]);
+    return () => {
+      clearTimeout(timer);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [delay, lines.length, prompt, visible]);
 
   return (
     <div ref={ref} style={{
@@ -1151,7 +1154,7 @@ export default function LandingPage() {
                     すべての認証が完了しました。<br />申込手続きにお進みください。
                   </p>
                   <a
-                    href="mailto:product@newaddr.com?subject=Webサイト生成システム申込"
+                    href="mailto:hello@rancorder.dev?subject=Webサイト生成システム申込"
                     style={{
                       display: 'inline-block',
                       padding: '1.1rem 3rem',

@@ -1011,7 +1011,7 @@ export default function ShowcasePage(): React.ReactElement {
             marginBottom: '1rem',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
-            // Interactive Showcase
+            {'// Interactive Showcase'}
           </div>
           <h2 style={{
             fontSize: 'clamp(1.8rem,4vw,3rem)',

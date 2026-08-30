@@ -1,27 +1,120 @@
 // components/blog/blog-renderer.tsx
-"use client";
+import parse, { domToReact, Element, Text, type DOMNode, type HTMLReactParserOptions } from 'html-react-parser';
+import { AccordionItem } from './AccordionItem';
+import { CalloutBox } from './CalloutBox';
+import { CodeBlock } from './CodeBlock';
+import { ComparisonCard } from './ComparisonCard';
+import { FadeIn } from './FadeIn';
+import { InteractiveChecklist } from './InteractiveChecklist';
+import { ProgressBar } from './ProgressBar';
 
 export type BlogRendererProps = {
   content: string;
 };
 
-export function BlogRenderer({ content }: BlogRendererProps) {
-  return (
-    <article 
-      className="prose prose-invert prose-cyan max-w-none
-        prose-headings:font-mono prose-headings:text-white
-        prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-12 prose-h2:mb-6
-        prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-8 prose-h3:mb-4
-        prose-p:text-cyan-100/80 prose-p:leading-relaxed prose-p:mb-6
-        prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:text-cyan-300
-        prose-strong:text-white prose-strong:font-bold
-        prose-code:text-cyan-300 prose-code:bg-cyan-950/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-        prose-pre:bg-black/60 prose-pre:border prose-pre:border-cyan-500/20
-        prose-blockquote:border-l-4 prose-blockquote:border-cyan-500/50 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-cyan-100/70
-        prose-ul:text-cyan-100/80 prose-ol:text-cyan-100/80
-        prose-li:my-2
-        prose-img:rounded prose-img:border prose-img:border-cyan-500/20"
-      dangerouslySetInnerHTML={{ __html: content }} 
-    />
+function textContent(nodes: DOMNode[]): string {
+  return nodes
+    .map((node) => {
+      if (node instanceof Text) return node.data;
+      if (node instanceof Element) return textContent(node.children as DOMNode[]);
+      return '';
+    })
+    .join('');
+}
+
+function parseNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function checklistNodes(element: Element): DOMNode[] {
+  const list = element.children.find(
+    (child) => child instanceof Element && (child.name === 'ul' || child.name === 'ol')
   );
+  return list instanceof Element ? (list.children as DOMNode[]) : (element.children as DOMNode[]);
+}
+
+function checklistFromAttribute(value?: string) {
+  if (!value) return null;
+  try {
+    const items: unknown = JSON.parse(value);
+    if (!Array.isArray(items)) return null;
+    return items
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => <li key={item}>{item}</li>);
+  } catch {
+    return null;
+  }
+}
+
+export function BlogRenderer({ content }: BlogRendererProps) {
+  const options: HTMLReactParserOptions = {
+    replace(node) {
+      if (!(node instanceof Element)) return;
+
+      const children = () => domToReact(node.children as DOMNode[], options);
+      const attributes = node.attribs;
+
+      switch (node.name) {
+        case 'script':
+          return <></>;
+        case 'fade-in': {
+          const delay = parseNumber(attributes.delay, 0);
+          return (
+            <FadeIn
+              delay={delay > 10 ? delay / 1000 : delay}
+              duration={parseNumber(attributes.duration, 700)}
+            >
+              {children()}
+            </FadeIn>
+          );
+        }
+        case 'callout-box': {
+          const allowedTypes = ['info', 'warning', 'success', 'critical'] as const;
+          const type = allowedTypes.find((candidate) => candidate === attributes.type) ?? 'info';
+          return (
+            <CalloutBox type={type} title={attributes.title}>
+              {children()}
+            </CalloutBox>
+          );
+        }
+        case 'code-block':
+          return (
+            <CodeBlock
+              language={attributes.language}
+              title={attributes.title}
+              code={textContent(node.children as DOMNode[]).trim()}
+            />
+          );
+        case 'interactive-checklist':
+          return (
+            <InteractiveChecklist>
+              {checklistFromAttribute(attributes.items) ?? domToReact(checklistNodes(node), options)}
+            </InteractiveChecklist>
+          );
+        case 'comparison-card':
+          return (
+            <ComparisonCard
+              title={attributes.title}
+              good={attributes.good ?? attributes.after ?? ''}
+              bad={attributes.bad ?? attributes.before ?? ''}
+            />
+          );
+        case 'progress-bar':
+          return (
+            <ProgressBar
+              value={parseNumber(attributes.value, 0)}
+              max={parseNumber(attributes.max, 100)}
+              label={attributes.label}
+            />
+          );
+        case 'accordion-item':
+          return <AccordionItem title={attributes.title ?? '詳細'}>{children()}</AccordionItem>;
+        default:
+          return;
+      }
+    },
+  };
+
+  return <>{parse(content, options)}</>;
 }
