@@ -112,3 +112,15 @@ body{margin:0}
 .lab-tabs{display:flex;gap:8px}.lab-tabs button{border:1px solid #263138;background:transparent;color:#66757a;padding:9px 12px;font:700 .52rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}.lab-tabs button.active{color:var(--mc-green);border-color:rgba(93,242,165,.4);background:rgba(93,242,165,.05)}
 .lab-list{border-top:1px solid var(--mc-line)}.lab-row{display:grid;grid-template-columns:48px 1fr 120px 20px;gap:18px;align-items:center;padding:22px 0;border-bottom:1px solid var(--mc-line);text-decoration:none;color:#fff;transition:.2s}.lab-row:hover{padding-left:8px}.lab-row>span{color:#46555a;font:700 .5rem/1 ui-monospace,SFMono-Regular,Menlo,monospace}.lab-row h3{margin:0 0 6px;font-size:.9rem}.lab-row p{margin:0;color:#657378;font-size:.7rem}.lab-row small{color:#59686d;font:700 .5rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}.lab-row>b{color:var(--mc-purple)}
 @media(max-width:760px){.lab-nav,.lab-shell{width:min(100% - 28px,1180px)}.lab-nav{height:64px}.lab-featured-grid{grid-template-columns:1fr}.lab-section-head{align-items:flex-start;flex-direction:column}.lab-tabs{width:100%;overflow:auto}.lab-row{grid-template-columns:34px 1fr 20px}.lab-row small{display:none}}
+
+/* LIVE MISSION CONTROL FX */
+.mission-network{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.55}
+.mission-boot{position:fixed;inset:0;z-index:100;background:#030508;display:flex;align-items:center;justify-content:center;animation:bootFade .45s ease 1.35s forwards}
+.mission-boot-box{width:min(520px,calc(100% - 40px));border:1px solid rgba(93,242,165,.28);background:rgba(5,10,11,.92);padding:28px;box-shadow:0 0 80px rgba(93,242,165,.08);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.mission-boot-box>span{display:block;color:#617075;font-size:.62rem;letter-spacing:.15em;margin-bottom:24px}.mission-boot-box p{margin:10px 0;color:#2d3a3d;font-size:.7rem;letter-spacing:.09em;transition:.2s}.mission-boot-box p.on{color:#8fa09d}.mission-boot-box b{display:block;margin-top:24px;color:#23362d;font-size:.72rem;letter-spacing:.14em;transition:.25s}.mission-boot-box b.on{color:#5df2a5;text-shadow:0 0 16px rgba(93,242,165,.5)}
+.mission-hud{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:20;width:180px;pointer-events:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.mission-hud-stage{display:grid;gap:7px;text-align:right}.mission-hud-stage small{color:#425156;font-size:.45rem;letter-spacing:.12em}.mission-hud-stage b{color:#718085;font-size:.52rem;letter-spacing:.08em;font-weight:700}
+.mission-hud-bar{height:2px;background:#182126;margin-top:10px}.mission-hud-bar i{display:block;height:100%;background:linear-gradient(90deg,#a78bfa,#5df2a5);box-shadow:0 0 8px rgba(93,242,165,.4);transition:width .12s linear}
+@keyframes bootFade{to{opacity:0;visibility:hidden}}
+@media(max-width:900px){.mission-hud{display:none}.mission-network{opacity:.38}}
+@media(prefers-reduced-motion:reduce){.mission-boot{display:none}.mission-network{display:none}}
