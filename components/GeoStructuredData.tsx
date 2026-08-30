@@ -17,7 +17,7 @@ const graph={
     {
       '@type':'ProfilePage',
       '@id':base+'/#profile-page',
-      url:base,
+      url:base+'/about',
       name:'rancorder | Technical PM / AI・DX Delivery',
       isPartOf:{'@id':base+'/#website'},
       mainEntity:{'@id':base+'/#profile'},
@@ -26,7 +26,7 @@ const graph={
       '@type':'Person',
       '@id':base+'/#profile',
       name:'rancorder',
-      url:base,
+      url:base+'/about',
       sameAs:['https://github.com/rancorder'],
       jobTitle:'Technical PM',
       description:'製造現場・営業支援・AI/DXの経験を横断し、曖昧な要件、責任境界、監視、復旧、現場定着を設計してPoCを本番運用へ移行するTechnical PM。',
