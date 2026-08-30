@@ -4,7 +4,7 @@ const cases=fs.readFileSync(path.join(process.cwd(),'lib/case-studies.ts'),'utf8
 const blogDir=path.join(process.cwd(),'content/blog');
 const errors=[],warnings=[];
 const ids=(prefix)=>new Set([...graph.matchAll(new RegExp("id:'("+prefix+":[^']+)'",'g'))].map(m=>m[1]));
-const expertise=ids('expertise'), evidence=ids('evidence'), decisions=ids('decision'), knowledge=ids('knowledge'), experience=ids('experience');
+const expertise=ids('expertise'), evidence=ids('evidence'), decisions=ids('decision'), knowledge=ids('knowledge'), experience=ids('experience'), sources=ids('source');
 const caseSlugs=new Set([...cases.matchAll(/slug:'([^']+)'/g)].map(m=>m[1]));
 const blogSlugs=new Set(fs.existsSync(blogDir)?fs.readdirSync(blogDir).filter(x=>x.endsWith('.html')&&!x.startsWith('_')).map(x=>x.replace(/\.html$/,'')):[]);
 function refs(re){return [...graph.matchAll(re)].flatMap(m=>m[1].split(',').map(x=>x.trim().replace(/^['"]|['"]$/g,'')).filter(Boolean))}
@@ -12,6 +12,7 @@ function check(label,refs,set){for(const x of refs)if(!set.has(x))errors.push(la
 check('expertiseIds',refs(/expertiseIds:\[([^\]]*)\]/g),expertise);
 for(const m of graph.matchAll(/expertiseId:'([^']+)'/g))if(!expertise.has(m[1]))errors.push('citation references missing expertise: '+m[1]);
 check('evidenceIds',refs(/evidenceIds:\[([^\]]*)\]/g),evidence);
+for(const m of graph.matchAll(/sourceId:'([^']+)'/g))if(!sources.has(m[1]))errors.push('Evidence references missing source: '+m[1]);
 check('decisionIds',refs(/decisionIds:\[([^\]]*)\]/g),decisions);
 check('caseSlugs',refs(/caseSlugs:\[([^\]]*)\]/g),caseSlugs);
 for(const m of graph.matchAll(/caseSlug:'([^']+)'/g))if(!caseSlugs.has(m[1]))errors.push('Decision references missing case: '+m[1]);
