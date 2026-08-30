@@ -117,7 +117,7 @@ export default function KnowledgeVault({posts}:{posts:Post[]}){
         </div>
 
         <aside className="vault-status vault-status-v2">
-          <header><span>VAULT STATUS</span><b>// LIVE FEED</b></header>
+          <header><span>VAULT STATUS</span><b>{'// LIVE FEED'}</b></header>
           {(Object.keys(categoryMeta) as Key[]).map(k=><div key={k} className={categoryMeta[k].color}>
             <small>{categoryMeta[k].code}</small><span>{categoryMeta[k].label}</span><b>{counts[k]}</b>
           </div>)}
