@@ -43,8 +43,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
     url:canonical,
     keywords:post.tags.join(', '),
     articleSection:classify(post),
-    author:{'@id':'https://rancorder.dev/#profile'},
-    publisher:{'@id':'https://rancorder.dev/#profile'},
+    author:{'@id':'https://rancorder.dev/#person'},
+    publisher:{'@id':'https://rancorder.dev/#person'},
     isPartOf:{'@id':'https://rancorder.dev/#website'},
   };
   return (
