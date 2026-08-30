@@ -1,60 +1,15 @@
-// app/blog/page.tsx
-import fs from 'fs';
-import path from 'path';
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getAllBlogPosts } from '@/lib/blog';
 
-type BlogPost = {
-  slug: string;
-  title: string;
-  date: string;
-  tags?: string[];
+export const metadata: Metadata = {
+  title: 'Blog | rancorder',
+  description: '技術、プロジェクトマネジメント、意思決定設計についての記録。',
+  alternates: { canonical: '/blog' },
 };
 
-function extractMetadata(html: string) {
-  const titleMatch = html.match(/<title>(.*?)<\/title>/);
-  const dateMatch = html.match(/<time[^>]*datetime="([^"]+)"/);
-  const tagsMatch = html.match(/<meta name="keywords" content="([^"]+)"/);
-
-  return {
-    title: titleMatch ? titleMatch[1] : 'Untitled',
-    date: dateMatch ? dateMatch[1] : '1970-01-01',
-    tags: tagsMatch
-      ? tagsMatch[1].split(',').map(t => t.trim())
-      : undefined,
-  };
-}
-
-function getAllPosts(): BlogPost[] {
-  const contentDir = path.join(process.cwd(), 'content', 'blog');
-
-  if (!fs.existsSync(contentDir)) return [];
-
-  return fs
-    .readdirSync(contentDir, { withFileTypes: true })
-    .filter(
-      entry =>
-        entry.isFile() &&
-        entry.name.endsWith('.html') &&
-        !entry.name.startsWith('_')
-    )
-    .map(entry => {
-      const slug = entry.name.replace(/\.html$/, '');
-      const filePath = path.join(contentDir, entry.name);
-      const html = fs.readFileSync(filePath, 'utf-8');
-      const meta = extractMetadata(html);
-
-      return {
-        slug,              // ← ファイル名由来（唯一の真実）
-        title: meta.title,
-        date: meta.date,
-        tags: meta.tags,
-      };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-}
-
 export default function BlogIndexPage() {
-  const posts = getAllPosts();
+  const posts = getAllBlogPosts();
 
   return (
     <main className="blog-page">
@@ -88,7 +43,13 @@ export default function BlogIndexPage() {
                   {post.title}
                 </h2>
 
-                {post.tags && (
+                {post.excerpt && (
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                    {post.excerpt}
+                  </p>
+                )}
+
+                {post.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {post.tags.map(tag => (
                       <span

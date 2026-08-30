@@ -1,9 +1,9 @@
-// app/blog/[slug]/page.tsx
-import fs from 'fs';
-import path from 'path';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { BlogRenderer } from '@/components/blog/blog-renderer';
 import BlogLayout from '@/components/BlogLayout';
+import { getBlogPost, getBlogSlugs } from '@/lib/blog';
+import './blog-post.css';
 
 interface BlogPostPageProps {
   params: {
@@ -11,72 +11,43 @@ interface BlogPostPageProps {
   };
 }
 
-interface PostMetadata {
-  title: string;
-  date: string;
-  readTime?: string;
-  tags?: string[];
-}
-
-function extractMetadata(html: string): PostMetadata {
-  const titleMatch = html.match(/<title>(.*?)<\/title>/);
-  const dateMatch = html.match(/<time[^>]*datetime="([^"]+)"/);
-  const tagsMatch = html.match(/<meta name="keywords" content="([^"]+)"/);
-  const readTimeMatch = html.match(/<meta name="reading-time" content="([^"]+)"/);
-
-  return {
-    title: titleMatch ? titleMatch[1] : 'Untitled',
-    date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-    readTime: readTimeMatch ? readTimeMatch[1] : undefined,
-    tags: tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()) : undefined,
-  };
-}
-
 export default function BlogPostPage({ params }: BlogPostPageProps) {
-  const { slug } = params;
-  const contentDir = path.join(process.cwd(), 'content', 'blog');
-  const filePath = path.join(contentDir, `${slug}.html`);
-
-  if (!fs.existsSync(filePath)) {
-    notFound();
-  }
-
-  const stats = fs.statSync(filePath);
-  if (!stats.isFile()) {
-    notFound();
-  }
-
-  const htmlContent = fs.readFileSync(filePath, 'utf-8');
-  const metadata = extractMetadata(htmlContent);
+  const post = getBlogPost(params.slug);
+  if (!post) notFound();
 
   return (
     <BlogLayout
-      title={metadata.title}
-      date={metadata.date}
-      readTime={metadata.readTime}
-      tags={metadata.tags}
+      title={post.title}
+      date={post.date}
+      readTime={post.readingTime}
+      tags={post.tags}
     >
-      <BlogRenderer content={htmlContent} />
+      <BlogRenderer content={post.content} />
     </BlogLayout>
   );
 }
 
-export async function generateStaticParams() {
-  const contentDir = path.join(process.cwd(), 'content', 'blog');
-  
-  if (!fs.existsSync(contentDir)) {
-    return [];
-  }
+export function generateStaticParams() {
+  return getBlogSlugs().map((slug) => ({ slug }));
+}
 
-  const entries = fs.readdirSync(contentDir, { withFileTypes: true });
-  
-  return entries
-    .filter(entry => 
-      entry.isFile() && 
-      entry.name.endsWith('.html') && 
-      !entry.name.startsWith('_')
-    )
-    .map(entry => ({
-      slug: entry.name.replace('.html', ''),
-    }));
+export function generateMetadata({ params }: BlogPostPageProps): Metadata {
+  const post = getBlogPost(params.slug);
+  if (!post) return {};
+
+  const canonical = `/blog/${post.slug}`;
+  return {
+    title: `${post.title} | rancorder`,
+    description: post.excerpt,
+    keywords: post.tags,
+    alternates: { canonical },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.date,
+      tags: post.tags,
+      url: canonical,
+    },
+  };
 }

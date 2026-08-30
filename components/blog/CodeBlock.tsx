@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 interface CodeBlockProps {
   language?: string;
+  title?: string;
   code: string;
 }
 
@@ -12,7 +13,7 @@ interface CodeBlockProps {
  * コードブロックコンポーネント
  * コピー機能付き
  */
-export function CodeBlock({ language = 'javascript', code }: CodeBlockProps) {
+export function CodeBlock({ language = 'javascript', title, code }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -28,7 +29,7 @@ export function CodeBlock({ language = 'javascript', code }: CodeBlockProps) {
   return (
     <div className="code-block-wrapper">
       <div className="code-block-header">
-        <span className="code-block-lang">{language}</span>
+        <span className="code-block-lang">{title ?? language}</span>
         <button 
           className="code-block-copy" 
           onClick={handleCopy}

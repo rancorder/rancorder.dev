@@ -204,7 +204,7 @@ export function InteractiveChecklist({ children }: InteractiveChecklistProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
-  const toggle = useCallback((i: number, e: React.MouseEvent) => {
+  const toggle = useCallback((i: number) => {
     setCheckedSet((prev) => {
       const next = new Set(prev);
       const willCheck = !next.has(i);
@@ -373,7 +373,16 @@ export function InteractiveChecklist({ children }: InteractiveChecklistProps) {
               <li
                 key={i}
                 ref={(el) => { itemRefs.current[i] = el; }}
-                onClick={(e) => toggle(i, e)}
+                onClick={() => toggle(i)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggle(i);
+                  }
+                }}
+                role="checkbox"
+                aria-checked={isChecked}
+                tabIndex={0}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

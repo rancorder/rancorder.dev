@@ -7,6 +7,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://rancorder.dev'),
   title: 'rancorder | Webシステムを作る。思想を実装に変える。',
   description: 'Canvas 2D、リアルタイム流体、物理演算などの技術デモを展示。',
   keywords: ['Web開発', 'Canvas', 'JavaScript', 'TypeScript', 'フロントエンド'],
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
     title: 'rancorder | Webシステムを作る',
     description: 'Canvas 2D、リアルタイム流体、物理演算などの技術デモを展示。',
   },
+  alternates: { canonical: '/' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

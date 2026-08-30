@@ -2,12 +2,8 @@
 // scripts/lint-blog-articles.js
 // Tier 2 制約違反検出スクリプト
 
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs/promises');
+const path = require('path');
 
 // Tier 2 違反パターン
 const TIER2_VIOLATIONS = [
@@ -72,14 +68,7 @@ async function lintArticle(filepath) {
     return { filepath, tier, violations: [], skipped: true };
   }
   
-  // tier 未宣言の場合は警告
-  if (tier === null) {
-    violations.push({
-      severity: 'warning',
-      message: 'No tier declaration found (assuming tier: 1)'
-    });
-  }
-  
+  // tier 未宣言は後方互換のため Tier 1 として扱う。
   // Tier 2 違反パターンをチェック
   for (const { pattern, message, severity } of TIER2_VIOLATIONS) {
     const matches = content.match(pattern);
@@ -110,10 +99,10 @@ async function main() {
   }
   
   // HTML ファイルを取得
-  const files = await fs.readdir(contentDir);
+  const files = await fs.readdir(contentDir, { withFileTypes: true });
   const htmlFiles = files
-    .filter(file => file.endsWith('.html'))
-    .map(file => path.join(contentDir, file));
+    .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
+    .map(entry => path.join(contentDir, entry.name));
   
   if (htmlFiles.length === 0) {
     console.log('ℹ️  No HTML files found in content/blog/');

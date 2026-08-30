@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 
 type BP = {
@@ -42,7 +40,7 @@ const rules = [
 ];
 
 const labs = [
-  { name: 'γ-GTP', value: '137', status: '要確認', comment: '次の血液検査の主役。飲酒ログと答え合わせ。' },
+  { name: 'γ-GTP', value: '98', status: '要確認', comment: '改善傾向。飲酒ログと次回検査で答え合わせ。' },
   { name: 'AST', value: '22', status: '良好', comment: '大きな肝細胞ダメージ感は薄い。' },
   { name: 'ALT', value: '31', status: '境界', comment: '少しだけ上振れ。' },
   { name: '中性脂肪', value: '193', status: '高め', comment: '酒・糖質・脂質の請求書。' },
@@ -102,7 +100,7 @@ export default function HealthOSPage() {
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <Metric label="直近平均血圧" value={`${avgSys}/${avgDia}`} unit="mmHg" good />
                 <Metric label="血圧状態" value="管理圏内" unit="" good />
-                <Metric label="本丸" value="γ-GTP" unit="137" warn />
+                <Metric label="本丸" value="γ-GTP" unit="98" warn />
                 <Metric label="勝ち食材" value="豆腐" unit="毎日OK" good />
               </div>
             </div>
@@ -232,7 +230,7 @@ export default function HealthOSPage() {
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
             <h2 className="text-2xl font-black">内科で伝えるメモ</h2>
             <div className="mt-5 rounded-2xl bg-slate-950 p-4 font-mono text-sm leading-7 text-slate-200">
-              健診でγ-GTP 137、AST 22、ALT 31でした。<br />
+              直近の検査でγ-GTP 98、AST 22、ALT 31でした。<br />
               飲酒量を減らし、休肝日も増やしています。<br />
               肝機能の血液検査をしたいです。<br />
               AST・ALT・γ-GTPに加えて、中性脂肪・LDL・HDL・尿酸も確認したいです。

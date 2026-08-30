@@ -1,20 +1,4 @@
 /* ===================================
-   グローバルリセット
-=================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background: #0a0a0f;
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  line-height: 1.7;
-}
-
-/* ===================================
    ブログページレイアウト
 =================================== */
 .blog-page {
@@ -168,6 +152,132 @@ body {
   font-size: 16px;
   line-height: 1.8;
   color: #e2e8f0;
+}
+
+.blog-content-wrapper .code-block-wrapper {
+  margin: 2rem 0;
+  overflow: hidden;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+}
+
+.blog-content-wrapper .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.blog-content-wrapper .code-block-lang {
+  color: #60a5fa;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.blog-content-wrapper .code-block-copy {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  color: #60a5fa;
+  cursor: pointer;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 4px;
+}
+
+.blog-content-wrapper .code-block {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.blog-content-wrapper .callout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  border-left: 4px solid;
+  border-radius: 8px;
+}
+
+.blog-content-wrapper .callout--info { background: rgba(96, 165, 250, 0.1); border-color: #60a5fa; }
+.blog-content-wrapper .callout--warning { background: rgba(251, 191, 36, 0.1); border-color: #fbbf24; }
+.blog-content-wrapper .callout--success { background: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+.blog-content-wrapper .callout--critical { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
+.blog-content-wrapper .callout__icon { font-size: 1.5rem; line-height: 1; }
+.blog-content-wrapper .callout__title { margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 700; }
+.blog-content-wrapper .callout__content { opacity: 0.9; }
+
+.blog-content-wrapper .comparison-card,
+.blog-content-wrapper .progress-bar-wrapper { margin: 2rem 0; }
+
+.blog-content-wrapper .comparison-card__title,
+.blog-content-wrapper .progress-label { margin-bottom: 0.75rem; font-weight: 700; }
+
+.blog-content-wrapper .comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.blog-content-wrapper .comparison-item {
+  padding: 1.5rem;
+  border: 2px solid;
+  border-radius: 8px;
+}
+
+.blog-content-wrapper .comparison-item--good { background: rgba(16, 185, 129, 0.05); border-color: #10b981; }
+.blog-content-wrapper .comparison-item--bad { background: rgba(239, 68, 68, 0.05); border-color: #ef4444; }
+.blog-content-wrapper .comparison-icon { margin-bottom: 0.5rem; font-size: 2rem; }
+.blog-content-wrapper .comparison-label { margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; }
+
+.blog-content-wrapper .progress-bar {
+  width: 100%;
+  height: 2rem;
+  overflow: hidden;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+}
+
+.blog-content-wrapper .progress-fill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(90deg, #60a5fa, #10b981);
+}
+
+.blog-content-wrapper .progress-text { color: #fff; font-size: 0.875rem; font-weight: 700; }
+
+.blog-content-wrapper .accordion-item {
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+}
+
+.blog-content-wrapper .accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  color: #e2e8f0;
+  cursor: pointer;
+  background: rgba(30, 41, 59, 0.5);
+  border: 0;
+}
+
+.blog-content-wrapper .accordion-content { border-top: 1px solid rgba(96, 165, 250, 0.2); }
+.blog-content-wrapper .accordion-body { padding: 1.5rem; }
+
+@media (max-width: 640px) {
+  .blog-content-wrapper .comparison-grid { grid-template-columns: 1fr; }
 }
 
 /* 記事内の見出し */

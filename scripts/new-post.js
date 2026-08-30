@@ -21,30 +21,29 @@ const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
 const slug = title
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '-') // 英数字以外をハイフンに
-  .replace(/^-+|-+$/g, ''); // 前後のハイフンを削除
+  .replace(/^-+|-+$/g, '') || `post-${now.getTime()}`; // 日本語タイトルだけの場合の安全な代替
 
 const fileName = `${date}-${slug}.html`;
 const filePath = path.join(process.cwd(), 'content', 'blog', fileName);
 
 // テンプレート生成
-const template = `<!DOCTYPE html>
+const template = `<!--
+title: ${title}
+date: ${date}
+excerpt: 記事の概要をここに書く
+category: Technical
+readingTime: 5 min read
+tags: ["Technical"]
+-->
+
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <link rel="stylesheet" href="/blog-base.css">
-  <script type="module" src="/blog-components.js"></script>
 </head>
 <body>
-  <!--
-  title: ${title}
-  date: ${now.toISOString()}
-  excerpt: 記事の概要をここに書く
-  category: Technical
-  readingTime: 5 min read
-  -->
-
   <article>
     <header>
       <h1>${title}</h1>
@@ -120,26 +119,6 @@ console.log(hello);
           <li>タスク3をテストする</li>
         </ul>
       </interactive-checklist>
-    </section>
-
-    <section>
-      <h2>タブ切り替え例</h2>
-      <tab-group>
-        <div class="tab-buttons">
-          <button data-tab-button>オプション1</button>
-          <button data-tab-button>オプション2</button>
-          <button data-tab-button>オプション3</button>
-        </div>
-        <div data-tab-panel>
-          <p>オプション1の内容</p>
-        </div>
-        <div data-tab-panel>
-          <p>オプション2の内容</p>
-        </div>
-        <div data-tab-panel>
-          <p>オプション3の内容</p>
-        </div>
-      </tab-group>
     </section>
 
     <section>
