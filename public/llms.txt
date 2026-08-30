@@ -1,0 +1,73 @@
+# rancorder.dev
+
+> Technical PM / AI・DX Delivery / Manufacturing B2B / Sales Operations
+
+rancorder.dev is a Japanese portfolio and knowledge system focused on moving ambiguous PoCs and DX initiatives into production-ready, operable systems.
+
+## Core positioning
+
+- Technical PM
+- Manufacturing B2B
+- AI PoC to Production
+- Sales Operations / Sales Support PoC
+- DX / Operating Model
+- Automation Reliability
+- Decision Architecture
+
+## What rancorder does
+
+rancorder works at the boundary between business, technology, and operations.
+
+Typical problems:
+- Requirements are ambiguous.
+- Responsibility boundaries are unclear.
+- A PoC works, but production ownership, monitoring, rollback, or recovery is undefined.
+- Sales data exists, but does not connect to operational decisions.
+- DX tools are introduced, but shadow workflows, duplicated data, or adoption gaps remain.
+
+The working principle is consistent across manufacturing, sales operations, and DX:
+decompose the process, identify bottlenecks and decision gaps, define responsibility and recovery boundaries, then turn the result into a repeatable operating model.
+
+## Experience origin
+
+- 2008–2026: manufacturing / operational improvement / business systems / process design / data utilization.
+- Parallel experience: sales support management, KPI analysis, list evaluation, knowledge systemization, and cross-account operational improvement.
+- 2026–present: AI / DX project management including requirements, PoC design, development coordination, production-readiness, and stakeholder alignment.
+
+## Selected decision records
+
+- 54-site monitoring platform
+  https://rancorder.dev/cases/54-site-monitoring
+- AI production delivery
+  https://rancorder.dev/cases/ai-production-delivery
+- 1,400-line quality rebuild
+  https://rancorder.dev/cases/1400-line-quality-rebuild
+- Sales-support PoC operations
+  https://rancorder.dev/cases/sales-support-poc-operations
+
+## Interactive diagnostics
+
+- PoC Survival Test
+  https://rancorder.dev/survival-test
+- Mission Brief flow
+  The diagnostic can generate recovery actions and a handoff-ready mission brief.
+
+## Knowledge system
+
+- Knowledge Vault
+  https://rancorder.dev/blog
+
+Main knowledge categories:
+- PoC → Production
+- Decision Architecture
+- Automation Reliability
+- DX / Operating Model
+
+## Contact
+
+Human review requests are handled through the Mission Brief flow or:
+hello@rancorder.dev
+
+## Canonical
+
+https://rancorder.dev
