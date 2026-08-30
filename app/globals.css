@@ -166,3 +166,12 @@ body{margin:0}
 .sector-engine-actions{display:flex;justify-content:flex-end;gap:10px;padding:18px;border-top:1px solid rgba(150,170,190,.12)}.sector-engine-actions a{min-height:44px;padding:0 15px;border:1px solid #263138;background:rgba(8,12,16,.68);color:#8a989c;text-decoration:none;display:inline-flex;align-items:center;font:700 .52rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}.sector-engine-actions a:last-child{border-color:rgba(93,242,165,.35);color:#5df2a5}.sector-engine.sales .sector-engine-actions a:last-child{border-color:rgba(167,139,250,.38);color:#a78bfa}
 @media(max-width:900px){.sector-engine-top,.sector-engine-body{grid-template-columns:1fr}.sector-event{border-right:none;border-bottom:1px solid rgba(150,170,190,.12)}.sector-radar{border-right:none;border-bottom:1px solid rgba(150,170,190,.12)}.sector-kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.sector-engine{width:min(100% - 28px,1360px)}.sector-event{grid-template-columns:1fr;gap:7px;padding:14px}.sector-kpi-grid{grid-template-columns:1fr}.sector-engine-actions{flex-direction:column}.sector-engine-actions a{width:100%;justify-content:center}}
+
+/* SURVIVAL TEST SECTOR MODE */
+.survival-sector-switch{display:inline-flex;gap:8px;margin-bottom:24px;padding:5px;border:1px solid rgba(150,170,190,.14);background:rgba(4,7,10,.68)}
+.survival-sector-switch button{min-height:34px;padding:0 12px;border:1px solid transparent;background:transparent;color:#627176;font:700 .5rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;cursor:pointer}
+.survival-sector-switch button.active{color:#5df2a5;border-color:rgba(93,242,165,.32);background:rgba(93,242,165,.06)}
+.survival-sales .survival-sector-switch button.active{color:#a78bfa;border-color:rgba(167,139,250,.34);background:rgba(167,139,250,.07)}
+.survival-sales .survival-progress i{background:linear-gradient(90deg,#5df2a5,#a78bfa)}
+.survival-sales .survival-qmeta b{color:#a78bfa}
+.survival-sales .survival-submit button:not(:disabled){border-color:rgba(167,139,250,.45);background:rgba(167,139,250,.09);color:#a78bfa}
