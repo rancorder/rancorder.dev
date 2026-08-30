@@ -5,7 +5,7 @@ const blogDir=path.join(process.cwd(),'content/blog');
 const errors=[],warnings=[];
 const ids=(prefix)=>new Set([...graph.matchAll(new RegExp("id:'("+prefix+":[^']+)'",'g'))].map(m=>m[1]));
 const expertise=ids('expertise'), evidence=ids('evidence'), decisions=ids('decision'), knowledge=ids('knowledge'), experience=ids('experience'), sources=ids('source');
-const caseSlugs=new Set([...cases.matchAll(/slug:'([^']+)'/g)].map(m=>m[1]));
+const caseSlugs=new Set([...cases.matchAll(/slug:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]));
 const blogSlugs=new Set(fs.existsSync(blogDir)?fs.readdirSync(blogDir).filter(x=>x.endsWith('.html')&&!x.startsWith('_')).map(x=>x.replace(/\.html$/,'')):[]);
 function refs(re){return [...graph.matchAll(re)].flatMap(m=>m[1].split(',').map(x=>x.trim().replace(/^['"]|['"]$/g,'')).filter(Boolean))}
 function check(label,refs,set){for(const x of refs)if(!set.has(x))errors.push(label+' references missing node: '+x)}
