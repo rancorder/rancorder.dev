@@ -16,7 +16,7 @@ export default function ExpertisePage(){
   <nav className="entity-nav"><Link href="/" className="mc-brand">RANCORDER<span>.DEV</span></Link><span>CAREER GRAPH / HUMAN VIEW</span></nav>
   <section className="expertise-shell">
    <header className="expertise-hero"><span>MACHINE-READABLE CAREER GRAPH</span><h1>専門性を、<br/><em>根拠まで辿れる形に。</em></h1><p>{canonicalExpertiseStatement.ja}</p>
-    <div><Link href="/about">PERSON ENTITY →</Link><a href="/expertise.json">EXPERTISE.JSON →</a></div></header>
+    <div><Link href="/about">PERSON ENTITY →</Link><a href="/expertise.json">EXPERTISE.JSON →</a><Link href="/evidence">EVIDENCE LEDGER →</Link></div></header>
    <section className="expertise-map-head"><span>PERSON</span><i>→</i><span>EXPERTISE</span><i>→</i><span>CLAIM</span><i>→</i><span>CASE</span><i>→</i><span>EVIDENCE</span></section>
    <div className="expertise-nodes">
     {expertise.map((x,index)=>{
