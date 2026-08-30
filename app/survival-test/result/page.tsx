@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ShareButton from './share-button';
 import MissionReplay from '../../../components/MissionReplay';
+import RecoveryPlan from '../../../components/RecoveryPlan';
 
 type SectorCode = 'mfg' | 'sales';
 
@@ -104,6 +105,7 @@ export default async function ResultPage({ searchParams }: { searchParams: Promi
       <div className="result-meter"><i style={{width:`${score}%`}} /></div>
 
       <MissionReplay sector={sector} code={code.join('')} />
+      <RecoveryPlan sector={sector} code={code.join('')} />
 
       <div className="result-grid">
         <section className="result-blockers">
