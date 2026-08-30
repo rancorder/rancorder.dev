@@ -219,7 +219,7 @@ export default function HomePage() {
           <span>RANCORDER.DEV</span>
           <p>PROJECT MISSION CONTROL</p>
         </div>
-        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS · <Link href="/about">PROFILE</Link> · <Link href="/lab">LAB / AFTER HOURS</Link></div>
+        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS · <Link href="/about">PROFILE</Link> · <Link href="/expertise">EXPERTISE GRAPH</Link> · <Link href="/lab">LAB / AFTER HOURS</Link></div>
       </footer>
     </main>
   );
