@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { identity, expertise, evidence, experiences, PERSON_ID, SITE_URL } from '../../lib/career-graph';
+import { identity, expertise, evidence, experiences, decisions, PERSON_ID, SITE_URL } from '../../lib/career-graph';
 import { caseStudies } from '../../lib/case-studies';
 import { getAllBlogPosts } from '../../lib/blog';
 
@@ -19,6 +19,7 @@ export function GET(){
     knowledge:posts.filter(p=>x.knowledgeQueries.some(q=>(p.title+' '+p.tags.join(' ')+' '+(p.excerpt||'')).toLowerCase().includes(q.toLowerCase()))).slice(0,12).map(p=>SITE_URL+'/blog/'+p.slug),
    })),
    experience:experiences,
+   decisions:decisions.map(d=>({...d,caseUrl:SITE_URL+'/cases/'+d.caseSlug,evidence:d.evidenceIds})),
    cases:caseStudies.map(c=>({id:'case:'+c.slug,url:SITE_URL+'/cases/'+c.slug,title:c.title,decision:c.decision,result:c.result,principle:c.principle})),
    evidence,
   },
