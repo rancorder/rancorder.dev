@@ -9,6 +9,7 @@ const achievements:Achievement[]=[
  {id:'diagnostic',label:'SURVIVAL TEST CLEARED',xp:160},
  {id:'recovery',label:'RECOVERY PLANNED',xp:120},
  {id:'brief',label:'MISSION BRIEF BUILT',xp:100},
+ {id:'incident',label:'BLACK BOX SURVIVED',xp:200},
 ];
 const key='rancorder-achievements';
 
@@ -37,10 +38,11 @@ export default function MissionXP(){
    return()=>{window.removeEventListener('mission-xp-change',onChange);window.removeEventListener('mission-sector-change',onSector);};
  },[]);
 
- const level=xp>=400?'MISSION ARCHITECT':xp>=200?'SYSTEM OPERATOR':xp>=80?'RISK SCOUT':'OBSERVER';
+ const level=xp>=500?'MISSION ARCHITECT':xp>=250?'SYSTEM OPERATOR':xp>=80?'RISK SCOUT':'OBSERVER';
+ const unlocked=xp>=500;
  return <div className="mission-xp">
    <button type="button" className={flash?'xp-flash':''} onClick={()=>setOpen(v=>!v)} aria-expanded={open}>
-     <span>MISSION XP</span><strong>{xp}<i>/500</i></strong><em>{level}</em>
+     <span>MISSION XP</span><strong>{xp}<i>/700</i></strong><em>{level}</em>
    </button>
    {open&&<div className="mission-xp-panel">
      <header><span>ACHIEVEMENTS</span><b>{earned.length}/{achievements.length}</b></header>
@@ -48,6 +50,7 @@ export default function MissionXP(){
        <i>{earned.includes(a.id)?'✓':'◇'}</i><span>{a.label}</span><b>+{a.xp}</b>
      </div>)}
      <p>読む・診断する・復旧を設計するほど、Mission Rankが上がります。</p>
+     <a className={unlocked?'xp-secret unlocked':'xp-secret'} href={unlocked?'/black-box-incident':'#'} onClick={e=>{if(!unlocked)e.preventDefault();}}>{unlocked?'⚠ SECRET MISSION UNLOCKED →':'▣ SECRET MISSION / 500 XP REQUIRED'}</a>
    </div>}
  </div>;
 }
