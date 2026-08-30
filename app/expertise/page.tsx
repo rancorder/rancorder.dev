@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { expertise, evidenceForExpertise, decisionsForExpertise, knowledgeForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
+import { expertise, evidenceForExpertise, decisionsForExpertise, knowledgeForExpertise, citationForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
 import { getCaseStudy } from '../../lib/case-studies';
 import { getAllBlogPosts } from '../../lib/blog';
 
@@ -23,12 +23,20 @@ export default function ExpertisePage(){
       const ev=evidenceForExpertise(x.id);
       const decisions=decisionsForExpertise(x.id);
       const cases=x.caseSlugs.map(getCaseStudy).filter(Boolean);
+      const citation=citationForExpertise(x.id);
       const explicitKnowledge=knowledgeForExpertise(x.id);
       const knowledge=explicitKnowledge.map(node=>posts.find(p=>p.slug===node.slug)).filter(Boolean).slice(0,4);
       return <article id={x.slug} key={x.id} className="expertise-node">
        <header><span>NODE {String(index+1).padStart(2,'0')}</span><div><small>EXPERTISE</small><h2>{x.name}</h2></div><b>{ev.length} EVIDENCE</b></header>
        <div className="expertise-claim"><small>CLAIM</small><p>{x.claim}</p></div>
        <div className="expertise-pattern"><small>DECISION PATTERN</small><code>{x.decisionPattern}</code></div>
+       {citation&&<section className="citation-surface">
+         <header><span>AI CITATION SURFACE</span><b>SELF-CONTAINED ANSWER</b></header>
+         <div><small>PRINCIPLE</small><p>{citation.principle}</p></div>
+         <div><small>WHY</small><p>{citation.why}</p></div>
+         <div><small>EVIDENCE</small><p>{citation.evidenceIds.map(id=>ev.find(e=>e.id===id)?.value).filter(Boolean).join(' / ')}</p></div>
+         <div><small>EXCEPTION</small><p>{citation.exception}</p></div>
+       </section>}
        <div className="expertise-decisions"><span>DECISION NODES</span>{decisions.map(d=><Link href={'/cases/'+d.caseSlug+'#decision-node'} key={d.id}><small>{d.id.replace('decision:','DECISION / ')}</small><b>{d.title}</b><p>{d.reason}</p></Link>)}</div>
        <div className="expertise-proof-grid">
         <section><span>CASES / PROOF</span>{cases.map(c=>c&&<Link href={'/cases/'+c.slug} key={c.slug}><b>{c.title}</b><small>{c.principle} →</small></Link>)}</section>
