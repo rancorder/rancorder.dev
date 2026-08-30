@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-type Sector = 'manufacturing' | 'sales';
+type Sector = 'manufacturing' | 'sales' | 'dx';
 
 const data = {
   manufacturing: {
@@ -25,6 +25,27 @@ const data = {
       ['OBSERVABILITY', 'ACTIVE'],
       ['ROLLBACK', 'PENDING'],
       ['AI FALLBACK', 'HITL'],
+    ],
+  },
+  dx: {
+    label: 'DX / BUSINESS TRANSFORMATION',
+    event: 'SHADOW WORKFLOW DETECTED',
+    xp: '+18 TRANSFORM XP',
+    chain: 'CHANGE CHAIN x6',
+    objective: 'Workflow → Operating Model',
+    readiness: 71,
+    caseHref: '/survival-test?s=dx',
+    caseLabel: 'DX Readiness Diagnostic',
+    risks: [
+      ['01', 'PROCESS FRAGMENTATION', '新旧フローが併存し、二重入力が常態化する'],
+      ['02', 'DATA OWNERSHIP', 'マスタ更新責任と正本が曖昧'],
+      ['03', 'ADOPTION GAP', '導入完了と現場定着を同じ成功として扱っている'],
+    ],
+    kpis: [
+      ['PROCESS OWNER', 'PENDING'],
+      ['SOURCE OF TRUTH', 'SPLIT'],
+      ['ADOPTION SIGNAL', 'WEAK'],
+      ['MANUAL FALLBACK', 'ACTIVE'],
     ],
   },
   sales: {
@@ -56,7 +77,7 @@ export default function SectorMissionPanel(){
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
-    if(saved === 'manufacturing' || saved === 'sales') setSector(saved);
+    if(saved === 'manufacturing' || saved === 'sales' || saved === 'dx') setSector(saved);
 
     const onSector = (event: Event) => {
       const detail = (event as CustomEvent<{sector: Sector}>).detail;
@@ -111,7 +132,7 @@ export default function SectorMissionPanel(){
 
     <div className="sector-engine-actions">
       <Link href={mission.caseHref}>{mission.caseLabel} ↗</Link>
-      <Link href="/survival-test">RUN PRODUCTION READINESS TEST →</Link>
+      <Link href={`/survival-test?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}`}>RUN PRODUCTION READINESS TEST →</Link>
     </div>
   </section>;
 }
