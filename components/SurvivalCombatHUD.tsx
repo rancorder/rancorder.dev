@@ -9,6 +9,7 @@ export default function SurvivalCombatHUD({
   answered,
   total,
   alert,
+  pulse,
 }: {
   sector: Sector;
   score: number;
@@ -16,6 +17,7 @@ export default function SurvivalCombatHUD({
   answered: number;
   total: number;
   alert: string;
+  pulse: number;
 }) {
   const danger = score < 65 || riskCount >= 3;
   const warning = !danger && (score < 85 || riskCount > 0);
@@ -51,7 +53,7 @@ export default function SurvivalCombatHUD({
           <div><small>SECTOR</small><b>{sector === 'sales' ? 'OPS' : 'AI'}</b></div>
         </div>
 
-        <div key={alert} className={`combat-alert ${alert ? 'active' : ''}`}>
+        <div key={pulse} className={`combat-alert ${alert ? 'active' : ''}`}>
           <span>{danger ? '⚠' : '◇'}</span>
           <b>{alert || 'AWAITING INPUT'}</b>
         </div>
