@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import MissionFX from '../components/MissionFX';
+import MissionSelector from '../components/MissionSelector';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -134,6 +135,8 @@ export default function HomePage() {
 
         <div className="mc-scroll-hint"><span /> SCROLL TO INSPECT</div>
       </section>
+
+      <MissionSelector />
 
       <section className="mc-battle-strip" aria-label="live mission events">
         <div className="battle-alert"><span>LIVE EVENT</span><b>SALES PoC / APPOINTMENT SIGNAL DETECTED</b><i>+12 OPERATOR XP</i></div>
