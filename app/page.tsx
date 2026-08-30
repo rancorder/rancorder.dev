@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MissionFX from '../components/MissionFX';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -49,6 +50,7 @@ const knowledge = [
 export default function HomePage() {
   return (
     <main className="mission">
+      <MissionFX />
       <div className="mission-grid" aria-hidden="true" />
       <div className="mission-glow mission-glow-a" aria-hidden="true" />
       <div className="mission-glow mission-glow-b" aria-hidden="true" />
