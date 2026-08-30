@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-type MissionKey = 'manufacturing' | 'sales';
+type MissionKey = 'manufacturing' | 'sales' | 'dx';
 
 const missions = {
   manufacturing: {
@@ -18,6 +18,19 @@ const missions = {
     signals: ['責任境界', 'AI失敗条件', '監視・復旧'],
     href: '/cases/ai-production-delivery',
     color: 'green',
+  },
+  dx: {
+    code: 'DX-OPS-07',
+    label: 'DX / BUSINESS TRANSFORMATION',
+    title: 'DX推進・業務変革',
+    subtitle: 'ツール導入を目的化せず、業務・データ・責任・定着まで一つの運用へ再設計する。',
+    readiness: 71,
+    risk: 'FRAGMENTED',
+    xp: '+210',
+    objective: 'Workflow → Operating Model',
+    signals: ['業務分断', 'データ二重化', '現場定着'],
+    href: '/survival-test?s=dx',
+    color: 'cyan',
   },
   sales: {
     code: 'SALES-OPS-04',
@@ -40,7 +53,7 @@ export default function MissionSelector(){
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
-    if(saved === 'manufacturing' || saved === 'sales') setSelected(saved);
+    if(saved === 'manufacturing' || saved === 'sales' || saved === 'dx') setSelected(saved);
   },[]);
 
   const choose = (key:MissionKey) => {
