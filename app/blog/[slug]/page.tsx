@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { BlogRenderer } from '@/components/blog/blog-renderer';
 import BlogLayout from '@/components/BlogLayout';
 import { getAllBlogPosts, getBlogPost, getBlogSlugs, type BlogPost } from '@/lib/blog';
-import { knowledgeForPost, expertise as expertiseGraph, decisions, getCaseStudy as _unused } from '@/lib/career-graph';
+import { knowledgeForPost, expertise as expertiseGraph, decisions } from '@/lib/career-graph';
 import { getCaseStudy } from '@/lib/case-studies';
 import Link from 'next/link';
 import './blog-post.css';
