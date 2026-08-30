@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { awardAchievement } from '../../components/MissionXP';
 
 export default function MissionBriefActions({ mailto, brief }: { mailto: string; brief: string }) {
   const [copied,setCopied] = useState(false);
+  useEffect(()=>{ awardAchievement('brief'); },[]);
 
   async function copy(){
     await navigator.clipboard.writeText(brief);
