@@ -1,0 +1,40 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { expertise, evidenceForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
+import { getCaseStudy } from '../../lib/case-studies';
+import { getAllBlogPosts } from '../../lib/blog';
+
+export const metadata:Metadata={
+ title:'Expertise & Evidence | rancorder Technical PM',
+ description:canonicalExpertiseStatement.ja,
+ alternates:{canonical:'/expertise'},
+};
+
+export default function ExpertisePage(){
+ const posts=getAllBlogPosts();
+ return <main className="expertise-page">
+  <nav className="entity-nav"><Link href="/" className="mc-brand">RANCORDER<span>.DEV</span></Link><span>CAREER GRAPH / HUMAN VIEW</span></nav>
+  <section className="expertise-shell">
+   <header className="expertise-hero"><span>MACHINE-READABLE CAREER GRAPH</span><h1>専門性を、<br/><em>根拠まで辿れる形に。</em></h1><p>{canonicalExpertiseStatement.ja}</p>
+    <div><Link href="/about">PERSON ENTITY →</Link><a href="/expertise.json">EXPERTISE.JSON →</a></div></header>
+   <section className="expertise-map-head"><span>PERSON</span><i>→</i><span>EXPERTISE</span><i>→</i><span>CLAIM</span><i>→</i><span>CASE</span><i>→</i><span>EVIDENCE</span></section>
+   <div className="expertise-nodes">
+    {expertise.map((x,index)=>{
+      const ev=evidenceForExpertise(x.id);
+      const cases=x.caseSlugs.map(getCaseStudy).filter(Boolean);
+      const knowledge=posts.filter(p=>x.knowledgeQueries.some(q=>(p.title+' '+p.tags.join(' ')+' '+(p.excerpt||'')).toLowerCase().includes(q.toLowerCase()))).slice(0,3);
+      return <article id={x.slug} key={x.id} className="expertise-node">
+       <header><span>NODE {String(index+1).padStart(2,'0')}</span><div><small>EXPERTISE</small><h2>{x.name}</h2></div><b>{ev.length} EVIDENCE</b></header>
+       <div className="expertise-claim"><small>CLAIM</small><p>{x.claim}</p></div>
+       <div className="expertise-pattern"><small>DECISION PATTERN</small><code>{x.decisionPattern}</code></div>
+       <div className="expertise-proof-grid">
+        <section><span>CASES / PROOF</span>{cases.map(c=>c&&<Link href={'/cases/'+c.slug} key={c.slug}><b>{c.title}</b><small>{c.principle} →</small></Link>)}</section>
+        <section><span>EVIDENCE</span>{ev.map(e=><div key={e.id}><strong>{e.value}</strong><p>{e.claim}</p><small>{e.publiclyVerifiable?'PUBLICLY VERIFIABLE':'FIRST-PARTY CASE RECORD'}</small></div>)}</section>
+        <section><span>KNOWLEDGE</span>{knowledge.length?knowledge.map(p=><Link href={'/blog/'+p.slug} key={p.slug}><b>{p.title}</b><small>{p.date} →</small></Link>):<p className="expertise-empty">Knowledge node is being indexed.</p>}</section>
+       </div>
+      </article>;
+    })}
+   </div>
+  </section>
+ </main>;
+}
