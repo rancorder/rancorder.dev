@@ -138,7 +138,7 @@ export const caseStudies: CaseStudy[] = [
       '全面改修を避けつつ、変更可能な領域を段階的に拡張。',
     ],
     principle: '品質改善は「テストを書くこと」ではない。壊れてはいけない境界を先に決めることである。',
-  },,
+  },
   {
     slug: 'sales-support-poc-operations',
     id: 'CASE 04',
