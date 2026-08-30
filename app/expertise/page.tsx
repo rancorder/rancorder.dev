@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { expertise, evidenceForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
+import { expertise, evidenceForExpertise, decisionsForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
 import { getCaseStudy } from '../../lib/case-studies';
 import { getAllBlogPosts } from '../../lib/blog';
 
@@ -21,12 +21,14 @@ export default function ExpertisePage(){
    <div className="expertise-nodes">
     {expertise.map((x,index)=>{
       const ev=evidenceForExpertise(x.id);
+      const decisions=decisionsForExpertise(x.id);
       const cases=x.caseSlugs.map(getCaseStudy).filter(Boolean);
       const knowledge=posts.filter(p=>x.knowledgeQueries.some(q=>(p.title+' '+p.tags.join(' ')+' '+(p.excerpt||'')).toLowerCase().includes(q.toLowerCase()))).slice(0,3);
       return <article id={x.slug} key={x.id} className="expertise-node">
        <header><span>NODE {String(index+1).padStart(2,'0')}</span><div><small>EXPERTISE</small><h2>{x.name}</h2></div><b>{ev.length} EVIDENCE</b></header>
        <div className="expertise-claim"><small>CLAIM</small><p>{x.claim}</p></div>
        <div className="expertise-pattern"><small>DECISION PATTERN</small><code>{x.decisionPattern}</code></div>
+       <div className="expertise-decisions"><span>DECISION NODES</span>{decisions.map(d=><Link href={'/cases/'+d.caseSlug+'#decision-node'} key={d.id}><small>{d.id.replace('decision:','DECISION / ')}</small><b>{d.title}</b><p>{d.reason}</p></Link>)}</div>
        <div className="expertise-proof-grid">
         <section><span>CASES / PROOF</span>{cases.map(c=>c&&<Link href={'/cases/'+c.slug} key={c.slug}><b>{c.title}</b><small>{c.principle} →</small></Link>)}</section>
         <section><span>EVIDENCE</span>{ev.map(e=><div key={e.id}><strong>{e.value}</strong><p>{e.claim}</p><small>{e.publiclyVerifiable?'PUBLICLY VERIFIABLE':'FIRST-PARTY CASE RECORD'}</small></div>)}</section>
