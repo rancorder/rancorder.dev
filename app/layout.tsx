@@ -4,16 +4,16 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://rancorder.dev'),
-  title: 'rancorder | Webシステムを作る。思想を実装に変える。',
-  description: 'Canvas 2D、リアルタイム流体、物理演算などの技術デモを展示。',
-  keywords: ['Web開発', 'Canvas', 'JavaScript', 'TypeScript', 'フロントエンド'],
+  title: 'rancorder | PoCを、止まらない運用へ。',
+  description: '製造業B2B × Technical PM × AI実装支援。曖昧なPoCを、判断・責任・監視・復旧まで設計された本番運用へ移行します。',
+  keywords: ['Technical PM', 'AI導入', 'PoC', '本番移行', '製造業DX', '自動化', '運用設計'],
   openGraph: {
-    title: 'rancorder | Webシステムを作る',
-    description: 'Canvas 2D、リアルタイム流体、物理演算などの技術デモを展示。',
+    title: 'rancorder | PoCを、止まらない運用へ。',
+    description: '曖昧なPoCを、判断・責任・監視・復旧まで設計された本番運用へ。',
     url: 'https://rancorder.dev',
     siteName: 'rancorder',
     locale: 'ja_JP',
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'rancorder | Webシステムを作る',
-    description: 'Canvas 2D、リアルタイム流体、物理演算などの技術デモを展示。',
+    title: 'rancorder | PoCを、止まらない運用へ。',
+    description: '製造業B2B × Technical PM × AI実装支援。動くデモを、使い続けられるシステムへ。',
   },
   alternates: { canonical: '/' },
 };
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body className={inter.className}>
+      <body className={`${inter.className} ${inter.variable}`}>
         {children}
         <Analytics />
         <SpeedInsights />
