@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PERSON_ID, SITE_URL, expertise, evidence, evidenceSources, decisions, knowledgeNodes, citationSurfaces } from '../../lib/career-graph';
+import AIQuerySimulator from '../../components/AIQuerySimulator';
 
-export const metadata:Metadata={title:'Authority Audit | rancorder',description:'Machine-readable Career Graphの公開監査面。Entity、Evidence、Knowledge、crawler discoveryの構造状態を確認する。',alternates:{canonical:'/authority-audit'}};
+export const metadata:Metadata={title:'Authority Audit | rancorder',description:'Machine-readable Career Graphの公開監査面。Entity、Evidence、Knowledge、crawler discovery of the structure are checked.',alternates:{canonical:'/authority-audit'}};
 
 const checks=[
  {id:'ENTITY-01',label:'Canonical Person ID',status:PERSON_ID===SITE_URL+'/#person',detail:PERSON_ID},
@@ -25,6 +26,7 @@ export default function AuthorityAudit(){
   <section className="audit-terminal"><header><span>RANCORDER://AUTHORITY-AUDIT</span><b>LIVE GRAPH CONTRACT</b></header>
    {checks.map((x,i)=><article key={x.id}><span>{String(i+1).padStart(2,'0')}</span><code>{x.id}</code><div><strong>{x.label}</strong><p>{x.detail}</p></div><b className={x.status?'audit-pass':'audit-fail'}>{x.status?'PASS':'FAIL'}</b></article>)}
   </section>
+  <AIQuerySimulator />
   <section className="audit-map"><div><span>ENTITY</span><strong>1</strong><small>canonical person</small></div><div><span>EXPERTISE</span><strong>{expertise.length}</strong><small>explicit domains</small></div><div><span>DECISIONS</span><strong>{decisions.length}</strong><small>reasoning nodes</small></div><div><span>EVIDENCE</span><strong>{evidence.length}</strong><small>provenance records</small></div><div><span>KNOWLEDGE</span><strong>{knowledgeNodes.length}</strong><small>semantic nodes</small></div></section>
   <section className="audit-endpoints"><header>MACHINE DISCOVERY SURFACE</header><a href="/robots.txt">/robots.txt <b>CRAWLER POLICY</b></a><a href="/sitemap.xml">/sitemap.xml <b>DISCOVERY MAP</b></a><a href="/llms.txt">/llms.txt <b>LLM ORIENTATION</b></a><a href="/expertise.json">/expertise.json <b>CAREER GRAPH API</b></a><Link href="/evidence">/evidence <b>PROVENANCE LEDGER</b></Link><Link href="/expertise">/expertise <b>HUMAN GRAPH VIEW</b></Link></section>
   <footer className="audit-warning"><span>INTERPRETATION</span><p>PASSは検索順位やAI推薦を保証するものではありません。これはrancorder.dev自身が公開する構造整合性・discovery・provenanceの監査面です。独立検証されていないEvidenceは、独立検証済みとして扱いません。</p></footer>
