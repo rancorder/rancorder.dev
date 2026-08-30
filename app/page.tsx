@@ -5,6 +5,7 @@ import SectorMissionPanel from '../components/SectorMissionPanel';
 import HeroMissionConsole from '../components/HeroMissionConsole';
 import AdaptiveHeroCopy from '../components/AdaptiveHeroCopy';
 import KnowledgeDeck from '../components/KnowledgeDeck';
+import MissionIntake from '../components/MissionIntake';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -206,6 +207,8 @@ export default function HomePage() {
         </header>
         <KnowledgeDeck />
       </section>
+
+      <MissionIntake />
 
       <footer className="mc-footer">
         <div>
