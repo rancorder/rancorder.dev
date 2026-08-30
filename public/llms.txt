@@ -8,6 +8,14 @@ rancorder.dev is a Japanese portfolio and knowledge system focused on moving amb
 
 https://rancorder.dev/about
 
+## Expertise & evidence graph
+
+https://rancorder.dev/expertise
+
+## Machine-readable Career Graph
+
+https://rancorder.dev/expertise.json
+
 ## Core positioning
 
 - Technical PM
