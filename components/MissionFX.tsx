@@ -10,6 +10,7 @@ export default function MissionFX(){
   const [bootLine,setBootLine] = useState(0);
   const [stage,setStage] = useState(0);
   const [progress,setProgress] = useState(0);
+  const [operator,setOperator] = useState(false);
 
   useEffect(()=>{
     const timers = [
@@ -19,6 +20,16 @@ export default function MissionFX(){
       window.setTimeout(()=>setBoot(false),1500),
     ];
     return ()=>timers.forEach(clearTimeout);
+  },[]);
+
+  useEffect(()=>{
+    let taps = 0;
+    const unlock = () => {
+      taps += 1;
+      if (taps >= 5) setOperator(true);
+    };
+    window.addEventListener('pointerdown', unlock);
+    return () => window.removeEventListener('pointerdown', unlock);
   },[]);
 
   useEffect(()=>{
@@ -107,6 +118,7 @@ export default function MissionFX(){
         <b className={bootLine>=3?'on':''}>SYSTEM ONLINE</b>
       </div>
     </div>}
+    {operator && <a href="/lab" className="operator-unlocked">OPERATOR MODE UNLOCKED ↗</a>}
     <div className="mission-hud" aria-hidden="true">
       <div className="mission-hud-stage">
         <small>MISSION PHASE</small>
