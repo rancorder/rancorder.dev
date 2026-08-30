@@ -9,6 +9,7 @@ const proof = [
 
 const cases = [
   {
+    slug: '54-site-monitoring',
     id: 'CASE 01',
     status: 'PRODUCTION READY',
     tone: 'green',
@@ -18,6 +19,7 @@ const cases = [
     result: '11か月連続稼働 / 月10万件超処理',
   },
   {
+    slug: 'ai-production-delivery',
     id: 'CASE 02',
     status: 'AI / AUTOMATION',
     tone: 'purple',
@@ -27,6 +29,7 @@ const cases = [
     result: 'Whisper / BERT を本番運用へ接続',
   },
   {
+    slug: '1400-line-quality-rebuild',
     id: 'CASE 03',
     status: 'RISK CONTAINED',
     tone: 'yellow',
@@ -127,7 +130,7 @@ export default function HomePage() {
               <h2>{item.label}</h2>
               <p>{item.detail}</p>
               <span className="mc-card-index">STATUS / VERIFIED</span>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
@@ -143,7 +146,7 @@ export default function HomePage() {
 
         <div className="mc-cases">
           {cases.map((item) => (
-            <article className="mc-case" key={item.id}>
+            <Link href={`/cases/${item.slug}`} className="mc-case" key={item.id}>
               <div className="mc-case-top">
                 <span>{item.id}</span>
                 <b className={`status-pill ${item.tone}`}>{item.status}</b>
