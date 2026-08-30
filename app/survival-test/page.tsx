@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import SurvivalCombatHUD from '../../components/SurvivalCombatHUD';
 
 type Answer = 'yes' | 'partial' | 'no';
 type Sector = 'manufacturing' | 'sales';
@@ -35,6 +36,8 @@ const valueMap: Record<Answer, number> = { yes:1, partial:.5, no:0 };
 export default function SurvivalTestPage(){
   const [sector,setSector] = useState<Sector>('manufacturing');
   const [answers,setAnswers] = useState<Record<string,Answer>>({});
+  const [alert,setAlert] = useState('');
+  const [pulse,setPulse] = useState(0);
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
@@ -43,20 +46,43 @@ export default function SurvivalTestPage(){
 
   const questions = sector === 'sales' ? sales : manufacturing;
   const answered = questions.filter(q=>answers[q.id]).length;
+  const riskCount = questions.filter(q=>answers[q.id] === 'no' || answers[q.id] === 'partial').length;
   const score = useMemo(()=>{
-    const total = questions.reduce((s,q)=>s+q.weight,0);
-    const earned = questions.reduce((s,q)=>s+q.weight*valueMap[answers[q.id] ?? 'no'],0);
-    return Math.round(earned/total*100);
+    const damage = questions.reduce((sum,q)=>{
+      const answer = answers[q.id];
+      if(!answer) return sum;
+      return sum + q.weight * (1 - valueMap[answer]);
+    },0);
+    return Math.max(0, Math.round(100 - damage));
   },[answers,questions]);
 
   const changeSector = (next:Sector) => {
     setSector(next);
     setAnswers({});
+    setAlert('');
+    setPulse((v)=>v+1);
     window.localStorage.setItem('rancorder-mission',next);
   };
 
-  return <main className={`survival survival-${sector}`}>
+  const answerQuestion = (q:Question, value:Answer) => {
+    setAnswers(prev=>({...prev,[q.id]:value}));
+    setPulse((v)=>v+1);
+    if(value === 'no') setAlert(`CRITICAL RISK DETECTED / ${q.blocker}`);
+    else if(value === 'partial') setAlert(`WARNING / ${q.domain} PARTIALLY DEFINED`);
+    else setAlert(`SYSTEM STABILIZED / ${q.domain}`);
+  };
+
+  return <main className={`survival survival-${sector} ${score < 65 ? 'survival-critical' : score < 85 ? 'survival-warning' : 'survival-stable'}`}>
     <div className="survival-grid" aria-hidden="true" />
+    <SurvivalCombatHUD
+      sector={sector}
+      score={score}
+      riskCount={riskCount}
+      answered={answered}
+      total={questions.length}
+      alert={alert}
+      pulse={pulse}
+    />
     <nav className="survival-nav">
       <Link href="/" className="mc-brand">RANCORDER<span>.DEV</span></Link>
       <span>PoC SURVIVAL TEST / SECTOR MODE</span>
@@ -87,7 +113,7 @@ export default function SurvivalTestPage(){
           <p>{q.why}</p>
           <div className="survival-options">
             {([['yes','YES','定義済み'],['partial','PARTIAL','一部のみ'],['no','NO','未定義']] as const).map(([value,label,note])=>
-              <button key={value} type="button" className={answers[q.id]===value?`active ${value}`:''} onClick={()=>setAnswers(prev=>({...prev,[q.id]:value}))}>
+              <button key={value} type="button" className={answers[q.id]===value?`active ${value}`:''} onClick={()=>answerQuestion(q,value)}>
                 <b>{label}</b><span>{note}</span>
               </button>
             )}
