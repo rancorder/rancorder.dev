@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { identity, expertise, evidence, experiences, decisions, knowledgeNodes, PERSON_ID, SITE_URL } from '../../lib/career-graph';
+import { identity, expertise, evidence, experiences, decisions, knowledgeNodes, citationSurfaces, PERSON_ID, SITE_URL } from '../../lib/career-graph';
 import { caseStudies } from '../../lib/case-studies';
 
 export const dynamic='force-static';
@@ -19,6 +19,7 @@ export function GET(){
    experience:experiences,
    decisions:decisions.map(d=>({...d,caseUrl:SITE_URL+'/cases/'+d.caseSlug,evidence:d.evidenceIds})),
    knowledge:knowledgeNodes.map(k=>({...k,url:SITE_URL+'/blog/'+k.slug})),
+   citations:citationSurfaces,
    cases:caseStudies.map(c=>({id:'case:'+c.slug,url:SITE_URL+'/cases/'+c.slug,title:c.title,decision:c.decision,result:c.result,principle:c.principle})),
    evidence,
   },
