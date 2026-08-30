@@ -35,14 +35,15 @@ jobs:
           git checkout -b "$BRANCH"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
-      - name: Run Codex implementation agent
-        id: codex
-        uses: openai/codex-action@v1
+      - name: Run Gemini implementation agent
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: "true"
+          GITHUB_TOKEN: ""
         with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          sandbox: workspace-write
-          safety-strategy: drop-sudo
-          effort: high
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          github_issue_number: ${{ github.event.issue.number }}
           prompt: |
             Implement GitHub Issue #${{ github.event.issue.number }} in ${{ github.repository }}.
 
@@ -52,8 +53,8 @@ jobs:
             ISSUE BODY:
             ${{ github.event.issue.body }}
 
-            Follow AGENTS.md as the repository implementation contract.
-            Do not edit workflow files, AGENTS.md, credentials, or security configuration.
+            Follow GEMINI.md and AGENTS.md as the repository implementation contract.
+            Do not edit workflow files, GEMINI.md, AGENTS.md, credentials, or security configuration.
             Do not commit, push, merge, or create a PR yourself.
             Work only inside the checked-out repository.
             Run npm run validate:graph and the relevant local checks before finishing.
@@ -63,9 +64,9 @@ jobs:
 
       - name: Ensure protected agent files were not changed
         run: |
-          if ! git diff --quiet main -- .github/workflows AGENTS.md; then
+          if ! git diff --quiet main -- .github/workflows GEMINI.md AGENTS.md; then
             echo "::error::AI attempted to modify protected agent/workflow files."
-            git diff -- main -- .github/workflows AGENTS.md
+            git diff -- main -- .github/workflows GEMINI.md AGENTS.md
             exit 1
           fi
 
@@ -78,10 +79,10 @@ jobs:
             echo "::error::Agent produced no code changes."
             exit 1
           fi
-          git config user.name "rancorder-ai-agent"
+          git config user.name "rancorder-gemini-agent"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "AI: implement issue #${ISSUE_NUMBER}"
+          git commit -m "Gemini: implement issue #${ISSUE_NUMBER}"
           git push origin "$BRANCH"
 
       - name: Open guarded pull request
@@ -89,12 +90,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
-          FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+          FINAL_MESSAGE: ${{ steps.gemini.outputs.summary }}
         run: |
           {
             echo "Implements #${ISSUE_NUMBER}"
             echo
-            echo "## AI implementation report"
+            echo "## Gemini implementation report"
             printf '%s\n' "$FINAL_MESSAGE"
             echo
             echo "## Merge gate"
@@ -104,7 +105,7 @@ jobs:
             echo "- [ ] Human review"
             echo "- [ ] Required GitHub checks pass"
           } > /tmp/pr-body.md
-          gh pr create --base main --head "$BRANCH" --title "AI: $ISSUE_TITLE" --body-file /tmp/pr-body.md
+          gh pr create --base main --head "$BRANCH" --title "Gemini: $ISSUE_TITLE" --body-file /tmp/pr-body.md
 
       - name: Report failure on Issue
         if: failure()
@@ -113,4 +114,4 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "🤖 AI implementation failed safely. No merge was performed. [Open workflow run]($RUN_URL)"
+          gh issue comment "$ISSUE_NUMBER" --body "🤖 Gemini implementation failed safely. No merge was performed. [Open workflow run]($RUN_URL)"
