@@ -25,7 +25,10 @@ export default function ExpertisePage(){
       const cases=x.caseSlugs.map(getCaseStudy).filter(Boolean);
       const citation=citationForExpertise(x.id);
       const explicitKnowledge=knowledgeForExpertise(x.id);
-      const knowledge=explicitKnowledge.map(node=>posts.find(p=>p.slug===node.slug)).filter(Boolean).slice(0,4);
+      const knowledge=explicitKnowledge.flatMap(node=>{
+        const post=posts.find(p=>p.slug===node.slug);
+        return post?[post]:[];
+      }).slice(0,4);
       return <article id={x.slug} key={x.id} className="expertise-node">
        <header><span>NODE {String(index+1).padStart(2,'0')}</span><div><small>EXPERTISE</small><h2>{x.name}</h2></div><b>{ev.length} EVIDENCE</b></header>
        <div className="expertise-claim"><small>CLAIM</small><p>{x.claim}</p></div>
