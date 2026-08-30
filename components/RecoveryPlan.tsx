@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 type Sector = 'mfg' | 'sales';
@@ -46,6 +47,8 @@ export default function RecoveryPlan({ sector, code }: { sector: Sector; code: s
   const [fixed,setFixed] = useState<number[]>([]);
   const recovered = candidates.filter(c=>fixed.includes(c.index)).reduce((s,c)=>s+c.recover,0);
   const projected = Math.min(100,initial+recovered);
+  const selectedFixes = fixed.slice().sort((a,b)=>a-b).join(',');
+  const briefUrl = `/mission-brief?s=${sector}&r=${code}&f=${selectedFixes}`;
 
   const toggle = (index:number) => setFixed(prev=>prev.includes(index)?prev.filter(x=>x!==index):[...prev,index]);
 
@@ -86,6 +89,14 @@ export default function RecoveryPlan({ sector, code }: { sector: Sector; code: s
           ? 'CONDITIONAL READY — 主要Blockerは減少。残りの境界を閉じる。'
           : 'CRITICAL RANGE — 追加開発より先に、止血と責任境界の確定が必要。'}
       </p>
+    </div>
+
+    <div className="recovery-handoff">
+      <div>
+        <span>MISSION HANDOFF</span>
+        <p>診断結果と選択したRecovery項目を、相談用のMission Briefへ引き継ぎます。</p>
+      </div>
+      <Link href={briefUrl}>BRING THIS MISSION TO ME →</Link>
     </div>
   </section>;
 }
