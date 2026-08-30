@@ -1,1107 +1,233 @@
-'use client';
+import Link from 'next/link';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+const proof = [
+  { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
+  { value: '11', unit: 'months', label: '連続稼働', detail: '止めないための監視・復旧設計' },
+  { value: '100K+', unit: '/ month', label: '処理規模', detail: '定常運用を前提にした自動処理' },
+  { value: '0', unit: 'stops', label: '障害停止', detail: 'システム障害による業務停止' },
+];
 
-/* ============================================================
-   CONSTANTS & UTILITIES
-   ============================================================ */
-const GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#_';
+const cases = [
+  {
+    id: 'CASE 01',
+    status: 'PRODUCTION READY',
+    tone: 'green',
+    title: '54サイト監視基盤',
+    signal: '個別監視では、障害の発見と復旧判断が担当者に依存する。',
+    decision: '監視対象・異常判定・復旧導線を一つの運用面へ集約。',
+    result: '11か月連続稼働 / 月10万件超処理',
+  },
+  {
+    id: 'CASE 02',
+    status: 'AI / AUTOMATION',
+    tone: 'purple',
+    title: 'AI機能の本番導入',
+    signal: '「動くPoC」と「使い続けられる機能」の間に責任境界がない。',
+    decision: '失敗条件・監視・人へのエスカレーションを先に定義。',
+    result: 'Whisper / BERT を本番運用へ接続',
+  },
+  {
+    id: 'CASE 03',
+    status: 'RISK CONTAINED',
+    tone: 'yellow',
+    title: '1,400行の品質再建',
+    signal: '未テストの巨大ロジック。全面改修はリスクと工数が大きい。',
+    decision: '壊れたときの影響度から保証境界を決め、30テストを追加。',
+    result: '変更可能なコードへ段階的に再構築',
+  },
+];
 
-function randomChar(): string {
-  return GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
-}
+const knowledge = [
+  ['01', 'PoC → Production', 'デモを本番へ移すとき、何を追加で設計するか。'],
+  ['02', 'Decision Architecture', '曖昧な案件で、誰が何を決めるべきか。'],
+  ['03', 'Automation Reliability', '自動化を「動く」から「任せられる」へ変える。'],
+];
 
-const NEIGHBORS: Record<string, string> = {
-  a: 'sqwze', s: 'adwxze', d: 'sfexc', f: 'dgrvb', g: 'fhtbn',
-  h: 'gjynm', j: 'hkum',  k: 'jlio',  l: 'kop',  e: 'wrsd',
-  r: 'etdf',  t: 'rygh',  y: 'tuhj',  u: 'yijk',  i: 'uojk',
-  o: 'iplk',  p: 'ol',    w: 'qes',   q: 'wa',
-};
-
-function mistakeChar(ch: string): string {
-  const lower = ch.toLowerCase();
-  const neighbors = NEIGHBORS[lower];
-  if (!neighbors) return ch;
-  return neighbors[Math.floor(Math.random() * neighbors.length)];
-}
-
-function playTone(
-  freq: number,
-  type: OscillatorType = 'sine',
-  dur = 0.25,
-  vol = 0.15,
-): void {
-  try {
-    const AudioCtx = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + dur);
-    osc.onended = () => ctx.close();
-  } catch (_) { /* AudioContext not available */ }
-}
-
-/* ============================================================
-   TYPES
-   ============================================================ */
-type TabId = 'all' | 'effects' | 'games';
-type Category = 'effect' | 'game';
-
-interface DemoData {
-  id: string;
-  title: string;
-  description: string;
-  category: Category;
-  color: string;
-  difficulty?: number;
-  icon: string;
-  tech?: string;
-  demoUrl?: string;
-}
-
-interface CardParticle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  size: number;
-}
-
-interface FireParticle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  size: number;
-  color: string;
-}
-
-/* ============================================================
-   GODZILLA FIRE BREATH EFFECT
-   ============================================================ */
-function GodzillaEffect(): React.ReactElement {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let animationId = 0;
-    let breathActive = false;
-    let breathProgress = 0;
-    let breathTimeout = 0;
-    const particles: FireParticle[] = [];
-
-    // Responsive: scale down on narrow screens
-    function getGodzillaParams(): { x: number; scale: number } {
-      const w = window.innerWidth;
-      if (w < 480) return { x: Math.round(w * 0.28), scale: w / 480 };
-      if (w < 768) return { x: Math.round(w * 0.25), scale: 0.9 + (w - 480) / 3000 };
-      return { x: 200, scale: 1.5 };
-    }
-
-    const godzilla = {
-      x: getGodzillaParams().x,
-      y: window.innerHeight - 50,
-    };
-
-    function spawnFireParticle(x: number, y: number): FireParticle {
-      const angle = -0.2 + (Math.random() - 0.5) * 0.3;
-      const speed = 15 + Math.random() * 10;
-      return {
-        x, y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1,
-        size: 8 + Math.random() * 15,
-        color: Math.random() > 0.5 ? '#ff6b00' : '#ffdd00',
-      };
-    }
-
-    function drawGodzilla(): void {
-      const scale = getGodzillaParams().scale;
-      const x = godzilla.x;
-      const y = godzilla.y;
-
-      ctx.save();
-      ctx.shadowBlur = 30;
-      ctx.shadowColor = '#00ff88';
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(0, 255, 136, 0.8)';
-      ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
-
-      ctx.beginPath();
-      ctx.moveTo(x - 150 * scale, y - 20);
-      ctx.lineTo(x - 120 * scale, y - 60);
-      ctx.lineTo(x - 80 * scale, y - 100);
-      ctx.lineTo(x - 40 * scale, y - 120);
-      ctx.lineTo(x, y - 130);
-      ctx.lineTo(x + 30 * scale, y - 150);
-      ctx.lineTo(x + 50 * scale, y - 170);
-      ctx.lineTo(x + 60 * scale, y - 180);
-      ctx.lineTo(x + 70 * scale, y - 200);
-      ctx.lineTo(x + 80 * scale, y - 220);
-      ctx.lineTo(x + 100 * scale, y - 230);
-      ctx.lineTo(x + 130 * scale, y - 230);
-      ctx.lineTo(x + 140 * scale, y - 220);
-      ctx.lineTo(x + 145 * scale, y - 210);
-      ctx.lineTo(x + 135 * scale, y - 200);
-      ctx.lineTo(x + 120 * scale, y - 205);
-      ctx.lineTo(x + 100 * scale, y - 210);
-      ctx.lineTo(x + 90 * scale, y - 190);
-      ctx.lineTo(x + 85 * scale, y - 160);
-      ctx.lineTo(x + 75 * scale, y - 120);
-      ctx.lineTo(x + 65 * scale, y - 80);
-      ctx.lineTo(x + 70 * scale, y - 50);
-      ctx.lineTo(x + 60 * scale, y);
-      ctx.lineTo(x + 40 * scale, y);
-      ctx.lineTo(x + 45 * scale, y - 70);
-      ctx.lineTo(x + 30 * scale, y - 90);
-      ctx.lineTo(x + 10 * scale, y - 80);
-      ctx.lineTo(x, y - 50);
-      ctx.lineTo(x - 10 * scale, y);
-      ctx.lineTo(x - 30 * scale, y);
-      ctx.lineTo(x - 20 * scale, y - 30);
-      ctx.lineTo(x - 40 * scale, y - 40);
-      ctx.lineTo(x - 60 * scale, y - 30);
-      ctx.lineTo(x - 90 * scale, y - 10);
-      ctx.lineTo(x - 120 * scale, y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      const spikes = [
-        { x: -20, y: -120, w: 25, h: 45 },
-        { x: 10,  y: -140, w: 30, h: 55 },
-        { x: 35,  y: -160, w: 35, h: 60 },
-        { x: 55,  y: -175, w: 30, h: 50 },
-        { x: 70,  y: -190, w: 25, h: 40 },
-      ];
-
-      spikes.forEach((spike) => {
-        ctx.fillStyle = 'rgba(0, 255, 136, 0.7)';
-        ctx.shadowBlur = 35;
-        ctx.shadowColor = '#00ff88';
-        ctx.beginPath();
-        ctx.moveTo(x + spike.x * scale, y + spike.y);
-        ctx.lineTo(x + (spike.x - spike.w * 0.4) * scale, y + spike.y - spike.h);
-        ctx.lineTo(x + (spike.x + spike.w * 0.4) * scale, y + spike.y - spike.h * 0.8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      });
-
-      ctx.fillStyle = breathActive ? '#ff0000' : '#ffff00';
-      ctx.shadowColor = breathActive ? '#ff0000' : '#ffff00';
-      ctx.shadowBlur = 25;
-      ctx.beginPath();
-      ctx.arc(x + 110 * scale, y - 220, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (breathActive) {
-        ctx.fillStyle = 'rgba(255, 100, 0, 0.8)';
-        ctx.shadowBlur = 50;
-        ctx.shadowColor = '#ff6b00';
-        ctx.beginPath();
-        ctx.arc(x + 135 * scale, y - 210, 15, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-
-    function drawBreath(): void {
-      if (!breathActive) return;
-
-      const scale = getGodzillaParams().scale;
-      const startX = godzilla.x + 135 * scale;
-      const startY = godzilla.y - 210;
-      const endX = startX + 900 * breathProgress;
-      const endY = startY - 100;
-
-      ctx.save();
-      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-      gradient.addColorStop(0, 'rgba(255,255,255,0.9)');
-      gradient.addColorStop(0.3, 'rgba(255,200,0,0.8)');
-      gradient.addColorStop(0.6, 'rgba(255,100,0,0.6)');
-      gradient.addColorStop(1, 'rgba(255,0,0,0)');
-
-      ctx.shadowBlur = 40;
-      ctx.shadowColor = '#ff6b00';
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 30 * breathProgress;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY + Math.sin(Date.now() * 0.01) * 10);
-      ctx.stroke();
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.lineWidth = 10 * breathProgress;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-      ctx.restore();
-
-      if (breathProgress > 0.3 && Math.random() < 0.3) {
-        const t = Math.random();
-        const px = startX + (endX - startX) * t;
-        const py = startY + (endY - startY) * t;
-        particles.push(spawnFireParticle(px, py));
-      }
-    }
-
-    function animate(): void {
-      ctx.fillStyle = 'rgba(8, 8, 16, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      drawGodzilla();
-      drawBreath();
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= 0.98;
-        p.vy += 0.2;
-        p.life -= 0.015;
-        p.size *= 0.97;
-
-        if (p.life <= 0) {
-          particles.splice(i, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = p.life;
-          ctx.shadowBlur = 30;
-          ctx.shadowColor = p.color;
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-      }
-
-      if (breathActive) {
-        breathProgress += 0.05;
-        if (breathProgress >= 1) {
-          breathProgress = 1;
-          breathTimeout = window.setTimeout(() => {
-            breathActive = false;
-            breathProgress = 0;
-          }, 500);
-        }
-      }
-
-      animationId = requestAnimationFrame(animate);
-    }
-
-    function scheduleBreath(): void {
-      breathTimeout = window.setTimeout(() => {
-        if (!breathActive) {
-          breathActive = true;
-          breathProgress = 0;
-          playTone(150, 'sawtooth', 0.8, 0.1);
-          window.setTimeout(() => playTone(200, 'sawtooth', 0.5, 0.08), 200);
-        }
-        scheduleBreath();
-      }, 8000 + Math.random() * 4000);
-    }
-
-    animate();
-    scheduleBreath();
-
-    const handleResize = (): void => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      godzilla.y = window.innerHeight - 50;
-      godzilla.x = getGodzillaParams().x;
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      clearTimeout(breathTimeout);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
+export default function HomePage() {
   return (
-    <canvas
-      ref={canvasRef}
-      className="godzilla-canvas"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 0,
-        opacity: 0.6,
-      }}
-    />
-  );
-}
+    <main className="mission">
+      <div className="mission-grid" aria-hidden="true" />
+      <div className="mission-glow mission-glow-a" aria-hidden="true" />
+      <div className="mission-glow mission-glow-b" aria-hidden="true" />
 
-/* ============================================================
-   TAB BUTTON COMPONENT
-   ============================================================ */
-interface TabButtonProps {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  icon?: string;
-}
+      <nav className="mc-nav">
+        <Link href="/" className="mc-brand" aria-label="rancorder home">
+          RANCORDER<span>.DEV</span>
+        </Link>
+        <div className="mc-nav-links">
+          <a href="#cases">CASES</a>
+          <a href="#diagnostic">DIAGNOSTIC</a>
+          <Link href="/blog">KNOWLEDGE</Link>
+        </div>
+        <div className="mc-system-state"><i /> SYSTEM ONLINE</div>
+      </nav>
 
-function TabButton({ active, onClick, children, icon }: TabButtonProps): React.ReactElement {
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.borderColor = 'rgba(124,58,237,0.6)';
-          e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.borderColor = 'rgba(124,58,237,0.3)';
-          e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-        }
-      }}
-      className="tab-btn"
-      style={{
-        padding: '0.875rem 1.5rem',
-        fontSize: '0.9rem',
-        fontWeight: active ? 800 : 600,
-        fontFamily: "'JetBrains Mono', monospace",
-        background: active ? 'rgba(124,58,237,0.2)' : 'transparent',
-        border: '2px solid',
-        borderColor: active ? '#7c3aed' : 'rgba(124,58,237,0.3)',
-        color: active ? '#a78bfa' : 'rgba(255,255,255,0.5)',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
-        boxShadow: active
-          ? '0 0 30px rgba(124,58,237,0.4), inset 0 0 20px rgba(124,58,237,0.1)'
-          : 'none',
-        letterSpacing: '0.05em',
-        textTransform: 'uppercase',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        transform: active ? 'translateY(-2px)' : 'none',
-      }}
-    >
-      {icon && <span style={{ fontSize: '1.2rem' }}>{icon}</span>}
-      {children}
-    </button>
-  );
-}
-
-/* ============================================================
-   GLITCH TEXT COMPONENT
-   ============================================================ */
-interface GlitchTextProps {
-  children: React.ReactNode;
-  intensity?: number;
-}
-
-function GlitchText({ children, intensity = 1 }: GlitchTextProps): React.ReactElement {
-  const text = String(children);
-  const [displayed, setDisplayed] = useState<string>(text);
-  const [glitching, setGlitching] = useState<boolean>(false);
-  const rafRef = useRef<number | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const trigger = useCallback(() => {
-    if (glitching) return;
-    setGlitching(true);
-    let frame = 0;
-    const total = Math.round(26 * intensity);
-
-    const tick = (): void => {
-      frame++;
-      const t = frame / total;
-      if (t < 0.55) {
-        setDisplayed(
-          text.split('').map((c) =>
-            c !== ' ' && Math.random() < 0.45 * intensity ? randomChar() : c,
-          ).join(''),
-        );
-      } else {
-        const idx = Math.floor(((t - 0.55) / 0.45) * text.length);
-        setDisplayed(
-          text.split('').map((c, i) =>
-            i <= idx ? c : c !== ' ' && Math.random() < 0.2 ? randomChar() : c,
-          ).join(''),
-        );
-      }
-      if (frame < total) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        setDisplayed(text);
-        setGlitching(false);
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-  }, [text, glitching, intensity]);
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      if (Math.random() < 0.3) trigger();
-    }, 3500 + Math.random() * 4000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [trigger]);
-
-  return (
-    <span
-      onClick={trigger}
-      style={{
-        fontFamily: "'Courier New', monospace",
-        fontWeight: 800,
-        cursor: 'pointer',
-        color: glitching ? '#00ff88' : 'inherit',
-        textShadow: glitching
-          ? '2px 0 rgba(255,0,60,.6), -2px 0 rgba(0,255,136,.6), 0 0 20px rgba(0,255,136,.4)'
-          : 'none',
-        transition: 'color .08s, text-shadow .08s',
-      }}
-    >
-      {displayed}
-    </span>
-  );
-}
-
-/* ============================================================
-   DEMO CARD COMPONENT
-   ============================================================ */
-interface DemoCardProps extends Omit<DemoData, 'id'> {}
-
-function DemoCard({
-  title,
-  description,
-  category,
-  color,
-  difficulty,
-  icon,
-  tech,
-  demoUrl,
-}: DemoCardProps): React.ReactElement {
-  const [isHovered, setIsHovered] = useState<boolean>(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    const card = cardRef.current as HTMLDivElement;
-    if (!canvas || !card) return;
-
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    if (!ctx) return;
-
-    const rect = card.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    const particles: CardParticle[] = [];
-
-    function animate(): void {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= 0.98;
-        p.vy *= 0.98;
-        p.life -= 0.02;
-
-        if (p.life <= 0) {
-          particles.splice(i, 1);
-        } else {
-          ctx.save();
-          ctx.globalAlpha = p.life;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = color;
-          ctx.fillStyle = color;
-          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-          ctx.restore();
-        }
-      }
-      animationRef.current = requestAnimationFrame(animate);
-    }
-
-    animate();
-
-    if (isHovered) {
-      intervalRef.current = setInterval(() => {
-        for (let i = 0; i < 5; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 2 + Math.random() * 4;
-          particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            life: 1,
-            size: 3 + Math.random() * 5,
-          });
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
-    };
-  }, [isHovered, color]);
-
-  const handleClick = (): void => {
-    if (demoUrl) {
-      window.open(demoUrl, '_blank');
-      playTone(600, 'sine', 0.2, 0.1);
-    }
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      onClick={handleClick}
-      onMouseEnter={() => {
-        setIsHovered(true);
-        playTone(440 + Math.random() * 200, 'sine', 0.1, 0.08);
-      }}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        position: 'relative',
-        padding: '2rem',
-        background: isHovered ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)',
-        border: `2px solid ${color}`,
-        borderRadius: '16px',
-        boxShadow: isHovered
-          ? `0 20px 60px ${color}88, 0 0 40px ${color}66, inset 0 0 30px ${color}22`
-          : `0 0 30px ${color}33`,
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
-        cursor: demoUrl ? 'pointer' : 'default',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Particle Canvas */}
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-
-      {/* Scan Line */}
-      {isHovered && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-          boxShadow: `0 0 20px ${color}`,
-          animation: 'scanDown 2s linear infinite',
-          zIndex: 2,
-        }} />
-      )}
-
-      {/* Glow Pulse */}
-      <div style={{
-        position: 'absolute',
-        top: '-50%',
-        left: '-50%',
-        right: '-50%',
-        bottom: '-50%',
-        background: `radial-gradient(circle, ${color}22 0%, transparent 70%)`,
-        opacity: isHovered ? 1 : 0,
-        animation: isHovered ? 'pulse 2s ease-in-out infinite' : 'none',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }} />
-
-      {/* Content */}
-      <div style={{ position: 'relative', zIndex: 3 }}>
-        {/* Category Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: '0.75rem',
-          color,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          marginBottom: '0.75rem',
-          fontFamily: "'JetBrains Mono', monospace",
-          padding: '0.4rem 0.8rem',
-          background: `${color}22`,
-          borderRadius: '6px',
-          border: `1px solid ${color}66`,
-          boxShadow: isHovered ? `0 0 15px ${color}66` : 'none',
-          transition: 'all 0.3s',
-        }}>
-          <span style={{ fontSize: '1.2rem' }}>{icon}</span>
-          {category}
+      <section className="mc-hero">
+        <div className="mc-kicker">
+          <span>TECHNICAL PM</span>
+          <b>/</b>
+          <span>AI DELIVERY</span>
+          <b>/</b>
+          <span>MANUFACTURING B2B</span>
         </div>
 
-        {/* Title */}
-        <h3 style={{
-          fontSize: '1.5rem',
-          marginBottom: '0.75rem',
-          color: '#fff',
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
-          textShadow: isHovered
-            ? `0 0 20px ${color}, 2px 0 ${color}44, -2px 0 ${color}44`
-            : 'none',
-          transition: 'all 0.2s',
-          animation: isHovered ? 'glitchText 0.3s ease-in-out infinite' : 'none',
-        }}>
-          {title}
-        </h3>
-
-        {/* Description */}
-        <p style={{
-          color: 'rgba(255,255,255,0.6)',
-          lineHeight: 1.6,
-          marginBottom: '1rem',
-          transition: 'color 0.3s',
-        }}>
-          {description}
-        </p>
-
-        {/* Tech Stack */}
-        {tech && (
-          <div style={{
-            fontSize: '0.7rem',
-            color: 'rgba(255,255,255,0.4)',
-            fontFamily: "'JetBrains Mono', monospace",
-            marginBottom: '1rem',
-            padding: '0.5rem 0.75rem',
-            background: 'rgba(0,0,0,0.3)',
-            borderRadius: '6px',
-            borderLeft: `3px solid ${color}`,
-          }}>
-            {tech}
-          </div>
-        )}
-
-        {/* Difficulty Bar */}
-        {difficulty !== undefined && (
-          <div style={{ marginTop: '1rem' }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '0.5rem',
-              fontSize: '0.75rem',
-              fontFamily: "'JetBrains Mono', monospace",
-              color: 'rgba(255,255,255,0.5)',
-            }}>
-              <span>DIFFICULTY</span>
-              <span style={{ color, fontWeight: 'bold' }}>LV.{difficulty}</span>
-            </div>
-            <div style={{
-              height: '6px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '3px',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${(difficulty / 10) * 100}%`,
-                background: `linear-gradient(90deg, ${color}, ${color}88)`,
-                boxShadow: `0 0 10px ${color}`,
-                borderRadius: '3px',
-                transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-                animation: isHovered ? 'slideIn 0.6s ease-out' : 'none',
-              }} />
+        <div className="mc-hero-layout">
+          <div className="mc-hero-copy">
+            <div className="mc-eyebrow">PROJECT MISSION CONTROL / 001</div>
+            <h1>
+              PoCを、<br />
+              <span>止まらない運用へ。</span>
+            </h1>
+            <p>
+              曖昧な要件、複数の関係者、AIの不確実性。<br className="desktop-break" />
+              判断・責任・監視・復旧を設計し、
+              「動くデモ」を「使い続けられるシステム」へ移行します。
+            </p>
+            <div className="mc-actions">
+              <a className="mc-primary" href="#cases">実績を見る <span>↘</span></a>
+              <a className="mc-secondary" href="#diagnostic">案件の詰まりを診断する <span>→</span></a>
             </div>
           </div>
-        )}
 
-        {/* Action Button */}
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '0.75rem 1.5rem',
-          background: demoUrl ? `${color}22` : 'rgba(255,255,255,0.05)',
-          border: `2px solid ${demoUrl ? color : 'rgba(255,255,255,0.1)'}`,
-          borderRadius: '8px',
-          textAlign: 'center',
-          fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: 'bold',
-          color: demoUrl ? color : 'rgba(255,255,255,0.3)',
-          letterSpacing: '0.1em',
-          transition: 'all 0.3s',
-          boxShadow: demoUrl && isHovered ? `0 0 25px ${color}88, inset 0 0 15px ${color}33` : 'none',
-          transform: demoUrl && isHovered ? 'scale(1.05)' : 'scale(1)',
-        }}>
-          {demoUrl
-            ? `▶ ${category === 'game' ? 'PLAY NOW' : 'VIEW DEMO'}`
-            : '✨ HTML TAG COMPONENT'}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes scanDown {
-          0%   { top: 0%;   opacity: 0; }
-          10%  { opacity: 1; }
-          90%  { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50%       { opacity: 0.6; transform: scale(1.1); }
-        }
-        @keyframes glitchText {
-          0%, 100% { transform: translateX(0); }
-          20%       { transform: translateX(-2px); }
-          40%       { transform: translateX(2px); }
-          60%       { transform: translateX(-1px); }
-          80%       { transform: translateX(1px); }
-        }
-        @keyframes slideIn {
-          from { width: 0%; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-/* ============================================================
-   MAIN SHOWCASE PAGE
-   ============================================================ */
-export default function ShowcasePage(): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<TabId>('all');
-  const [demos, setDemos] = useState<DemoData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/demos')
-      .then((res) => res.json())
-      .then((data) => {
-        const transformed: DemoData[] = data.demos.map((demo: any) => {
-          const isGame = demo.filename.includes('neon-') || 
-                        demo.filename.includes('space-') ||
-                        demo.type === 'game';
-          
-          const iconMap: Record<string, string> = {
-            'TETRIS': '🎮', 'SUDOKU': '🧩', 'INVADERS': '👾',
-            'BREAKOUT': '🎯', 'BASEBALL': '⚾', 'REVERSI': '⚫',
-            'MANDALA': '🎨', 'ERUPTION': '🌋', 'NIGHT': '🌃',
-            'RIPPLE': '💧', 'MATH': '🔷',
-          };
-          
-          let icon = isGame ? '🎮' : '✨';
-          for (const [key, value] of Object.entries(iconMap)) {
-            if (demo.title.toUpperCase().includes(key)) {
-              icon = value;
-              break;
-            }
-          }
-          
-          return {
-            id: demo.id,
-            title: demo.title,
-            description: demo.desc,
-            category: isGame ? 'game' : 'effect',
-            color: demo.color,
-            difficulty: demo.level,
-            icon,
-            tech: demo.tech,
-            demoUrl: demo.demoUrl,
-          };
-        });
-        
-        setDemos(transformed);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Failed to load demos:', error);
-        setLoading(false);
-      });
-  }, []);
-
-  const filteredDemos = demos.filter((demo) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'effects') return demo.category === 'effect';
-    if (activeTab === 'games') return demo.category === 'game';
-    return true;
-  });
-
-  const handleTabChange = (tab: TabId, freq: number): void => {
-    setActiveTab(tab);
-    playTone(freq, 'sine', 0.1);
-  };
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#080810',
-      color: '#fff',
-      fontFamily: "'Georgia','Times New Roman',serif",
-      overflowX: 'hidden',
-    }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #080810; }
-        ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 2px; }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px) scale(0.95); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .demo-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-          gap: 1.5rem;
-        }
-        .tab-bar {
-          display: flex;
-          gap: 0.75rem;
-          margin-bottom: 2rem;
-          padding: 0.75rem;
-          background: rgba(0,0,0,0.3);
-          border-radius: 16px;
-          border: 1px solid rgba(124,58,237,0.2);
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
-        .tab-bar::-webkit-scrollbar { display: none; }
-        .hero-section {
-          position: relative;
-          z-index: 1;
-          min-height: 100svh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 5rem clamp(1rem,5vw,4rem) 3rem;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-        .showcase-section {
-          position: relative;
-          z-index: 1;
-          padding: 4rem clamp(1rem,4vw,4rem);
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-        @media (max-width: 479px) {
-          .demo-grid { gap: 0.875rem; }
-        }
-        @media (max-width: 640px) {
-          .showcase-section { padding: 3rem 1rem; }
-          .hero-section { padding: 4rem 1rem 2rem; }
-        }
-      `}</style>
-
-      {/* GRID BACKGROUND */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute',
-          inset: '-40px',
-          backgroundImage:
-            'linear-gradient(rgba(124,58,237,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.07) 1px,transparent 1px)',
-          backgroundSize: '40px 40px',
-        }} />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(ellipse 80% 60% at 20% 20%,rgba(124,58,237,.12),transparent),' +
-            'radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,255,136,.06),transparent)',
-        }} />
-      </div>
-
-      {/* GODZILLA FIRE BREATH */}
-      <GodzillaEffect />
-
-      {/* HERO */}
-      <section className="hero-section">
-        <h1 style={{
-          fontSize: 'clamp(2.8rem,8vw,6rem)',
-          fontWeight: 800,
-          lineHeight: 0.95,
-          letterSpacing: '-.03em',
-          marginBottom: '2rem',
-        }}>
-          <GlitchText intensity={1.2}>HTML</GlitchText>
-          <span style={{
-            display: 'block',
-            color: 'rgba(255,255,255,.25)',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            fontSize: 'clamp(1.4rem,4vw,2.8rem)',
-            letterSpacing: '-.01em',
-            marginTop: '.3rem',
-          }}>
-            is not the destination.
-          </span>
-          <span style={{
-            display: 'block',
-            background: 'linear-gradient(135deg,#7c3aed,#a78bfa,#00ff88)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            It&apos;s the input.
-          </span>
-        </h1>
-
-        <p style={{
-          fontSize: 'clamp(1rem,2.5vw,1.25rem)',
-          color: 'rgba(255,255,255,.5)',
-          lineHeight: 1.7,
-          maxWidth: '580px',
-          marginBottom: '3rem',
-        }}>
-          コンテンツと体験を完全に分離したブログシステム。HTMLを書くだけで、全記事にゲーミングUIが宿る。
-        </p>
-      </section>
-
-      {/* SHOWCASE SECTION */}
-      <section className="showcase-section">
-        {/* Section Header */}
-        <div style={{ marginBottom: '3rem' }}>
-          <div style={{
-            fontSize: '.65rem',
-            letterSpacing: '.2em',
-            color: 'rgba(124,58,237,.7)',
-            textTransform: 'uppercase',
-            marginBottom: '1rem',
-            fontFamily: "'JetBrains Mono',monospace",
-          }}>
-            {'// Interactive Showcase'}
-          </div>
-          <h2 style={{
-            fontSize: 'clamp(1.8rem,4vw,3rem)',
-            fontWeight: 700,
-            letterSpacing: '-.03em',
-            marginBottom: '2rem',
-            lineHeight: 1.1,
-          }}>
-            <span style={{ color: '#a78bfa' }}>ビジュアルエフェクト</span>
-            {' と '}
-            <span style={{ color: '#00ff88' }}>ゲーム</span>
-          </h2>
-          <p style={{
-            color: 'rgba(255,255,255,.4)',
-            fontSize: '.95rem',
-            marginBottom: '3rem',
-            maxWidth: '700px',
-            lineHeight: 1.7,
-          }}>
-            HTMLタグとして記事に埋め込めるエフェクトコンポーネントと、
-            Canvas 2Dで作られたスタンドアロンゲームデモ。
-            すべてクリック・タップで操作可能。
-          </p>
-        </div>
-
-        {/* TAB BUTTONS */}
-        <div className="tab-bar">
-          <TabButton active={activeTab === 'all'}     onClick={() => handleTabChange('all',     400)} icon="🎯">All</TabButton>
-          <TabButton active={activeTab === 'effects'} onClick={() => handleTabChange('effects', 500)} icon="✨">Effects</TabButton>
-          <TabButton active={activeTab === 'games'}   onClick={() => handleTabChange('games',   600)} icon="🎮">Games</TabButton>
-        </div>
-
-        {/* DEMO GRID */}
-        {loading ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '4rem',
-            color: 'rgba(255,255,255,0.5)',
-            fontFamily: "'JetBrains Mono', monospace"
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚡</div>
-            Loading demos...
-          </div>
-        ) : demos.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '4rem',
-            color: 'rgba(255,255,255,0.5)'
-          }}>
-            No demos found in /public/demos/
-          </div>
-        ) : (
-          <div className="demo-grid">
-            {filteredDemos.map((demo, index) => (
-              <div
-                key={demo.id}
-                style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.08}s backwards` }}
-              >
-                <DemoCard {...demo} />
+          <aside className="mc-console" aria-label="production readiness console">
+            <div className="mc-console-head">
+              <span>PRODUCTION READINESS</span>
+              <span className="mc-live"><i /> LIVE</span>
+            </div>
+            <div className="mc-score">
+              <strong>84</strong><span>%</span>
+              <div>
+                <b>MISSION STATUS</b>
+                <em>CONDITIONAL READY</em>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+            <div className="mc-meter"><i style={{ width: '84%' }} /></div>
+            <div className="mc-console-list">
+              <div><span><i className="s-green" /> Responsibility</span><b>DEFINED</b></div>
+              <div><span><i className="s-green" /> Observability</span><b>ACTIVE</b></div>
+              <div><span><i className="s-yellow" /> Rollback</span><b>PENDING</b></div>
+              <div className="critical-row"><span><i className="s-red" /> Failure Criteria</span><b>CHECK</b></div>
+            </div>
+            <div className="mc-console-foot">
+              <span>LAST CHECK 00:00:12</span>
+              <span>RISK SIGNALS 02</span>
+            </div>
+          </aside>
+        </div>
 
-        {/* Count Display */}
-        {!loading && demos.length > 0 && (
-          <div style={{
-            marginTop: '3rem',
-            padding: '1.5rem',
-            background: 'rgba(124,58,237,0.1)',
-            border: '1px solid rgba(124,58,237,0.3)',
-            borderRadius: '12px',
-            textAlign: 'center',
-            fontFamily: "'JetBrains Mono', monospace",
-            color: '#a78bfa',
-          }}>
-            <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.7 }}>
-              {activeTab === 'all'     && 'すべてのデモ'}
-              {activeTab === 'games'   && 'ゲームデモ'}
-           　 {activeTab === 'effects' && 'HTMLタグエフェクト'}
+        <div className="mc-scroll-hint"><span /> SCROLL TO INSPECT</div>
+      </section>
+
+      <section className="mc-proof" aria-label="operational evidence">
+        <div className="mc-section-tag">01 / OPERATIONAL EVIDENCE</div>
+        <div className="mc-proof-grid">
+          {proof.map((item) => (
+            <article key={item.label} className="mc-proof-card">
+              <div className="mc-proof-number">{item.value}<small>{item.unit}</small></div>
+              <h2>{item.label}</h2>
+              <p>{item.detail}</p>
+              <span className="mc-card-index">STATUS / VERIFIED</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mc-section" id="cases">
+        <header className="mc-section-head">
+          <div>
+            <div className="mc-section-tag">02 / DECISION RECORDS</div>
+            <h2>コードではなく、<br /><span>判断の履歴を見せる。</span></h2>
+          </div>
+          <p>複雑な案件で価値になるのは、実装量ではなく「何を危険と見て、どこに境界を引いたか」です。</p>
+        </header>
+
+        <div className="mc-cases">
+          {cases.map((item) => (
+            <article className="mc-case" key={item.id}>
+              <div className="mc-case-top">
+                <span>{item.id}</span>
+                <b className={`status-pill ${item.tone}`}>{item.status}</b>
+              </div>
+              <h3>{item.title}</h3>
+              <dl>
+                <div>
+                  <dt>RISK SIGNAL</dt>
+                  <dd>{item.signal}</dd>
+                </div>
+                <div>
+                  <dt>DECISION</dt>
+                  <dd>{item.decision}</dd>
+                </div>
+                <div>
+                  <dt>RESULT</dt>
+                  <dd>{item.result}</dd>
+                </div>
+              </dl>
+              <div className="mc-case-line" />
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mc-section mc-diagnostic" id="diagnostic">
+        <div className="mc-diag-panel">
+          <div className="mc-diag-copy">
+            <div className="mc-section-tag purple">03 / POC SURVIVAL TEST</div>
+            <h2>そのPoC、<br /><span>本番で生き残れるか。</span></h2>
+            <p>
+              成功条件だけでは、本番移行はできません。
+              責任・失敗条件・データ追跡・ロールバック・監視から
+              Production Readiness を判定します。
+            </p>
+            <div className="mc-diag-preview">
+              <span>INPUT</span><i>→</i><span>RISK SIGNAL</span><i>→</i><span>DECISION GRAPH</span><i>→</i><strong>NEXT 7 DAYS</strong>
             </div>
-            <strong style={{ fontSize: '2rem', color: '#fff', display: 'block' }}>
-              {filteredDemos.length}
-            </strong>
-            <div style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.5 }}>
-              / {demos.length} total
+            <button type="button" className="mc-disabled" disabled>
+              SURVIVAL TEST — COMING NEXT
+            </button>
+          </div>
+          <div className="mc-blockers">
+            <div className="mc-blockers-head"><span>CRITICAL BLOCKERS</span><b>03</b></div>
+            <ol>
+              <li><span>01</span><div><b>Failure criteria undefined</b><small>成功条件はあるが、撤退条件がない</small></div></li>
+              <li><span>02</span><div><b>Data owner unresolved</b><small>データ品質の責任者が不明</small></div></li>
+              <li><span>03</span><div><b>Recovery depends on operator</b><small>復旧判断が担当者の経験に依存</small></div></li>
+            </ol>
+            <div className="mc-next-seven">
+              <span>NEXT 7 DAYS</span>
+              <p>Define exit criteria / Assign data owner / Limit observability to 3 signals</p>
             </div>
           </div>
-        )}
+        </div>
       </section>
-    </div>
+
+      <section className="mc-section mc-knowledge">
+        <header className="mc-section-head">
+          <div>
+            <div className="mc-section-tag">04 / KNOWLEDGE SYSTEM</div>
+            <h2>知識を、<br /><span>判断に使える形で残す。</span></h2>
+          </div>
+          <Link href="/blog" className="mc-text-link">KNOWLEDGE BASE を開く →</Link>
+        </header>
+        <div className="mc-knowledge-grid">
+          {knowledge.map(([id, title, desc]) => (
+            <Link href="/blog" className="mc-knowledge-card" key={id}>
+              <span>{id}</span>
+              <h3>{title}</h3>
+              <p>{desc}</p>
+              <b>EXPLORE ↗</b>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <footer className="mc-footer">
+        <div>
+          <span>RANCORDER.DEV</span>
+          <p>PROJECT MISSION CONTROL</p>
+        </div>
+        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS</div>
+      </footer>
+    </main>
   );
 }
