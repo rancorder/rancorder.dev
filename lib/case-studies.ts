@@ -138,6 +138,48 @@ export const caseStudies: CaseStudy[] = [
       '全面改修を避けつつ、変更可能な領域を段階的に拡張。',
     ],
     principle: '品質改善は「テストを書くこと」ではない。壊れてはいけない境界を先に決めることである。',
+  },,
+  {
+    slug: 'sales-support-poc-operations',
+    id: 'CASE 04',
+    status: 'SALES OPS / POC',
+    tone: 'purple',
+    title: '営業支援PoCの運用化',
+    subtitle: '架電データを「集める」だけでなく、アポ検知・分析・報告まで止まらない運用へ。',
+    metrics: [
+      { value: '38', label: 'accounts monitored' },
+      { value: '1H', label: '巡回 cadence' },
+      { value: 'AUTO', label: 'appointment detection' },
+      { value: 'REPORT', label: 'KPI pipeline' },
+    ],
+    chaos: [
+      '営業支援PoCでは、架電結果・アポ・音声・KPIが複数の画面やデータに分散していた。',
+      '「データが取れた」ことと「営業判断に使える報告になった」ことが分離していた。',
+      '巡回・取得・文字起こし・集計・Drive配布まで、人の確認作業が連鎖していた。',
+    ],
+    hiddenRisk: [
+      '取得処理の成功だけを見ていると、アポ取りこぼしや集計欠損を見逃す。',
+      '複数顧客を同一基盤で扱うと、設定衝突・認証切替・保存先誤りが運用事故になる。',
+      'レポート生成が属人化すると、PoCが増えるほど報告工数も比例して増える。',
+    ],
+    decision: [
+      '顧客ごとの設定を台帳化し、取得ロジックと顧客情報を分離した。',
+      '巡回・アポ検知・文字起こし・KPI集計・Drive振り分けを一つの運用パイプラインとして扱った。',
+      '処理成功ではなく「営業判断に必要な情報が揃ったか」を完了条件にした。',
+    ],
+    architecture: [
+      { label: 'COLLECT', value: 'call result / audio / status' },
+      { label: 'DETECT', value: 'appointment / request signals' },
+      { label: 'ANALYZE', value: 'KPI + transcript + company context' },
+      { label: 'DELIVER', value: 'report + Drive routing' },
+    ],
+    result: [
+      '複数顧客を定期巡回する営業支援データ取得基盤へ拡張。',
+      '新規アポ検知と文字起こしを巡回フローへ統合。',
+      '顧客別KPIレポートと保存先を自動振り分けできる運用へ移行。',
+      'PoCの評価軸を「取得できる」から「営業判断に使い続けられる」へ変更。',
+    ],
+    principle: '営業支援PoCの価値はAI精度だけではない。データ取得から意思決定までの摩擦を消して初めて運用になる。',
   },
 ];
 
