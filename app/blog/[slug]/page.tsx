@@ -29,12 +29,33 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   const post=getBlogPost(params.slug);
   if(!post) notFound();
   const related=relatedPosts(post);
+  const canonical=`https://rancorder.dev/blog/${post.slug}`;
+  const articleSchema={
+    '@context':'https://schema.org',
+    '@type':'BlogPosting',
+    '@id':canonical+'#article',
+    headline:post.title,
+    description:post.excerpt,
+    datePublished:post.date,
+    dateModified:post.date,
+    inLanguage:'ja-JP',
+    mainEntityOfPage:canonical,
+    url:canonical,
+    keywords:post.tags.join(', '),
+    articleSection:classify(post),
+    author:{'@id':'https://rancorder.dev/#profile'},
+    publisher:{'@id':'https://rancorder.dev/#profile'},
+    isPartOf:{'@id':'https://rancorder.dev/#website'},
+  };
   return (
-    <BlogLayout title={post.title} date={post.date} readTime={post.readingTime} tags={post.tags}
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(articleSchema)}} />
+      <BlogLayout title={post.title} date={post.date} readTime={post.readingTime} tags={post.tags}
       category={classify(post)}
       related={related.map((p,i)=>({slug:p.slug,title:p.title,category:classify(p),readTime:p.readingTime,xp:140+i*20}))}>
       <BlogRenderer content={post.content}/>
-    </BlogLayout>
+      </BlogLayout>
+    </>
   );
 }
 
