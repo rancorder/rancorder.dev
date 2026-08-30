@@ -53,6 +53,8 @@ export default function AboutPage(){
         </div>
       </section>
 
+      <section className="entity-footer"><div><span>EXPLORE THE EVIDENCE GRAPH</span><p>専門性 → Claim → Case → Evidenceを辿れます。</p></div><Link href="/expertise">OPEN EXPERTISE GRAPH →</Link></section>
+
       <footer className="entity-footer"><div><span>NEED A STRUCTURED DIAGNOSIS?</span><p>案件の詰まりを7問で構造化します。</p></div><Link href="/survival-test">RUN SURVIVAL TEST →</Link></footer>
     </section>
   </main>;
