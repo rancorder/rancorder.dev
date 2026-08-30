@@ -69,12 +69,28 @@ export default async function MissionBriefPage({ searchParams }:{ searchParams:P
   })).filter(x=>x.recover>0);
   const projected = Math.min(100, initial + selected.reduce((s,x)=>s+x.recover,0));
   const risks = code.map((a,i)=>({a,i})).filter(x=>x.a!=='y').sort((a,b)=>weights[b.i]-weights[a.i]).slice(0,3);
+  const unresolved = code.filter(a=>a!=='y').length;
+  const hardNo = code.filter(a=>a==='n').length;
+  const ambiguity = Math.min(100, 34 + hardNo*9 + (code[0]!=='y'?18:0) + (code[1]!=='y'?12:0));
+  const techBusiness = sector==='mfg'?Math.min(100,68+(code[2]!=='y'?14:0)+(code[3]!=='y'?12:0)):sector==='sales'?Math.min(100,66+(code[2]!=='y'?14:0)+(code[6]!=='y'?12:0)):Math.min(100,62+(code[2]!=='y'?16:0)+(code[3]!=='y'?10:0));
+  const productionRisk = Math.min(100, 28 + (100-initial)*0.62 + (code[4]!=='y'?14:0) + (code[5]!=='y'?10:0));
+  const decisionDensity = Math.min(100, 30 + unresolved*9 + selected.length*3);
+  const fit = Math.round(ambiguity*.28 + techBusiness*.24 + productionRisk*.28 + decisionDensity*.20);
+  const fitClass = fit>=85?'S':fit>=70?'A':fit>=52?'B':'C';
+  const fitLabel = fitClass==='S'?'HIGH-LEVERAGE MISSION':fitClass==='A'?'STRONG FIT':fitClass==='B'?'SELECTIVE FIT':'SPECIALIST ROUTE MAY BE FASTER';
+  const fitAxes = [
+    ['AMBIGUITY',Math.round(ambiguity),'要件・責任境界の曖昧さ'],
+    ['TECH × BUSINESS',Math.round(techBusiness),'技術と業務をまたぐ必要性'],
+    ['PRODUCTION RISK',Math.round(productionRisk),'本番移行・運用の難易度'],
+    ['DECISION DENSITY',Math.round(decisionDensity),'意思決定が詰まっている度合い'],
+  ] as const;
 
   const brief = [
     'MISSION BRIEF',
     `Sector: ${config[sector].label}`,
     `Current Readiness: ${initial}%`,
     `Projected Readiness: ${projected}%`,
+    `Mission Fit: ${fit}% / Class ${fitClass} / ${fitLabel}`,
     '',
     ...(signal?['Original Mission Signal:',signal,'']:[]),
     'Critical Risks:',
@@ -111,6 +127,13 @@ export default async function MissionBriefPage({ searchParams }:{ searchParams:P
           <div><small>CURRENT</small><strong>{initial}<em>%</em></strong></div>
           <div><small>PROJECTED</small><strong>{projected}<em>%</em></strong></div>
         </div>
+
+        <section className={'mission-fit-panel fit-'+fitClass.toLowerCase()}>
+          <header><div><span>MISSION FIT / HEURISTIC</span><h2>この案件に、Technical PM介入余地があるか。</h2></div><div className="mission-fit-score"><small>FIT SCORE</small><strong>{fit}<em>%</em></strong><b>CLASS {fitClass}</b></div></header>
+          <div className="mission-fit-verdict"><span>{fitLabel}</span><p>{fitClass==='C'?'実装範囲が明確なら、専門ベンダーへ直接依頼する方が速い可能性があります。':fitClass==='B'?'論点を絞れば介入価値があります。まず責任境界と本番条件を確認します。':'曖昧さ・技術×業務・本番リスクが重なっています。実装前の判断設計に介入価値が高いMissionです。'}</p></div>
+          <div className="mission-fit-axes">{fitAxes.map(axis=><div key={axis[0]}><div><span>{axis[0]}</span><b>{axis[1]}</b></div><i><em style={{width:axis[1]+'%'}}/></i><p>{axis[2]}</p></div>)}</div>
+          <footer><span>HOW THIS IS CALCULATED</span><p>Survival Testの回答から算出するルールベースの適合度です。能力評価や成功確率ではなく、「判断設計が価値を出しやすい案件か」を見るためのヒューリスティックです。</p></footer>
+        </section>
 
         <div className="mission-brief-grid">
           <section>
