@@ -18,6 +18,10 @@ export type Expertise={
 export type Experience={
  id:string; period:string; domain:string; capability:string; decisionPattern:string; expertiseIds:string[];
 };
+export type DecisionNode={
+ id:string; caseSlug:string; title:string; situation:string; constraint:string; risk:string;
+ decision:string; reason:string; result:string; principle:string; expertiseIds:string[]; evidenceIds:string[];
+};
 
 export const evidence:Evidence[]=[
  {id:'evidence:54-sites',claim:'54 external sites operated on one monitoring surface',value:'54 sites',sourceType:'first_party_case_record',publiclyVerifiable:false,sourceUrl:'/cases/54-site-monitoring',scope:'monitoring architecture'},
@@ -38,6 +42,13 @@ export const expertise:Expertise[]=[
  {id:'expertise:sales-operations',slug:'sales-operations',name:'Sales Operations',statement:'架電・アポ・音声・KPIを分断せず、取得から営業判断までを一つの運用へ接続する。',claim:'営業支援PoCを「取得できる」から「営業判断に使い続けられる」へ移行する。',decisionPattern:'Collect → Detect → Analyze → Deliver → Improve',caseSlugs:['sales-support-poc-operations'],evidenceIds:['evidence:sales-ops'],knowledgeQueries:['営業','KPI','Sales']},
 ];
 
+export const decisions:DecisionNode[]=[
+ {id:'decision:failure-mode-monitoring',caseSlug:'54-site-monitoring',title:'監視対象をサイトではなく失敗モードで定義する',situation:'複数サイトの状態確認が人の巡回と経験に依存していた。',constraint:'監視対象が増えるほど、人が見る画面と切り分け作業も増える。',risk:'正常終了でも期待データが取れていない状態を見逃し、復旧が担当者の記憶に依存する。',decision:'処理成功・データ取得・更新鮮度を別シグナルにし、復旧を自動・手動・要判断へ分離した。',reason:'人が常時監視するのではなく、異常時だけ判断を返す構造にするため。',result:'54サイトを単一運用面へ集約し、11か月連続稼働・月10万件超処理・システム障害による業務停止0件。',principle:'監視とは画面を見ることではなく、異常時だけ人間へ判断を返す設計である。',expertiseIds:['expertise:automation-reliability','expertise:decision-architecture','expertise:technical-pm'],evidenceIds:['evidence:54-sites','evidence:11-months','evidence:100k-month','evidence:zero-stops']},
+ {id:'decision:ai-failure-boundary',caseSlug:'ai-production-delivery',title:'AI精度より先に失敗条件と責任境界を定義する',situation:'PoCでは「動く・精度が出る」が主な評価軸だった。',constraint:'本番では誤判定・入力欠損・モデル変更・外部API不調を運用として扱う必要がある。',risk:'AIが失敗した際の人への切替条件が曖昧だと、判断と責任が担当者ごとに変わる。',decision:'失敗条件・責任境界・Fallback条件を定義し、AI結果を採用する条件と人へ戻す条件を分離した。',reason:'AIの誤りをゼロにするのではなく、誤ったときにも壊れないProduction Boundaryを作るため。',result:'Whisper系・BERT系機能をPoC外へ持ち出し、本番導入へ接続した。',principle:'AI本番化の本質は精度改善ではない。間違えたときに壊れない境界設計である。',expertiseIds:['expertise:ai-production','expertise:decision-architecture','expertise:technical-pm','expertise:manufacturing-dx'],evidenceIds:['evidence:ai-production']},
+ {id:'decision:risk-based-test-boundary',caseSlug:'1400-line-quality-rebuild',title:'コード量ではなく障害影響度から保証境界を決める',situation:'約1,400行のロジックに変更を守るテストが不足していた。',constraint:'全面リファクタリングは既存挙動を変えるリスクが大きく、暗黙仕様も存在した。',risk:'低リスク領域からテストすると件数だけ増え、重要な失敗を防げない。',decision:'変更頻度・分岐・外部境界・障害影響度を基準に30テストを追加し、既存挙動を固定してから変更境界を広げた。',reason:'テスト数ではなく、壊れてはいけない領域を先に保証するため。',result:'未テスト1,400行に30テストを追加し、保証対象を明示しながら変更可能領域を段階的に拡張した。',principle:'品質改善はテストを書くことではない。壊れてはいけない境界を先に決めることである。',expertiseIds:['expertise:decision-architecture','expertise:technical-pm'],evidenceIds:['evidence:quality-tests']},
+ {id:'decision:sales-completion-condition',caseSlug:'sales-support-poc-operations',title:'処理成功ではなく営業判断可能を完了条件にする',situation:'架電結果・アポ・音声・KPIが分散し、取得後も人の確認作業が連鎖していた。',constraint:'複数顧客では設定衝突・認証切替・保存先誤りが運用事故になり得る。',risk:'取得処理の成功だけでは、アポ取りこぼしや集計欠損を検知できない。',decision:'顧客設定を台帳化し、巡回・アポ検知・文字起こし・KPI集計・配布を一つの運用パイプラインとして扱った。',reason:'PoCの価値をデータ取得ではなく、営業判断までの摩擦削減で評価するため。',result:'複数顧客の定期巡回、新規アポ検知、文字起こし、顧客別KPIレポート、保存先振り分けを運用へ統合した。',principle:'営業支援PoCは、データ取得から意思決定までの摩擦を消して初めて運用になる。',expertiseIds:['expertise:sales-operations','expertise:automation-reliability','expertise:decision-architecture','expertise:technical-pm'],evidenceIds:['evidence:sales-ops']},
+];
+
 export const experiences:Experience[]=[
  {id:'experience:manufacturing',period:'2008–2026',domain:'Manufacturing / Operational Improvement',capability:'Process Decomposition',decisionPattern:'工程を分解し、ボトルネックを特定して再現可能な仕組みに変える。',expertiseIds:['expertise:manufacturing-dx','expertise:technical-pm']},
  {id:'experience:sales',period:'Parallel',domain:'Sales Operations / Management',capability:'Signal → Decision',decisionPattern:'活動データをKPI・判断・改善へ接続する。',expertiseIds:['expertise:sales-operations','expertise:decision-architecture']},
@@ -51,3 +62,6 @@ export const identity={
 };
 
 export function evidenceForExpertise(id:string){const x=expertise.find(e=>e.id===id);return evidence.filter(e=>x?.evidenceIds.includes(e.id));}
+
+export function decisionsForExpertise(id:string){return decisions.filter(d=>d.expertiseIds.includes(id));}
+export function decisionsForCase(slug:string){return decisions.filter(d=>d.caseSlug===slug);}
