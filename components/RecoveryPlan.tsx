@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { awardAchievement } from './MissionXP';
 
-type Sector = 'mfg' | 'sales';
+type Sector = 'mfg' | 'sales' | 'dx';
 
 const weights = [16,16,16,14,14,13,11];
 
@@ -26,6 +26,15 @@ const labels = {
     ['REPORT FRESHNESS','更新期限と遅延監視を設定','7 DAYS'],
     ['TRANSCRIPT QUALITY','文字起こし品質ゲートを設定','30 DAYS'],
     ['DECISION OUTPUT','分析結果を営業アクションへ接続','30 DAYS'],
+  ],
+  dx: [
+    ['RESPONSIBILITY','停止・継続・復旧を決める責任者を定義','48H'],
+    ['FAILURE CRITERIA','失敗・撤退条件を定義','48H'],
+    ['PROCESS OWNERSHIP','新業務フローの責任境界を定義','7 DAYS'],
+    ['SOURCE OF TRUTH','主要データの正本を一意にする','7 DAYS'],
+    ['SHADOW WORKFLOW','旧手順・Excel・紙の残存箇所を棚卸し','7 DAYS'],
+    ['ADOPTION SIGNAL','新フロー完結率を計測','30 DAYS'],
+    ['TRANSITION FALLBACK','旧運用へ戻す境界を定義','30 DAYS'],
   ],
 } as const;
 
@@ -49,7 +58,9 @@ export default function RecoveryPlan({ sector, code }: { sector: Sector; code: s
   const recovered = candidates.filter(c=>fixed.includes(c.index)).reduce((s,c)=>s+c.recover,0);
   const projected = Math.min(100,initial+recovered);
   const selectedFixes = fixed.slice().sort((a,b)=>a-b).join(',');
-  const briefUrl = `/mission-brief?s=${sector}&r=${code}&f=${selectedFixes}`;
+  const [signal,setSignal] = useState('');
+  useState(()=>{ if(typeof window!=='undefined') setSignal(new URLSearchParams(window.location.search).get('q')||window.sessionStorage.getItem('rancorder-mission-signal')||''); });
+  const briefUrl = `/mission-brief?s=${sector}&r=${code}&f=${selectedFixes}${signal?`&q=${encodeURIComponent(signal)}`:''}`;
 
   const toggle = (index:number) => { setFixed(prev=>prev.includes(index)?prev.filter(x=>x!==index):[...prev,index]); awardAchievement('recovery'); };
 
