@@ -49,10 +49,20 @@ export default function SurvivalTestPage(){
   const [answers,setAnswers] = useState<Record<string,Answer>>({});
   const [alert,setAlert] = useState('');
   const [pulse,setPulse] = useState(0);
+  const [missionSignal,setMissionSignal] = useState('');
 
   useEffect(()=>{
     const saved = window.localStorage.getItem('rancorder-mission');
-    const query = new URLSearchParams(window.location.search).get('s');
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('s');
+    const incomingSignal = params.get('q');
+    if(incomingSignal){
+      const clean = incomingSignal.slice(0,180);
+      setMissionSignal(clean);
+      window.sessionStorage.setItem('rancorder-mission-signal',clean);
+    } else {
+      setMissionSignal(window.sessionStorage.getItem('rancorder-mission-signal')||'');
+    }
     if(query === 'dx') setSector('dx');
     else if(query === 'sales') setSector('sales');
     else if(query === 'mfg') setSector('manufacturing');
@@ -105,6 +115,7 @@ export default function SurvivalTestPage(){
 
     <section className="survival-shell">
       <header className="survival-head">
+        {missionSignal&&<div className="survival-mission-signal"><span>MISSION SIGNAL CAPTURED</span><p>“{missionSignal}”</p><b>INPUT LOCKED / ANALYSIS ROUTE ACTIVE</b></div>}
         <div className="survival-sector-switch">
           <button className={sector==='manufacturing'?'active':''} onClick={()=>changeSector('manufacturing')}>MFG AI</button>
           <button className={sector==='sales'?'active':''} onClick={()=>changeSector('sales')}>SALES OPS</button>
@@ -147,7 +158,8 @@ export default function SurvivalTestPage(){
         <button type="button" disabled={answered!==questions.length} onClick={()=>{
           const code = questions.map(q=>answers[q.id]==='yes'?'y':answers[q.id]==='partial'?'p':'n').join('');
           awardAchievement('diagnostic');
-          window.location.href = `/survival-test/result?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}&r=${code}`;
+          const signal = missionSignal ? `&q=${encodeURIComponent(missionSignal)}` : '';
+          window.location.href = `/survival-test/result?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}&r=${code}${signal}`;
         }}>ANALYZE MISSION →</button>
       </div>
     </section>
