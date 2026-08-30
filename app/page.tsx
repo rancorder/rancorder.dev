@@ -3,6 +3,7 @@ import MissionFX from '../components/MissionFX';
 import MissionSelector from '../components/MissionSelector';
 import SectorMissionPanel from '../components/SectorMissionPanel';
 import HeroMissionConsole from '../components/HeroMissionConsole';
+import AdaptiveHeroCopy from '../components/AdaptiveHeroCopy';
 
 const proof = [
   { value: '54', unit: 'sites', label: '監視基盤', detail: '複数サイトを一つの運用面で監視' },
@@ -83,33 +84,8 @@ export default function HomePage() {
       </nav>
 
       <section className="mc-hero">
-        <div className="mc-kicker">
-          <span>TECHNICAL PM</span>
-          <b>/</b>
-          <span>AI DELIVERY</span>
-          <b>/</b>
-          <span>MANUFACTURING B2B</span>
-          <b>/</b>
-          <span>SALES OPS POC</span>
-        </div>
-
         <div className="mc-hero-layout">
-          <div className="mc-hero-copy">
-            <div className="mc-eyebrow">PROJECT MISSION CONTROL / 001</div>
-            <h1>
-              PoCを、<br />
-              <span>止まらない運用へ。</span>
-            </h1>
-            <p>
-              曖昧な要件、複数の関係者、AIの不確実性。<br className="desktop-break" />
-              製造業AIと営業支援PoCの「判断・責任・監視・復旧」を設計し、
-              「動くデモ」を「使い続けられる運用」へ移行します。
-            </p>
-            <div className="mc-actions">
-              <a className="mc-primary" href="#cases">実績を見る <span>↘</span></a>
-              <a className="mc-secondary" href="#diagnostic">案件の詰まりを診断する <span>→</span></a>
-            </div>
-          </div>
+          <div className="mc-hero-copy"><AdaptiveHeroCopy /></div>
 
           <HeroMissionConsole />
         </div>
