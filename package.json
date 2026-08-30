@@ -9,7 +9,8 @@
     "lint": "next lint",
     "lint:blog": "node scripts/lint-blog-articles.js",
     "test:frontmatter": "node scripts/frontmatter-qa.js",
-    "validate": "npm run lint && npm run lint:blog && npm run test:frontmatter && npm run build"
+    "validate": "npm run validate:graph && npm run lint && npm run lint:blog && npm run test:frontmatter && npm run build",
+    "validate:graph": "node scripts/validate-career-graph.js"
   },
   "dependencies": {
     "@vercel/analytics": "^1.1.1",
