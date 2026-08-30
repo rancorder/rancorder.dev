@@ -23,10 +23,35 @@ const categoryMeta = {
 
 type Key = keyof typeof categoryMeta;
 
+function TypewriterTitle({ text, active, delay = 0 }: { text:string; active:boolean; delay?:number }) {
+  const [shown,setShown] = useState(active ? '' : text);
+
+  useEffect(()=>{
+    if(!active){ setShown(text); return; }
+    setShown('');
+    let index = 0;
+    let timer: number | undefined;
+    const start = window.setTimeout(()=>{
+      timer = window.setInterval(()=>{
+        index += 1;
+        setShown(text.slice(0,index));
+        if(index >= text.length && timer) window.clearInterval(timer);
+      }, 24);
+    }, delay);
+    return ()=>{
+      window.clearTimeout(start);
+      if(timer) window.clearInterval(timer);
+    };
+  },[text,active,delay]);
+
+  return <span className="vault-typewriter" aria-label={text}>{shown}<i aria-hidden="true" /></span>;
+}
+
 export default function KnowledgeVault({ posts }:{ posts:Post[] }){
   const [filter,setFilter] = useState<'all'|Key>('all');
   const [query,setQuery] = useState('');
   const [view,setView] = useState<'grid'|'terminal'>('grid');
+  const [hovered,setHovered] = useState<string | null>(null);
 
   useEffect(()=>{
     const category = new URLSearchParams(window.location.search).get('category');
@@ -72,12 +97,31 @@ export default function KnowledgeVault({ posts }:{ posts:Post[] }){
       <section className="vault-featured">
         <div className="vault-section-label"><span>01</span><b>PRIORITY INTEL</b><i>START HERE</i></div>
         <div className="vault-featured-grid">
-          {featured.map((p,index)=><Link key={p.slug} href={'/blog/'+p.slug} className={'vault-feature-card v'+index} onClick={()=>awardAchievement('case')}>
-            <div className="vault-card-top"><span>INTEL {String(index+1).padStart(2,'0')}</span><b>{categoryMeta[p.category as Key]?.code||'LOG'}</b></div>
-            <h2>{p.title}</h2>
-            <p>{p.excerpt}</p>
-            <div className="vault-card-foot"><span>{p.readingTime||'READ'}</span><time>{p.date}</time><b>OPEN INTEL ↗</b></div>
-          </Link>)}
+          {featured.map((p,index)=>{
+            const meta = categoryMeta[p.category as Key] || categoryMeta.decision;
+            return <Link
+              key={p.slug}
+              href={'/blog/'+p.slug}
+              className={'vault-feature-card '+meta.color+' v'+index}
+              onClick={()=>awardAchievement('case')}
+              onMouseEnter={()=>setHovered('featured-'+p.slug)}
+              onMouseLeave={()=>setHovered(null)}
+              onFocus={()=>setHovered('featured-'+p.slug)}
+              onBlur={()=>setHovered(null)}
+            >
+              <div className="vault-card-beam" aria-hidden="true" />
+              <div className="vault-card-corners" aria-hidden="true"><i/><i/><i/><i/></div>
+              <div className="vault-card-top">
+                <span>INTEL {String(index+1).padStart(2,'0')}</span>
+                <b>{meta.code}</b>
+              </div>
+              <div className="vault-card-signal"><i/><span>{meta.label}</span><em>SYNCED</em></div>
+              <h2><TypewriterTitle text={p.title} active={hovered==='featured-'+p.slug || hovered===null} delay={index*180} /></h2>
+              <p>{p.excerpt}</p>
+              <div className="vault-card-meter"><i style={{width:(72-index*9)+'%'}} /></div>
+              <div className="vault-card-foot"><span>{p.readingTime||'READ'}</span><time>{p.date}</time><b>OPEN INTEL ↗</b></div>
+            </Link>;
+          })}
         </div>
       </section>
 
@@ -98,15 +142,25 @@ export default function KnowledgeVault({ posts }:{ posts:Post[] }){
         <div className={view==='grid'?'vault-post-grid':'vault-terminal-list'}>
           {filtered.map((p,index)=>{
             const meta=categoryMeta[p.category as Key]||categoryMeta.decision;
-            return <Link href={'/blog/'+p.slug} key={p.slug} className={'vault-post '+meta.color} onClick={()=>awardAchievement('case')}>
+            return <Link
+              href={'/blog/'+p.slug}
+              key={p.slug}
+              className={'vault-post '+meta.color}
+              onClick={()=>awardAchievement('case')}
+              onMouseEnter={()=>setHovered(p.slug)}
+              onMouseLeave={()=>setHovered(null)}
+              onFocus={()=>setHovered(p.slug)}
+              onBlur={()=>setHovered(null)}
+            >
+              <div className="vault-post-scan" aria-hidden="true" />
               <div className="vault-post-index"><span>{String(index+1).padStart(2,'0')}</span><i/></div>
               <div className="vault-post-main">
-                <div className="vault-post-meta"><b>{meta.code}</b><time>{p.date}</time><span>{p.readingTime||'INTEL'}</span></div>
-                <h3>{p.title}</h3>
+                <div className="vault-post-meta"><b>{meta.code}</b><time>{p.date}</time><span>{hovered===p.slug?'DECRYPTING':'READY'}</span></div>
+                <h3><TypewriterTitle text={p.title} active={hovered===p.slug} /></h3>
                 {view==='grid'&&<p>{p.excerpt}</p>}
                 <div className="vault-tags">{p.tags.slice(0,4).map(t=><span key={t}>{t}</span>)}</div>
               </div>
-              <strong>↗</strong>
+              <strong>{hovered===p.slug?'OPEN':'↗'}</strong>
             </Link>;
           })}
         </div>
