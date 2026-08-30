@@ -61,6 +61,7 @@ export default function HomePage() {
           <a href="#cases">CASES</a>
           <a href="#diagnostic">DIAGNOSTIC</a>
           <Link href="/blog">KNOWLEDGE</Link>
+          <Link href="/lab">LAB</Link>
         </div>
         <div className="mc-system-state"><i /> SYSTEM ONLINE</div>
       </nav>
@@ -130,7 +131,7 @@ export default function HomePage() {
               <h2>{item.label}</h2>
               <p>{item.detail}</p>
               <span className="mc-card-index">STATUS / VERIFIED</span>
-            </Link>
+            </article>
           ))}
         </div>
       </section>
@@ -167,7 +168,7 @@ export default function HomePage() {
                 </div>
               </dl>
               <div className="mc-case-line" />
-            </article>
+            </Link>
           ))}
         </div>
       </section>
@@ -229,7 +230,7 @@ export default function HomePage() {
           <span>RANCORDER.DEV</span>
           <p>PROJECT MISSION CONTROL</p>
         </div>
-        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS</div>
+        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS · <Link href="/lab">LAB / AFTER HOURS</Link></div>
       </footer>
     </main>
   );
