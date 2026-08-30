@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { awardAchievement } from './MissionXP';
 
 type MissionKey = 'manufacturing' | 'sales' | 'dx';
 
@@ -60,6 +61,7 @@ export default function MissionSelector(){
     setSelected(key);
     window.localStorage.setItem('rancorder-mission', key);
     window.dispatchEvent(new CustomEvent('mission-sector-change',{detail:{sector:key}}));
+    awardAchievement('sector');
   };
 
   return <section className="mission-select" aria-label="mission selector">
