@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { expertise, evidenceForExpertise, decisionsForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
+import { expertise, evidenceForExpertise, decisionsForExpertise, knowledgeForExpertise, canonicalExpertiseStatement } from '../../lib/career-graph';
 import { getCaseStudy } from '../../lib/case-studies';
 import { getAllBlogPosts } from '../../lib/blog';
 
@@ -23,7 +23,8 @@ export default function ExpertisePage(){
       const ev=evidenceForExpertise(x.id);
       const decisions=decisionsForExpertise(x.id);
       const cases=x.caseSlugs.map(getCaseStudy).filter(Boolean);
-      const knowledge=posts.filter(p=>x.knowledgeQueries.some(q=>(p.title+' '+p.tags.join(' ')+' '+(p.excerpt||'')).toLowerCase().includes(q.toLowerCase()))).slice(0,3);
+      const explicitKnowledge=knowledgeForExpertise(x.id);
+      const knowledge=explicitKnowledge.map(node=>posts.find(p=>p.slug===node.slug)).filter(Boolean).slice(0,4);
       return <article id={x.slug} key={x.id} className="expertise-node">
        <header><span>NODE {String(index+1).padStart(2,'0')}</span><div><small>EXPERTISE</small><h2>{x.name}</h2></div><b>{ev.length} EVIDENCE</b></header>
        <div className="expertise-claim"><small>CLAIM</small><p>{x.claim}</p></div>
