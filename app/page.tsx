@@ -182,9 +182,9 @@ export default function HomePage() {
             <div className="mc-diag-preview">
               <span>INPUT</span><i>→</i><span>RISK SIGNAL</span><i>→</i><span>DECISION GRAPH</span><i>→</i><strong>NEXT 7 DAYS</strong>
             </div>
-            <button type="button" className="mc-disabled" disabled>
-              SURVIVAL TEST — COMING NEXT
-            </button>
+            <Link href="/survival-test" className="mc-disabled mc-live-cta">
+              START SURVIVAL TEST →
+            </Link>
           </div>
           <div className="mc-blockers">
             <div className="mc-blockers-head"><span>CRITICAL BLOCKERS</span><b>03</b></div>
