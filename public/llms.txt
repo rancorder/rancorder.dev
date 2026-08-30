@@ -4,6 +4,10 @@
 
 rancorder.dev is a Japanese portfolio and knowledge system focused on moving ambiguous PoCs and DX initiatives into production-ready, operable systems.
 
+## Canonical entity profile
+
+https://rancorder.dev/about
+
 ## Core positioning
 
 - Technical PM
