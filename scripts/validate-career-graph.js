@@ -10,6 +10,7 @@ const blogSlugs=new Set(fs.existsSync(blogDir)?fs.readdirSync(blogDir).filter(x=
 function refs(re){return [...graph.matchAll(re)].flatMap(m=>m[1].split(',').map(x=>x.trim().replace(/^['"]|['"]$/g,'')).filter(Boolean))}
 function check(label,refs,set){for(const x of refs)if(!set.has(x))errors.push(label+' references missing node: '+x)}
 check('expertiseIds',refs(/expertiseIds:\[([^\]]*)\]/g),expertise);
+for(const m of graph.matchAll(/expertiseId:'([^']+)'/g))if(!expertise.has(m[1]))errors.push('citation references missing expertise: '+m[1]);
 check('evidenceIds',refs(/evidenceIds:\[([^\]]*)\]/g),evidence);
 check('decisionIds',refs(/decisionIds:\[([^\]]*)\]/g),decisions);
 check('caseSlugs',refs(/caseSlugs:\[([^\]]*)\]/g),caseSlugs);
