@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Sector = 'mfg' | 'sales';
+type Sector = 'mfg' | 'sales' | 'dx';
 const weights = [16,16,16,14,14,13,11];
 
 const config = {
@@ -36,15 +36,28 @@ const config = {
       ['DECISION OUTPUT','分析結果を営業アクションへ接続'],
     ],
   },
+  dx: {
+    label:'DX TRANSFORMATION',
+    items:[
+      ['RESPONSIBILITY','停止・継続・復旧を決める責任者を定義'],
+      ['FAILURE CRITERIA','失敗・撤退条件を定義'],
+      ['PROCESS OWNERSHIP','新業務フローの責任境界を定義'],
+      ['SOURCE OF TRUTH','主要データの正本を一意にする'],
+      ['SHADOW WORKFLOW','旧手順・Excel・紙の残存箇所を棚卸し'],
+      ['ADOPTION SIGNAL','新フロー完結率を計測'],
+      ['TRANSITION FALLBACK','旧運用へ戻す境界を定義'],
+    ],
+  },
 } as const;
 
-function sectorOf(raw?:string):Sector{return raw==='sales'?'sales':'mfg';}
+function sectorOf(raw?:string):Sector{return raw==='sales'?'sales':raw==='dx'?'dx':'mfg';}
 function decode(raw?:string){return (raw||'').toLowerCase().replace(/[^ypn]/g,'').slice(0,7).padEnd(7,'n').split('');}
 function scoreOf(code:string[]){return code.reduce((score,a,i)=>Math.max(0,Math.round(score-(a==='n'?weights[i]:a==='p'?weights[i]*.5:0))),100);}
 
-export default async function MissionBriefPage({ searchParams }:{ searchParams:Promise<{s?:string;r?:string;f?:string}> }){
+export default async function MissionBriefPage({ searchParams }:{ searchParams:Promise<{s?:string;r?:string;f?:string;q?:string}> }){
   const params = await searchParams;
   const sector = sectorOf(params.s);
+  const signal = (params.q||'').slice(0,180);
   const code = decode(params.r);
   const initial = scoreOf(code);
   const fixed = (params.f||'').split(',').map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<7);
@@ -63,6 +76,7 @@ export default async function MissionBriefPage({ searchParams }:{ searchParams:P
     `Current Readiness: ${initial}%`,
     `Projected Readiness: ${projected}%`,
     '',
+    ...(signal?['Original Mission Signal:',signal,'']:[]),
     'Critical Risks:',
     ...risks.map((x,i)=>`${i+1}. ${config[sector].items[x.i][0]}`),
     '',
@@ -91,6 +105,7 @@ export default async function MissionBriefPage({ searchParams }:{ searchParams:P
       </header>
 
       <div className="mission-brief-console">
+        {signal&&<div className="mission-brief-origin"><span>ORIGINAL MISSION SIGNAL</span><p>“{signal}”</p><b>→ DIAGNOSTIC → RECOVERY → HANDOFF</b></div>}
         <div className="mission-brief-score">
           <div><small>SECTOR</small><b>{config[sector].label}</b></div>
           <div><small>CURRENT</small><strong>{initial}<em>%</em></strong></div>
