@@ -31,4 +31,5 @@ Thumbs.db
 
 # Gemini CLI local state
 .gemini/
+gemini-artifacts/
 gha-creds-*.json
