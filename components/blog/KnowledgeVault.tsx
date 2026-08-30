@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { awardAchievement } from '../MissionXP';
 
 type Post = {
@@ -27,6 +27,13 @@ export default function KnowledgeVault({ posts }:{ posts:Post[] }){
   const [filter,setFilter] = useState<'all'|Key>('all');
   const [query,setQuery] = useState('');
   const [view,setView] = useState<'grid'|'terminal'>('grid');
+
+  useEffect(()=>{
+    const category = new URLSearchParams(window.location.search).get('category');
+    if(category === 'production' || category === 'decision' || category === 'reliability' || category === 'dx') {
+      setFilter(category);
+    }
+  },[]);
 
   const filtered = useMemo(()=>posts.filter(p=>{
     const cat = filter==='all'||p.category===filter;
