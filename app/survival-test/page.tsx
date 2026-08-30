@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import SurvivalCombatHUD from '../../components/SurvivalCombatHUD';
+import { awardAchievement } from '../../components/MissionXP';
 
 type Answer = 'yes' | 'partial' | 'no';
 type Sector = 'manufacturing' | 'sales' | 'dx';
@@ -145,6 +146,7 @@ export default function SurvivalTestPage(){
         </div>
         <button type="button" disabled={answered!==questions.length} onClick={()=>{
           const code = questions.map(q=>answers[q.id]==='yes'?'y':answers[q.id]==='partial'?'p':'n').join('');
+          awardAchievement('diagnostic');
           window.location.href = `/survival-test/result?s=${sector==='sales'?'sales':sector==='dx'?'dx':'mfg'}&r=${code}`;
         }}>ANALYZE MISSION →</button>
       </div>
