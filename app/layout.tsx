@@ -5,6 +5,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import MissionXP from '../components/MissionXP';
 import WelcomeBack from '../components/WelcomeBack';
+import GeoStructuredData from '../components/GeoStructuredData';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body className={`${inter.className} ${inter.variable}`}>
+        <GeoStructuredData />
         {children}
         <WelcomeBack />
         <MissionXP />
