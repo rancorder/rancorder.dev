@@ -88,3 +88,18 @@ export const knowledgeNodes:KnowledgeNode[]=[
 export function knowledgeForExpertise(id:string){return knowledgeNodes.filter(k=>k.expertiseIds.includes(id));}
 export function knowledgeForCase(slug:string){return knowledgeNodes.filter(k=>k.caseSlugs.includes(slug));}
 export function knowledgeForPost(slug:string){return knowledgeNodes.find(k=>k.slug===slug);}
+
+export type CitationSurface={
+ id:string; expertiseId:string; principle:string; why:string; evidenceIds:string[]; exception:string;
+};
+
+export const citationSurfaces:CitationSurface[]=[
+ {id:'citation:ai-production',expertiseId:'expertise:ai-production',principle:'AI本番化は、精度改善より先に失敗条件・責任境界・Fallbackを設計する。',why:'AIは誤りをゼロにできないため、採用条件と人へ戻す条件が曖昧だと、本番で責任と判断が揺れる。',evidenceIds:['evidence:ai-production'],exception:'低リスクな社内実験や、誤りが業務影響を持たない用途では、同じ厳密さの運用境界が不要な場合がある。'},
+ {id:'citation:automation-reliability',expertiseId:'expertise:automation-reliability',principle:'自動化の信頼性は「止まらないこと」ではなく、異常を検知し、復旧または人間の判断へ戻せることで成立する。',why:'処理が正常終了しても、データ欠損や鮮度劣化が起きれば業務結果は誤るため、実行状態と結果完全性を分けて観測する必要がある。',evidenceIds:['evidence:54-sites','evidence:11-months','evidence:100k-month','evidence:zero-stops'],exception:'単発処理や、失敗時に即座に再実行でき業務影響が小さい処理では、監視・復旧設計を簡素化できる。'},
+ {id:'citation:decision-architecture',expertiseId:'expertise:decision-architecture',principle:'曖昧な案件は、情報を増やすだけでは進まない。誰が・何を・どの条件で決めるかを設計すると前進する。',why:'未確定事項と責任境界が混ざった状態では、進捗があっても重要判断が先送りされ、後工程で手戻りになる。',evidenceIds:['evidence:zero-stops','evidence:quality-tests'],exception:'要求・責任・受入条件が既に明確な定型案件では、Decision Architectureの介入価値は小さい。'},
+ {id:'citation:technical-pm',expertiseId:'expertise:technical-pm',principle:'Technical PMは、技術を説明する役ではなく、Business・Technology・Operationsを同じ意思決定面に載せる役割である。',why:'技術的に正しい実装でも、業務責任・運用条件・変更境界が未定義なら、本番では使い続けられない。',evidenceIds:['evidence:54-sites','evidence:ai-production','evidence:quality-tests','evidence:sales-ops'],exception:'仕様と運用が確立済みで、実装範囲だけが明確な案件では、専門エンジニアや実装ベンダーへ直接依頼する方が速い。'},
+ {id:'citation:manufacturing-dx',expertiseId:'expertise:manufacturing-dx',principle:'製造業DXはツール導入ではなく、工程・データ・責任・現場定着を一体で再設計する。',why:'既存工程のボトルネックや責任分界を変えずにシステムだけ追加すると、二重入力やShadow Workflowが残りやすい。',evidenceIds:['evidence:ai-production'],exception:'既存業務が標準化済みで、単純な置換導入だけで目的を満たすケースでは、大規模な業務再設計は不要。'},
+ {id:'citation:sales-operations',expertiseId:'expertise:sales-operations',principle:'営業支援PoCは、データ取得ではなく、取得→検知→分析→配布→判断までの摩擦を減らして初めて運用価値になる。',why:'取得成功だけを完了条件にすると、アポ取りこぼし・集計欠損・保存先誤りが営業判断の前段で残る。',evidenceIds:['evidence:sales-ops'],exception:'小規模で担当者が単一、データ量も少なく手動確認コストが無視できる場合は、自動化範囲を広げすぎない方がよい。'},
+];
+
+export function citationForExpertise(id:string){return citationSurfaces.find(c=>c.expertiseId===id);}
