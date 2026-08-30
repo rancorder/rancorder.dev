@@ -11,6 +11,7 @@ export default function MissionFX(){
   const [stage,setStage] = useState(0);
   const [progress,setProgress] = useState(0);
   const [operator,setOperator] = useState(false);
+  const [sector,setSector] = useState<'manufacturing'|'sales'>('manufacturing');
 
   useEffect(()=>{
     const timers = [
@@ -20,6 +21,17 @@ export default function MissionFX(){
       window.setTimeout(()=>setBoot(false),1500),
     ];
     return ()=>timers.forEach(clearTimeout);
+  },[sector]);
+
+  useEffect(()=>{
+    const saved = window.localStorage.getItem('rancorder-mission');
+    if(saved === 'sales' || saved === 'manufacturing') setSector(saved);
+    const onSector = (event: Event) => {
+      const detail = (event as CustomEvent<{sector:'manufacturing'|'sales'}>).detail;
+      if(detail?.sector) setSector(detail.sector);
+    };
+    window.addEventListener('mission-sector-change', onSector);
+    return () => window.removeEventListener('mission-sector-change', onSector);
   },[]);
 
   useEffect(()=>{
@@ -84,20 +96,24 @@ export default function MissionFX(){
           const b=nodes[j],bx=b.x*w,by=b.y*h;
           const d=Math.hypot(ax-bx,ay-by);
           if(d<150){
-            ctx.strokeStyle=`rgba(93,242,165,${(1-d/150)*.11})`;
+            const base = sector === 'sales' ? '167,139,250' : '93,242,165';
+            ctx.strokeStyle=`rgba(${base},${(1-d/150)*.11})`;
             ctx.lineWidth=.7;
             ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
           }
         }
         const md=Math.hypot(ax-mouse.x,ay-mouse.y);
         if(md<180){
-          ctx.strokeStyle=`rgba(167,139,250,${(1-md/180)*.4})`;
+          const hover = sector === 'sales' ? '93,242,165' : '167,139,250';
+          ctx.strokeStyle=`rgba(${hover},${(1-md/180)*.4})`;
           ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(mouse.x,mouse.y);ctx.stroke();
         }
         ctx.beginPath();
-        ctx.fillStyle=a.critical?'rgba(255,95,109,.85)':'rgba(93,242,165,.7)';
+        const normal = sector === 'sales' ? 'rgba(167,139,250,.75)' : 'rgba(93,242,165,.7)';
+        const glow = sector === 'sales' ? '#a78bfa' : '#5df2a5';
+        ctx.fillStyle=a.critical?'rgba(255,95,109,.85)':normal;
         ctx.shadowBlur=a.critical?14:8;
-        ctx.shadowColor=a.critical?'#ff5f6d':'#5df2a5';
+        ctx.shadowColor=a.critical?'#ff5f6d':glow;
         ctx.arc(ax,ay,a.r,0,Math.PI*2);ctx.fill();
         ctx.shadowBlur=0;
       }
@@ -121,7 +137,7 @@ export default function MissionFX(){
     {operator && <a href="/lab" className="operator-unlocked">OPERATOR MODE UNLOCKED ↗</a>}
     <div className="mission-hud" aria-hidden="true">
       <div className="mission-hud-stage">
-        <small>MISSION PHASE</small>
+        <small>MISSION PHASE / {sector === 'sales' ? 'SALES OPS' : 'MFG AI'}</small>
         <b>{String(stage).padStart(2,'0')} / {stages[stage]}</b>
       </div>
       <div className="mission-hud-bar"><i style={{width:`${progress*100}%`}} /></div>
