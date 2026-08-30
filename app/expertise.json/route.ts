@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { identity, expertise, evidence, experiences, decisions, knowledgeNodes, PERSON_ID, SITE_URL } from '../../lib/career-graph';
 import { caseStudies } from '../../lib/case-studies';
-import { getAllBlogPosts } from '../../lib/blog';
 
 export const dynamic='force-static';
 
 export function GET(){
- const posts=getAllBlogPosts();
  const payload={
   schemaVersion:'1.0',
   generatedFrom:'rancorder.dev Career Graph',
