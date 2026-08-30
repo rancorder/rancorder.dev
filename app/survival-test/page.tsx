@@ -173,8 +173,11 @@ export default function SurvivalTestPage() {
                 type="button"
                 disabled={answered !== questions.length}
                 onClick={() => {
-                  setSubmitted(true);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  const code = questions.map((q) => {
+                    const value = answers[q.id];
+                    return value === 'yes' ? 'y' : value === 'partial' ? 'p' : 'n';
+                  }).join('');
+                  window.location.href = `/survival-test/result?r=${code}`;
                 }}
               >
                 ANALYZE PROJECT →
