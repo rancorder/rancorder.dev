@@ -21,10 +21,15 @@ const protectedPaths = new Set([
   'GEMINI.md',
   'GEMINI_REVIEW.md',
   'scripts/ai-review-preflight.js',
+  'scripts/audit-repository-policy.js',
 ]);
 
 for (const file of files) {
-  if (file.startsWith('.github/workflows/') || protectedPaths.has(file)) {
+  if (
+    file.startsWith('.github/workflows/') ||
+    file.startsWith('.github/rulesets/') ||
+    protectedPaths.has(file)
+  ) {
     findings.push(`protected control file changed: ${file}`);
   }
 }

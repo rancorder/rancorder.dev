@@ -1,0 +1,27 @@
+name: Repository Policy Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 0 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Repository Policy Drift Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Audit live GitHub ruleset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npm run audit:policy
