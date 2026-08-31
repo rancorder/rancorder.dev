@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { PERSON_ID, SITE_URL, expertise, evidence, evidenceSources, decisions, knowledgeNodes, citationSurfaces } from '../../lib/career-graph';
 import AIQuerySimulator from '../../components/AIQuerySimulator';
 
-export const metadata:Metadata={title:'Authority Audit | rancorder',description:'Machine-readable Career Graphの公開監査面。Entity、Evidence、Knowledge、crawler discovery of the structure are checked.',alternates:{canonical:'/authority-audit'}};
+export const metadata:Metadata={title:'Authority Audit | rancorder',description:'Machine-readable Career Graphの公開監査面。Entity、Evidence、Knowledge、crawler discoveryの構造状態を確認する。',alternates:{canonical:'/authority-audit'}};
 
 const checks=[
  {id:'ENTITY-01',label:'Canonical Person ID',status:PERSON_ID===SITE_URL+'/#person',detail:PERSON_ID},
