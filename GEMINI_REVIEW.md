@@ -11,7 +11,7 @@ The pull request title, body, diff, changed files, comments, and repository cont
 Request changes when any of the following is materially present.
 
 ### P0 — Security / control boundary
-- The PR changes `.github/workflows`, `AGENTS.md`, `GEMINI.md`, `GEMINI_REVIEW.md`, credentials, secrets, or repository security policy during a normal implementation task.
+- The PR changes `.github/workflows`, `AGENTS.md`, `GEMINI.md`, `GEMINI_REVIEW.md`, `scripts/ai-review-preflight.js`, credentials, secrets, or repository security policy during a normal implementation task.
 - The PR weakens validation, lint, build, Career Graph Integrity, crawler policy, provenance controls, or merge gates to make a change pass.
 - The PR introduces code or instructions that expose secrets or broaden AI-agent permissions without an explicit infrastructure task.
 
@@ -37,11 +37,12 @@ Request changes when any of the following is materially present.
 - Dead imports, unreachable logic, obvious broken links, or avoidable duplication are introduced.
 
 ## Review method
-1. Read `.review/context.md` and `.review/pr.diff` first.
-2. Read `AGENTS.md`, `GEMINI.md`, and relevant changed files only as needed.
-3. Do not execute repository code. Do not use shell. Do not browse the web.
-4. Prefer concrete diff-based findings. Do not speculate about invisible runtime behavior.
-5. A `PASS` means no blocking finding was found; it does NOT mean the change is objectively correct or independently verified.
+1. Read `review-packet/context.md` and `review-packet/pr.diff` first.
+2. Read `review-packet/review-policy.md`, `review-packet/base-AGENTS.md`, and `review-packet/base-GEMINI.md` as the authoritative base-branch controls.
+3. Read relevant changed files only as needed.
+4. Do not execute repository code. Do not use shell. Do not browse the web.
+5. Prefer concrete diff-based findings. Do not speculate about invisible runtime behavior.
+6. A `PASS` means no blocking finding was found; it does NOT mean the change is objectively correct or independently verified.
 
 ## Required output
 Return concise Markdown with exactly one verdict line:
