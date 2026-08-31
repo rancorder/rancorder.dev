@@ -70,6 +70,7 @@ jobs:
           node /tmp/ai-review-preflight.js review-packet/pr.diff
 
       - name: Run read-only Gemini reviewer
+        if: steps.preflight.outcome == 'success'
         id: gemini
         continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
@@ -108,9 +109,6 @@ jobs:
             4. review-packet/base-AGENTS.md and review-packet/base-GEMINI.md — base implementation invariants.
             5. Relevant changed files only when needed to understand the diff.
 
-            Deterministic preflight outcome: ${{ steps.preflight.outcome }}
-            If deterministic preflight failed, treat that as a blocking signal and explain the concrete reason visible in the diff.
-
             Review for security/control-boundary violations, Evidence/provenance overclaiming, Career Graph integrity, canonical/Schema misuse, scope drift, broken links/imports, SSR/SSG regressions, mobile/reduced-motion regressions, and mismatch with the PR's stated Done condition.
 
             Follow the exact output contract in review-packet/review-policy.md. Return exactly one VERDICT line: PASS or REQUEST_CHANGES. PASS never means independently verified and never replaces human review.
@@ -128,9 +126,21 @@ jobs:
           if [ "$PREFLIGHT_OUTCOME" != "success" ]; then
             VERDICT="REQUEST_CHANGES"
             {
+              echo "VERDICT: REQUEST_CHANGES"
               echo
-              echo "GATE NOTE: Deterministic provenance preflight failed. The gate fails closed."
-            } >> /tmp/gemini-review.md
+              echo "RISK: HIGH"
+              echo
+              echo "FINDINGS:"
+              echo "- Deterministic provenance preflight found a blocking control or authority-integrity violation. See the preflight step log for the exact diff finding."
+              echo
+              echo "NON_BLOCKING:"
+              echo "- None"
+              echo
+              echo "WHY:"
+              echo "A deterministic safety rule was violated, so the expensive Gemini review was intentionally skipped and the gate failed closed."
+              echo
+              echo "GATE NOTE: No Gemini API call was made because deterministic preflight already blocked the PR."
+            } > /tmp/gemini-review.md
           elif [ "$GEMINI_OUTCOME" != "success" ]; then
             VERDICT="REQUEST_CHANGES"
             {
