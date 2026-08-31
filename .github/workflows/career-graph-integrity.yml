@@ -3,30 +3,20 @@ name: Career Graph Integrity
 on:
   push:
     branches: [main]
-    paths:
-      - 'lib/career-graph.ts'
-      - 'lib/case-studies.ts'
-      - 'content/blog/**'
-      - 'scripts/validate-career-graph.js'
-      - 'package.json'
   pull_request:
-    paths:
-      - 'lib/career-graph.ts'
-      - 'lib/case-studies.ts'
-      - 'content/blog/**'
-      - 'scripts/validate-career-graph.js'
-      - 'package.json'
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   graph-integrity:
+    name: Career Graph Integrity Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Validate Machine-readable Career Graph
         run: npm run validate:graph
