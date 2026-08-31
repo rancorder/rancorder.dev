@@ -20,6 +20,7 @@ const protectedPaths = new Set([
   'AGENTS.md',
   'GEMINI.md',
   'GEMINI_REVIEW.md',
+  'scripts/ai-review-preflight.js',
 ]);
 
 for (const file of files) {
