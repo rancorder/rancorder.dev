@@ -80,7 +80,12 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           git show "origin/${BASE_REF}:scripts/ai-review-preflight.js" > /tmp/ai-review-preflight.js
-          node /tmp/ai-review-preflight.js review-packet/pr.diff
+          set +e
+          node /tmp/ai-review-preflight.js review-packet/pr.diff > /tmp/ai-review-preflight.txt 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/ai-review-preflight.txt
+          exit "$STATUS"
 
       - name: Run read-only Gemini reviewer
         if: steps.scope.outputs.ai_required == 'true' && steps.preflight.outcome == 'success'
@@ -161,7 +166,14 @@ jobs:
               echo "RISK: HIGH"
               echo
               echo "FINDINGS:"
-              echo "- Deterministic provenance preflight found a blocking control or authority-integrity violation. See the preflight step log for the exact diff finding."
+              echo "- Deterministic provenance preflight found a blocking control or authority-integrity violation:"
+              if [ -s /tmp/ai-review-preflight.txt ]; then
+                while IFS= read -r line; do
+                  printf '  %s\n' "$line"
+                done < /tmp/ai-review-preflight.txt
+              else
+                echo "  preflight failed without diagnostic output"
+              fi
               echo
               echo "NON_BLOCKING:"
               echo "- None"
@@ -174,12 +186,24 @@ jobs:
           elif [ "$GEMINI_OUTCOME" != "success" ]; then
             VERDICT="REQUEST_CHANGES"
             {
+              echo "VERDICT: REQUEST_CHANGES"
               echo
-              echo "GATE NOTE: Gemini reviewer execution failed, so no trustworthy AI verdict was produced. The gate fails closed."
+              echo "RISK: HIGH"
+              echo
+              echo "FINDINGS:"
+              echo "- Gemini reviewer execution failed, so no trustworthy AI verdict was produced."
               if [ -n "$GEMINI_ERROR" ]; then
-                echo "Reviewer error: $GEMINI_ERROR"
+                echo "- Reviewer error: $GEMINI_ERROR"
               fi
-            } >> /tmp/gemini-review.md
+              echo
+              echo "NON_BLOCKING:"
+              echo "- None"
+              echo
+              echo "WHY:"
+              echo "The review system failed closed instead of treating an infrastructure failure as approval."
+              echo
+              echo "GATE NOTE: Gemini reviewer execution failed; no code-quality conclusion should be inferred."
+            } > /tmp/gemini-review.md
           elif grep -Eq '^VERDICT:[[:space:]]*REQUEST_CHANGES[[:space:]]*$' /tmp/gemini-review.md; then
             VERDICT="REQUEST_CHANGES"
           elif grep -Eq '^VERDICT:[[:space:]]*PASS[[:space:]]*$' /tmp/gemini-review.md; then
@@ -220,6 +244,19 @@ jobs:
             jq -n --rawfile body /tmp/gate-comment.md '{body:$body}' | gh api --method POST "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" --input - >/dev/null
           fi
 
+      - name: Dismiss superseded Gemini change requests
+        if: steps.scope.outputs.ai_required == 'true' && steps.verdict.outputs.verdict == 'PASS'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          REVIEW_IDS=$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/reviews?per_page=100" --jq '.[] | select(.state == "CHANGES_REQUESTED" and ((.body // "") | contains("<!-- gemini-review-gate-formal -->"))) | .id')
+          for REVIEW_ID in $REVIEW_IDS; do
+            gh api --method PUT "repos/${REPOSITORY}/pulls/${PR_NUMBER}/reviews/${REVIEW_ID}/dismissals" -f message="Superseded by a later passing Gemini Review Gate run." >/dev/null
+          done
+
       - name: Attempt formal request-changes review
         if: steps.scope.outputs.ai_required == 'true' && steps.verdict.outputs.verdict == 'REQUEST_CHANGES'
         continue-on-error: true
@@ -228,7 +265,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          BODY="Gemini Review Gate found blocking issues. See the sticky review-gate comment and failing check for details."
+          BODY="<!-- gemini-review-gate-formal -->
+          Gemini Review Gate found blocking issues. See the sticky review-gate comment and failing check for details."
           jq -n --arg body "$BODY" '{body:$body,event:"REQUEST_CHANGES"}' | gh api --method POST "repos/${REPOSITORY}/pulls/${PR_NUMBER}/reviews" --input - >/dev/null
 
       - name: Enforce review gate
