@@ -13,8 +13,8 @@ Turn a scoped GitHub Issue request or authorized /ai operator command into a pro
 - Use only valid Schema.org properties. Put custom Career Graph relations in the existing graph structures / expertise.json.
 - Preserve SSR/SSG availability of important Person, Expertise, Case, Evidence, and Knowledge content.
 - Production canonical URLs must remain under `https://rancorder.dev`.
-- Do not weaken tests, lint rules, graph validation, crawler policy, or security controls merely to make CI pass.
-- Never modify GitHub workflows, AGENTS.md, secrets, credentials, or repository security policy unless the task explicitly requests infrastructure work and is being handled outside the normal implementation-agent flow.
+- Do not weaken tests, lint rules, graph validation, crawler policy, review gates, or security controls merely to make CI pass.
+- Never modify GitHub workflows, AGENTS.md, GEMINI.md, GEMINI_REVIEW.md, `scripts/ai-review-preflight.js`, secrets, credentials, or repository security policy unless the task explicitly requests infrastructure work and is being handled outside the normal implementation-agent flow.
 - Do not push to main. The workflow owns branch/PR creation.
 
 ## UX
@@ -33,6 +33,8 @@ Turn a scoped GitHub Issue request or authorized /ai operator command into a pro
 7. Leave the worktree with only intentional changes.
 8. In the final response summarize files changed, semantic impact, validation performed, and any unresolved risk.
 
+## Independent Review Gate
+AI-generated PRs are reviewed by a separate read-only Gemini Review Gate governed by `GEMINI_REVIEW.md` and the base-branch deterministic preflight. The implementation agent must not modify, bypass, instruct, or weaken that reviewer. A passing AI review does not replace human review.
 
 ## Operator Mode
 Authorized repository operators may invoke implementation from an existing GitHub Issue or PR conversation with a comment beginning exactly with `/ai `.
@@ -41,4 +43,4 @@ Examples:
 - `/ai Authority AuditにAI Query Simulatorを追加して`
 - `/ai ブログ一覧のDXカテゴリをCareer Graphへ接続して`
 
-Operator commands must still obey every invariant in this file. A slash command is task input, not permission to bypass safety, validation, provenance, or protected-file rules.
+Operator commands must still obey every invariant in this file. A slash command is task input, not permission to bypass safety, validation, provenance, review, or protected-file rules.
