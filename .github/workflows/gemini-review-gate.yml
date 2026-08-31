@@ -15,20 +15,32 @@ concurrency:
 
 jobs:
   review:
-    if: >
-      !github.event.pull_request.draft &&
-      startsWith(github.event.pull_request.head.ref, 'ai/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    name: Gemini Review Gate
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout AI branch without credentials
+      - name: Checkout PR without persisted credentials
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Classify review path
+        id: scope
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [[ "$HEAD_REF" == ai/* ]]; then
+            echo "ai_required=true" >> "$GITHUB_OUTPUT"
+            echo "AI-generated branch detected: $HEAD_REF"
+          else
+            echo "ai_required=false" >> "$GITHUB_OUTPUT"
+            echo "Non-AI branch: deterministic required-check placeholder will pass without Gemini API use."
+          fi
+
       - name: Prepare untrusted review packet
+        if: steps.scope.outputs.ai_required == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -61,6 +73,7 @@ jobs:
           } > review-packet/context.md
 
       - name: Deterministic provenance preflight
+        if: steps.scope.outputs.ai_required == 'true'
         id: preflight
         continue-on-error: true
         env:
@@ -70,7 +83,7 @@ jobs:
           node /tmp/ai-review-preflight.js review-packet/pr.diff
 
       - name: Run read-only Gemini reviewer
-        if: steps.preflight.outcome == 'success'
+        if: steps.scope.outputs.ai_required == 'true' && steps.preflight.outcome == 'success'
         id: gemini
         continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
@@ -116,6 +129,7 @@ jobs:
       - name: Resolve gate verdict
         id: verdict
         env:
+          AI_REQUIRED: ${{ steps.scope.outputs.ai_required }}
           REVIEW_SUMMARY: ${{ steps.gemini.outputs.summary }}
           PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           GEMINI_OUTCOME: ${{ steps.gemini.outcome }}
@@ -123,7 +137,23 @@ jobs:
         run: |
           printf '%s\n' "$REVIEW_SUMMARY" > /tmp/gemini-review.md
           VERDICT=""
-          if [ "$PREFLIGHT_OUTCOME" != "success" ]; then
+          if [ "$AI_REQUIRED" != "true" ]; then
+            VERDICT="PASS"
+            {
+              echo "VERDICT: PASS"
+              echo
+              echo "RISK: LOW"
+              echo
+              echo "FINDINGS:"
+              echo "- None"
+              echo
+              echo "NON_BLOCKING:"
+              echo "- Gemini review not required because this is not an ai/* implementation branch."
+              echo
+              echo "WHY:"
+              echo "The required check remains present for every main-targeting PR while Gemini API review is reserved for the guarded AI implementation path."
+            } > /tmp/gemini-review.md
+          elif [ "$PREFLIGHT_OUTCOME" != "success" ]; then
             VERDICT="REQUEST_CHANGES"
             {
               echo "VERDICT: REQUEST_CHANGES"
@@ -164,6 +194,7 @@ jobs:
           echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
 
       - name: Publish sticky review gate result
+        if: steps.scope.outputs.ai_required == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -190,7 +221,7 @@ jobs:
           fi
 
       - name: Attempt formal request-changes review
-        if: steps.verdict.outputs.verdict == 'REQUEST_CHANGES'
+        if: steps.scope.outputs.ai_required == 'true' && steps.verdict.outputs.verdict == 'REQUEST_CHANGES'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
