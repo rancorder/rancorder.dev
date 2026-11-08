@@ -2,6 +2,7 @@
 
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import Link from 'next/link';
+import { track } from '@vercel/analytics';
 import {
   parseCsvSummary,
   compareCsvSchemas,
@@ -153,6 +154,8 @@ export default function CsvFormatCheckerClient() {
   };
 
   const loadSample = (key: keyof typeof SAMPLES) => {
+    // No contents, header labels or filenames ever enter analytics.
+    track('csv_compare_started', { mode: 'sample' });
     fileReadGeneration.current.before++;
     fileReadGeneration.current.after++;
     if (beforeInputRef.current) beforeInputRef.current.value = '';
@@ -174,7 +177,9 @@ export default function CsvFormatCheckerClient() {
       const aSummary = parseCsvSummary(sample.afterText, { delimiter: delimiterChoice });
       const diff = compareCsvSchemas(bSummary, aSummary);
       setResult(diff);
+      track('csv_compare_completed', { mode: 'sample', status: diff.status });
     } catch (err: unknown) {
+      track('csv_compare_error', { mode: 'sample' });
       if (err instanceof CsvParseError) {
         setErrorMsg(err.message);
       } else if (err instanceof Error) {
@@ -195,12 +200,15 @@ export default function CsvFormatCheckerClient() {
       return;
     }
 
+    track('csv_compare_started', { mode: 'upload' });
     try {
       const bSummary = parseCsvSummary(beforeText, { delimiter: delimiterChoice });
       const aSummary = parseCsvSummary(afterText, { delimiter: delimiterChoice });
       const diff = compareCsvSchemas(bSummary, aSummary);
       setResult(diff);
+      track('csv_compare_completed', { mode: 'upload', status: diff.status });
     } catch (err: unknown) {
+      track('csv_compare_error', { mode: 'upload' });
       setResult(null);
       if (err instanceof CsvParseError) {
         setErrorMsg(err.message);
@@ -687,7 +695,7 @@ export default function CsvFormatCheckerClient() {
             </div>
 
             <div className="funnel-action-box">
-              <a href={mailtoUrl} className="btn-consult">
+              <a href={mailtoUrl} className="btn-consult" onClick={() => track('consultation_cta_clicked', { source: 'csv_checker' })}>
                 <span>データ変換・運用設計のメール相談を開く</span>
                 <i>→</i>
               </a>
