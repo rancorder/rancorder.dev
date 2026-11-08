@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '無料CSVフォーマット変更チェッカー | rancorder',
     description:
-      'CSV/TSVファイルの列名・列順・区切り文字・列数整合性をブラウザ内完結で比較。CSV内容のCSV内容のサーバー送信なし。受発注・基幹連携のサイレント障害を防止。',
+      'CSV/TSVファイルの列名・列順・区切り文字・列数整合性をブラウザ内完結で比較。CSV内容のサーバー送信なし。受発注・基幹連携のサイレント障害を防止。',
     url: 'https://rancorder.dev/tools/csv-format-check',
     siteName: 'rancorder',
     locale: 'ja_JP',
