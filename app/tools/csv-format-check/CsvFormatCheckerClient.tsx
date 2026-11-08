@@ -68,12 +68,26 @@ export default function CsvFormatCheckerClient() {
 
   const beforeInputRef = useRef<HTMLInputElement>(null);
   const afterInputRef = useRef<HTMLInputElement>(null);
+  // Ignore results from an earlier async read after the user replaces a file.
+  const fileReadGeneration = useRef({ before: 0, after: 0 });
 
   const handleFile = async (
     file: File,
     target: 'before' | 'after'
   ) => {
+    const generation = ++fileReadGeneration.current[target];
+    // Invalidate the previous comparison immediately, including when validation fails.
+    setResult(null);
     setErrorMsg(null);
+    if (target === 'before') {
+      setBeforeName('');
+      setBeforeText('');
+      setBeforeSize(0);
+    } else {
+      setAfterName('');
+      setAfterText('');
+      setAfterSize(0);
+    }
 
     // File size guard (3MB)
     if (file.size > MAX_FILE_SIZE) {
@@ -94,6 +108,7 @@ export default function CsvFormatCheckerClient() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
+      if (fileReadGeneration.current[target] !== generation) return;
       // Use fatal: false or inspect for replacement char
       const decoder = new TextDecoder('utf-8', { fatal: false });
       const text = decoder.decode(arrayBuffer);
@@ -115,7 +130,9 @@ export default function CsvFormatCheckerClient() {
         setAfterSize(file.size);
       }
     } catch {
-      setErrorMsg(`ファイル「${file.name}」の読み込み中にエラーが発生しました。`);
+      if (fileReadGeneration.current[target] === generation) {
+        setErrorMsg(`ファイル「${file.name}」の読み込み中にエラーが発生しました。`);
+      }
     }
   };
 
@@ -125,17 +142,22 @@ export default function CsvFormatCheckerClient() {
     else setDragOverAfter(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFile(e.dataTransfer.files[0], target);
+      void handleFile(e.dataTransfer.files[0], target);
     }
   };
 
   const onFileChange = (e: ChangeEvent<HTMLInputElement>, target: 'before' | 'after') => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFile(e.target.files[0], target);
-    }
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = ''; // Allow choosing the same file again after fixing it.
+    if (file) void handleFile(file, target);
   };
 
   const loadSample = (key: keyof typeof SAMPLES) => {
+    fileReadGeneration.current.before++;
+    fileReadGeneration.current.after++;
+    if (beforeInputRef.current) beforeInputRef.current.value = '';
+    if (afterInputRef.current) afterInputRef.current.value = '';
+    setResult(null);
     setErrorMsg(null);
     const sample = SAMPLES[key];
     setBeforeName(sample.beforeName);
@@ -162,6 +184,7 @@ export default function CsvFormatCheckerClient() {
   };
 
   const runAnalysis = () => {
+    setResult(null);
     setErrorMsg(null);
     if (!beforeText) {
       setErrorMsg('「変更前ファイル (BEFORE)」を選択または入力してください。');
@@ -190,6 +213,8 @@ export default function CsvFormatCheckerClient() {
   };
 
   const handleReset = () => {
+    fileReadGeneration.current.before++;
+    fileReadGeneration.current.after++;
     setBeforeName('');
     setBeforeText('');
     setBeforeSize(0);
@@ -251,11 +276,15 @@ export default function CsvFormatCheckerClient() {
             id="delim-select"
             className="delimiter-select"
             value={delimiterChoice}
-            onChange={(e) => setDelimiterChoice(e.target.value as CsvDelimiter | 'auto')}
+            onChange={(e) => {
+              setDelimiterChoice(e.target.value as CsvDelimiter | 'auto');
+              setResult(null); // Prior results use the previous delimiter setting.
+              setErrorMsg(null);
+            }}
           >
             <option value="auto">自動検出 (Auto)</option>
             <option value=",">カンマ (CSV)</option>
-            <option value="&#9;">タブ (TSV)</option>
+            <option value={'\t'}>タブ (TSV)</option>
             <option value=";">セミコロン (;)</option>
           </select>
         </div>
