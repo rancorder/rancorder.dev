@@ -688,7 +688,7 @@ export default function CsvFormatCheckerClient() {
                 スキーマ変更に強い自動変換パイプラインの設計、責任境界の策定、例外エスカレーションの構築をTechnical PMとして支援します。
               </p>
               <div className="funnel-guarantees">
-                <span><i>✓</i> 100% ブラウザ内完結・データ送信なし</span>
+                <span><i>✓</i> CSV内容はブラウザ内で解析・外部送信なし</span>
                 <span><i>✓</i> 個人情報・会員登録の入力不要</span>
                 <span><i>✓</i> 製造業B2B・受発注運用の知見に基づく設計</span>
               </div>
