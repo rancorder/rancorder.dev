@@ -284,6 +284,85 @@ test('Schema comparison: Irregular row count in AFTER triggers BREAKING_CHANGES'
   assert(diff.risks.some((r) => r.title.includes('列数不一致の行が存在')));
 });
 
+// 22. Exact header names must retain whitespace differences.
+test('Header whitespace change is a breaking schema change', () => {
+  const before = parseCsvSummary('id,name\n1,Acme');
+  const after = parseCsvSummary('id, name\n1,Acme');
+  const result = compareCsvSchemas(before, after);
+  assert.deepEqual(after.headers, ['id', ' name']);
+  assert.equal(result.status, 'BREAKING_CHANGES');
+  assert.deepEqual(result.removedColumns, ['name']);
+  assert.deepEqual(result.addedColumns, [' name']);
+});
+
+// 23. Quoted header whitespace also matters.
+test('Quoted headers keep leading and trailing spaces exactly', () => {
+  const before = parseCsvSummary('id,"name"\n1,Acme');
+  const after = parseCsvSummary('id,"name "\n1,Acme');
+  const result = compareCsvSchemas(before, after);
+  assert.equal(after.headers[1], 'name ');
+  assert.equal(result.status, 'BREAKING_CHANGES');
+});
+
+// 24. Whitespace-only headers are blank; differently-spaced keys are not duplicates.
+test('Exact duplicate detection does not conflate distinct whitespace keys', () => {
+  const value = parseCsvSummary('id, id,  \n1,2,3');
+  assert.deepEqual(value.headerIssues.emptyHeaders, [3]);
+  assert.deepEqual(value.headerIssues.duplicateHeaders, []);
+});
+
+// 25. TSV with many commas in its data is still TSV.
+test('Auto detection uses TSV record structure instead of comma frequency', () => {
+  const tsv = 'id\tnote\n1\tone,two,three,four\n2\tfive,six,seven,eight';
+  assert.equal(detectDelimiter(tsv), '\t');
+  const parsed = parseCsvSummary(tsv);
+  assert.deepEqual(parsed.headers, ['id', 'note']);
+  assert.equal(parsed.totalDataRows, 2);
+  assert.equal(parsed.irregularRowCount, 0);
+});
+
+// 26. Semicolon records with ordinary commas in data.
+test('Auto detection uses semicolon record structure instead of comma frequency', () => {
+  const csv = 'id;note\n1;one,two,three,four\n2;five,six,seven,eight';
+  assert.equal(detectDelimiter(csv), ';');
+  const parsed = parseCsvSummary(csv);
+  assert.deepEqual(parsed.headers, ['id', 'note']);
+  assert.equal(parsed.irregularRowCount, 0);
+});
+
+// 27. Delimiters and line breaks inside quoted header fields should be ignored.
+test('Delimiter detection respects quoted header punctuation and multiline values', () => {
+  const tsv = '"order,id"\t"notes,part"\n1\t"one,two\nthree,four"\n2\t"five,six"';
+  const parsed = parseCsvSummary(tsv);
+  assert.equal(parsed.delimiter, '\t');
+  assert.deepEqual(parsed.headers, ['order,id', 'notes,part']);
+  assert.equal(parsed.totalDataRows, 2);
+  assert.equal(parsed.irregularRowCount, 0);
+});
+
+// 28. An explicitly quoted empty field at EOF is a real final row.
+test('Quoted empty field at EOF counts as a malformed short record', () => {
+  const parsed = parseCsvSummary('id,name\n""');
+  assert.equal(parsed.totalDataRows, 1);
+  assert.equal(parsed.irregularRowCount, 1);
+  assert.equal(parsed.irregularRowSamples[0].rowNumber, 2);
+  assert.equal(parsed.irregularRowSamples[0].actual, 1);
+});
+
+// 29. A one-column quoted empty field at EOF is a valid row.
+test('Quoted empty field at EOF counts even for single-column data', () => {
+  const parsed = parseCsvSummary('id\n""');
+  assert.equal(parsed.totalDataRows, 1);
+  assert.equal(parsed.irregularRowCount, 0);
+});
+
+// 30. Trailing record separator must not introduce a phantom record.
+test('Final record separator does not create an extra empty row', () => {
+  const parsed = parseCsvSummary('id,name\n1,Acme\n');
+  assert.equal(parsed.totalDataRows, 1);
+  assert.equal(parsed.irregularRowCount, 0);
+});
+
 console.log('\n============================================================');
 console.log(`📊 Result: ${passCount} passed, ${failCount} failed`);
 console.log('============================================================\n');
