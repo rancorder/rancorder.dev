@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://rancorder.dev'),
   title: '無料CSVフォーマット変更チェッカー | ブラウザ完結・スキーマ差分比較 | rancorder',
   description:
-    'CSV/TSVファイルの列名・列順・区切り文字・列数の変更をブラウザ内完結で即時判定。サーバー送信・データ保持なし。受発注システムや基幹連携のサイレントエラー・取込異常を未然に防ぎます。',
+    'CSV/TSVファイルの列名・列順・区切り文字・列数の変更をブラウザ内完結で即時判定。CSV内容のサーバー送信・保存なし。受発注システムや基幹連携のサイレントエラー・取込異常を未然に防ぎます。',
   keywords: [
     'CSV変更チェック',
     'CSV差分比較',
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '無料CSVフォーマット変更チェッカー | rancorder',
     description:
-      'CSV/TSVファイルの列名・列順・区切り文字・列数整合性をブラウザ内完結で比較。サーバーへのデータ送信なし。受発注・基幹連携のサイレント障害を防止。',
+      'CSV/TSVファイルの列名・列順・区切り文字・列数整合性をブラウザ内完結で比較。CSV内容のCSV内容のサーバー送信なし。受発注・基幹連携のサイレント障害を防止。',
     url: 'https://rancorder.dev/tools/csv-format-check',
     siteName: 'rancorder',
     locale: 'ja_JP',
@@ -55,7 +55,7 @@ export default function CsvFormatCheckPage() {
         {/* Hero Section */}
         <header className="checker-hero">
           <div className="status-tag" style={{ background: 'rgba(93, 242, 165, 0.1)', color: 'var(--mc-green)', border: '1px solid rgba(93, 242, 165, 0.3)', display: 'inline-block', marginBottom: '16px' }}>
-            01 / FREE BROWSER TOOL · ZERO CLOUD LOGGING
+            01 / FREE BROWSER TOOL · LOCAL FILE PROCESSING
           </div>
           <h1>
             CSVフォーマット変更チェッカー。<br />
@@ -63,7 +63,7 @@ export default function CsvFormatCheckPage() {
           </h1>
           <p>
             取引先や外部システムから送られてくるCSV/TSVの仕様変更（列の追加・削除・順序入替・区切り文字変更・行ごとの列数不正）を、
-            ブラウザ内完結で即座に判定します。機密情報や行データをサーバーへ送信・記録することはありません。
+            ブラウザ内完結で即座に判定します。CSVの内容やファイル名をサーバーへ送信・記録することはありません。匿名の操作イベントを計測する場合があります。
           </p>
 
           {/* Disclosures & Specifications */}
@@ -71,7 +71,7 @@ export default function CsvFormatCheckPage() {
             <div className="checker-disc-item">
               <small>PROCESSING</small>
               <b>100% ブラウザ内完結</b>
-              <span>データ送信・通信ログなし。端末内で安全に完結。</span>
+              <span>CSVの中身は端末内で解析。匿名の利用状況のみ計測する場合があります。</span>
             </div>
             <div className="checker-disc-item">
               <small>FILE LIMIT</small>
