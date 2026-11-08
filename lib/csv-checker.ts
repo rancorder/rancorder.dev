@@ -88,40 +88,68 @@ export class CsvParseError extends Error {
 }
 
 /**
- * Detect delimiter from sample text (e.g. first non-empty lines outside quotes)
+ * Detect the delimiter by the structure of the first logical records.
+ * Counting all punctuation misidentifies TSV when unquoted data contains commas.
+ * Quoted delimiters and quoted newlines are ignored.
  */
 export function detectDelimiter(text: string): CsvDelimiter {
+  const candidates: CsvDelimiter[] = [',', '\t', ';'];
+  const records: number[][] = [];
+  let widths = [1, 1, 1];
   let inQuotes = false;
-  let commas = 0;
-  let tabs = 0;
-  let semicolons = 0;
+  let recordStarted = false;
+  const limit = Math.min(text.length, 65536);
 
-  // Scan up to first 4KB or first 5 lines to detect delimiter
-  const scanLimit = Math.min(text.length, 4096);
-  let lineCount = 0;
-
-  for (let i = 0; i < scanLimit; i++) {
+  for (let i = 0; i < limit && records.length < 12; i++) {
     const ch = text[i];
     if (ch === '"') {
       if (inQuotes && text[i + 1] === '"') {
-        i++; // skip escaped quote
+        i++;
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (!inQuotes) {
-      if (ch === ',') commas++;
-      else if (ch === '\t') tabs++;
-      else if (ch === ';') semicolons++;
-      else if (ch === '\n') {
-        lineCount++;
-        if (lineCount >= 5 && (commas > 0 || tabs > 0 || semicolons > 0)) break;
+      recordStarted = true;
+      continue;
+    }
+
+    if (!inQuotes && (ch === '\n' || ch === '\r')) {
+      if (recordStarted) records.push(widths);
+      widths = [1, 1, 1];
+      recordStarted = false;
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      continue;
+    }
+
+    if (!inQuotes) {
+      for (let j = 0; j < candidates.length; j++) {
+        if (ch === candidates[j]) widths[j]++;
       }
     }
+    recordStarted = true;
   }
 
-  if (tabs > commas && tabs > semicolons) return '\t';
-  if (semicolons > commas && semicolons > tabs) return ';';
-  return ',';
+  if (recordStarted && records.length < 12) records.push(widths);
+  if (!records.length) return ',';
+
+  let chosen: CsvDelimiter = ',';
+  let bestScore = -Infinity;
+  for (let j = 0; j < candidates.length; j++) {
+    const headerColumns = records[0][j];
+    if (headerColumns <= 1) continue;
+
+    // A real delimiter should yield the same number of columns across records.
+    // Header structure is mandatory; frequent commas only in TSV data cannot win.
+    const dataWidths = records.slice(1).map((record) => record[j]);
+    const matching = dataWidths.filter((width) => width === headerColumns).length;
+    const mismatching = dataWidths.length - matching;
+    const score = matching * 8 - mismatching * 4 + headerColumns - 1;
+
+    if (score > bestScore) {
+      bestScore = score;
+      chosen = candidates[j];
+    }
+  }
+  return chosen;
 }
 
 /**
@@ -279,17 +307,15 @@ export function parseCsvSummary(text: string, options: ParseCsvOptions = {}): Pa
   }
 
   // Final row if remaining
-  if (currentRow.length > 0 || currentField.length > 0) {
+  if (currentRow.length > 0 || currentField.length > 0 || !atStartOfField) {
     currentRow.push(currentField);
-    // Ignore trailing empty line if it consists of 1 empty field at EOF
-    if (!(currentRow.length === 1 && currentRow[0] === '' && (headers !== null))) {
-      processParsedRow(currentRow, actualRowNumber);
-    }
+    // An explicitly quoted empty field is a real record, not an empty trailing line.
+    processParsedRow(currentRow, actualRowNumber);
   }
 
   function processParsedRow(row: string[], rowNum: number) {
     if (headers === null) {
-      headers = row.map((h) => h.trim());
+      headers = row; // Preserve exact column keys; leading/trailing whitespace is significant.
       return;
     }
 
@@ -341,7 +367,7 @@ export function inspectHeaders(headers: string[]): HeaderIssue {
       emptyHeaders.push(colNumber);
     }
 
-    const key = name.trim();
+    const key = name; // Distinct exact names must not be conflated with trimmed names.
     if (key.length > 0) {
       const existing = nameToIndices.get(key) || [];
       existing.push(colNumber);
