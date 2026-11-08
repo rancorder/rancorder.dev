@@ -76,6 +76,7 @@ export default function HomePage() {
           <a href="#diagnostic">DIAGNOSTIC</a>
           <Link href="/blog">KNOWLEDGE</Link>
           <Link href="/lab">LAB</Link>
+          <Link href="/tools/csv-format-check">CSV CHECKER</Link>
           <a href="#sales-poc">SALES PoC</a>
         </div>
         <div className="mc-system-state"><i /> SYSTEM ONLINE</div>
@@ -90,6 +91,19 @@ export default function HomePage() {
 
         <div className="mc-scroll-hint"><span /> SCROLL TO INSPECT</div>
       </section>
+
+      <div className="mc-battle-strip" aria-label="system utilities and diagnostics">
+        <Link href="/tools/csv-format-check" className="battle-alert">
+          <span>FREE UTILITY // SCHEMA CHECK</span>
+          <b>CSVフォーマット変更チェッカー: 受発注・連携データの列変更・サイレント破壊を事前検知</b>
+          <i>SCAN CSV →</i>
+        </Link>
+        <Link href="/survival-test" className="battle-alert muted">
+          <span>DIAGNOSTIC // READINESS</span>
+          <b>PoC SURVIVAL TEST: 責任・失敗条件・データ追跡から本番耐性を判定</b>
+          <i>START TEST →</i>
+        </Link>
+      </div>
 
       <MissionSelector />
       <SectorMissionPanel />
@@ -219,7 +233,7 @@ export default function HomePage() {
           <span>RANCORDER.DEV</span>
           <p>PROJECT MISSION CONTROL</p>
         </div>
-        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS · <Link href="/about">PROFILE</Link> · <Link href="/expertise">EXPERTISE GRAPH</Link> · <Link href="/lab">LAB / AFTER HOURS</Link></div>
+        <div className="mc-footer-state"><i /> AVAILABLE FOR COMPLEX SYSTEMS · <Link href="/about">PROFILE</Link> · <Link href="/expertise">EXPERTISE GRAPH</Link> · <Link href="/tools/csv-format-check">CSV CHECKER</Link> · <Link href="/lab">LAB / AFTER HOURS</Link></div>
       </footer>
     </main>
   );
